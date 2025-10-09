@@ -257,7 +257,7 @@
     </div>
   </section>
 
-  <!-- Agenda (simplificada) -->
+  <!-- Agenda (solo CTAs principales) -->
 <section id="agenda" class="py-16 md:py-24 bg-white reveal">
   <div class="max-w-6xl mx-auto px-4">
     <div class="flex items-center justify-between flex-wrap gap-4">
@@ -312,31 +312,13 @@
       </article>
     </div>
 
-    <!-- Tarjeta CTA final -->
-    <div class="mt-6 w-full rounded-xl border border-gray-200 bg-gray-50 p-6">
-      <div class="flex flex-col md:flex-row items-center gap-6">
-        <div class="flex-1">
-          <h3 class="font-semibold text-lg">Reserva con Microsoft Bookings</h3>
-          <p class="text-gray-800 mt-1">
-            Se sincroniza automáticamente con mi calendario de Outlook. Escoge el horario que mejor te acomode.
-          </p>
-        </div>
-        <div>
-          <a href="https://outlook.office.com/bookwithme/user/c53758f6cac443108f6f112c6eedf95b@solidservicios.com?anonymous&ismsaljsauthenabled&ep=plink"
-             target="_blank" rel="noopener noreferrer"
-             class="px-5 py-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 transition">
-            Agendar ahora
-          </a>
-        </div>
-      </div>
-    </div>
-
     <p class="mt-4 text-sm text-gray-800">
       ¿No ves un horario disponible? Escríbeme por
-      <a class="text-blue-600 hover:underline" href="https://wa.me/524425992802">WhatsApp</a> y lo ajustamos.
+      <a class="text-blue-600 hover:underline" href="https://wa.me/524425992802" rel="noopener noreferrer">WhatsApp</a> y lo ajustamos.
     </p>
   </div>
 </section>
+
 
   <!-- Recursos -->
   <section id="recursos" class="py-16 md:py-24 reveal">
@@ -470,74 +452,63 @@
 
   <!-- Scripts -->
   <script>
-    // Toggle menú móvil con accesibilidad
-    const menuBtn = document.getElementById('menuBtn');
-    const mobileMenu = document.getElementById('mobileMenu');
-    menuBtn?.addEventListener('click', () => {
-      const isOpen = !mobileMenu.classList.toggle('hidden');
-      menuBtn.setAttribute('aria-expanded', String(isOpen));
-    });
+  // Toggle menú móvil con accesibilidad
+  const menuBtn = document.getElementById('menuBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  menuBtn?.addEventListener('click', () => {
+    const isOpen = !mobileMenu.classList.toggle('hidden');
+    menuBtn.setAttribute('aria-expanded', String(isOpen));
+  });
 
-    // Abre Booking en ventana centrada
-    function openBookings() {
-      const url = "https://outlook.office.com/bookwithme/user/c53758f6cac443108f6f112c6eedf95b@solidservicios.com?anonymous&ismsaljsauthenabled&ep=plink";
-      const w = Math.min(1100, window.innerWidth - 40);
-      const h = Math.min(800, window.innerHeight - 60);
-      const left = window.screenX + (window.innerWidth - w) / 2;
-      const top  = window.screenY + (window.innerHeight - h) / 2;
-      const win = window.open(url, "bookings", `width=${w},height=${h},left=${left},top=${top},noopener,noreferrer`);
-      if (!win) window.open(url, "_blank", "noopener,noreferrer");
+  // Envío del formulario con feedback (Formspree)
+  const form = document.getElementById('contactForm');
+  const formMsg = document.getElementById('formMsg');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const action = form.getAttribute('action');
+    if (action.includes('/f/XXXXXXXX')) {
+      // Fallback mailto si aún no configuras Formspree
+      window.location.href =
+        'mailto:ramirez.miguel.alejandro@gmail.com'
+        + '?subject=Contacto%20desde%20AlexRaSa.store'
+        + '&body=' + encodeURIComponent(
+            'Nombre: ' + (document.getElementById('nombre').value || '') + '\n'
+          + 'Empresa: ' + (document.getElementById('empresa').value || '') + '\n'
+          + 'Correo: ' + (document.getElementById('correo').value || '') + '\n'
+          + 'Teléfono: ' + (document.getElementById('telefono').value || '') + '\n'
+          + 'Mensaje: ' + (document.getElementById('motivo').value || '')
+          );
+      return;
     }
-
-    // Envío del formulario con feedback (Formspree)
-    const form = document.getElementById('contactForm');
-    const formMsg = document.getElementById('formMsg');
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const action = form.getAttribute('action');
-      if (action.includes('/f/XXXXXXXX')) {
-        // Fallback mailto si aún no configuras Formspree
-        window.location.href =
-          'mailto:ramirez.miguel.alejandro@gmail.com'
-          + '?subject=Contacto%20desde%20AlexRaSa.store'
-          + '&body=' + encodeURIComponent(
-              'Nombre: ' + (document.getElementById('nombre').value || '') + '\n'
-            + 'Empresa: ' + (document.getElementById('empresa').value || '') + '\n'
-            + 'Correo: ' + (document.getElementById('correo').value || '') + '\n'
-            + 'Teléfono: ' + (document.getElementById('telefono').value || '') + '\n'
-            + 'Mensaje: ' + (document.getElementById('motivo').value || '')
-            );
-        return;
-      }
-      formMsg.classList.remove('hidden');
-      formMsg.textContent = 'Enviando...';
-      formMsg.className = 'mt-3 text-sm text-gray-600';
-      try {
-        const formData = new FormData(form);
-        const res = await fetch(action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: formData });
-        if (res.ok) {
-          form.reset();
-          formMsg.textContent = '¡Gracias! Te responderé en menos de 24 horas hábiles.';
-          formMsg.className = 'mt-3 text-sm text-green-700';
-        } else {
-          formMsg.textContent = 'No se pudo enviar. Intenta de nuevo o usa WhatsApp/correo.';
-          formMsg.className = 'mt-3 text-sm text-red-600';
-        }
-      } catch (err) {
-        formMsg.textContent = 'Error de red. Intenta de nuevo o usa WhatsApp/correo.';
+    formMsg.classList.remove('hidden');
+    formMsg.textContent = 'Enviando...';
+    formMsg.className = 'mt-3 text-sm text-gray-600';
+    try {
+      const formData = new FormData(form);
+      const res = await fetch(action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: formData });
+      if (res.ok) {
+        form.reset();
+        formMsg.textContent = '¡Gracias! Te responderé en menos de 24 horas hábiles.';
+        formMsg.className = 'mt-3 text-sm text-green-700';
+      } else {
+        formMsg.textContent = 'No se pudo enviar. Intenta de nuevo o usa WhatsApp/correo.';
         formMsg.className = 'mt-3 text-sm text-red-600';
       }
-    });
+    } catch (err) {
+      formMsg.textContent = 'Error de red. Intenta de nuevo o usa WhatsApp/correo.';
+      formMsg.className = 'mt-3 text-sm text-red-600';
+    }
+  });
 
-    // Scroll-reveal con IntersectionObserver
-    (function() {
-      const els = document.querySelectorAll('.reveal');
-      const onIntersect = (entries, obs) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); } });
-      };
-      const io = new IntersectionObserver(onIntersect, { threshold: 0.12 });
-      els.forEach(el => io.observe(el));
-    })();
-  </script>
+  // Scroll-reveal con IntersectionObserver
+  (function() {
+    const els = document.querySelectorAll('.reveal');
+    const onIntersect = (entries, obs) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); } });
+    };
+    const io = new IntersectionObserver(onIntersect, { threshold: 0.12 });
+    els.forEach(el => io.observe(el));
+  })();
+</script>
 </body>
 </html>
