@@ -719,7 +719,49 @@
     menuBtn.setAttribute('aria-expanded', String(isOpen));
   });
 
-  // Envío del formulario con feedback (Formspree)
+  // --- Dropdown Soluciones (desktop) ---
+  const solutionsBtn = document.getElementById('solutionsMenuBtn');
+  const solutionsMenu = document.getElementById('solutionsMenu');
+
+  // Abre al pasar el mouse (Tailwind group ya muestra), pero sincronizamos aria-expanded:
+  const setExpanded = (val) => solutionsBtn?.setAttribute('aria-expanded', String(val));
+
+  solutionsBtn?.addEventListener('mouseenter', () => setExpanded(true));
+  solutionsBtn?.addEventListener('focus', () => setExpanded(true));
+  solutionsMenu?.addEventListener('mouseenter', () => setExpanded(true));
+
+  const closeSolutions = () => setExpanded(false);
+
+  solutionsMenu?.addEventListener('mouseleave', closeSolutions);
+  solutionsBtn?.addEventListener('blur', () => {
+    // Pequeño delay por si el foco pasa a un link dentro del menú
+    setTimeout(() => {
+      if (!solutionsMenu.matches(':hover')) closeSolutions();
+    }, 100);
+  });
+
+  // Cerrar con click fuera y tecla Esc
+  document.addEventListener('click', (e) => {
+    if (!solutionsMenu || !solutionsBtn) return;
+    const within = solutionsMenu.contains(e.target) || solutionsBtn.contains(e.target);
+    if (!within) closeSolutions();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSolutions();
+  });
+
+  // --- Acordeón Soluciones (móvil) ---
+  const mobileSolutionsBtn = document.getElementById('mobileSolutionsBtn');
+  const mobileSolutions = document.getElementById('mobileSolutions');
+  mobileSolutionsBtn?.addEventListener('click', () => {
+    const isOpen = mobileSolutions.classList.toggle('hidden') === false;
+    mobileSolutionsBtn.setAttribute('aria-expanded', String(isOpen));
+    // Rotar caret
+    const icon = mobileSolutionsBtn.querySelector('svg');
+    if (icon) icon.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+
+  // --- Envío del formulario con feedback (Formspree) ---
   const form = document.getElementById('contactForm');
   const formMsg = document.getElementById('formMsg');
   form?.addEventListener('submit', async (e) => {
@@ -759,7 +801,7 @@
     }
   });
 
-  // Scroll-reveal con IntersectionObserver
+  // --- Scroll-reveal con IntersectionObserver ---
   (function() {
     const els = document.querySelectorAll('.reveal');
     const onIntersect = (entries, obs) => {
@@ -768,6 +810,7 @@
     const io = new IntersectionObserver(onIntersect, { threshold: 0.12 });
     els.forEach(el => io.observe(el));
   })();
-  </script>
+</script>
+
 </body>
 </html>
