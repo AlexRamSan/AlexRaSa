@@ -711,106 +711,71 @@
   </a>
 
   <!-- Scripts -->
-  <script>
-  // Toggle menú móvil con accesibilidad
-  const menuBtn = document.getElementById('menuBtn');
-  const mobileMenu = document.getElementById('mobileMenu');
-  menuBtn?.addEventListener('click', () => {
-    const isOpen = !mobileMenu.classList.toggle('hidden');
-    menuBtn.setAttribute('aria-expanded', String(isOpen));
-  });
+ <script>
+// --- Dropdown Soluciones (desktop) — click + retardo de cierre ---
+const solutionsBtn  = document.getElementById('solutionsMenuBtn');
+const solutionsMenu = document.getElementById('solutionsMenu');
+let closeTimer = null;
 
-  // --- Dropdown Soluciones (desktop) ---
-  const solutionsBtn = document.getElementById('solutionsMenuBtn');
-  const solutionsMenu = document.getElementById('solutionsMenu');
+function openSolutions() {
+  if (!solutionsMenu) return;
+  solutionsMenu.classList.remove('hidden');
+  solutionsBtn?.setAttribute('aria-expanded', 'true');
+  const icon = solutionsBtn?.querySelector('svg');
+  if (icon) icon.style.transform = 'rotate(180deg)';
+  if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+}
 
-  // Abre al pasar el mouse (Tailwind group ya muestra), pero sincronizamos aria-expanded:
-  const setExpanded = (val) => solutionsBtn?.setAttribute('aria-expanded', String(val));
+function closeSolutions(immediate = false) {
+  if (!solutionsMenu) return;
+  const doClose = () => {
+    solutionsMenu.classList.add('hidden');
+    solutionsBtn?.setAttribute('aria-expanded', 'false');
+    const icon = solutionsBtn?.querySelector('svg');
+    if (icon) icon.style.transform = 'rotate(0deg)';
+  };
+  if (immediate) {
+    if (closeTimer) clearTimeout(closeTimer);
+    doClose();
+  } else {
+    if (closeTimer) clearTimeout(closeTimer);
+    closeTimer = setTimeout(doClose, 180); // retardo suave para no “parpadear”
+  }
+}
 
-  solutionsBtn?.addEventListener('mouseenter', () => setExpanded(true));
-  solutionsBtn?.addEventListener('focus', () => setExpanded(true));
-  solutionsMenu?.addEventListener('mouseenter', () => setExpanded(true));
+solutionsBtn?.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const isOpen = solutionsBtn.getAttribute('aria-expanded') === 'true';
+  if (isOpen) closeSolutions(true); else openSolutions();
+});
 
-  const closeSolutions = () => setExpanded(false);
+// Mantener abierto si el mouse está dentro
+solutionsMenu?.addEventListener('mouseenter', () => {
+  if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+});
+solutionsMenu?.addEventListener('mouseleave', () => closeSolutions(false));
 
-  solutionsMenu?.addEventListener('mouseleave', closeSolutions);
-  solutionsBtn?.addEventListener('blur', () => {
-    // Pequeño delay por si el foco pasa a un link dentro del menú
-    setTimeout(() => {
-      if (!solutionsMenu.matches(':hover')) closeSolutions();
-    }, 100);
-  });
+// Cerrar con click fuera
+document.addEventListener('click', (e) => {
+  if (!solutionsMenu || !solutionsBtn) return;
+  const isInside = solutionsMenu.contains(e.target) || solutionsBtn.contains(e.target);
+  if (!isInside) closeSolutions(true);
+});
 
-  // Cerrar con click fuera y tecla Esc
-  document.addEventListener('click', (e) => {
-    if (!solutionsMenu || !solutionsBtn) return;
-    const within = solutionsMenu.contains(e.target) || solutionsBtn.contains(e.target);
-    if (!within) closeSolutions();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSolutions();
-  });
+// Cerrar con Esc
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSolutions(true);
+});
 
-  // --- Acordeón Soluciones (móvil) ---
-  const mobileSolutionsBtn = document.getElementById('mobileSolutionsBtn');
-  const mobileSolutions = document.getElementById('mobileSolutions');
-  mobileSolutionsBtn?.addEventListener('click', () => {
-    const isOpen = mobileSolutions.classList.toggle('hidden') === false;
-    mobileSolutionsBtn.setAttribute('aria-expanded', String(isOpen));
-    // Rotar caret
-    const icon = mobileSolutionsBtn.querySelector('svg');
-    if (icon) icon.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-  });
-
-  // --- Envío del formulario con feedback (Formspree) ---
-  const form = document.getElementById('contactForm');
-  const formMsg = document.getElementById('formMsg');
-  form?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const action = form.getAttribute('action');
-    if (action.includes('/f/XXXXXXXX')) {
-      // Fallback mailto si aún no configuras Formspree
-      window.location.href =
-        'mailto:ramirez.miguel.alejandro@gmail.com'
-        + '?subject=Contacto%20desde%20AlexRaSa.store'
-        + '&body=' + encodeURIComponent(
-            'Nombre: ' + (document.getElementById('nombre').value || '') + '\n'
-          + 'Empresa: ' + (document.getElementById('empresa').value || '') + '\n'
-          + 'Correo: ' + (document.getElementById('correo').value || '') + '\n'
-          + 'Teléfono: ' + (document.getElementById('telefono').value || '') + '\n'
-          + 'Mensaje: ' + (document.getElementById('motivo').value || '')
-          );
-      return;
-    }
-    formMsg.classList.remove('hidden');
-    formMsg.textContent = 'Enviando...';
-    formMsg.className = 'mt-3 text-sm text-gray-600';
-    try {
-      const formData = new FormData(form);
-      const res = await fetch(action, { method: 'POST', headers: { 'Accept': 'application/json' }, body: formData });
-      if (res.ok) {
-        form.reset();
-        formMsg.textContent = '¡Gracias! Te responderé en menos de 24 horas hábiles.';
-        formMsg.className = 'mt-3 text-sm text-green-700';
-      } else {
-        formMsg.textContent = 'No se pudo enviar. Intenta de nuevo o usa WhatsApp/correo.';
-        formMsg.className = 'mt-3 text-sm text-red-600';
-      }
-    } catch (err) {
-      formMsg.textContent = 'Error de red. Intenta de nuevo o usa WhatsApp/correo.';
-      formMsg.className = 'mt-3 text-sm text-red-600';
-    }
-  });
-
-  // --- Scroll-reveal con IntersectionObserver ---
-  (function() {
-    const els = document.querySelectorAll('.reveal');
-    const onIntersect = (entries, obs) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); } });
-    };
-    const io = new IntersectionObserver(onIntersect, { threshold: 0.12 });
-    els.forEach(el => io.observe(el));
-  })();
+// Accesibilidad con teclado (flecha abajo abre y enfoca primer item)
+solutionsBtn?.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') {
+    openSolutions();
+    const firstItem = solutionsMenu?.querySelector('a');
+    firstItem?.focus();
+  }
+});
 </script>
 
 </body>
