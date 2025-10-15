@@ -88,11 +88,26 @@
       --sc-dark-2:#1a1a1a;
     }
     .bg-sc { background: linear-gradient(45deg, var(--sc-dark) 0%, var(--sc-dark-2) 100%); }
+
+    /* ===== Parrilla uniforme para logos ===== */
+    .logos-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    @media (min-width:640px){ .logos-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); } }
+    @media (min-width:768px){ .logos-grid{ grid-template-columns: repeat(6, minmax(0,1fr)); gap: 16px; } }
+    .logo-tile{
+      display:flex; align-items:center; justify-content:center;
+      height:64px; /* alto uniforme */
+      padding:10px; border:1px solid #e5e7eb; border-radius:12px;
+      background:#fff; transition:filter .2s, opacity .2s, box-shadow .2s, transform .2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,.03);
+      filter: grayscale(100%); opacity:.75;
+    }
+    .logo-tile:hover{ filter:none; opacity:1; transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,.08); }
+    .logo-img{ max-height:100%; max-width:100%; object-fit:contain; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
 
-  <!-- ===== HEADER (unificado con menú desplegable y off-canvas) ===== -->
+  <!-- ===== HEADER ===== -->
   <header id="siteHeader" class="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200 transition-shadow">
     <div class="max-w-7xl mx-auto px-4">
       <div class="h-16 flex items-center justify-between gap-3">
@@ -187,43 +202,16 @@
         <!-- Logos de Integración -->
         <div class="mt-12">
           <p class="text-sm text-white/70 tracking-wider">INTEGRACIÓN GOLD CERTIFICADA CON:</p>
-          <div class="mt-4 flex justify-center items-center gap-8">
-            <!-- Si no existe solidworks.svg, ocultamos la imagen -->
-            <img src="/assets/logos/solidworks.svg" alt="SolidWorks"
-                 onerror="this.style.display='none'"
-                 class="h-8 md:h-10 opacity-85 hover:opacity-100 transition"
-                 width="160" height="40" loading="lazy" />
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== Módulos ===== -->
-    <section class="py-16 md:py-24 bg-white reveal">
-      <div class="max-w-7xl mx-auto px-4 text-center">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Una Plataforma CAM Completa</h2>
-        <p class="mt-3 max-w-2xl mx-auto text-gray-700">Desde fresado 2.5D hasta complejos Torno-Fresa y 5 Ejes Simultáneos, todo en una sola interfaz.</p>
-        <div class="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 text-left">
-          <div class="p-5 rounded-xl border border-gray-200 bg-gray-50/50 transition hover:shadow-lg hover:border-blue-300">
-            <h3 class="font-semibold text-gray-900">iMachining 2D & 3D</h3>
-            <p class="mt-1 text-sm text-gray-700">Trayectorias óptimas con carga constante.</p>
-          </div>
-          <div class="p-5 rounded-xl border border-gray-200 bg-gray-50/50 transition hover:shadow-lg hover:border-blue-300">
-            <h3 class="font-semibold text-gray-900">Fresado 2.5D</h3>
-            <p class="mt-1 text-sm text-gray-700">Cajeados, contornos, taladrado y roscado.</p>
-          </div>
-          <div class="p-5 rounded-xl border border-gray-200 bg-gray-50/50 transition hover:shadow-lg hover:border-blue-300">
-            <h3 class="font-semibold text-gray-900">Fresado 3D (HSR/HSM)</h3>
-            <p class="mt-1 text-sm text-gray-700">Superficies complejas, moldes y troqueles.</p>
-          </div>
-          <div class="p-5 rounded-xl border border-gray-200 bg-gray-50/50 transition hover:shadow-lg hover:border-blue-300">
-            <h3 class="font-semibold text-gray-900">5 Ejes Simultáneos</h3>
-            <p class="mt-1 text-sm text-gray-700">Evasión de colisiones y control total.</p>
-          </div>
-          <div class="p-5 rounded-xl border border-gray-200 bg-gray-50/50 transition hover:shadow-lg hover:border-blue-300">
-            <h3 class="font-semibold text-gray-900">Torno-Fresa y Suizo</h3>
-            <p class="mt-1 text-sm text-gray-700">Multi-torreta y multi-canal.</p>
-          </div>
+          <ul class="mt-4 mx-auto max-w-3xl grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <li class="logo-tile bg-white/90">
+              <img src="/assets/logos/solidworks.svg" alt="SolidWorks" class="logo-img" loading="lazy"
+                   onerror="this.closest('li').remove()" />
+            </li>
+            <li class="logo-tile bg-white/90">
+              <img src="/assets/logos/solidcam.svg" alt="SolidCAM" class="logo-img" loading="lazy"
+                   onerror="this.closest('li').remove()" />
+            </li>
+          </ul>
         </div>
       </div>
     </section>
@@ -262,19 +250,27 @@
       </div>
     </section>
 
-    <!-- ===== Compatibilidad (logos desde /assets/logos/) ===== -->
+    <!-- ===== Compatibilidad (parrilla uniforme) ===== -->
     <section class="py-16 md:py-24 reveal">
       <div class="max-w-7xl mx-auto px-4">
         <h2 class="text-center text-3xl font-bold text-gray-900">Compatible con su maquinaria</h2>
         <p class="text-center mt-3 text-gray-700">Postprocesadores para los principales controles CNC.</p>
-        <div class="mt-8 grid grid-cols-3 md:grid-cols-6 gap-8 items-center">
-          <img src="/assets/logos/amada.svg"       alt="Amada"       class="mx-auto h-10 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition" loading="lazy" />
-          <img src="/assets/logos/bodor.webp"      alt="Bodor"       class="mx-auto h-10 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition" loading="lazy" />
-          <img src="/assets/logos/bystronic.jpg"   alt="Bystronic"   class="mx-auto h-10 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition" loading="lazy" />
-          <img src="/assets/logos/esab.png"        alt="ESAB"        class="mx-auto h-10 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition" loading="lazy" />
-          <img src="/assets/logos/fanuc.jpg"       alt="Fanuc"       class="mx-auto h-10 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition" loading="lazy" />
-          <!-- Si agregas más logos (Haas, Mazak, Siemens, etc.), solo súbelos a /assets/logos/ y añade otra <img> aquí. -->
-        </div>
+
+        <ul class="logos-grid mt-8">
+          <!-- Archivos confirmados en tu repo -->
+          <li class="logo-tile"><img src="/assets/logos/amada.svg"      alt="Amada"      class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/bodor.webp"     alt="Bodor"      class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/bystronic.jpg"  alt="Bystronic"  class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/esab.png"       alt="ESAB"       class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/fanuc.jpg"      alt="Fanuc"      class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+
+          <!-- Opcionales: se ocultan si aún no existen -->
+          <li class="logo-tile"><img src="/assets/logos/haas.svg"       alt="Haas"       class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/siemens.svg"    alt="Siemens"    class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/okuma.svg"      alt="Okuma"      class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/mazak.svg"      alt="Mazak"      class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+          <li class="logo-tile"><img src="/assets/logos/heidenhain.svg" alt="Heidenhain" class="logo-img" loading="lazy" onerror="this.closest('li').remove()" /></li>
+        </ul>
       </div>
     </section>
 
