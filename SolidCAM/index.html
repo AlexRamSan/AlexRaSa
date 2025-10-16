@@ -29,7 +29,7 @@
   <meta name="twitter:description" content="Implementación, soporte y estandarización CAM con SolidCAM e iMachining." />
   <meta name="twitter:image" content="https://alexrasa.store/og/og-solidcam.png" />
 
-  <!-- Rendimiento (visuales existentes) -->
+  <!-- Rendimiento -->
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
   <link rel="preload" as="image" href="/assets/logos/hero-industrial.jpg" />
   <link rel="preload" as="image" href="/assets/logos/poster-imachining.jpg" />
@@ -74,24 +74,21 @@
     }
     .bg-sc { background: linear-gradient(45deg, var(--sc-dark) 0%, var(--sc-dark-2) 100%); }
 
-    /* Grid de compatibilidad (logos uniformes y legibles) */
+    /* Grid logos: contenidos y uniformes */
     .brand-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem}
     @media (min-width:640px){.brand-grid{grid-template-columns:repeat(4,minmax(0,1fr));}}
     @media (min-width:1024px){.brand-grid{grid-template-columns:repeat(6,minmax(0,1fr));}}
     .brand-card{
       display:grid;place-items:center;background:#fff;
       border:1px solid #e5e7eb;border-radius:12px;
-      padding:20px;min-height:120px
+      padding:20px;min-height:120px;overflow:hidden;
     }
     .brand-card img{
-      max-height:56px;           /* altura mayor para lectura */
-      max-width:180px;
-      width:auto;object-fit:contain;
-      filter:grayscale(.35);     /* menos gris por defecto */
-      opacity:.95;
-      transition:filter .2s,opacity .2s
+      display:block;height:56px;width:auto;max-width:100%;
+      object-fit:contain;filter:grayscale(.35);opacity:.95;
+      transition:filter .2s,opacity .2s,transform .2s;transform:none;
     }
-    .brand-card img:hover{filter:none;opacity:1}
+    .brand-card img:hover{filter:none;opacity:1;transform:scale(1.02)}
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
@@ -170,10 +167,16 @@
   </header>
 
   <main>
-    <!-- ===== Hero (2 columnas) ===== -->
+    <!-- ===== Hero ===== -->
     <section class="bg-sc text-white">
       <div class="max-w-7xl mx-auto px-6 py-18 md:py-24 lg:py-28 grid md:grid-cols-2 gap-10 items-center">
         <div>
+          <!-- Logo SolidCAM arriba (SVG con fallback) -->
+          <img src="/assets/logos/solidcam.svg"
+               onerror="this.onerror=null;this.src='/assets/logos/solidcam.png';"
+               alt="SolidCAM"
+               class="h-10 w-auto mb-5 opacity-95" />
+
           <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">
             SolidCAM & <span class="text-[color:var(--sc-red)]">iMachining</span>: menos ciclo, más herramienta
           </h1>
@@ -191,7 +194,7 @@
           </div>
         </div>
 
-        <!-- Media: poster de iMachining (existe) -->
+        <!-- Media: poster iMachining -->
         <div class="rounded-xl border border-white/10 p-1 bg-white/5">
           <div class="p-4 bg-slate-900 rounded-lg">
             <div
@@ -208,10 +211,6 @@
             </noscript>
           </div>
         </div>
-      </div>
-      <!-- Fondo del hero (existe) -->
-      <div class="absolute inset-0 -z-10 hidden" aria-hidden="true">
-        <img src="/assets/logos/hero-industrial.jpg" alt="" class="w-full h-full object-cover opacity-70" />
       </div>
     </section>
 
@@ -388,24 +387,6 @@
         el.style.backgroundImage = 'none';
         el.appendChild(ifr);
       }, { once:true });
-    })();
-
-    // ===== BOOST automático de logos “delgados” o con mucho margen =====
-    (function boostThinLogos(){
-      const imgs = document.querySelectorAll('.brand-card img');
-      const THIN_ALT = /mori|heidenhain|mazatrol|centroid/i;
-      imgs.forEach(img => {
-        const apply = () => {
-          const isSvg = /\.svg(\?|$)/i.test(img.src);
-          const ar = img.naturalWidth / Math.max(1, img.naturalHeight);
-          let scale = 1;
-          if (ar > 3 || img.naturalHeight < 40) scale += 0.12;  // muy ancho o muy pequeño
-          if (isSvg) scale += 0.06;                              // muchos svg traen padding interno
-          if (THIN_ALT.test(img.alt)) scale += 0.06;            // trazos finos conocidos
-          if (scale > 1) img.style.transform = `scale(${scale.toFixed(2)})`;
-        };
-        if (img.complete) apply(); else img.addEventListener('load', apply, {once:true});
-      });
     })();
   </script>
 </body>
