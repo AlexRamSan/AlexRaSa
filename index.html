@@ -83,7 +83,224 @@
     .animate-bounce-soft { animation: bounceSoft 2.8s ease-in-out infinite; }
   </style>
 </head>
+<!-- CAM Assist — Widget flotante -->
+<style>
+  :root{
+    --brand-bg: #0F172A;         /* Navy principal */
+    --brand-accent: #2563EB;     /* Azul acento */
+    --brand-muted: #F8FAFC;
+    --brand-text: #111827;
 
+    /* Logos (ajusta rutas a tu /assets/logos/) */
+    --brand-logo: url('/assets/logos/solidservicios-horizontal.svg');
+    --brand-icon: url('/assets/logos/solidservicios-icon.svg');
+  }
+  .cam-bubble {
+    position: fixed; right: 20px; bottom: 20px; width: 60px; height: 60px;
+    border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    box-shadow: 0 12px 24px rgba(0,0,0,.2); z-index: 9999; background: var(--brand-bg);
+  }
+  .cam-bubble::before {
+    content: ""; width: 28px; height: 28px; display: block; background: var(--brand-muted);
+    -webkit-mask-image: var(--brand-icon); mask-image: var(--brand-icon);
+    -webkit-mask-size: cover; mask-size: cover;
+  }
+  .cam-bubble:active { transform: scale(.96); }
+
+  .cam-window {
+    position: fixed; right: 20px; bottom: 90px; width: 380px; max-width: calc(100vw - 40px);
+    height: 560px; background: #fff; border-radius: 16px; overflow: hidden; display: none; flex-direction: column;
+    box-shadow: 0 24px 48px rgba(0,0,0,.25); z-index: 10000; border: 1px solid #e5e7eb;
+  }
+  .cam-header {
+    background: var(--brand-bg); color: #fff; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .cam-brand { display:flex; align-items:center; gap:10px; }
+  .cam-brand::before {
+    content:""; width: 24px; height: 24px; display:block; background:#fff;
+    -webkit-mask-image: var(--brand-icon); mask-image: var(--brand-icon);
+    -webkit-mask-size: cover; mask-size: cover; opacity:.95;
+  }
+  .cam-title { font-weight: 700; font-size: 14px; letter-spacing:.2px; }
+  .cam-sub { font-size: 11px; opacity: .9; }
+  .cam-close { background: transparent; border: 0; color: #fff; font-size: 20px; cursor: pointer; }
+
+  .cam-body { background: var(--brand-muted); height: 100%; display: flex; flex-direction: column; }
+  .cam-toolbar {
+    display:flex; align-items:center; gap:8px; padding:8px 10px; background:#fff; border-bottom:1px solid #e5e7eb;
+    font-size:12px; color:#334155;
+  }
+  .cam-toolbar label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .cam-toolbar input[type="checkbox"] { transform: translateY(1px); }
+
+  .cam-messages { flex: 1; padding: 12px; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+  .cam-msg { max-width: 85%; padding: 10px 12px; border-radius: 12px; line-height: 1.35; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
+  .cam-user { align-self: flex-end; background: #DBEAFE; border: 1px solid #BFDBFE; }
+  .cam-bot { align-self: flex-start; background: #fff; border: 1px solid #e5e7eb; }
+  .cam-bot .cam-ref { margin-top:6px; font-size:11px; color:#64748B; }
+  .cam-typing { font-size: 12px; color: #64748B; padding: 4px 12px; display:none; }
+
+  .cam-input { display: flex; gap: 8px; padding: 10px; background: #fff; border-top:1px solid #e5e7eb; }
+  .cam-input input {
+    flex: 1; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 14px; outline: none; background: #fff;
+  }
+  .cam-input button {
+    padding: 10px 14px; border: 0; border-radius: 10px;
+    background: var(--brand-bg); color: #fff; cursor: pointer; font-weight: 600;
+  }
+
+  .cam-footer {
+    padding: 8px 12px; background:#fff; border-top:1px solid #e5e7eb; font-size:11px; color:#64748B; display:flex; align-items:center; gap:8px; justify-content:space-between;
+  }
+  .cam-logo {
+    width: 90px; height: 16px; background: #0B1220;
+    -webkit-mask-image: var(--brand-logo); mask-image: var(--brand-logo);
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+    -webkit-mask-size:contain; mask-size:contain;
+  }
+  @media (max-height: 640px) { .cam-window { height: 70vh; } }
+</style>
+
+<div id="cam-bubble" class="cam-bubble" aria-label="Abrir CAM Assist" title="CAM Assist"></div>
+
+<div id="cam-window" class="cam-window" role="dialog" aria-modal="true" aria-label="Chat CAM Assist">
+  <div class="cam-header">
+    <div class="cam-brand">
+      <div class="cam-title">CAM Assist</div>
+    </div>
+    <div style="text-align:right">
+      <div class="cam-title">Asesor CNC</div>
+      <div class="cam-sub">Técnico · Humano · Comercial</div>
+    </div>
+    <button id="cam-close" class="cam-close" aria-label="Cerrar">×</button>
+  </div>
+
+  <div class="cam-toolbar">
+    <label><input id="use-knowledge" type="checkbox" checked> Conocimiento propio</label>
+    <label><input id="use-web" type="checkbox"> Búsqueda web</label>
+    <button id="clear-history" style="margin-left:auto; background:transparent; border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; cursor:pointer;">Limpiar chat</button>
+  </div>
+
+  <div id="cam-messages" class="cam-messages"></div>
+  <div id="cam-typing" class="cam-typing">CAM Assist está escribiendo…</div>
+
+  <div class="cam-input">
+    <input id="cam-input" type="text" placeholder="Pregúntame sobre CNC, SolidCAM, procesos… (Shift+Enter = salto)" />
+    <button id="cam-send">Enviar</button>
+  </div>
+
+  <div class="cam-footer">
+    <span>Impulsado por Gemini</span>
+    <span class="cam-logo" title="SolidServicios"></span>
+  </div>
+</div>
+
+<script>
+(() => {
+  const STORE_KEY = 'camAssistHistory.v1';
+  const bubble = document.getElementById('cam-bubble');
+  const win = document.getElementById('cam-window');
+  const closeBtn = document.getElementById('cam-close');
+  const messagesEl = document.getElementById('cam-messages');
+  const typingEl = document.getElementById('cam-typing');
+  const inputEl = document.getElementById('cam-input');
+  const sendBtn = document.getElementById('cam-send');
+  const useKnowledgeEl = document.getElementById('use-knowledge');
+  const useWebEl = document.getElementById('use-web');
+  const clearHistoryBtn = document.getElementById('clear-history');
+
+  let history = loadHistory();
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+    catch(_) { return []; }
+  }
+  function saveHistory() {
+    localStorage.setItem(STORE_KEY, JSON.stringify(history.slice(-100))); // guarda últimos 100 turnos
+  }
+
+  function toggle(open) { win.style.display = open ? 'flex' : 'none'; }
+  bubble.addEventListener('click', () => toggle(true));
+  closeBtn.addEventListener('click', () => toggle(false));
+
+  function pushMessage(role, content, refs=[]) {
+    const wrap = document.createElement('div');
+    wrap.className = `cam-msg ${role === 'user' ? 'cam-user' : 'cam-bot'}`;
+    wrap.textContent = content;
+    messagesEl.appendChild(wrap);
+
+    if (role !== 'user' && refs && refs.length) {
+      const refEl = document.createElement('div');
+      refEl.className = 'cam-ref';
+      refEl.textContent = 'Fuentes: ' + refs.map(r => r.title || r.url).join(' · ');
+      wrap.appendChild(refEl);
+    }
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // Pintar historial previo
+  if (history.length === 0) {
+    const welcome = 'Hola, soy CAM Assist. Te ayudo con estrategias CNC y SolidCAM con enfoque en resultados (tiempos, herramienta, scrap, ROI). ¿En qué empezamos?';
+    pushMessage('model', welcome);
+    history.push({ role: 'model', content: welcome, ts: Date.now() });
+    saveHistory();
+  } else {
+    history.forEach(m => pushMessage(m.role === 'assistant' ? 'model' : m.role, m.content));
+  }
+
+  async function askCamAssist(userText) {
+    typingEl.style.display = 'block';
+    try {
+      const res = await fetch('/api/cam-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          use_knowledge: !!useKnowledgeEl.checked,
+          use_web: !!useWebEl.checked,
+          history: history.slice(-12), // contexto reciente
+          user_text: userText
+        })
+      });
+      if (!res.ok) throw new Error('Error en el servidor');
+      const data = await res.json();
+      return data; // { text, refs? }
+    } catch (e) {
+      console.error(e);
+      return { text: 'Hubo un problema procesando tu solicitud. Intenta de nuevo.' };
+    } finally {
+      typingEl.style.display = 'none';
+    }
+  }
+
+  async function handleSend() {
+    const text = (inputEl.value || '').trim();
+    if (!text) return;
+    inputEl.value = '';
+    pushMessage('user', text);
+    history.push({ role: 'user', content: text, ts: Date.now() });
+    saveHistory();
+
+    const { text: answer, refs = [] } = await askCamAssist(text);
+    pushMessage('model', answer, refs);
+    history.push({ role: 'assistant', content: answer, refs, ts: Date.now() });
+    saveHistory();
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  });
+  clearHistoryBtn.addEventListener('click', () => {
+    history = [];
+    saveHistory();
+    messagesEl.innerHTML = '';
+    const welcome = 'Historial limpiado. ¿Qué quieres resolver hoy en CAM?';
+    pushMessage('model', welcome);
+    history.push({ role: 'assistant', content: welcome, ts: Date.now() });
+    saveHistory();
+  });
+})();
+</script>
 <body class="bg-gray-50 text-gray-800">
   <!-- ===== HEADER NUEVO ===== -->
   <header id="siteHeader" class="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200">
