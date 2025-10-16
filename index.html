@@ -83,7 +83,7 @@
     .animate-bounce-soft { animation: bounceSoft 2.8s ease-in-out infinite; }
   </style>
 </head>
-<!-- CAM Assist — Widget flotante -->
+<!-- CAM Assist — Widget flotante (lado izquierdo) -->
 <style>
   :root{
     --brand-bg: #0F172A;         /* Navy principal */
@@ -96,7 +96,7 @@
     --brand-icon: url('/assets/logos/solidservicios-icon.svg');
   }
   .cam-bubble {
-    position: fixed; right: 20px; bottom: 20px; width: 60px; height: 60px;
+    position: fixed; left: 20px; bottom: 20px; width: 60px; height: 60px;
     border-radius: 50%; display: grid; place-items: center; cursor: pointer;
     box-shadow: 0 12px 24px rgba(0,0,0,.2); z-index: 9999; background: var(--brand-bg);
   }
@@ -108,7 +108,7 @@
   .cam-bubble:active { transform: scale(.96); }
 
   .cam-window {
-    position: fixed; right: 20px; bottom: 90px; width: 380px; max-width: calc(100vw - 40px);
+    position: fixed; left: 20px; bottom: 90px; width: 380px; max-width: calc(100vw - 40px);
     height: 560px; background: #fff; border-radius: 16px; overflow: hidden; display: none; flex-direction: column;
     box-shadow: 0 24px 48px rgba(0,0,0,.25); z-index: 10000; border: 1px solid #e5e7eb;
   }
@@ -158,6 +158,8 @@
     -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
     -webkit-mask-size:contain; mask-size:contain;
   }
+
+  /* Altura en pantallas pequeñas */
   @media (max-height: 640px) { .cam-window { height: 70vh; } }
 </style>
 
@@ -165,9 +167,7 @@
 
 <div id="cam-window" class="cam-window" role="dialog" aria-modal="true" aria-label="Chat CAM Assist">
   <div class="cam-header">
-    <div class="cam-brand">
-      <div class="cam-title">CAM Assist</div>
-    </div>
+    <div class="cam-brand"><div class="cam-title">CAM Assist</div></div>
     <div style="text-align:right">
       <div class="cam-title">Asesor CNC</div>
       <div class="cam-sub">Técnico · Humano · Comercial</div>
@@ -216,7 +216,7 @@
     catch(_) { return []; }
   }
   function saveHistory() {
-    localStorage.setItem(STORE_KEY, JSON.stringify(history.slice(-100))); // guarda últimos 100 turnos
+    localStorage.setItem(STORE_KEY, JSON.stringify(history.slice(-100)));
   }
 
   function toggle(open) { win.style.display = open ? 'flex' : 'none'; }
@@ -238,14 +238,13 @@
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
-  // Pintar historial previo
   if (history.length === 0) {
-    const welcome = 'Hola, soy CAM Assist. Te ayudo con estrategias CNC y SolidCAM con enfoque en resultados (tiempos, herramienta, scrap, ROI). ¿En qué empezamos?';
+    const welcome = 'Hola, soy CAM Assist. Te ayudo con estrategias CNC y SolidCAM con enfoque en resultados (tiempos, vida de herramienta, scrap, ROI). ¿En qué empezamos?';
     pushMessage('model', welcome);
-    history.push({ role: 'model', content: welcome, ts: Date.now() });
+    history.push({ role: 'assistant', content: welcome, ts: Date.now() });
     saveHistory();
   } else {
-    history.forEach(m => pushMessage(m.role === 'assistant' ? 'model' : m.role, m.content));
+    history.forEach(m => pushMessage(m.role === 'assistant' ? 'model' : m.role, m.content, m.refs));
   }
 
   async function askCamAssist(userText) {
@@ -257,7 +256,7 @@
         body: JSON.stringify({
           use_knowledge: !!useKnowledgeEl.checked,
           use_web: !!useWebEl.checked,
-          history: history.slice(-12), // contexto reciente
+          history: history.slice(-12),
           user_text: userText
         })
       });
