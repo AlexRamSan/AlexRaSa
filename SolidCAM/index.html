@@ -74,13 +74,24 @@
     }
     .bg-sc { background: linear-gradient(45deg, var(--sc-dark) 0%, var(--sc-dark-2) 100%); }
 
-    /* Grid de compatibilidad (logos uniformes) */
-    .brand-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.1rem}
+    /* Grid de compatibilidad (logos uniformes y legibles) */
+    .brand-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem}
     @media (min-width:640px){.brand-grid{grid-template-columns:repeat(4,minmax(0,1fr));}}
     @media (min-width:1024px){.brand-grid{grid-template-columns:repeat(6,minmax(0,1fr));}}
-    .brand-card{display:grid;place-items:center;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;min-height:92px}
-    .brand-card img{max-height:40px;width:auto;object-fit:contain;filter:grayscale(1);opacity:.85;transition:filter .2s,opacity .2s,transform .2s}
-    .brand-card img:hover{filter:none;opacity:1;transform:scale(1.02)}
+    .brand-card{
+      display:grid;place-items:center;background:#fff;
+      border:1px solid #e5e7eb;border-radius:12px;
+      padding:20px;min-height:120px
+    }
+    .brand-card img{
+      max-height:56px;           /* altura mayor para lectura */
+      max-width:180px;
+      width:auto;object-fit:contain;
+      filter:grayscale(.35);     /* menos gris por defecto */
+      opacity:.95;
+      transition:filter .2s,opacity .2s
+    }
+    .brand-card img:hover{filter:none;opacity:1}
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
@@ -377,6 +388,24 @@
         el.style.backgroundImage = 'none';
         el.appendChild(ifr);
       }, { once:true });
+    })();
+
+    // ===== BOOST automático de logos “delgados” o con mucho margen =====
+    (function boostThinLogos(){
+      const imgs = document.querySelectorAll('.brand-card img');
+      const THIN_ALT = /mori|heidenhain|mazatrol|centroid/i;
+      imgs.forEach(img => {
+        const apply = () => {
+          const isSvg = /\.svg(\?|$)/i.test(img.src);
+          const ar = img.naturalWidth / Math.max(1, img.naturalHeight);
+          let scale = 1;
+          if (ar > 3 || img.naturalHeight < 40) scale += 0.12;  // muy ancho o muy pequeño
+          if (isSvg) scale += 0.06;                              // muchos svg traen padding interno
+          if (THIN_ALT.test(img.alt)) scale += 0.06;            // trazos finos conocidos
+          if (scale > 1) img.style.transform = `scale(${scale.toFixed(2)})`;
+        };
+        if (img.complete) apply(); else img.addEventListener('load', apply, {once:true});
+      });
     })();
   </script>
 </body>
