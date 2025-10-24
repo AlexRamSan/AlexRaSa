@@ -1,0 +1,233 @@
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadoras — Inversión & ROI | AlexRaSa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="color-scheme" content="dark light">
+  <style>
+    .glass { background: rgba(15,23,42,.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .num::-webkit-outer-spin-button, .num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .num[type=number] { appearance: textfield; }
+    .tab { cursor:pointer }
+    .tab[aria-selected="true"] { background: #10b981; color:#0f172a; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
+  <main class="max-w-6xl mx-auto p-6 md:p-10">
+    <header class="mb-6">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Calculadoras financieras</h1>
+      <p class="text-slate-300 mt-2">Simula crecimiento de inversión y evalúa ROI/Payback/NPV/TIR en una sola página.</p>
+    </header>
+
+    <div role="tablist" class="flex gap-2 mb-6">
+      <button id="tab-inv" class="tab rounded-xl border border-slate-800 px-4 py-2" role="tab" aria-controls="panel-inv" aria-selected="true">Inversión</button>
+      <button id="tab-roi" class="tab rounded-xl border border-slate-800 px-4 py-2" role="tab" aria-controls="panel-roi" aria-selected="false">ROI</button>
+    </div>
+
+    <section id="panel-inv" role="tabpanel" aria-labelledby="tab-inv">
+      <div class="glass rounded-2xl border border-slate-800 p-6 md:p-8 shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label for="inicial" class="block text-sm font-medium text-slate-300">Inversión inicial (MXN)</label>
+            <input id="inicial" type="number" min="0" step="100" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="50000">
+          </div>
+          <div>
+            <label for="mensual" class="block text-sm font-medium text-slate-300">Aportación mensual (MXN)</label>
+            <input id="mensual" type="number" min="0" step="100" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="3000">
+          </div>
+          <div>
+            <label for="tasa" class="block text-sm font-medium text-slate-300">Tasa anual esperada (%)</label>
+            <input id="tasa" type="number" min="-100" step="0.1" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="10">
+            <p class="text-xs text-slate-400 mt-1">Nominal; se convierte a tasa mensual efectiva según capitalización.</p>
+          </div>
+          <div>
+            <label for="anos" class="block text-sm font-medium text-slate-300">Horizonte (años)</label>
+            <input id="anos" type="number" min="0" step="1" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="10">
+          </div>
+          <div>
+            <label for="comp" class="block text-sm font-medium text-slate-300">Capitalización</label>
+            <select id="comp" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="12" selected>Mensual (12)</option>
+              <option value="4">Trimestral (4)</option>
+              <option value="2">Semestral (2)</option>
+              <option value="1">Anual (1)</option>
+              <option value="365">Diaria (365)</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:col-span-1">
+            <div class="flex items-center gap-3 mt-1">
+              <input id="infl_chk" type="checkbox" class="h-5 w-5 rounded border-slate-700 bg-slate-900 focus:ring-emerald-500">
+              <label for="infl_chk" class="text-sm font-medium text-slate-300">Ajustar por inflación</label>
+            </div>
+            <div>
+              <label for="inflacion" class="block text-sm font-medium text-slate-300">Inflación anual (%)</label>
+              <input id="inflacion" type="number" min="0" step="0.1" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="4">
+            </div>
+          </div>
+          <div>
+            <label for="isr" class="block text-sm font-medium text-slate-300">ISR sobre rendimientos (%)</label>
+            <input id="isr" type="number" min="0" step="0.1" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="0">
+            <p class="text-xs text-slate-400 mt-1">Opcional; se descuenta sobre intereses.</p>
+          </div>
+          <div class="flex items-end gap-3">
+            <button id="btn-calcular" class="inline-flex justify-center items-center rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition">Calcular</button>
+            <button id="btn-limpiar" class="inline-flex justify-center items-center rounded-xl border border-slate-700 px-5 py-3 font-semibold text-slate-200 hover:bg-slate-800 transition">Limpiar</button>
+            <button id="btn-csv" class="inline-flex justify-center items-center rounded-xl border border-emerald-700 text-emerald-300 px-5 py-3 font-semibold hover:bg-emerald-900/20 transition">Descargar .csv</button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-8 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Aportado</p><p id="kpi-aportado" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Rendimiento bruto</p><p id="kpi-bruto" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Impuestos</p><p id="kpi-impuestos" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Rendimiento neto</p><p id="kpi-neto" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Valor futuro (nominal)</p><p id="kpi-futuro" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Valor futuro (real)</p><p id="kpi-real" class="mt-1 text-lg font-semibold">—</p></div>
+      </div>
+      <div class="mt-8 glass rounded-2xl border border-slate-800 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Crecimiento en el tiempo</h2>
+          <p id="apy" class="text-sm text-slate-400">—</p>
+        </div>
+        <svg id="grafica" viewBox="0 0 800 240" class="w-full h-56 md:h-64 rounded-xl border border-slate-800 bg-slate-900"></svg>
+      </div>
+      <div class="mt-8 glass rounded-2xl border border-slate-800 p-6 overflow-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Detalle por año</h2>
+          <p class="text-xs text-slate-400">Intereses e impuestos se agregan mensualmente.</p>
+        </div>
+        <table class="min-w-full text-sm">
+          <thead class="text-left text-slate-300">
+            <tr class="border-b border-slate-800">
+              <th class="py-2 pr-4">Año</th><th class="py-2 pr-4">Saldo inicial</th><th class="py-2 pr-4">Aportaciones</th><th class="py-2 pr-4">Intereses</th><th class="py-2 pr-4">Impuestos</th><th class="py-2 pr-4">Saldo final</th>
+            </tr>
+          </thead>
+          <tbody id="tabla" class="text-slate-200"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="panel-roi" role="tabpanel" aria-labelledby="tab-roi" hidden>
+      <div class="glass rounded-2xl border border-slate-800 p-6 md:p-8 shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div><label for="inv_inicial" class="block text-sm font-medium text-slate-300">Inversión inicial (MXN)</label><input id="inv_inicial" type="number" min="0" step="100" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="150000"></div>
+          <div><label for="otros_iniciales" class="block text-sm font-medium text-slate-300">Otros costos iniciales (MXN)</label><input id="otros_iniciales" type="number" min="0" step="100" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="0"></div>
+          <div><label for="ingreso_mensual" class="block text-sm font-medium text-slate-300">Ingresos/Ahorros mensuales (MXN)</label><input id="ingreso_mensual" type="number" min="0" step="100" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="35000"></div>
+          <div><label for="costos_mensuales" class="block text-sm font-medium text-slate-300">Costos mensuales (MXN)</label><input id="costos_mensuales" type="number" min="0" step="100" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="5000"></div>
+          <div><label for="horiz_anos" class="block text-sm font-medium text-slate-300">Horizonte (años)</label><input id="horiz_anos" type="number" min="0.5" step="0.5" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="3"></div>
+          <div><label for="desc_anual" class="block text-sm font-medium text-slate-300">Tasa de descuento anual (%)</label><input id="desc_anual" type="number" min="0" step="0.1" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="12"></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:col-span-1">
+            <div class="flex items-center gap-3 mt-1"><input id="chk_isr" type="checkbox" class="h-5 w-5 rounded border-slate-700 bg-slate-900 focus:ring-emerald-500"><label for="chk_isr" class="text-sm font-medium text-slate-300">Aplicar ISR a utilidades</label></div>
+            <div><label for="isr_roi" class="block text-sm font-medium text-slate-300">ISR (%)</label><input id="isr_roi" type="number" min="0" step="0.1" class="num mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500" value="0"></div>
+          </div>
+          <div class="flex items-end gap-3">
+            <button id="btn-calcular-roi" class="inline-flex justify-center items-center rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition">Calcular</button>
+            <button id="btn-limpiar-roi" class="inline-flex justify-center items-center rounded-xl border border-slate-700 px-5 py-3 font-semibold text-slate-200 hover:bg-slate-800 transition">Limpiar</button>
+            <button id="btn-csv-roi" class="inline-flex justify-center items-center rounded-xl border border-emerald-700 text-emerald-300 px-5 py-3 font-semibold hover:bg-emerald-900/20 transition">Descargar .csv</button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-8 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">ROI simple</p><p id="kpi-roi" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Payback</p><p id="kpi-payback" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">VPN / NPV</p><p id="kpi-vpn" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">TIR (anual)</p><p id="kpi-tir" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Beneficio neto total</p><p id="kpi-beneficio" class="mt-1 text-lg font-semibold">—</p></div>
+        <div class="glass rounded-2xl border border-slate-800 p-4"><p class="text-xs text-slate-400">Inversión total</p><p id="kpi-inversion" class="mt-1 text-lg font-semibold">—</p></div>
+      </div>
+      <div class="mt-8 glass rounded-2xl border border-slate-800 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Flujo de caja acumulado</h2>
+          <p id="tasa-eq" class="text-sm text-slate-400">—</p>
+        </div>
+        <svg id="grafica-roi" viewBox="0 0 800 240" class="w-full h-56 md:h-64 rounded-xl border border-slate-800 bg-slate-900"></svg>
+      </div>
+      <div class="mt-8 glass rounded-2xl border border-slate-800 p-6 overflow-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Detalle mensual</h2>
+          <p class="text-xs text-slate-400">Flujo nominal y descontado.</p>
+        </div>
+        <table class="min-w-full text-sm">
+          <thead class="text-left text-slate-300">
+            <tr class="border-b border-slate-800">
+              <th class="py-2 pr-4">Mes</th><th class="py-2 pr-4">Flujo</th><th class="py-2 pr-4">Flujo descontado</th><th class="py-2 pr-4">Acumulado</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-roi" class="text-slate-200"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Tabs
+    const tabInv = document.getElementById('tab-inv');
+    const tabRoi = document.getElementById('tab-roi');
+    const panelInv = document.getElementById('panel-inv');
+    const panelRoi = document.getElementById('panel-roi');
+    function setTab(which) {
+      const inv = (which === 'inv');
+      tabInv.setAttribute('aria-selected', inv ? 'true' : 'false');
+      tabRoi.setAttribute('aria-selected', inv ? 'false' : 'true');
+      panelInv.hidden = !inv; panelRoi.hidden = inv;
+    }
+    tabInv.addEventListener('click', () => setTab('inv'));
+    tabRoi.addEventListener('click', () => setTab('roi'));
+
+    // Inversión
+    const $ = (id) => document.getElementById(id);
+    const fmtMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 });
+    function v(id) { return (parseFloat($(id).value.replace(',', '.')) || 0); }
+    function calcular() {
+      const inicial = v('inicial'), mensual = v('mensual'), tasaNom = v('tasa')/100, anos=v('anos'), comp=parseInt($('comp').value,10);
+      const usaInfl = $('infl_chk').checked, infl = usaInfl ? (v('inflacion')/100) : 0, isr = v('isr')/100;
+      const meses = Math.max(0, Math.round(anos * 12));
+      const effAnual = Math.pow(1 + (tasaNom / Math.max(1, comp)), Math.max(1, comp)) - 1;
+      const rMensual = Math.pow(1 + effAnual, 1/12) - 1;
+      let saldo=inicial, totalAportes=0, totalInteres=0, totalImpuestos=0;
+      const serie=[saldo], filas=[]; let saldoInicioAnio=saldo, aportesAnio=0, interesAnio=0, impuestoAnio=0;
+      for (let m=1;m<=meses;m++){ const interes=saldo*rMensual; const impuesto=interes*isr; saldo+=interes-impuesto; totalInteres+=interes; totalImpuestos+=impuesto; interesAnio+=interes; impuestoAnio+=impuesto; saldo+=mensual; totalAportes+=mensual; aportesAnio+=mensual; if(m%12===0){ const anio=m/12; filas.push({anio,inicio:saldoInicioAnio,aportes:aportesAnio,interes:interesAnio,impuestos:impuestoAnio,fin:saldo}); saldoInicioAnio=saldo; aportesAnio=0; interesAnio=0; impuestoAnio=0; } serie.push(saldo); }
+      const valorFuturo=saldo, valorReal=valorFuturo/Math.pow(1+infl, anos);
+      $('kpi-aportado').textContent = fmtMoney.format(totalAportes + inicial);
+      $('kpi-bruto').textContent = fmtMoney.format(totalInteres);
+      $('kpi-impuestos').textContent = fmtMoney.format(totalImpuestos);
+      $('kpi-neto').textContent = fmtMoney.format(totalInteres - totalImpuestos);
+      $('kpi-futuro').textContent = fmtMoney.format(valorFuturo);
+      $('kpi-real').textContent = usaInfl ? fmtMoney.format(valorReal) : '—';
+      $('apy').textContent = 'TAE: ' + (effAnual * 100).toFixed(2) + '% — Tasa mensual: ' + (rMensual * 100).toFixed(3) + '%';
+      const tbody=$('tabla'); tbody.innerHTML=''; filas.forEach(row=>{ const tr=document.createElement('tr'); tr.className='border-b border-slate-800/60'; tr.innerHTML=`<td class="py-2 pr-4">${row.anio}</td><td class="py-2 pr-4">${fmtMoney.format(row.inicio)}</td><td class="py-2 pr-4">${fmtMoney.format(row.aportes)}</td><td class="py-2 pr-4">${fmtMoney.format(row.interes)}</td><td class="py-2 pr-4">${fmtMoney.format(row.impuestos)}</td><td class="py-2 pr-4">${fmtMoney.format(row.fin)}</td>`; tbody.appendChild(tr); });
+      dibujarGrafica(serie); window.__tablaAnual=filas;
+    }
+    function dibujarGrafica(serie){ const svg=$('grafica'), w=800,h=240,pad=28; svg.setAttribute('viewBox',`0 0 ${w} ${h}`); svg.innerHTML=''; const N=serie.length, maxV=Math.max(...serie,1), minV=Math.min(...serie,0), range=Math.max(maxV-minV,1); const eje=document.createElementNS('http://www.w3.org/2000/svg','path'); eje.setAttribute('d',`M 28 ${h-28} L ${w-28} ${h-28} M 28 28 L 28 ${h-28}`); eje.setAttribute('stroke','#334155'); eje.setAttribute('stroke-width','1'); svg.appendChild(eje); const toX=(i)=>28+(i*(w-56)/Math.max(1,N-1)), toY=(v)=>(h-28)-((v-minV)/range)*(h-56); let d=''; serie.forEach((v,i)=>{ const x=toX(i), y=toY(v); d+=(i?` L ${x} ${y}`:`M ${x} ${y}`); }); const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',d); path.setAttribute('fill','none'); path.setAttribute('stroke','#34d399'); path.setAttribute('stroke-width','2.5'); svg.appendChild(path); const area=document.createElementNS('http://www.w3.org/2000/svg','path'); area.setAttribute('d', d + ` L ${toX(N-1)} ${h-28} L ${toX(0)} ${h-28} Z`); area.setAttribute('fill','#34d39922'); svg.insertBefore(area, path); }
+    function limpiar(){ $('inicial').value=0; $('mensual').value=0; $('tasa').value=0; $('anos').value=0; $('comp').value='12'; $('infl_chk').checked=false; $('inflacion').value=4; $('isr').value=0; $('tabla').innerHTML=''; $('grafica').innerHTML=''; ['kpi-aportado','kpi-bruto','kpi-impuestos','kpi-neto','kpi-futuro','kpi-real','apy'].forEach(id=>$(id).textContent='—'); window.__tablaAnual=[]; }
+    function descargarCSV(){ const filas=window.__tablaAnual||[]; if(!filas.length) return; const head=['Año','Saldo inicial','Aportaciones','Intereses','Impuestos','Saldo final']; const rows=filas.map(f=>[f.anio,f.inicio.toFixed(2),f.aportes.toFixed(2),f.interes.toFixed(2),f.impuestos.toFixed(2),f.fin.toFixed(2)]); const csv=[head.join(','),...rows.map(r=>r.join(','))].join('\\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='detalle-inversion.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+    $('btn-calcular').addEventListener('click', calcular); $('btn-limpiar').addEventListener('click', limpiar); $('btn-csv').addEventListener('click', descargarCSV); ['inicial','mensual','tasa','anos','comp','infl_chk','inflacion','isr'].forEach(id=>{ $(id).addEventListener('input',()=>{ clearTimeout(window.__t); window.__t=setTimeout(calcular,180); }); $(id).addEventListener('change',calcular); }); calcular();
+
+    // ROI
+    const $$ = (id) => document.getElementById(id);
+    const money = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 });
+    const pct = (x) => (x*100).toFixed(2) + '%';
+    function valNum(id){ return (parseFloat($$(id).value.replace(',', '.')) || 0); }
+    function calcularROI(){
+      const invInicial=valNum('inv_inicial'), otrosIni=valNum('otros_iniciales'), ingresoMensual=valNum('ingreso_mensual'), costosMensuales=valNum('costos_mensuales'), anos=valNum('horiz_anos'), descAnual=valNum('desc_anual')/100, aplicarISR=$$('#chk_isr').checked, isr=valNum('isr_roi')/100;
+      const meses=Math.max(1,Math.round(anos*12)), outlay=invInicial+otrosIni, netoMesBruto=Math.max(0,ingresoMensual-costosMensuales), netoMes=aplicarISR ? (netoMesBruto*(1-isr)) : netoMesBruto, r_m=Math.pow(1+descAnual,1/12)-1;
+      const tabla=[]; let acumulado=-outlay, paybackMes=null; for(let m=1;m<=meses;m++){ acumulado+=netoMes; const flujoDesc=netoMes/Math.pow(1+r_m,m); tabla.push({mes:m,flujo:netoMes,flujoDesc,acumulado}); if(paybackMes===null && acumulado>=0) paybackMes=m; }
+      const beneficioTotal=netoMes*meses, roiSimple=outlay>0 ? ((beneficioTotal-outlay)/outlay) : 0;
+      let vpn=-outlay; for(let m=1;m<=meses;m++) vpn+=netoMes/Math.pow(1+r_m,m);
+      function npv(rate){ let s=-outlay; for(let m=1;m<=meses;m++) s+=netoMes/Math.pow(1+rate,m); return s; }
+      let low=-0.9999, high=10, irr_m=null, fLow=npv(low), fHigh=npv(high);
+      if(fLow*fHigh<0){ for(let i=0;i<200;i++){ const mid=(low+high)/2, fMid=npv(mid); if(Math.abs(fMid)<1e-9){irr_m=mid;break;} if(fLow*fMid<0){high=mid;fHigh=fMid;} else {low=mid;fLow=fMid;} irr_m=mid; } }
+      const irr_anual=(irr_m!==null)?(Math.pow(1+irr_m,12)-1):null;
+      $$('#kpi-roi').textContent=pct(roiSimple); $$('#kpi-payback').textContent=paybackMes ? (paybackMes+' meses') : 'No recupera en el horizonte'; $$('#kpi-vpn').textContent=money.format(vpn); $$('#kpi-tir').textContent=(irr_anual!==null)?((irr_anual*100).toFixed(2)+'%'):'—'; $$('#kpi-beneficio').textContent=money.format(beneficioTotal); $$('#kpi-inversion').textContent=money.format(outlay); $$('#tasa-eq').textContent='Tasa de descuento mensual equivalente: '+(r_m*100).toFixed(3)+'%';
+      const tbody=$$('#tabla-roi'); tbody.innerHTML=''; tabla.forEach(row=>{ const tr=document.createElement('tr'); tr.className='border-b border-slate-800/60'; tr.innerHTML=`<td class="py-2 pr-4">${row.mes}</td><td class="py-2 pr-4">${money.format(row.flujo)}</td><td class="py-2 pr-4">${money.format(row.flujoDesc)}</td><td class="py-2 pr-4">${money.format(row.acumulado)}</td>`; tbody.appendChild(tr); });
+      const serie=[-outlay]; let acc=-outlay; for(let m=1;m<=meses;m++){ acc+=netoMes; serie.push(acc); } dibujarGraficaROI(serie);
+      window.__roiTabla=tabla;
+    }
+    function dibujarGraficaROI(serie){ const svg=$$('#grafica-roi'), w=800,h=240,pad=28; svg.setAttribute('viewBox',`0 0 ${w} ${h}`); svg.innerHTML=''; const N=serie.length, maxV=Math.max(...serie,1), minV=Math.min(...serie,-1), range=Math.max(maxV-minV,1); const eje=document.createElementNS('http://www.w3.org/2000/svg','path'); const y0=(h-pad)-((0-minV)/range)*(h-2*pad); eje.setAttribute('d',`M ${pad} ${h-pad} L ${w-pad} ${h-pad} M ${pad} ${pad} L ${pad} ${h-pad} M ${pad} ${y0} L ${w-pad} ${y0}`); eje.setAttribute('stroke','#334155'); eje.setAttribute('stroke-width','1'); svg.appendChild(eje); const toX=(i)=>pad+(i*(w-2*pad)/Math.max(1,N-1)), toY=(v)=>(h-pad)-((v-minV)/range)*(h-2*pad); let d=''; serie.forEach((v,i)=>{ const x=toX(i), y=toY(v); d+=(i?` L ${x} ${y}`:`M ${x} ${y}`); }); const path=document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',d); path.setAttribute('fill','none'); path.setAttribute('stroke','#34d399'); path.setAttribute('stroke-width','2.5'); svg.appendChild(path); const area=document.createElementNS('http://www.w3.org/2000/svg','path'); area.setAttribute('d', d + ` L ${toX(N-1)} ${h-pad} L ${toX(0)} ${h-pad} Z`); area.setAttribute('fill','#34d39922'); svg.insertBefore(area, path); }
+    function limpiarROI(){ $$('#inv_inicial').value=0; $$('#otros_iniciales').value=0; $$('#ingreso_mensual').value=0; $$('#costos_mensuales').value=0; $$('#horiz_anos').value=1; $$('#desc_anual').value=12; $$('#chk_isr').checked=false; $$('#isr_roi').value=0; $$('#tabla-roi').innerHTML=''; $$('#grafica-roi').innerHTML=''; ['kpi-roi','kpi-payback','kpi-vpn','kpi-tir','kpi-beneficio','kpi-inversion','tasa-eq'].forEach(id=>$$(id).textContent='—'); window.__roiTabla=[]; }
+    function descargarCSVROI(){ const filas=window.__roiTabla||[]; if(!filas.length) return; const head=['Mes','Flujo','Flujo descontado','Acumulado']; const rows=filas.map(f=>[f.mes,f.flujo.toFixed(2),f.flujoDesc.toFixed(2),f.acumulado.toFixed(2)]); const csv=[head.join(','),...rows.map(r=>r.join(','))].join('\\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='detalle-roi.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+    $$('#btn-calcular-roi').addEventListener('click', calcularROI); $$('#btn-limpiar-roi').addEventListener('click', limpiarROI); $$('#btn-csv-roi').addEventListener('click', descargarCSVROI); ['inv_inicial','otros_iniciales','ingreso_mensual','costos_mensuales','horiz_anos','desc_anual','chk_isr','isr_roi'].forEach(id=>{ $$(id).addEventListener('input',()=>{ clearTimeout(window.__t2); window.__t2=setTimeout(calcularROI,180); }); $$(id).addEventListener('change',calcularROI); }); calcularROI();
+  </script>
+</body>
+</html>
