@@ -6,47 +6,58 @@
   <title>Calculadora Costo‑Beneficio</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script defer src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <meta name="color-scheme" content="dark light">
   <style>
     :root{color-scheme:light dark}
-    .card{ @apply rounded-2xl shadow-lg p-5 md:p-7 bg-white/80 dark:bg-slate-900/70 backdrop-blur border border-slate-200/60 dark:border-slate-800/60; }
-    .kpi{ @apply text-3xl md:text-4xl font-bold tracking-tight; }
+    /* Layout & Cards */
+    .card{ @apply rounded-2xl shadow-lg p-6 md:p-8 bg-white/80 dark:bg-slate-900/75 backdrop-blur border border-slate-200/60 dark:border-slate-800/60; }
+    .section{ @apply space-y-6 md:space-y-8; }
+    .spaced{ @apply space-y-10 md:space-y-12; }
+    .kpi{ @apply text-3xl md:text-4xl font-extrabold tracking-tight; }
     .muted{ @apply text-slate-600 dark:text-slate-400; }
-    .pill{ @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border; }
-    .btn{ @apply px-4 py-2 rounded-xl font-medium transition hover:-translate-y-0.5; }
-    .btn-primary{ @apply bg-indigo-600 text-white hover:bg-indigo-700 shadow; }
-    .btn-ghost{ @apply border border-slate-300 dark:border-slate-700; }
-    .section-title{ @apply text-xl md:text-2xl font-semibold; }
-    .grid-2{ @apply grid gap-8 md:gap-10 md:grid-cols-2; } /* más espacio entre tópicos */
-    .grid-3{ @apply grid gap-8 md:gap-10 md:grid-cols-3; }
-    .grid-4{ @apply grid gap-6 md:gap-8 md:grid-cols-4; }
+    .h2{ @apply text-2xl md:text-3xl font-bold tracking-tight; }
+    .h3{ @apply text-xl md:text-2xl font-semibold; }
 
-    /* ===== Inputs estandarizados y legibles (iOS friendly) ===== */
-    .input{ width:100%; border-radius:0.75rem; border:1px solid; padding:0.625rem 0.75rem; background:white; color:#0f172a; }
+    /* Inputs estándar y legibles iOS */
+    .input{ width:100%; border-radius:0.75rem; border:1px solid; padding:0.625rem 0.75rem; background:white; color:#0f172a; border-color:#cbd5e1; }
     .dark .input{ background:#0f172a; color:#f8fafc; border-color:#1f2937; }
-    .input{ border-color:#cbd5e1; }
     .input:focus{ outline:none; box-shadow:0 0 0 3px rgba(99,102,241,.25); border-color:#6366f1; }
-    .input-sm{ height:2.5rem; font-size:16px; line-height:1.25rem; } /* 16px evita zoom en Safari/iOS */
+    .input-sm{ height:2.5rem; font-size:16px; line-height:1.25rem; }
     input[type=number]{ text-align:right; font-variant-numeric:tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    input[type=number], select{ caret-color: currentColor; }
-    ::placeholder{ color:#94a3b8; opacity:1; }
-    .dark ::placeholder{ color:#94a3b8; opacity:1; }
-
-    /* Quitar spinners en WebKit para que no tapen números */
     input[type=number]::-webkit-outer-spin-button,
     input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
     input[type=number]{ -moz-appearance:textfield; }
 
-    .stat-up{ @apply text-emerald-600 dark:text-emerald-400; }
-    .stat-down{ @apply text-rose-600 dark:text-rose-400; }
-    .badge{ @apply text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800; }
-    .glass{ @apply bg-white/60 dark:bg-slate-900/50 backdrop-blur; }
+    /* Table */
+    table.comp{ @apply w-full text-sm border-separate; border-spacing:0 8px; }
+    table.comp th{ @apply text-left text-slate-500 dark:text-slate-400 px-4; }
+    table.comp td{ @apply px-4 py-3; }
+    tr.row{ @apply bg-white/70 dark:bg-slate-900/70 shadow rounded-xl border border-slate-200/60 dark:border-slate-800/60; }
+
+    .delta{ @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border; }
+    .delta.up{ @apply text-emerald-600 dark:text-emerald-400 border-emerald-300/40 bg-emerald-500/10; }
+    .delta.down{ @apply text-rose-600 dark:text-rose-400 border-rose-300/40 bg-rose-500/10; }
+
+    /* Charts */
+    .chart-wrap{ @apply rounded-2xl p-4 bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60; }
+    canvas{ width:100% !important; height:300px !important; }
+
+    /* Hero */
+    .hero{ @apply relative overflow-hidden border-b border-slate-200/70 dark:border-slate-800/70 mb-10; }
+    .hero-bg{ @apply absolute inset-0 -z-10 opacity-60; }
+
+    /* Responsive sidebar behavior */
+    @media (max-width: 1023px){
+      .sidebar{ position:static !important; top:auto !important; }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-white dark:from-slate-950 dark:via-slate-950 dark:to-slate-950 text-slate-900 dark:text-slate-100">
-  <!-- HEADER (no sticky) -->
-  <header class="relative overflow-hidden border-b border-slate-200/70 dark:border-slate-800/70 mb-10">
-    <div class="absolute inset-0 -z-10 opacity-60">
+  <!-- HERO (no sticky) -->
+  <header class="hero">
+    <div class="hero-bg">
       <svg viewBox="0 0 1200 400" class="w-full h-full" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
@@ -62,7 +73,7 @@
       <div>
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border bg-white/70 dark:bg-slate-900/70 border-slate-200 dark:border-slate-800">Actual vs Propuesta</div>
         <h1 class="text-3xl md:text-5xl font-black tracking-tight mt-3">Calculadora Costo‑Beneficio</h1>
-        <p class="text-slate-600 dark:text-slate-400 mt-3 max-w-2xl">Compara escenarios y enfócate en <span class="font-semibold">Mejora Productiva</span>, <span class="font-semibold">Ahorro Total</span> y <span class="font-semibold">ROI/Payback</span>. Ahora con autosave, sidebar fija y entradas estandarizadas.</p>
+        <p class="muted mt-3 max-w-2xl">Compara escenarios y enfócate en <span class="font-semibold">Mejora Productiva</span>, <span class="font-semibold">Ahorro Total</span> y <span class="font-semibold">ROI/Payback</span>. Con autosave, sidebar y PDF.</p>
         <div class="mt-5 flex flex-wrap gap-3">
           <button id="btnReset" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Restablecer</button>
           <button id="btnExport" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Exportar JSON</button>
@@ -73,68 +84,65 @@
     </div>
   </header>
 
-  <!-- LAYOUT con sidebar fija a la derecha -->
-  <div class="max-w-7xl mx-auto px-4 md:px-6 pb-28 grid gap-8 lg:grid-cols-[1fr_360px]">
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="space-y-10">
-      <!-- PARÁMETROS GLOBALES -->
-      <section class="card space-y-6">
-        <h2 class="text-2xl font-semibold">Parámetros</h2>
+  <!-- LAYOUT -->
+  <div class="max-w-7xl mx-auto px-4 md:px-6 pb-28 grid gap-10 lg:grid-cols-[1fr_360px]">
+    <!-- MAIN -->
+    <main class="spaced">
+      <section class="card section">
+        <h2 class="h2">Parámetros</h2>
         <div class="grid gap-6 md:grid-cols-3">
-          <div class="field">
+          <div>
             <label class="block text-sm font-semibold mb-1">Días productivos/mes</label>
             <input id="diasMes" type="number" step="1" value="30" class="input input-sm" />
           </div>
-          <div class="field">
+          <div>
             <label class="block text-sm font-semibold mb-1">Costo hora máquina (USD/hr)</label>
             <input id="costoHora" type="number" step="0.01" value="125" class="input input-sm" />
           </div>
-          <div class="field">
+          <div>
             <label class="block text-sm font-semibold mb-1">Costo por pieza (USD/pza)</label>
             <input id="costoPieza" type="number" step="0.01" value="60" class="input input-sm" />
           </div>
         </div>
       </section>
 
-      <!-- JORNADA -->
-      <section class="card space-y-6">
-        <h2 class="text-2xl font-semibold">Jornada y disponibilidad</h2>
+      <section class="card section">
+        <h2 class="h2">Jornada y disponibilidad</h2>
         <div class="grid gap-6 md:grid-cols-4">
-          <div class="field"><label class="block text-sm font-semibold mb-1">Horas por turno</label><input id="horasTurno" type="number" step="0.25" value="8" class="input input-sm" /></div>
-          <div class="field"><label class="block text-sm font-semibold mb-1">Hora de comida</label><input id="horaComida" type="number" step="0.25" value="0.5" class="input input-sm" /></div>
-          <div class="field"><label class="block text-sm font-semibold mb-1">Turnos por día</label><input id="turnos" type="number" step="1" value="3" class="input input-sm" /></div>
-          <div class="field"><label class="block text-sm font-semibold mb-1">Horas productivas/día</label><input id="horasProductivas" type="number" step="0.25" value="22.5" class="input input-sm" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Horas por turno</label><input id="horasTurno" type="number" step="0.25" value="8" class="input input-sm" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Hora de comida</label><input id="horaComida" type="number" step="0.25" value="0.5" class="input input-sm" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Turnos por día</label><input id="turnos" type="number" step="1" value="3" class="input input-sm" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Horas productivas/día</label><input id="horasProductivas" type="number" step="0.25" value="22.5" class="input input-sm" /></div>
         </div>
       </section>
 
-      <!-- PROCESO -->
-      <section class="card space-y-6">
-        <h2 class="text-2xl font-semibold">Proceso</h2>
+      <section class="card section">
+        <h2 class="h2">Proceso</h2>
         <div class="grid gap-8 md:grid-cols-2">
           <div>
-            <h3 class="font-semibold mb-3">Actual</h3>
+            <h3 class="h3 mb-3">Actual</h3>
             <div class="grid gap-4">
-              <div class="field"><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloA" type="number" step="0.1" value="370" class="input input-sm" /></div>
-              <div class="field"><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaA" type="number" step="1" value="1500" class="input input-sm" /></div>
-              <div class="field"><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinA" type="number" step="1" value="1440" class="input input-sm" /></div>
-              <div class="field"><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHA" type="number" step="0.1" value="4" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloA" type="number" step="0.1" value="370" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaA" type="number" step="1" value="1500" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinA" type="number" step="1" value="1440" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHA" type="number" step="0.1" value="4" class="input input-sm" /></div>
             </div>
           </div>
           <div>
-            <h3 class="font-semibold mb-3">Propuesta</h3>
+            <h3 class="h3 mb-3">Propuesta</h3>
             <div class="grid gap-4">
-              <div class="field"><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloP" type="number" step="0.1" value="360" class="input input-sm" /></div>
-              <div class="field"><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaP" type="number" step="1" value="2500" class="input input-sm" /></div>
-              <div class="field"><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinP" type="number" step="1" value="20" class="input input-sm" /></div>
-              <div class="field"><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHP" type="number" step="0.1" value="0" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloP" type="number" step="0.1" value="360" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaP" type="number" step="1" value="2500" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinP" type="number" step="1" value="20" class="input input-sm" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHP" type="number" step="0.1" value="0" class="input input-sm" /></div>
             </div>
           </div>
         </div>
         <div class="grid gap-6 md:grid-cols-2">
-          <div class="field"><label class="block text-sm font-semibold mb-1">Costo herramienta (USD)</label><input id="costoHerr" type="number" step="0.01" value="15" class="input input-sm" /></div>
-          <div class="field"><label class="block text-sm font-semibold mb-1">Inversión inicial (USD)</label><input id="inversion" type="number" step="0.01" value="0" class="input input-sm" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Costo herramienta (USD)</label><input id="costoHerr" type="number" step="0.01" value="15" class="input input-sm" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Inversión inicial (USD)</label><input id="inversion" type="number" step="0.01" value="0" class="input input-sm" /></div>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3 pt-2">
           <label class="text-sm font-semibold">Método de pérdidas</label>
           <select id="metodoPerdidas" class="input input-sm">
             <option value="pieza" selected>Por valor de pieza</option>
@@ -143,88 +151,110 @@
         </div>
       </section>
 
-      <!-- RESULTADOS Y GRÁFICAS -->
-      <section class="space-y-8">
-        <div class="grid gap-6 md:grid-cols-2">
-          <div class="rounded-2xl p-5 bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
+      <section class="section">
+        <div class="grid gap-8 md:grid-cols-2">
+          <div class="rounded-2xl p-6 bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
             <div class="text-sm/5 opacity-90">Mejora productiva (mensual)</div>
-            <div id="ahorroProd" class="text-4xl font-black mt-1 select-none" contenteditable="false">$0</div>
+            <div id="ahorroProd" class="text-4xl font-black mt-1 select-none">$0</div>
             <div class="mt-2 text-xs opacity-90">Output adicional valorado por pieza</div>
           </div>
-          <div class="rounded-2xl p-5 bg-gradient-to-br from-emerald-600 to-lime-500 text-white">
+          <div class="rounded-2xl p-6 bg-gradient-to-br from-emerald-600 to-lime-500 text-white">
             <div class="text-sm/5 opacity-90">Ahorro por herramienta (mensual)</div>
-            <div id="ahorroHerr" class="text-4xl font-black mt-1 select-none" contenteditable="false">$0</div>
+            <div id="ahorroHerr" class="text-4xl font-black mt-1 select-none">$0</div>
             <div class="mt-2 text-xs opacity-90">Vida útil vs consumo</div>
           </div>
         </div>
-        <div class="grid gap-6 md:grid-cols-2">
-          <div class="rounded-2xl p-5 bg-gradient-to-br from-fuchsia-600 to-pink-500 text-white">
+        <div class="grid gap-8 md:grid-cols-2">
+          <div class="rounded-2xl p-6 bg-gradient-to-br from-fuchsia-600 to-pink-500 text-white">
             <div class="text-sm/5 opacity-90"><span id="lblPerdidas">Piezas perdidas</span> (mensual)</div>
-            <div id="ahorroPerdidas" class="text-4xl font-black mt-1 select-none" contenteditable="false">$0</div>
+            <div id="ahorroPerdidas" class="text-4xl font-black mt-1 select-none">$0</div>
           </div>
-          <div class="rounded-2xl p-5 bg-gradient-to-br from-amber-600 to-orange-500 text-white">
+          <div class="rounded-2xl p-6 bg-gradient-to-br from-amber-600 to-orange-500 text-white">
             <div class="text-sm/5 opacity-90">Programación (mensual)</div>
-            <div id="ahorroProg" class="text-4xl font-black mt-1 select-none" contenteditable="false">$0</div>
+            <div id="ahorroProg" class="text-4xl font-black mt-1 select-none">$0</div>
           </div>
         </div>
-        <div class="grid gap-6 md:grid-cols-2">
-          <canvas id="chartAhorros" class="bg-white/60 dark:bg-slate-900/40 rounded-2xl p-4"></canvas>
-          <canvas id="chartProductividad" class="bg-white/60 dark:bg-slate-900/40 rounded-2xl p-4"></canvas>
+        <div class="grid gap-8 md:grid-cols-2">
+          <div class="chart-wrap"><canvas id="chartAhorros"></canvas></div>
+          <div class="chart-wrap"><canvas id="chartProductividad"></canvas></div>
         </div>
       </section>
 
-      <!-- COMPARATIVA -->
-      <section class="card space-y-6">
-        <h2 class="text-2xl font-semibold">Comparativa rápida</h2>
+      <section class="card section" id="comparativa">
+        <h2 class="h2">Comparativa rápida</h2>
         <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
+          <table class="comp">
             <thead>
-              <tr class="text-left text-slate-600 dark:text-slate-300">
-                <th class="py-2 pr-4">Métrica</th>
-                <th class="py-2 pr-4">Actual</th>
-                <th class="py-2 pr-4">Propuesta</th>
-                <th class="py-2">Δ Mejora</th>
+              <tr>
+                <th>Métrica</th>
+                <th>Actual</th>
+                <th>Propuesta</th>
+                <th>Δ Mejora</th>
               </tr>
             </thead>
             <tbody id="tbodyComp"></tbody>
           </table>
         </div>
-        <div class="grid gap-4 md:grid-cols-3 text-sm">
-          <div><span class="text-slate-500">Pzas/h:</span> <span id="pph"></span></div>
-          <div><span class="text-slate-500">Pzas/día:</span> <span id="pdia"></span></div>
-          <div><span class="text-slate-500">Pzas/mes:</span> <span id="pmes"></span></div>
-          <div><span class="text-slate-500">Costo herr. diario A→P:</span> <span id="costHerrDia"></span></div>
-          <div><span class="text-slate-500">Pzas perdidas/día A→P:</span> <span id="perdidasDia"></span></div>
-          <div><span class="text-slate-500">Ajuste (h/día) A→P:</span> <span id="ajusteH"></span></div>
+        <div class="grid gap-3 md:grid-cols-3 text-sm pt-2">
+          <div><span class="muted">Pzas/h:</span> <span id="pph"></span></div>
+          <div><span class="muted">Pzas/día:</span> <span id="pdia"></span></div>
+          <div><span class="muted">Pzas/mes:</span> <span id="pmes"></span></div>
+          <div><span class="muted">Costo herr. diario A→P:</span> <span id="costHerrDia"></span></div>
+          <div><span class="muted">Pzas perdidas/día A→P:</span> <span id="perdidasDia"></span></div>
+          <div><span class="muted">Ajuste (h/día) A→P:</span> <span id="ajusteH"></span></div>
         </div>
       </section>
-    </main>
 
-    <!-- SIDEBAR FIJA -->
-    <aside class="self-start sticky top-6 space-y-6">
-      <div class="card">
-        <h3 class="text-lg font-semibold mb-2">ROI & Payback</h3>
-        <div class="text-sm text-slate-500">Resumen siempre visible</div>
-        <div class="mt-4 grid grid-cols-2 gap-4">
+      <!-- ROI móvil (copiado) -->
+      <section class="card section lg:hidden" id="roiMobile">
+        <h2 class="h2">ROI & Payback</h2>
+        <div class="grid grid-cols-2 gap-6">
           <div>
-            <div class="text-xs text-slate-500">Ahorro mensual total</div>
-            <div id="ahorroTotal" class="text-3xl font-black select-none" contenteditable="false">$0</div>
+            <div class="muted text-xs">Ahorro mensual total</div>
+            <div id="ahorroTotal_m" class="kpi select-none">$0</div>
           </div>
           <div>
-            <div class="text-xs text-slate-500">ROI anual</div>
-            <div id="roi" class="text-3xl font-black select-none" contenteditable="false">—</div>
+            <div class="muted text-xs">ROI anual</div>
+            <div id="roi_m" class="kpi select-none">—</div>
           </div>
           <div class="col-span-2">
-            <div class="text-xs text-slate-500">Payback</div>
+            <div class="muted text-xs">Payback</div>
             <div class="flex items-end gap-2">
-              <div id="payback" class="text-3xl font-black select-none" contenteditable="false">—</div>
-              <span class="text-slate-500 mb-1">meses</span>
+              <div id="payback_m" class="kpi select-none">—</div>
+              <span class="muted mb-1">meses</span>
             </div>
           </div>
         </div>
+        <button id="btnPDF_m" class="mt-4 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 w-full">Descargar PDF</button>
+      </section>
+    </main>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar self-start sticky top-6 space-y-6 hidden lg:block">
+      <div class="card" id="roiSide">
+        <h3 class="h3 mb-2">ROI & Payback</h3>
+        <div class="muted text-sm">Resumen siempre visible</div>
+        <div class="mt-5 grid grid-cols-2 gap-5">
+          <div>
+            <div class="muted text-xs">Ahorro mensual total</div>
+            <div id="ahorroTotal" class="kpi select-none">$0</div>
+          </div>
+          <div>
+            <div class="muted text-xs">ROI anual</div>
+            <div id="roi" class="kpi select-none">—</div>
+          </div>
+          <div class="col-span-2">
+            <div class="muted text-xs">Payback</div>
+            <div class="flex items-end gap-2">
+              <div id="payback" class="kpi select-none">—</div>
+              <span class="muted mb-1">meses</span>
+            </div>
+          </div>
+        </div>
+        <button id="btnPDF" class="mt-5 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 w-full">Descargar PDF</button>
       </div>
       <div class="card">
-        <h3 class="text-lg font-semibold mb-3">Acciones</h3>
+        <h3 class="h3 mb-3">Acciones</h3>
         <div class="flex flex-col gap-3">
           <button id="btnExportSidebar" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Exportar JSON</button>
           <button id="btnResetSidebar" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Restablecer</button>
@@ -233,47 +263,22 @@
     </aside>
   </div>
 
-  <footer class="max-w-7xl mx-auto px-4 md:px-6 py-10 text-center text-slate-500">
+  <footer class="max-w-7xl mx-auto px-4 md:px-6 py-12 text-center muted">
     Hecha por AlexRaSa + GPT · Tailwind + Chart.js · <span class="text-xs">Autosave activado</span>
   </footer>
 
 <script>
-  // ======== Helpers y estilos de inputs ========
   const $ = (id) => document.getElementById(id);
   const fmt = (n, d=2) => Number(n).toLocaleString(undefined, {maximumFractionDigits: d});
   const money = (n) => `$${fmt(n)}`;
-
-  // Estilo de inputs pequeños, derecha y monospace para números
-  (function prepareInputsBase(){
-    const style = document.createElement('style');
-    style.textContent = `
-      .input{width:100%; border-radius:0.75rem; border:1px solid var(--tw-prose-borders, rgb(203 213 225)); padding:0.5rem 0.75rem; background:var(--tw-bg, white)}
-      .input-sm{height:2.25rem; font-size:.9rem;}
-      input[type=number]{text-align:right; font-variant-numeric:tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;}
-    `;
-    document.head.appendChild(style);
-  })();
-
-  // ======== Identificadores de campos ========
   const FIELD_IDS = ['diasMes','costoHora','costoPieza','horasTurno','horaComida','turnos','horasProductivas','cicloA','vidaA','ajusteMinA','progHA','cicloP','vidaP','ajusteMinP','progHP','costoHerr','metodoPerdidas','inversion'];
-
-  // ======== Autosave en localStorage ========
-  const LS_KEY = 'calc_cb_config_v2';
-  function loadFromStorage(){
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      if(!raw) return;
-      const obj = JSON.parse(raw);
-      FIELD_IDS.forEach(id => { if(obj[id] !== undefined) $(id).value = obj[id]; });
-    }catch(err){ console.warn('No se pudo cargar configuración:', err); }
-  }
-  function saveToStorage(){
-    const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value);
-    localStorage.setItem(LS_KEY, JSON.stringify(payload));
-  }
-
-  // ======== Cálculo principal ========
+  const LS_KEY = 'calc_cb_config_v3';
   let chartA, chartB;
+
+  function loadFromStorage(){ try{ const raw = localStorage.getItem(LS_KEY); if(!raw) return; const obj = JSON.parse(raw); FIELD_IDS.forEach(id => { if(obj[id] !== undefined) $(id).value = obj[id]; }); }catch(e){}
+  }
+  function saveToStorage(){ const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); localStorage.setItem(LS_KEY, JSON.stringify(payload)); }
+
   function recalc(){
     const diasMes = +$('diasMes').value || 0;
     const costoHora = +$('costoHora').value || 0;
@@ -282,16 +287,12 @@
     const horaComida = +$('horaComida').value || 0;
     const turnos = +$('turnos').value || 0;
     let horasProductivas = +$('horasProductivas').value || 0;
-    if(!horasProductivas){
-      horasProductivas = turnos * Math.max(0, (horasTurno - horaComida));
-      $('horasProductivas').value = horasProductivas;
-    }
+    if(!horasProductivas){ horasProductivas = turnos * Math.max(0, (horasTurno - horaComida)); $('horasProductivas').value = horasProductivas; }
 
     const cicloA = +$('cicloA').value || 1;
     const vidaA = +$('vidaA').value || 1;
     const ajusteMinA = +$('ajusteMinA').value || 0;
     const progHA = +$('progHA').value || 0;
-
     const cicloP = +$('cicloP').value || 1;
     const vidaP = +$('vidaP').value || 1;
     const ajusteMinP = +$('ajusteMinP').value || 0;
@@ -302,56 +303,46 @@
     const inversion = +$('inversion').value || 0;
 
     // Productividad
-    const pphA = 3600 / cicloA; // pzas/hora
-    const pphP = 3600 / cicloP;
-    const horasProd = horasProductivas;
-    const pdiaA = pphA * horasProd;
-    const pdiaP = pphP * horasProd;
-    const pmesA = pdiaA * diasMes;
-    const pmesP = pdiaP * diasMes;
+    const pphA = 3600 / cicloA, pphP = 3600 / cicloP;
+    const pdiaA = pphA * horasProductivas, pdiaP = pphP * horasProductivas;
+    const pmesA = pdiaA * diasMes, pmesP = pdiaP * diasMes;
 
-    // Mejora productiva valorada por valor de pieza
     const mejoraProdMensual = Math.max(0, (pmesP - pmesA)) * costoPieza;
 
-    // Herramienta
     const costHerrDiaA = (vidaA>0) ? (pdiaA / vidaA) * costoHerr : 0;
     const costHerrDiaP = (vidaP>0) ? (pdiaP / vidaP) * costoHerr : 0;
     const ahorroHerrMensual = Math.max(0, (costHerrDiaA - costHerrDiaP)) * diasMes;
 
-    // Pérdidas / ajuste
     const perdidasDiaA = (ajusteMinA * 60) / cicloA;
     const perdidasDiaP = (ajusteMinP * 60) / cicloP;
 
-    let ahorroPerdidasMensual = 0;
-    let ahorroAjusteMensual = 0;
+    let ahorroPerdidasMensual = 0, ahorroAjusteMensual = 0;
     if(metodoPerdidas === 'pieza'){
-      ahorroPerdidasMensual = Math.max(0, (perdidasDiaA - perdidasDiaP)) * costoPieza * diasMes;
-      $('lblPerdidas').textContent = 'Piezas perdidas';
+      ahorroPerdidasMensual = Math.max(0, (perdidasDiaA - perdidasDiaP)) * costoPieza * diasMes; $('lblPerdidas').textContent = 'Piezas perdidas';
     } else {
-      const horasAjusteA = ajusteMinA / 60;
-      const horasAjusteP = ajusteMinP / 60;
-      ahorroAjusteMensual = Math.max(0, (horasAjusteA - horasAjusteP)) * costoHora * diasMes;
-      $('lblPerdidas').textContent = 'Tiempo de ajuste';
+      const horasAjusteA = ajusteMinA / 60, horasAjusteP = ajusteMinP / 60;
+      ahorroAjusteMensual = Math.max(0, (horasAjusteA - horasAjusteP)) * costoHora * diasMes; $('lblPerdidas').textContent = 'Tiempo de ajuste';
     }
 
-    // Programación
     const ahorroProgMensual = Math.max(0, (progHA - progHP)) * costoHora;
-
     const ahorroTotalMensual = mejoraProdMensual + ahorroHerrMensual + ahorroPerdidasMensual + ahorroAjusteMensual + ahorroProgMensual;
 
-    // KPI ROI / Payback
     const ahorroAnual = ahorroTotalMensual * 12;
     const paybackMeses = (inversion > 0 && ahorroTotalMensual > 0) ? (inversion / ahorroTotalMensual) : null;
     const roiAnual = (inversion > 0) ? (ahorroAnual - inversion) / inversion : null;
 
-    // Pintar KPIs (solo lectura)
-    $('ahorroTotal').textContent = money(ahorroTotalMensual);
+    // KPIs (side + mobile)
+    ['ahorroTotal','ahorroTotal_m'].forEach(id => { const el=$(id); if(el) el.textContent = money(ahorroTotalMensual); });
+    ['roi','roi_m'].forEach(id => { const el=$(id); if(el) el.textContent = (roiAnual==null) ? '—' : (fmt(roiAnual*100)+'%'); });
+    ['payback','payback_m'].forEach(id => { const el=$(id); if(el) el.textContent = (paybackMeses==null||!isFinite(paybackMeses)) ? '—' : fmt(paybackMeses); });
+
+    // Resultados
     $('ahorroProd').textContent = money(mejoraProdMensual);
     $('ahorroHerr').textContent = money(ahorroHerrMensual);
     $('ahorroPerdidas').textContent = money(ahorroPerdidasMensual + ahorroAjusteMensual);
     $('ahorroProg').textContent = money(ahorroProgMensual);
 
-    // Comparativas
+    // Resumen comparativo
     $('pph').textContent = `${fmt(pphA)} → ${fmt(pphP)} pzas/h`;
     $('pdia').textContent = `${fmt(pdiaA)} → ${fmt(pdiaP)} pzas/día`;
     $('pmes').textContent = `${fmt(pmesA)} → ${fmt(pmesP)} pzas/mes`;
@@ -359,46 +350,28 @@
     $('perdidasDia').textContent = `${fmt(perdidasDiaA)} → ${fmt(perdidasDiaP)} pzas/día`;
     $('ajusteH').textContent = `${fmt(ajusteMinA/60)} → ${fmt(ajusteMinP/60)} h/día`;
 
-    $('payback').textContent = (paybackMeses==null || !isFinite(paybackMeses)) ? '—' : fmt(paybackMeses);
-    $('roi').textContent = (roiAnual==null) ? '—' : (fmt(roiAnual*100) + '%');
-
-    // Gráficas
     drawCharts({
-      labels: ['Productividad','Herramienta', (metodoPerdidas==='pieza'?'Pérdidas':'Ajuste'), 'Programación'],
-      data: [mejoraProdMensual, ahorroHerrMensual, (metodoPerdidas==='pieza'?ahorroPerdidasMensual:ahorroAjusteMensual), ahorroProgMensual]
+      labels:['Productividad','Herramienta',(metodoPerdidas==='pieza'?'Pérdidas':'Ajuste'),'Programación'],
+      data:[mejoraProdMensual, ahorroHerrMensual, (metodoPerdidas==='pieza'?ahorroPerdidasMensual:ahorroAjusteMensual), ahorroProgMensual]
     }, { pphA, pphP, pdiaA, pdiaP });
 
-    // Tabla comparativa
     renderTabla([
-      ['Tiempo de ciclo (s)', cicloA, cicloP, `${((cicloA-cicloP)/cicloA*100).toFixed(1)}%`],
-      ['Pzas/h', pphA, pphP, `${((pphP-pphA)/pphA*100).toFixed(1)}%`],
-      ['Pzas/día', pdiaA, pdiaP, `${((pdiaP-pdiaA)/pdiaA*100).toFixed(1)}%`],
-      ['Vida herramienta (pzas)', vidaA, vidaP, `${((vidaP-vidaA)/vidaA*100).toFixed(1)}%`],
-      ['Ajuste (min/día)', ajusteMinA, ajusteMinP, `${((ajusteMinA-ajusteMinP)/ajusteMinA*100).toFixed(1)}%`],
+      ['Tiempo de ciclo (s)', cicloA, cicloP, ((cicloA-cicloP)/cicloA*100)],
+      ['Pzas/h', pphA, pphP, ((pphP-pphA)/pphA*100)],
+      ['Pzas/día', pdiaA, pdiaP, ((pdiaP-pdiaA)/pdiaA*100)],
+      ['Vida herramienta (pzas)', vidaA, vidaP, ((vidaP-vidaA)/vidaA*100)],
+      ['Ajuste (min/día)', ajusteMinA, ajusteMinP, ((ajusteMinA-ajusteMinP)/ajusteMinA*100)],
     ]);
 
-    // Guardar
     saveToStorage();
   }
 
   function drawCharts(ahorros, prod){
     const ctxA = document.getElementById('chartAhorros');
     const ctxB = document.getElementById('chartProductividad');
-
-    if(chartA) chartA.destroy();
-    if(chartB) chartB.destroy();
-
-    chartA = new Chart(ctxA, {
-      type: 'doughnut',
-      data: { labels: ahorros.labels, datasets: [{ data: ahorros.data }] },
-      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
-
-    chartB = new Chart(ctxB, {
-      type: 'bar',
-      data: { labels: ['Pzas/h (A)', 'Pzas/h (P)', 'Pzas/día (A)', 'Pzas/día (P)'], datasets: [{ data: [prod.pphA, prod.pphP, prod.pdiaA, prod.pdiaP] }] },
-      options: { responsive: true, plugins: { legend: { display: false } } }
-    });
+    if(chartA) chartA.destroy(); if(chartB) chartB.destroy();
+    chartA = new Chart(ctxA, { type:'doughnut', data:{ labels:ahorros.labels, datasets:[{ data:ahorros.data }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } });
+    chartB = new Chart(ctxB, { type:'bar', data:{ labels:['Pzas/h (A)','Pzas/h (P)','Pzas/día (A)','Pzas/día (P)'], datasets:[{ data:[prod.pphA, prod.pphP, prod.pdiaA, prod.pdiaP] }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
   }
 
   function renderTabla(rows){
@@ -406,30 +379,64 @@
     tbody.innerHTML = '';
     rows.forEach(([name,a,p,delta]) => {
       const up = (typeof a==='number' && typeof p==='number') ? (p>a) : false;
-      const cls = up ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr class="border-t border-slate-200 dark:border-slate-800">
-          <td class="py-2 pr-4">${name}</td>
-          <td class="py-2 pr-4">${fmt(a)}</td>
-          <td class="py-2 pr-4">${fmt(p)}</td>
-          <td class="py-2"><span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${cls} border border-current/30 bg-current/5">${delta}</span></td>
-        </tr>
-      `);
+      const cls = up ? 'delta up' : 'delta down';
+      const row = document.createElement('tr'); row.className = 'row';
+      row.innerHTML = `<td>${name}</td><td>${fmt(a)}</td><td>${fmt(p)}</td><td><span class="${cls}">${(delta>=0?'+':'')+fmt(delta,1)}%</span></td>`;
+      tbody.appendChild(row);
     });
+  }
+
+  // PDF
+  async function generatePDF(){
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit:'pt', format:'a4' });
+    const margin = 32; let y = margin;
+    const date = new Date().toLocaleString();
+
+    // Título
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(16);
+    pdf.text('Resumen Costo‑Beneficio', margin, y); y += 18;
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(10);
+    pdf.text(`Generado: ${date}`, margin, y); y += 16;
+
+    // KPIs
+    const ahorro = $('ahorroTotal').textContent || $('ahorroTotal_m').textContent;
+    const roi = $('roi').textContent || $('roi_m').textContent;
+    const payback = $('payback').textContent || $('payback_m').textContent;
+
+    pdf.setFontSize(12);
+    pdf.text(`Ahorro mensual total: ${ahorro}`, margin, y); y += 16;
+    pdf.text(`ROI anual: ${roi}`, margin, y); y += 16;
+    pdf.text(`Payback: ${payback} meses`, margin, y); y += 24;
+
+    // Charts como imágenes
+    const c1 = document.getElementById('chartAhorros');
+    const c2 = document.getElementById('chartProductividad');
+    for (const c of [c1,c2]){
+      const dataURL = c.toDataURL('image/png', 1.0);
+      pdf.addImage(dataURL, 'PNG', margin, y, 531, 200); // A4 width ~ 595pt
+      y += 210;
+    }
+
+    // Tabla comparativa (captura del bloque)
+    const comp = document.getElementById('comparativa');
+    const canvas = await html2canvas(comp, { scale: 2, backgroundColor: null });
+    const img = canvas.toDataURL('image/png', 1.0);
+    if (y + 300 > 800) { pdf.addPage(); y = margin; }
+    pdf.addImage(img, 'PNG', margin, y, 531, 0); // auto height
+
+    pdf.save('Resumen_Costo_Beneficio.pdf');
   }
 
   // Eventos
   FIELD_IDS.forEach(id => $(id).addEventListener('input', recalc));
-  document.getElementById('btnExport').addEventListener('click', () => {
-    const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'config_calculadora.json'; a.click(); URL.revokeObjectURL(url);
-  });
-  document.getElementById('btnExportSidebar').addEventListener('click', () => document.getElementById('btnExport').click());
-  document.getElementById('btnReset').addEventListener('click', () => { localStorage.removeItem(LS_KEY); window.location.reload(); });
-  document.getElementById('btnResetSidebar').addEventListener('click', () => document.getElementById('btnReset').click());
-  document.getElementById('btnClearStorage').addEventListener('click', () => { localStorage.removeItem(LS_KEY); alert('Guardado local eliminado'); });
+  $('btnExport').addEventListener('click', () => { const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href = url; a.download = 'config_calculadora.json'; a.click(); URL.revokeObjectURL(url); });
+  $('btnExportSidebar').addEventListener('click', () => $('btnExport').click());
+  $('btnReset').addEventListener('click', () => { localStorage.removeItem(LS_KEY); window.location.reload(); });
+  $('btnResetSidebar').addEventListener('click', () => $('btnReset').click());
+  $('btnClearStorage').addEventListener('click', () => { localStorage.removeItem(LS_KEY); alert('Guardado local eliminado'); });
+  $('btnPDF').addEventListener('click', generatePDF);
+  const btnPDFm = $('btnPDF_m'); if (btnPDFm) btnPDFm.addEventListener('click', generatePDF);
 
   // INIT
   loadFromStorage();
