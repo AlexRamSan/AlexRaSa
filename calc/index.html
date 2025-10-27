@@ -8,8 +8,18 @@
     * { box-sizing: border-box; }
     body { font-family: system-ui, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
     header { background: #1e293b; color: #fff; padding: 1rem 2rem; text-align: center; font-size: 1.25rem; font-weight: bold; }
-    main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2rem; padding: 2rem; max-width: 1200px; margin: auto; }
-    section { flex: 1 1 480px; min-width: 320px; background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+
+    /* Layout principal: 3 columnas en desktop (form | resultados | visuales) */
+    main { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr 1fr; 
+      gap: 2rem; 
+      padding: 2rem; 
+      max-width: 1200px; 
+      margin: auto; 
+      align-items: start;
+    }
+    section { background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
     h2 { font-size: 1.2rem; border-bottom: 2px solid #e2e8f0; padding-bottom: .5rem; margin-bottom: 1rem; }
     label { display: block; margin-top: .75rem; font-weight: 600; }
     input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .4rem .6rem; font-size: .9rem; }
@@ -29,26 +39,38 @@
     .chip { display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.75rem; font-weight:700; }
     .chip-up { color:#166534; background:#dcfce7; border:1px solid #86efac; }
     .chip-down { color:#991b1b; background:#fee2e2; border:1px solid #fecaca; }
+    .off { opacity: .5; }
 
-    @media (max-width: 900px){
-      .grid2 { grid-template-columns: 1fr; }
-      section { flex: 1 1 100%; }
+    /* Visuales (SVG) */
+    .viz-wrap { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    .viz-card { background:#ffffff; border:1px solid #e2e8f0; border-radius:1rem; padding:1rem; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+    .viz-title { margin:0 0 .5rem 0; font-weight:700; color:#334155; font-size:1rem; }
+    .svgfit { width:100%; height:auto; display:block; }
+
+    /* Responsive: 1 columna en móvil, 2 en tablet */
+    @media (max-width: 1024px){
+      main { grid-template-columns: 1fr 1fr; }
     }
-  .off { opacity: .5; }
+    @media (max-width: 900px){
+      main { grid-template-columns: 1fr; }
+      .grid2 { grid-template-columns: 1fr; }
+    }
   </style>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-XXXXXXXXXX');
-</script>
 
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
 </head>
 <body>
   <header>Calculadora de Costo-Beneficio</header>
+
   <main>
+    <!-- 1) FORMULARIO -->
     <section>
       <h2>Parámetros del proceso</h2>
       <label>Tiempo de ciclo actual (s)</label>
@@ -67,7 +89,8 @@
       <input id="pmes" type="number" value="10000">
       <label>Inversión inicial (USD)</label>
       <input id="inversion" type="number" value="2000">
-      <div class="grid2">
+
+      <div class="grid2" style="margin-top:.5rem">
         <div>
           <label>Días productivos/mes</label>
           <input id="diasMes" type="number" value="22">
@@ -92,6 +115,7 @@
       <button id="btnCalcular">Calcular</button>
     </section>
 
+    <!-- 2) TABLA COMPARATIVA -->
     <section>
       <h2>Comparativa A vs P</h2>
       <div style="overflow:auto">
@@ -109,12 +133,14 @@
       </div>
     </section>
 
-    <section><h2>Resultados</h2>
+    <!-- 3) RESULTADOS + VISUALES (dos bloques apilados) -->
+    <section>
+      <h2>Resultados</h2>
       <div class="kpi-box">
         <div>Ahorro mensual estimado:</div>
         <div id="ahorro" class="result">$0</div>
       </div>
-      <div class="kpi-box">
+      <div id="kpiTMBox" class="kpi-box">
         <div>Ahorro por tiempo muerto (USD/mes):</div>
         <div id="ahorroTM" class="result">$0.00</div>
       </div>
@@ -130,11 +156,24 @@
         <div>Payback (meses):</div>
         <div id="payback" class="result">0</div>
       </div>
+
+      <h2 style="margin-top:1.25rem">Visuales</h2>
+      <div class="viz-wrap">
+        <div class="viz-card">
+          <p class="viz-title">Distribución de ahorros</p>
+          <div id="vizAhorros"></div>
+        </div>
+        <div class="viz-card">
+          <p class="viz-title">Comparativa rápida</p>
+          <div id="vizPerf"></div>
+        </div>
+      </div>
     </section>
   </main>
 
   <script>
     function fmt(n){return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
     document.getElementById('btnCalcular').addEventListener('click', ()=>{
       const cicloA = +document.getElementById('cicloA').value || 0;
       const cicloP = +document.getElementById('cicloP').value || 0;
@@ -214,26 +253,91 @@
         row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
       ].join('');
       document.getElementById('tbodyComp').innerHTML = rows;
-    });
-    // === Inclusión por tipo de ahorro ===
-  function setEnabled(ids, on){
-    ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.disabled = !on; });
-  }
-  function applyInclusions(){
-    const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-    const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-    const incTM    = document.getElementById('incTM')?.checked ?? true;
-    // Habilitar/deshabilitar campos específicos (evitamos los compartidos como costoHora)
-    setEnabled(['cicloA','cicloP'], incCiclo);
-    setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
-    setEnabled(['tmuertoA','tmuertoP'], incTM);
-  }
 
-  // Hook checkboxes
-  ['incCiclo','incHerr','incTM'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el){ el.addEventListener('change', ()=>{ applyInclusions(); document.getElementById('btnCalcular').click(); }); }
-  });
-</script>
+      // ==================== VISUALES SVG ====================
+      // Donut de distribución de ahorros
+      const parts = [], labels = [];
+      if(incCiclo) { parts.push(Math.max(0, ahorroCiclo)); labels.push('Ciclo'); }
+      if(incHerr)  { parts.push(Math.max(0, ahorroHerr));  labels.push('Herramienta'); }
+      if(incTM)    { parts.push(Math.max(0, ahorroTM));    labels.push('Tiempo muerto'); }
+      renderDonut('vizAhorros', parts, labels);
+
+      // Barras comparativas básicas
+      renderBars('vizPerf', [
+        ['Pzas/h', pphA, pphP, false],
+        ['T. muerto (min/día)', tmuertoA, tmuertoP, true]
+      ]);
+    });
+
+    // === Inclusión por tipo de ahorro ===
+    function setEnabled(ids, on){
+      ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.disabled = !on; });
+    }
+    function applyInclusions(){
+      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
+      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
+      const incTM    = document.getElementById('incTM')?.checked ?? true;
+      setEnabled(['cicloA','cicloP'], incCiclo);
+      setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
+      setEnabled(['tmuertoA','tmuertoP'], incTM);
+    }
+    ['incCiclo','incHerr','incTM'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el){ el.addEventListener('change', ()=>{ applyInclusions(); document.getElementById('btnCalcular').click(); }); }
+    });
+
+    /* ====== Generadores de SVG (sin librerías) ====== */
+    function renderDonut(targetId, parts, labels){
+      const total = parts.reduce((a,b)=>a+b,0);
+      const W=300,H=200,cx=110,cy=100,r=80,th=28;
+      let start=0; const colors=['#6366F1','#22C55E','#F59E0B','#06B6D4','#EF4444'];
+      const segs = parts.map((v,i)=>{
+        const frac = total>0 ? v/total : 0;
+        const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
+        const large = (a1-a0)>Math.PI ? 1:0;
+        const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+        const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+        const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
+        const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
+        const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
+        const pct = total>0 ? Math.round(frac*100) : 0;
+        return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>`+
+               (pct>0?`<text x="220" y="${24+18*i}" font-size="12" fill="#334155">${labels[i]}: ${pct}%</text>`:'');
+      }).join('');
+      const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="#fff"></circle>`+
+                     `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
+      const svg = `<svg class="svgfit" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">
+        ${segs}
+        ${center}
+      </svg>`;
+      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+    }
+
+    function renderBars(targetId, pairs){ // [[label, actual, propuesta, lowerIsBetter]]
+      const W=300, rowH=28, pad=16; const H = pad + pairs.length*(rowH+10) + pad;
+      const maxVal = Math.max(...pairs.flatMap(p=>[p[1],p[2]].map(v=>Math.abs(v)||0)), 1);
+      const rows = pairs.map((p,i)=>{
+        const [label,a,b,lowerIsBetter] = p; const y = pad + i*(rowH+10);
+        const aw = Math.round((Math.abs(a)/maxVal)*200), bw = Math.round((Math.abs(b)/maxVal)*200);
+        const goodB = lowerIsBetter ? (b<a) : (b>a);
+        return `
+          <text x="0" y="${y+12}" font-size="12" fill="#334155">${label}</text>
+          <rect x="90" y="${y}" width="${aw}" height="10" fill="#94a3b8"></rect>
+          <rect x="90" y="${y+12}" width="${bw}" height="10" fill="${goodB?'#22C55E':'#ef4444'}"></rect>
+          <text x="${90+aw+4}" y="${y+9}" font-size="10" fill="#475569">${isFinite(a)?a.toFixed(1):'—'}</text>
+          <text x="${90+bw+4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(b)?b.toFixed(1):'—'}</text>`;
+      }).join('');
+      const legend = `
+        <rect x="90" y="${H-18}" width="10" height="10" fill="#94a3b8"></rect>
+        <text x="104" y="${H-9}" font-size="10" fill="#334155">Actual</text>
+        <rect x="150" y="${H-18}" width="10" height="10" fill="#22C55E"></rect>
+        <text x="164" y="${H-9}" font-size="10" fill="#334155">Propuesta</text>`;
+      const svg = `<svg class="svgfit" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">
+        ${rows}
+        ${legend}
+      </svg>`;
+      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+    }
+  </script>
 </body>
 </html>
