@@ -38,32 +38,22 @@
   <meta name="twitter:description" content="ROI, payback y distribución de ahorros para procesos CNC." />
   <meta name="twitter:image" content="https://alexrasa.store/og/og-image.png" />
 
-  <!-- Rendimiento -->
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
-  <!-- Tailwind via CDN -->
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Estilos utilitarios locales -->
+  <!-- Estilos locales -->
   <style>
     html { scroll-behavior: smooth; }
     .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
     .reveal.show { opacity: 1; transform: none; }
     @keyframes bounceSoft { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
     .animate-bounce-soft { animation: bounceSoft 2.8s ease-in-out infinite; }
-  </style>
 
-  <!-- Datos estructurados -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "Calculadora de Costo-Beneficio — AlexRaSa",
-    "url": "https://alexrasa.store/calculadora-costo-beneficio/",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Web",
-    "author": {"@type":"Person","name":"Miguel Alejandro Ramírez"}
-  }
-  </script>
+    /* Fix iOS: evita zoom al escribir y solapes */
+    input, select, textarea { font-size:16px; }
+    /* Safe area / espacio inferior para barra fija */
+    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
+  </style>
 
   <!-- Google tag -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
@@ -85,136 +75,82 @@
         </a>
         <nav class="hidden lg:flex items-center gap-6 text-sm">
           <a href="/" class="hover:text-blue-600">Inicio</a>
-          <div class="relative">
-            <button id="navSolBtn" type="button" class="inline-flex items-center gap-1 hover:text-blue-600" aria-haspopup="true" aria-expanded="false" aria-controls="navSolMenu">
-              Soluciones
-              <svg class="h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
-            </button>
-            <div id="navSolMenu" class="absolute left-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white shadow-lg hidden" role="menu" tabindex="-1">
-              <div class="py-2">
-                <a href="/SolidCAM/"  class="block px-4 py-2 text-sm hover:bg-gray-50" role="menuitem">SolidCAM & iMachining</a>
-                <a href="/lantek/"    class="block px-4 py-2 text-sm hover:bg-gray-50" role="menuitem">Lantek — Corte & Nesting</a>
-                <a href="/logopress/" class="block px-4 py-2 text-sm hover:bg-gray-50" role="menuitem">Logopress — Troqueles</a>
-              </div>
-            </div>
-          </div>
+          <a href="/SolidCAM/" class="hover:text-blue-600">Soluciones</a>
           <a href="/#servicios" class="hover:text-blue-600">Servicios</a>
-          <a href="/#recursos"  class="hover:text-blue-600">Recursos</a>
-          <a href="/#contacto"  class="hover:text-blue-600">Contacto</a>
+          <a href="/#recursos" class="hover:text-blue-600">Recursos</a>
+          <a href="/#contacto" class="hover:text-blue-600">Contacto</a>
         </nav>
-        <div class="hidden md:flex items-center gap-2">
-          <a href="/#soporte" class="px-3 py-2 rounded-md border border-gray-300 text-gray-900 hover:bg-gray-100 text-sm">Soporte</a>
-          <a href="/#agenda" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Agendar cita</a>
-        </div>
-        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobilePanel">
+        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú">
           <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
     </div>
-    <div id="mobileBackdrop" class="fixed inset-0 z-40 hidden bg-black/40"></div>
-    <aside id="mobilePanel" class="fixed inset-y-0 right-0 z-50 w-[88%] max-w-sm translate-x-full transition-transform bg-white border-l border-gray-200 shadow-xl">
-      <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-        <span class="text-base font-semibold">Menú</span>
-        <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar menú"><svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-      </div>
-      <nav class="px-3 py-4 text-[15px]">
-        <a href="/" class="block px-3 py-2 rounded hover:bg-gray-100">Inicio</a>
-        <div class="mt-1">
-          <button id="mSolBtn" class="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100" aria-expanded="false" aria-controls="mSolPanel">
-            <span>Soluciones</span>
-            <svg id="mSolIcon" class="h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
-          </button>
-          <div id="mSolPanel" class="hidden ml-2 mt-1 rounded-lg border border-gray-200">
-            <a href="/SolidCAM/"  class="block px-3 py-2 hover:bg-gray-50">SolidCAM & iMachining</a>
-            <a href="/lantek/"    class="block px-3 py-2 hover:bg-gray-50">Lantek — Corte & Nesting</a>
-            <a href="/logopress/" class="block px-3 py-2 hover:bg-gray-50">Logopress — Troqueles</a>
-          </div>
-        </div>
-        <a href="/#servicios" class="block px-3 py-2 rounded hover:bg-gray-100 mt-1">Servicios</a>
-        <a href="/#recursos"  class="block px-3 py-2 rounded hover:bg-gray-100">Recursos</a>
-        <a href="/#contacto"  class="block px-3 py-2 rounded hover:bg-gray-100">Contacto</a>
-        <div class="mt-4 grid grid-cols-2 gap-2 px-1">
-          <a href="/#soporte" class="px-3 py-2 text-center rounded-md border border-gray-300 hover:bg-gray-100">Soporte</a>
-          <a href="/#agenda"  class="px-3 py-2 text-center rounded-md bg-blue-600 text-white hover:bg-blue-700">Agendar</a>
-        </div>
-      </nav>
-    </aside>
   </header>
 
-  <!-- ===== HERO / TÍTULO ===== -->
+  <!-- ===== HERO ===== -->
   <section class="relative reveal">
     <div class="absolute inset-0 -z-10">
       <div class="absolute inset-0 bg-[url('/assets/hero-industrial.jpg')] bg-cover bg-center opacity-70"></div>
       <div class="absolute inset-0 bg-slate-900/60"></div>
     </div>
-    <div class="max-w-6xl mx-auto px-4 py-14 md:py-20 text-white">
+    <div class="max-w-6xl mx-auto px-4 py-10 md:py-20 text-white">
       <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">Calculadora de <span class="text-sky-400">Costo-Beneficio</span></h1>
       <p class="mt-3 text-white/90 max-w-3xl">Estima ahorros por <strong>tiempo de ciclo</strong>, <strong>vida de herramienta</strong> y <strong>tiempos muertos</strong>. Obtén <strong>ROI</strong>, <strong>payback</strong> y una comparativa <em>Actual vs Propuesta</em>.</p>
-      <div class="mt-6 flex flex-wrap gap-3">
-        <a href="#calc" class="px-5 py-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 transition">Ir a la calculadora</a>
-        <a href="/SolidCAM/" class="px-5 py-3 rounded-md border border-white/30 text-white font-medium hover:bg-white/10 transition">Ver cómo logro estos ahorros</a>
-      </div>
     </div>
   </section>
 
   <!-- ===== CALCULADORA ===== -->
-  <main id="calc" class="max-w-6xl mx-auto px-4 py-10 md:py-14 grid gap-6 lg:grid-cols-8 reveal">
+  <main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-14 grid gap-4 sm:gap-6 lg:grid-cols-8 reveal">
     <!-- FORM -->
     <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
       <h2 class="text-lg font-semibold text-gray-900">Parámetros del proceso</h2>
       <div class="grid gap-3 mt-3">
         <label class="text-sm">Tiempo de ciclo actual (s)
-          <input id="cicloA" type="number" value="60" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
+          <input id="cicloA" type="number" value="60" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
         </label>
         <label class="text-sm">Tiempo de ciclo propuesto (s)
-          <input id="cicloP" type="number" value="45" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
+          <input id="cicloP" type="number" value="45" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
         </label>
-        <div class="grid grid-cols-1 gap-3">
-          <label class="text-sm">Vida útil actual (pzas)
-            <input id="vidaA" type="number" value="1300" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
-          </label>
-          <label class="text-sm">Vida útil propuesta (pzas)
-            <input id="vidaP" type="number" value="2500" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
-          </label>
-        </div>
+        <label class="text-sm">Vida útil actual (pzas)
+          <input id="vidaA" type="number" value="1300" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
+        </label>
+        <label class="text-sm">Vida útil propuesta (pzas)
+          <input id="vidaP" type="number" value="2500" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
+        </label>
         <label class="text-sm">Costo de herramienta (USD)
-          <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
+          <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
         </label>
         <label class="text-sm">Costo por hora máquina (USD)
-          <input id="costoHora" type="number" value="50" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
+          <input id="costoHora" type="number" value="50" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
         </label>
         <label class="text-sm">Piezas por mes
-          <input id="pmes" type="number" value="10000" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
+          <input id="pmes" type="number" value="10000" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
         </label>
         <label class="text-sm">Inversión inicial (USD)
-          <input id="inversion" type="number" value="2000" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
+          <input id="inversion" type="number" value="2000" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
         </label>
-        <div class="grid grid-cols-1 gap-3">
-          <label class="text-sm">Días productivos/mes
-            <input id="diasMes" type="number" value="22" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
-          </label>
-          <!-- CAMBIO: tiempos muertos ahora son mensuales -->
-          <label class="text-sm">T. muerto actual (min/mes)
-            <input id="tmuertoA" type="number" value="120" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
-          </label>
-          <label class="text-sm">T. muerto propuesto (min/mes)
-            <input id="tmuertoP" type="number" value="30" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400">
-          </label>
-        </div>
-        <h3 class="text-sm font-semibold text-gray-900 mt-2">Tipos de ahorro a incluir</h3>
+        <label class="text-sm">T. muerto actual (min/mes)
+          <input id="tmuertoA" type="number" value="120" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
+        </label>
+        <label class="text-sm">T. muerto propuesto (min/mes)
+          <input id="tmuertoP" type="number" value="30" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
+        </label>
+
+        <h3 class="text-sm font-semibold mt-2">Tipos de ahorro a incluir</h3>
         <div class="grid grid-cols-2 gap-2 text-sm">
-          <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Reducir tiempo de ciclo</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Aumentar vida de herramienta</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Reducir tiempo muerto</span></label>
+          <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
+          <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
+          <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
         </div>
-        <button id="btnCalcular" class="mt-3 w-full px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">Calcular</button>
+        <!-- Oculto en móvil: usamos el botón fijo -->
+        <button id="btnCalcular" class="hidden md:block mt-3 w-full px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">Calcular</button>
       </div>
     </section>
 
     <!-- TABLA -->
     <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-4">
       <h2 class="text-lg font-semibold text-gray-900">Comparativa A vs P</h2>
-      <div class="mt-3 overflow-auto">
+      <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
         <table class="w-full border-separate [border-spacing:0_8px] text-sm">
           <thead>
             <tr class="text-gray-600">
@@ -229,17 +165,17 @@
       </div>
     </section>
 
-    <!-- KPIs + RESULTADOS (más delgada) -->
+    <!-- RESULTADOS (más delgada) -->
     <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
       <h2 class="text-lg font-semibold text-gray-900">Resultados</h2>
       <div class="mt-3 grid gap-3">
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <div class="text-sm">Ahorro mensual estimado</div>
+          <div class="text-sm">Ahorro mensual</div>
           <div id="ahorro" class="text-right font-bold text-xl text-emerald-700">$0</div>
         </div>
         <div id="kpiTMBox" class="rounded-lg border border-teal-200 bg-teal-50 p-3">
           <div class="text-sm">Ahorro por tiempo muerto (USD/mes)</div>
-          <div id="ahorroTM" class="text-right font-bold text-lg text-teal-700">$0.00</div>
+          <div id="ahorroTM" class="text-right font-bold text-lg text-teal-700">$0</div>
         </div>
         <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
           <div class="text-sm">ROI anual</div>
@@ -256,7 +192,7 @@
       </div>
     </section>
 
-    <!-- VISUALES (debajo, span correcto de 8 cols) -->
+    <!-- VISUALES -->
     <section id="visuales" class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-8 lg:col-start-1">
       <h2 class="text-lg font-semibold text-gray-900">Visuales</h2>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -272,46 +208,33 @@
     </section>
   </main>
 
-  <!-- ===== FOOTER ===== -->
+  <!-- BOTÓN FIJO EN MÓVIL -->
+  <div class="md:hidden fixed inset-x-0 bottom-0 z-40 safe-bottom bg-white/95 backdrop-blur border-t border-gray-200 px-4 py-2">
+    <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
+      Calcular
+    </button>
+  </div>
+
+  <!-- FOOTER -->
   <footer class="bg-gray-100 py-6 border-t border-gray-300 mt-16 text-center">
-    <div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
-      <div class="flex items-center gap-3">
-        <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-8 w-auto" width="160" height="40" loading="lazy" />
-        <p class="text-sm text-gray-600">© 2025 AlexRaSa — Ingeniería, innovación y eficiencia.</p>
-      </div>
-      <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
-        <a href="/SolidCAM/" class="hover:underline">SolidCAM</a>
-        <span>·</span>
-        <a href="/lantek/" class="hover:underline">Lantek</a>
-        <span>·</span>
-        <a href="/logopress/" class="hover:underline">Logopress</a>
-      </div>
-      <a href="#calc" class="inline-block mt-3 px-5 py-2 bg-blue-600 text-white text-sm rounded-full shadow hover:bg-blue-700 transition">↑ Volver a la calculadora</a>
+    <div class="max-w-6xl mx-auto px-4 text-sm text-gray-600">
+      © 2025 AlexRaSa — Ingeniería, innovación y eficiencia.
     </div>
   </footer>
 
-  <!-- Botón WhatsApp -->
-  <a href="https://wa.me/524425992802?text=Hola%20Miguel,%20quiero%20usar%20la%20calculadora%20de%20costo-beneficio%20para%20mi%20proceso." class="fixed bottom-6 right-6 inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-500 text-white hover:bg-green-600 transition animate-bounce-soft" aria-label="Chatear por WhatsApp" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M19.11 17.44c-.27-.14-1.58-.78-1.83-.86-.25-.09-.43-.14-.61.14-.18.27-.7.86-.86 1.04-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.18-1.34-.81-.72-1.36-1.61-1.52-1.88-.16-.27-.02-.42.12-.55.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.46h-.52c-.18 0 -.48 .07 -.73 .34 -.25 .27 -.96 .94 -.96 2.28 s .98 2.64 1.11 2.82 c .14 .18 1.93 2.95 4.68 4.14 .65 .28 1.16 .45 1.55 .58 .65 .21 1.24 .18 1.71 .11 .52 -.08 1.58 -.65 1.81 -1.27 .23 -.62 .23 -1.15 .16 -1.27 -.07 -.11 -.25 -.18 -.52 -.32 z"/><path d="M26.02 5.97A12.9 12.9 0 0 0 16 2C8.83 2 3 7.83 3 15c0 2.29.6 4.44 1.66 6.31L3 30l8.88-1.63A12.96 12.96 0 0 0 16 28c7.17 0 13-5.83 13-13 0-3.47-1.35-6.72-3.98-9.03z"/></svg><span class="font-medium">WhatsApp</span></a>
+  <!-- BOTÓN WHATSAPP (oculto en pantallas chicas para no tapar inputs) -->
+  <a href="https://wa.me/524425992802?text=Hola%20Miguel,%20quiero%20usar%20la%20calculadora%20de%20costo-beneficio."
+     class="hidden sm:inline-flex fixed bottom-6 right-6 items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-500 text-white hover:bg-green-600 transition animate-bounce-soft"
+     aria-label="Chatear por WhatsApp" rel="noopener noreferrer">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <path d="M19.11 17.44c-.27-.14-1.58-.78-1.83-.86-.25-.09-.43-.14-.61.14-.18.27-.7.86-.86 1.04-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.18-1.34-.81-.72-1.36-1.61-1.52-1.88-.16-.27-.02-.42.12-.55.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.28s.98 2.64 1.11 2.82c.14.18 1.93 2.95 4.68 4.14.65.28 1.16.45 1.55.58.65.21 1.24.18 1.71.11.52-.08 1.58-.65 1.81-1.27.23-.62.23-1.15.16-1.27-.07-.11-.25-.18-.52-.32z"/>
+      <path d="M26.02 5.97A12.9 12.9 0 0 0 16 2C8.83 2 3 7.83 3 15c0 2.29.6 4.44 1.66 6.31L3 30l8.88-1.63A12.96 12.96 0 0 0 16 28c7.17 0 13-5.83 13-13 0-3.47-1.35-6.72-3.98-9.03z"/>
+    </svg>
+    <span class="font-medium">WhatsApp</span>
+  </a>
 
   <!-- ===== SCRIPTS ===== -->
   <script>
-    // Dropdown Soluciones (desktop)
-    const solBtn = document.getElementById('navSolBtn'), solMenu = document.getElementById('navSolMenu');
-    let solCloseTimer = null;
-    const openSol = () => { if (!solMenu) return; solMenu.classList.remove('hidden'); solBtn?.setAttribute('aria-expanded','true'); solBtn?.querySelector('svg')?.classList.add('rotate-180'); clearTimeout(solCloseTimer); };
-    const closeSol = (immediate=false) => { if (!solMenu) return; const doClose = () => { solMenu.classList.add('hidden'); solBtn?.setAttribute('aria-expanded','false'); solBtn?.querySelector('svg')?.classList.remove('rotate-180'); }; if(immediate){clearTimeout(solCloseTimer);doClose();} else {solCloseTimer=setTimeout(doClose,160);} };
-    solBtn?.addEventListener('click', (e) => { e.stopPropagation(); solBtn.getAttribute('aria-expanded') === 'true' ? closeSol(true) : openSol(); });
-    solMenu?.addEventListener('mouseenter', () => clearTimeout(solCloseTimer));
-    solMenu?.addEventListener('mouseleave', () => closeSol());
-    document.addEventListener('click', () => closeSol(true));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSol(true); });
-
-    // Menú móvil
-    const mOpen = document.getElementById('mobileOpenBtn'), mClose = document.getElementById('mobileCloseBtn'), mPanel = document.getElementById('mobilePanel'), mBg = document.getElementById('mobileBackdrop');
-    const openMobile = () => { mPanel?.classList.remove('translate-x-full'); mBg?.classList.remove('hidden'); document.body.style.overflow='hidden'; mOpen?.setAttribute('aria-expanded','true'); };
-    const closeMobile = () => { mPanel?.classList.add('translate-x-full'); mBg?.classList.add('hidden'); document.body.style.overflow=''; mOpen?.setAttribute('aria-expanded','false'); };
-    mOpen?.addEventListener('click', openMobile); mClose?.addEventListener('click', closeMobile); mBg?.addEventListener('click', closeMobile);
-
     // Sombra en header
     const siteHeader = document.getElementById('siteHeader');
     window.addEventListener('scroll', () => { siteHeader.classList.toggle('shadow', window.scrollY > 2); }, { passive: true });
@@ -326,10 +249,10 @@
       els.forEach(el => io.observe(el));
     })();
 
-    // ===== LÓGICA DE LA CALCULADORA =====
+    // ====== LÓGICA DE LA CALCULADORA ======
     function fmt(n){return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
-    document.getElementById('btnCalcular').addEventListener('click', ()=>{
+    function calcular(){
       const cicloA = +document.getElementById('cicloA').value || 0;
       const cicloP = +document.getElementById('cicloP').value || 0;
       const vidaA = +document.getElementById('vidaA').value || 0;
@@ -338,19 +261,20 @@
       const costoHora = +document.getElementById('costoHora').value || 0;
       const pmes = +document.getElementById('pmes').value || 0;
       const inversion = +document.getElementById('inversion').value || 0;
-      const diasMes = +document.getElementById('diasMes').value || 0; // ya no se usa para TM mensual
       const tmuertoA = +document.getElementById('tmuertoA').value || 0; // min/mes
       const tmuertoP = +document.getElementById('tmuertoP').value || 0; // min/mes
 
-      // Ahorros
+      // Ahorro por ciclo
       const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
+
+      // Herramienta
       const consA = (vidaA>0) ? (pmes / vidaA) : 0;
       const consP = (vidaP>0) ? (pmes / vidaP) : 0;
       const costoHerrA = consA * costoHerr;
       const costoHerrP = consP * costoHerr;
       const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
 
-      // CAMBIO: tiempo muerto mensual (min/mes -> horas/mes)
+      // Tiempo muerto mensual (min/mes -> horas/mes)
       const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
 
       const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
@@ -364,14 +288,14 @@
       );
 
       const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
-      const roiAnual = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
-      const payback = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
+      const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
+      const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
 
-      document.getElementById('ahorro').textContent = `$${fmt(ahorroTotal)}`;
-      document.getElementById('roi').textContent = `${fmt(roiAnual)}%`;
+      document.getElementById('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
+      document.getElementById('roi').textContent        = `${fmt(roiAnual)}%`;
       document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
-      document.getElementById('payback').textContent = fmt(payback);
-      document.getElementById('ahorroTM').textContent = `$${fmt(ahorroTM)}`;
+      document.getElementById('payback').textContent    = fmt(payback);
+      document.getElementById('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
 
       const tmWrap = document.getElementById('kpiTMBox');
       if (tmWrap) tmWrap.classList.toggle('opacity-50', !incTM);
@@ -404,7 +328,7 @@
         row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
         row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
         row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
-        row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),                 <!-- CAMBIO etiqueta -->
+        row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
         row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
         row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
       ].join('');
@@ -419,24 +343,28 @@
       if(incHerr)  { parts.push(ahorroHerrPOS);  labels.push('Herramienta'); }
       if(incTM)    { parts.push(ahorroTMPOS);    labels.push('Tiempo muerto'); }
       renderDonut('vizAhorros', parts, labels);
-      renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]); // CAMBIO etiqueta
-    });
+      renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
+    }
 
-    function setEnabled(ids, on){ ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.disabled = !on; el.classList.toggle('bg-gray-100', !on); }); }
+    function setEnabled(ids, on){
+      ids.forEach(id=>{
+        const el=document.getElementById(id);
+        if(!el) return;
+        el.disabled = !on;
+        el.classList.toggle('bg-gray-100', !on);
+        el.classList.toggle('cursor-not-allowed', !on);
+      });
+    }
     function applyInclusions(){
       const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
       const incHerr  = document.getElementById('incHerr')?.checked ?? true;
       const incTM    = document.getElementById('incTM')?.checked ?? true;
       setEnabled(['cicloA','cicloP'], incCiclo);
       setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
-      setEnabled(['tmuertoA','tmuertoP'], incTM); // ya en min/mes
+      setEnabled(['tmuertoA','tmuertoP'], incTM);
     }
-    ['incCiclo','incHerr','incTM'].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el){ el.addEventListener('change', ()=>{ applyInclusions(); document.getElementById('btnCalcular').click(); }); }
-    });
 
-    // ===== SVGs sin librerías =====
+    // SVGs sin librerías
     function renderDonut(targetId, parts, labels){
       const total = parts.reduce((a,b)=>a+b,0);
       const W=320,H=210,cx=110,cy=105,r=80,th=28;
@@ -460,7 +388,6 @@
       const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
     }
 
-    // Barras
     function renderBars(targetId, pairs){
       const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
         lines: String(lbl).replace(' (', '\n(').split('\n'),
@@ -511,9 +438,21 @@
       if (el) el.innerHTML = svg;
     }
 
+    // Listeners
+    document.getElementById('btnCalcular')?.addEventListener('click', calcular);
+    document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
+    ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP']
+      .forEach(id => document.getElementById(id)?.addEventListener('input', () => {
+        // Recalcula "en vivo" en desktop; en móvil puedes tocar el botón fijo
+        if (window.innerWidth >= 768) calcular();
+      }));
+    ['incCiclo','incHerr','incTM'].forEach(id=>{
+      document.getElementById(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); });
+    });
+
     // Estado inicial
     applyInclusions();
-    document.getElementById('btnCalcular').click();
+    calcular();
   </script>
 </body>
 </html>
