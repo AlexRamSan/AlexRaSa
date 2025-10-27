@@ -456,30 +456,73 @@
       const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
     }
 
+    // === NUEVA VERSION: barras con columna de labels y salto de línea con <tspan> ===
     function renderBars(targetId, pairs){
-      const W = 360;                // ancho base del SVG
-      const barMax = 240;           // largo máximo de barra
-      const rowH = 32, pad = 16;    // altura de fila y padding
-      const H = pad + pairs.length*(rowH+12) + pad + 20;
-      const maxVal = Math.max(...pairs.flatMap(p=>[p[1],p[2]].map(v=>Math.abs(v)||0)), 1);
-      const rows = pairs.map((p,i)=>{
-        const [label,a,b,lowerIsBetter] = p; const y = pad + i*(rowH+12);
-        const aw = Math.round((Math.abs(a)/maxVal)*barMax), bw = Math.round((Math.abs(b)/maxVal)*barMax);
-        const goodB = lowerIsBetter ? (b<a) : (b>a);
-        return `
-          <text x="0" y="${y+12}" font-size="12" fill="#334155">${label}</text>
-          <rect x="90" y="${y}" width="${aw}" height="10" fill="#94a3b8"></rect>
-          <rect x="90" y="${y+12}" width="${bw}" height="10" fill="${goodB?'#22C55E':'#ef4444'}"></rect>
-          <text x="${90+aw+4}" y="${y+9}" font-size="10" fill="#475569">${isFinite(a)?a.toFixed(1):'—'}</text>
-          <text x="${90+bw+4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(b)?b.toFixed(1):'—'}</text>`;
+      // 1) Normaliza labels: fuerza salto antes de "("
+      const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
+        lines: String(lbl).replace(' (', '\n(').split('\n'),
+        a, b, lowerIsBetter
+      }));
+
+      // 2) Ancho de columna de labels (dinámico con estimación por caracteres)
+      const approxChar = 7; // ~px por carácter a 12px
+      const labelCol = Math.max(
+        100,
+        Math.min(
+          200,
+          Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))
+        )
+      );
+
+      const barStartX = labelCol + 12; // donde inician las barras
+      const barMax    = 240;           // largo máximo de barra
+      const rowH      = 32;            // alto base de fila
+      const rowGap    = 12;            // espacio entre filas
+      const padY      = 16;
+
+      // 3) Dimensiones del SVG calculadas
+      const W = barStartX + barMax + 120; // margen para números + leyenda
+      const H = padY + rowsData.length * (rowH + rowGap) + 28;
+
+      const maxVal = Math.max(
+        ...rowsData.flatMap(r => [r.a, r.b].map(v => Math.abs(v) || 0)),
+        1
+      );
+
+      let y = padY;
+      const rows = rowsData.map(r => {
+        const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
+        const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
+        const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
+
+        // Label multilínea con <tspan>
+        const label = `<text x="0" y="${y+12}" font-size="12" fill="#334155">`
+          + r.lines.map((ln, i) => i === 0 ? ln : `<tspan x="0" dy="1.2em">${ln}</tspan>`).join('')
+          + `</text>`;
+
+        const bars = `
+          <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
+          <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
+          <text x="${barStartX + aw + 4}" y="${y+9}"  font-size="10" fill="#475569">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
+          <text x="${barStartX + bw + 4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
+        `;
+
+        const out = label + bars;
+        y += rowH + rowGap;
+        return out;
       }).join('');
+
+      const legendY = H - 18;
       const legend = `
-        <rect x="90" y="${H-18}" width="10" height="10" fill="#94a3b8"></rect>
-        <text x="104" y="${H-9}" font-size="10" fill="#334155">Actual</text>
-        <rect x="150" y="${H-18}" width="10" height="10" fill="#22C55E"></rect>
-        <text x="164" y="${H-9}" font-size="10" fill="#334155">Propuesta</text>`;
+        <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
+        <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10" fill="#334155">Actual</text>
+        <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
+        <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10" fill="#334155">Propuesta</text>
+      `;
+
       const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
-      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+      const el = document.getElementById(targetId);
+      if (el) el.innerHTML = svg;
     }
 
     // Estado inicial
