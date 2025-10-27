@@ -11,54 +11,54 @@
   <meta name="color-scheme" content="dark light">
   <style>
     :root{color-scheme:light dark}
-    /* Layout & Cards */
-    .card{ @apply rounded-2xl shadow-lg p-6 md:p-8 bg-white/80 dark:bg-slate-900/75 backdrop-blur border border-slate-200/60 dark:border-slate-800/60; }
-    .section{ @apply space-y-6 md:space-y-8; }
-    .spaced{ @apply space-y-10 md:space-y-12; }
-    .kpi{ @apply text-3xl md:text-4xl font-extrabold tracking-tight; }
+    /* ===== Layout Base ===== */
+    .wrap{ @apply max-w-7xl mx-auto px-4 md:px-6 pb-16; }
+    .card{ @apply rounded-2xl shadow p-5 md:p-6 bg-white/85 dark:bg-slate-900/75 border border-slate-200/60 dark:border-slate-800/60; }
+    .section{ @apply space-y-4 md:space-y-5; }
+    .h2{ @apply text-xl md:text-2xl font-bold tracking-tight; }
+    .h3{ @apply text-lg md:text-xl font-semibold; }
     .muted{ @apply text-slate-600 dark:text-slate-400; }
-    .h2{ @apply text-2xl md:text-3xl font-bold tracking-tight; }
-    .h3{ @apply text-xl md:text-2xl font-semibold; }
+    .kpi{ @apply text-3xl font-extrabold tracking-tight; }
 
-    /* Inputs estándar y legibles iOS */
-    .input{ width:100%; border-radius:0.75rem; border:1px solid; padding:0.625rem 0.75rem; background:white; color:#0f172a; border-color:#cbd5e1; }
+    /* ===== Inputs compactos ===== */
+    .input{ width:100%; border-radius:0.75rem; border:1px solid; padding:0.45rem 0.65rem; background:white; color:#0f172a; border-color:#cbd5e1; height:2.25rem; font-size:16px; }
     .dark .input{ background:#0f172a; color:#f8fafc; border-color:#1f2937; }
     .input:focus{ outline:none; box-shadow:0 0 0 3px rgba(99,102,241,.25); border-color:#6366f1; }
-    .input-sm{ height:2.5rem; font-size:16px; line-height:1.25rem; }
     input[type=number]{ text-align:right; font-variant-numeric:tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     input[type=number]::-webkit-outer-spin-button,
     input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
     input[type=number]{ -moz-appearance:textfield; }
 
-    /* Table */
+    /* ===== Tabla ===== */
     table.comp{ @apply w-full text-sm border-separate; border-spacing:0 8px; }
     table.comp th{ @apply text-left text-slate-500 dark:text-slate-400 px-4; }
     table.comp td{ @apply px-4 py-3; }
     tr.row{ @apply bg-white/70 dark:bg-slate-900/70 shadow rounded-xl border border-slate-200/60 dark:border-slate-800/60; }
-
-    .delta{ @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border; }
+    .delta{ @apply inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold border; }
     .delta.up{ @apply text-emerald-600 dark:text-emerald-400 border-emerald-300/40 bg-emerald-500/10; }
     .delta.down{ @apply text-rose-600 dark:text-rose-400 border-rose-300/40 bg-rose-500/10; }
 
-    /* Charts */
+    /* ===== Charts ===== */
     .chart-wrap{ @apply rounded-2xl p-4 bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60; }
-    canvas{ width:100% !important; height:300px !important; }
+    canvas{ width:100% !important; height:260px !important; }
 
-    /* Hero */
-    .hero{ @apply relative overflow-hidden border-b border-slate-200/70 dark:border-slate-800/70 mb-10; }
-    .hero-bg{ @apply absolute inset-0 -z-10 opacity-60; }
+    /* ===== Header compacto ===== */
+    .hero{ @apply relative overflow-hidden border-b border-slate-200/60 dark:border-slate-800/60; }
+    .hero .inner{ @apply wrap py-6 md:py-8; } /* menos alto */
+    .hero h1{ @apply text-2xl md:text-3xl font-black tracking-tight; }
+    .hero p{ @apply muted mt-2; }
+    .hero-bg{ @apply absolute inset-0 -z-10 opacity-40; }
 
-    /* Responsive sidebar behavior */
-    @media (max-width: 1023px){
-      .sidebar{ position:static !important; top:auto !important; }
-    }
+    /* ===== Responsive Grid principal: izquierda (formularios) / derecha (KPIs+gráficas) ===== */
+    .grid-main{ @apply wrap grid gap-8 lg:gap-10 lg:grid-cols-[520px,1fr]; }
+    @media (max-width:1023px){ .grid-main{ @apply grid-cols-1; } }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-indigo-50 via-slate-50 to-white dark:from-slate-950 dark:via-slate-950 dark:to-slate-950 text-slate-900 dark:text-slate-100">
-  <!-- HERO (no sticky) -->
+<body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+  <!-- HEADER COMPACTO -->
   <header class="hero">
     <div class="hero-bg">
-      <svg viewBox="0 0 1200 400" class="w-full h-full" preserveAspectRatio="none" aria-hidden="true">
+      <svg viewBox="0 0 1200 260" class="w-full h-full" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
             <stop offset="0%" stop-color="#6366F1"/>
@@ -66,118 +66,121 @@
             <stop offset="100%" stop-color="#22C55E"/>
           </linearGradient>
         </defs>
-        <path d="M0,300 C300,350 400,150 700,200 C950,240 1050,120 1200,180 L1200,0 L0,0 Z" fill="url(#g1)" opacity="0.25"></path>
+        <path d="M0,200 C260,240 420,120 720,160 C960,180 1080,100 1200,140 L1200,0 L0,0 Z" fill="url(#g1)" opacity="0.25"></path>
       </svg>
     </div>
-    <div class="max-w-7xl mx-auto px-4 md:px-6 py-10 md:py-12 flex items-start justify-between gap-6">
-      <div>
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border bg-white/70 dark:bg-slate-900/70 border-slate-200 dark:border-slate-800">Actual vs Propuesta</div>
-        <h1 class="text-3xl md:text-5xl font-black tracking-tight mt-3">Calculadora Costo‑Beneficio</h1>
-        <p class="muted mt-3 max-w-2xl">Compara escenarios y enfócate en <span class="font-semibold">Mejora Productiva</span>, <span class="font-semibold">Ahorro Total</span> y <span class="font-semibold">ROI/Payback</span>. Con autosave, sidebar y PDF.</p>
-        <div class="mt-5 flex flex-wrap gap-3">
-          <button id="btnReset" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Restablecer</button>
-          <button id="btnExport" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Exportar JSON</button>
-          <button id="btnClearStorage" class="px-4 py-2 rounded-xl border border-rose-300 text-rose-700 dark:border-rose-700 dark:text-rose-300">Borrar guardado</button>
+    <div class="inner">
+      <div class="flex items-end justify-between">
+        <div>
+          <h1>Calculadora Costo‑Beneficio</h1>
+          <p>Secciones claras, campos compactos y **gráficas al lado derecho**. Autosave + PDF.</p>
+        </div>
+        <div class="hidden md:flex gap-2">
+          <button id="btnReset" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Restablecer</button>
+          <button id="btnExport" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Exportar JSON</button>
         </div>
       </div>
-      <div class="hidden md:block"></div>
     </div>
   </header>
 
-  <!-- LAYOUT -->
-  <div class="max-w-7xl mx-auto px-4 md:px-6 pb-28 grid gap-10 lg:grid-cols-[1fr_360px]">
-    <!-- MAIN -->
-    <main class="spaced">
+  <!-- GRID PRINCIPAL: IZQ (FORM) / DER (KPIs + CHARTS + COMP) -->
+  <div class="grid-main">
+    <!-- COLUMNA IZQUIERDA: FORMULARIOS POR SECCIONES -->
+    <main class="space-y-6">
       <section class="card section">
         <h2 class="h2">Parámetros</h2>
-        <div class="grid gap-6 md:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-2">
           <div>
             <label class="block text-sm font-semibold mb-1">Días productivos/mes</label>
-            <input id="diasMes" type="number" step="1" value="30" class="input input-sm" />
+            <input id="diasMes" type="number" step="1" value="30" class="input" />
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">Costo hora máquina (USD/hr)</label>
-            <input id="costoHora" type="number" step="0.01" value="125" class="input input-sm" />
+            <input id="costoHora" type="number" step="0.01" value="125" class="input" />
           </div>
-          <div>
+          <div class="md:col-span-2">
             <label class="block text-sm font-semibold mb-1">Costo por pieza (USD/pza)</label>
-            <input id="costoPieza" type="number" step="0.01" value="60" class="input input-sm" />
+            <input id="costoPieza" type="number" step="0.01" value="60" class="input" />
           </div>
         </div>
       </section>
 
       <section class="card section">
         <h2 class="h2">Jornada y disponibilidad</h2>
-        <div class="grid gap-6 md:grid-cols-4">
-          <div><label class="block text-sm font-semibold mb-1">Horas por turno</label><input id="horasTurno" type="number" step="0.25" value="8" class="input input-sm" /></div>
-          <div><label class="block text-sm font-semibold mb-1">Hora de comida</label><input id="horaComida" type="number" step="0.25" value="0.5" class="input input-sm" /></div>
-          <div><label class="block text-sm font-semibold mb-1">Turnos por día</label><input id="turnos" type="number" step="1" value="3" class="input input-sm" /></div>
-          <div><label class="block text-sm font-semibold mb-1">Horas productivas/día</label><input id="horasProductivas" type="number" step="0.25" value="22.5" class="input input-sm" /></div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div><label class="block text-sm font-semibold mb-1">Horas por turno</label><input id="horasTurno" type="number" step="0.25" value="8" class="input" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Hora de comida (por turno)</label><input id="horaComida" type="number" step="0.25" value="0.5" class="input" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Turnos por día</label><input id="turnos" type="number" step="1" value="3" class="input" /></div>
+          <div><label class="block text-sm font-semibold mb-1">Horas productivas/día</label><input id="horasProductivas" type="number" step="0.25" value="22.5" class="input" /></div>
         </div>
       </section>
 
       <section class="card section">
         <h2 class="h2">Proceso</h2>
-        <div class="grid gap-8 md:grid-cols-2">
+        <div class="grid gap-6">
           <div>
-            <h3 class="h3 mb-3">Actual</h3>
-            <div class="grid gap-4">
-              <div><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloA" type="number" step="0.1" value="370" class="input input-sm" /></div>
-              <div><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaA" type="number" step="1" value="1500" class="input input-sm" /></div>
-              <div><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinA" type="number" step="1" value="1440" class="input input-sm" /></div>
-              <div><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHA" type="number" step="0.1" value="4" class="input input-sm" /></div>
+            <h3 class="h3 mb-2">Actual</h3>
+            <div class="grid gap-3 md:grid-cols-2">
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloA" type="number" step="0.1" value="370" class="input" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaA" type="number" step="1" value="1500" class="input" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinA" type="number" step="1" value="1440" class="input" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHA" type="number" step="0.1" value="4" class="input" /></div>
             </div>
           </div>
           <div>
-            <h3 class="h3 mb-3">Propuesta</h3>
-            <div class="grid gap-4">
-              <div><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloP" type="number" step="0.1" value="360" class="input input-sm" /></div>
-              <div><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaP" type="number" step="1" value="2500" class="input input-sm" /></div>
-              <div><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinP" type="number" step="1" value="20" class="input input-sm" /></div>
-              <div><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHP" type="number" step="0.1" value="0" class="input input-sm" /></div>
+            <h3 class="h3 mb-2">Propuesta</h3>
+            <div class="grid gap-3 md:grid-cols-2">
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ciclo (s)</label><input id="cicloP" type="number" step="0.1" value="360" class="input" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Vida herramienta (pzas)</label><input id="vidaP" type="number" step="1" value="2500" class="input" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de ajuste (min/día)</label><input id="ajusteMinP" type="number" step="1" value="20" class="input" /></div>
+              <div><label class="block text-sm font-semibold mb-1">Tiempo de programación (h/mes)</label><input id="progHP" type="number" step="0.1" value="0" class="input" /></div>
+            </div>
+          </div>
+          <div class="grid gap-3 md:grid-cols-2">
+            <div><label class="block text-sm font-semibold mb-1">Costo herramienta (USD)</label><input id="costoHerr" type="number" step="0.01" value="15" class="input" /></div>
+            <div><label class="block text-sm font-semibold mb-1">Inversión inicial (USD)</label><input id="inversion" type="number" step="0.01" value="0" class="input" /></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-semibold">Método de pérdidas</label>
+            <select id="metodoPerdidas" class="input">
+              <option value="pieza" selected>Por valor de pieza</option>
+              <option value="hora">Por costo hora (ajuste)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- COLUMNA DERECHA: KPIs + GRÁFICAS + COMPARATIVA + PDF -->
+    <aside class="space-y-6">
+      <section class="card section">
+        <h2 class="h2">ROI & Payback</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <div class="muted text-xs">Ahorro mensual total</div>
+            <div id="ahorroTotal" class="kpi select-none">$0</div>
+          </div>
+          <div>
+            <div class="muted text-xs">ROI anual</div>
+            <div id="roi" class="kpi select-none">—</div>
+          </div>
+          <div class="col-span-2">
+            <div class="muted text-xs">Payback</div>
+            <div class="flex items-end gap-2">
+              <div id="payback" class="kpi select-none">—</div>
+              <span class="muted mb-1">meses</span>
             </div>
           </div>
         </div>
-        <div class="grid gap-6 md:grid-cols-2">
-          <div><label class="block text-sm font-semibold mb-1">Costo herramienta (USD)</label><input id="costoHerr" type="number" step="0.01" value="15" class="input input-sm" /></div>
-          <div><label class="block text-sm font-semibold mb-1">Inversión inicial (USD)</label><input id="inversion" type="number" step="0.01" value="0" class="input input-sm" /></div>
-        </div>
-        <div class="flex flex-wrap items-center gap-3 pt-2">
-          <label class="text-sm font-semibold">Método de pérdidas</label>
-          <select id="metodoPerdidas" class="input input-sm">
-            <option value="pieza" selected>Por valor de pieza</option>
-            <option value="hora">Por costo hora (ajuste)</option>
-          </select>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button id="btnPDF" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Descargar PDF</button>
+          <button id="btnClearStorage" class="px-3 py-2 rounded-xl border border-rose-300 text-rose-700 dark:border-rose-700 dark:text-rose-300">Borrar guardado</button>
         </div>
       </section>
 
       <section class="section">
-        <div class="grid gap-8 md:grid-cols-2">
-          <div class="rounded-2xl p-6 bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
-            <div class="text-sm/5 opacity-90">Mejora productiva (mensual)</div>
-            <div id="ahorroProd" class="text-4xl font-black mt-1 select-none">$0</div>
-            <div class="mt-2 text-xs opacity-90">Output adicional valorado por pieza</div>
-          </div>
-          <div class="rounded-2xl p-6 bg-gradient-to-br from-emerald-600 to-lime-500 text-white">
-            <div class="text-sm/5 opacity-90">Ahorro por herramienta (mensual)</div>
-            <div id="ahorroHerr" class="text-4xl font-black mt-1 select-none">$0</div>
-            <div class="mt-2 text-xs opacity-90">Vida útil vs consumo</div>
-          </div>
-        </div>
-        <div class="grid gap-8 md:grid-cols-2">
-          <div class="rounded-2xl p-6 bg-gradient-to-br from-fuchsia-600 to-pink-500 text-white">
-            <div class="text-sm/5 opacity-90"><span id="lblPerdidas">Piezas perdidas</span> (mensual)</div>
-            <div id="ahorroPerdidas" class="text-4xl font-black mt-1 select-none">$0</div>
-          </div>
-          <div class="rounded-2xl p-6 bg-gradient-to-br from-amber-600 to-orange-500 text-white">
-            <div class="text-sm/5 opacity-90">Programación (mensual)</div>
-            <div id="ahorroProg" class="text-4xl font-black mt-1 select-none">$0</div>
-          </div>
-        </div>
-        <div class="grid gap-8 md:grid-cols-2">
-          <div class="chart-wrap"><canvas id="chartAhorros"></canvas></div>
-          <div class="chart-wrap"><canvas id="chartProductividad"></canvas></div>
-        </div>
+        <div class="chart-wrap"><canvas id="chartAhorros"></canvas></div>
+        <div class="chart-wrap"><canvas id="chartProductividad"></canvas></div>
       </section>
 
       <section class="card section" id="comparativa">
@@ -195,7 +198,7 @@
             <tbody id="tbodyComp"></tbody>
           </table>
         </div>
-        <div class="grid gap-3 md:grid-cols-3 text-sm pt-2">
+        <div class="grid gap-2 md:grid-cols-2 text-sm pt-2">
           <div><span class="muted">Pzas/h:</span> <span id="pph"></span></div>
           <div><span class="muted">Pzas/día:</span> <span id="pdia"></span></div>
           <div><span class="muted">Pzas/mes:</span> <span id="pmes"></span></div>
@@ -204,67 +207,11 @@
           <div><span class="muted">Ajuste (h/día) A→P:</span> <span id="ajusteH"></span></div>
         </div>
       </section>
-
-      <!-- ROI móvil (copiado) -->
-      <section class="card section lg:hidden" id="roiMobile">
-        <h2 class="h2">ROI & Payback</h2>
-        <div class="grid grid-cols-2 gap-6">
-          <div>
-            <div class="muted text-xs">Ahorro mensual total</div>
-            <div id="ahorroTotal_m" class="kpi select-none">$0</div>
-          </div>
-          <div>
-            <div class="muted text-xs">ROI anual</div>
-            <div id="roi_m" class="kpi select-none">—</div>
-          </div>
-          <div class="col-span-2">
-            <div class="muted text-xs">Payback</div>
-            <div class="flex items-end gap-2">
-              <div id="payback_m" class="kpi select-none">—</div>
-              <span class="muted mb-1">meses</span>
-            </div>
-          </div>
-        </div>
-        <button id="btnPDF_m" class="mt-4 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 w-full">Descargar PDF</button>
-      </section>
-    </main>
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar self-start sticky top-6 space-y-6 hidden lg:block">
-      <div class="card" id="roiSide">
-        <h3 class="h3 mb-2">ROI & Payback</h3>
-        <div class="muted text-sm">Resumen siempre visible</div>
-        <div class="mt-5 grid grid-cols-2 gap-5">
-          <div>
-            <div class="muted text-xs">Ahorro mensual total</div>
-            <div id="ahorroTotal" class="kpi select-none">$0</div>
-          </div>
-          <div>
-            <div class="muted text-xs">ROI anual</div>
-            <div id="roi" class="kpi select-none">—</div>
-          </div>
-          <div class="col-span-2">
-            <div class="muted text-xs">Payback</div>
-            <div class="flex items-end gap-2">
-              <div id="payback" class="kpi select-none">—</div>
-              <span class="muted mb-1">meses</span>
-            </div>
-          </div>
-        </div>
-        <button id="btnPDF" class="mt-5 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 w-full">Descargar PDF</button>
-      </div>
-      <div class="card">
-        <h3 class="h3 mb-3">Acciones</h3>
-        <div class="flex flex-col gap-3">
-          <button id="btnExportSidebar" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Exportar JSON</button>
-          <button id="btnResetSidebar" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Restablecer</button>
-        </div>
-      </div>
     </aside>
   </div>
 
-  <footer class="max-w-7xl mx-auto px-4 md:px-6 py-12 text-center muted">
-    Hecha por AlexRaSa + GPT · Tailwind + Chart.js · <span class="text-xs">Autosave activado</span>
+  <footer class="wrap py-10 text-center muted">
+    Hecha por AlexRaSa + GPT · Tailwind + Chart.js · <span class="text-xs">Autosave</span>
   </footer>
 
 <script>
@@ -272,7 +219,7 @@
   const fmt = (n, d=2) => Number(n).toLocaleString(undefined, {maximumFractionDigits: d});
   const money = (n) => `$${fmt(n)}`;
   const FIELD_IDS = ['diasMes','costoHora','costoPieza','horasTurno','horaComida','turnos','horasProductivas','cicloA','vidaA','ajusteMinA','progHA','cicloP','vidaP','ajusteMinP','progHP','costoHerr','metodoPerdidas','inversion'];
-  const LS_KEY = 'calc_cb_config_v3';
+  const LS_KEY = 'calc_cb_config_v4';
   let chartA, chartB;
 
   function loadFromStorage(){ try{ const raw = localStorage.getItem(LS_KEY); if(!raw) return; const obj = JSON.parse(raw); FIELD_IDS.forEach(id => { if(obj[id] !== undefined) $(id).value = obj[id]; }); }catch(e){}
@@ -318,10 +265,10 @@
 
     let ahorroPerdidasMensual = 0, ahorroAjusteMensual = 0;
     if(metodoPerdidas === 'pieza'){
-      ahorroPerdidasMensual = Math.max(0, (perdidasDiaA - perdidasDiaP)) * costoPieza * diasMes; $('lblPerdidas').textContent = 'Piezas perdidas';
+      ahorroPerdidasMensual = Math.max(0, (perdidasDiaA - perdidasDiaP)) * costoPieza * diasMes;
     } else {
       const horasAjusteA = ajusteMinA / 60, horasAjusteP = ajusteMinP / 60;
-      ahorroAjusteMensual = Math.max(0, (horasAjusteA - horasAjusteP)) * costoHora * diasMes; $('lblPerdidas').textContent = 'Tiempo de ajuste';
+      ahorroAjusteMensual = Math.max(0, (horasAjusteA - horasAjusteP)) * costoHora * diasMes;
     }
 
     const ahorroProgMensual = Math.max(0, (progHA - progHP)) * costoHora;
@@ -331,15 +278,15 @@
     const paybackMeses = (inversion > 0 && ahorroTotalMensual > 0) ? (inversion / ahorroTotalMensual) : null;
     const roiAnual = (inversion > 0) ? (ahorroAnual - inversion) / inversion : null;
 
-    // KPIs (side + mobile)
-    ['ahorroTotal','ahorroTotal_m'].forEach(id => { const el=$(id); if(el) el.textContent = money(ahorroTotalMensual); });
-    ['roi','roi_m'].forEach(id => { const el=$(id); if(el) el.textContent = (roiAnual==null) ? '—' : (fmt(roiAnual*100)+'%'); });
-    ['payback','payback_m'].forEach(id => { const el=$(id); if(el) el.textContent = (paybackMeses==null||!isFinite(paybackMeses)) ? '—' : fmt(paybackMeses); });
+    // KPIs
+    $('ahorroTotal').textContent = money(ahorroTotalMensual);
+    $('roi').textContent = (roiAnual==null) ? '—' : (fmt(roiAnual*100)+'%');
+    $('payback').textContent = (paybackMeses==null || !isFinite(paybackMeses)) ? '—' : fmt(paybackMeses);
 
     // Resultados
     $('ahorroProd').textContent = money(mejoraProdMensual);
     $('ahorroHerr').textContent = money(ahorroHerrMensual);
-    $('ahorroPerdidas').textContent = money(ahorroPerdidasMensual + ahorroAjusteMensual);
+    document.getElementById('ahorroPerdidas')?.replaceChildren(document.createTextNode(money(ahorroPerdidasMensual + ahorroAjusteMensual)));
     $('ahorroProg').textContent = money(ahorroProgMensual);
 
     // Resumen comparativo
@@ -351,7 +298,7 @@
     $('ajusteH').textContent = `${fmt(ajusteMinA/60)} → ${fmt(ajusteMinP/60)} h/día`;
 
     drawCharts({
-      labels:['Productividad','Herramienta',(metodoPerdidas==='pieza'?'Pérdidas':'Ajuste'),'Programación'],
+      labels:['Productividad','Herramienta','Pérdidas/Ajuste','Programación'],
       data:[mejoraProdMensual, ahorroHerrMensual, (metodoPerdidas==='pieza'?ahorroPerdidasMensual:ahorroAjusteMensual), ahorroProgMensual]
     }, { pphA, pphP, pdiaA, pdiaP });
 
@@ -375,7 +322,7 @@
   }
 
   function renderTabla(rows){
-    const tbody = $('tbodyComp');
+    const tbody = document.getElementById('tbodyComp');
     tbody.innerHTML = '';
     rows.forEach(([name,a,p,delta]) => {
       const up = (typeof a==='number' && typeof p==='number') ? (p>a) : false;
@@ -386,61 +333,47 @@
     });
   }
 
-  // PDF
   async function generatePDF(){
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit:'pt', format:'a4' });
     const margin = 32; let y = margin;
     const date = new Date().toLocaleString();
 
-    // Título
     pdf.setFont('helvetica','bold'); pdf.setFontSize(16);
     pdf.text('Resumen Costo‑Beneficio', margin, y); y += 18;
     pdf.setFont('helvetica','normal'); pdf.setFontSize(10);
     pdf.text(`Generado: ${date}`, margin, y); y += 16;
 
-    // KPIs
-    const ahorro = $('ahorroTotal').textContent || $('ahorroTotal_m').textContent;
-    const roi = $('roi').textContent || $('roi_m').textContent;
-    const payback = $('payback').textContent || $('payback_m').textContent;
-
+    const ahorro = document.getElementById('ahorroTotal').textContent;
+    const roi = document.getElementById('roi').textContent;
+    const payback = document.getElementById('payback').textContent;
     pdf.setFontSize(12);
     pdf.text(`Ahorro mensual total: ${ahorro}`, margin, y); y += 16;
     pdf.text(`ROI anual: ${roi}`, margin, y); y += 16;
     pdf.text(`Payback: ${payback} meses`, margin, y); y += 24;
 
-    // Charts como imágenes
     const c1 = document.getElementById('chartAhorros');
     const c2 = document.getElementById('chartProductividad');
-    for (const c of [c1,c2]){
-      const dataURL = c.toDataURL('image/png', 1.0);
-      pdf.addImage(dataURL, 'PNG', margin, y, 531, 200); // A4 width ~ 595pt
-      y += 210;
-    }
+    for (const c of [c1,c2]){ const dataURL = c.toDataURL('image/png', 1.0); pdf.addImage(dataURL, 'PNG', margin, y, 531, 200); y += 210; }
 
-    // Tabla comparativa (captura del bloque)
     const comp = document.getElementById('comparativa');
     const canvas = await html2canvas(comp, { scale: 2, backgroundColor: null });
     const img = canvas.toDataURL('image/png', 1.0);
     if (y + 300 > 800) { pdf.addPage(); y = margin; }
-    pdf.addImage(img, 'PNG', margin, y, 531, 0); // auto height
+    pdf.addImage(img, 'PNG', margin, y, 531, 0);
 
     pdf.save('Resumen_Costo_Beneficio.pdf');
   }
 
   // Eventos
   FIELD_IDS.forEach(id => $(id).addEventListener('input', recalc));
-  $('btnExport').addEventListener('click', () => { const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href = url; a.download = 'config_calculadora.json'; a.click(); URL.revokeObjectURL(url); });
-  $('btnExportSidebar').addEventListener('click', () => $('btnExport').click());
-  $('btnReset').addEventListener('click', () => { localStorage.removeItem(LS_KEY); window.location.reload(); });
-  $('btnResetSidebar').addEventListener('click', () => $('btnReset').click());
-  $('btnClearStorage').addEventListener('click', () => { localStorage.removeItem(LS_KEY); alert('Guardado local eliminado'); });
-  $('btnPDF').addEventListener('click', generatePDF);
-  const btnPDFm = $('btnPDF_m'); if (btnPDFm) btnPDFm.addEventListener('click', generatePDF);
+  document.getElementById('btnExport').addEventListener('click', () => { const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href = url; a.download = 'config_calculadora.json'; a.click(); URL.revokeObjectURL(url); });
+  document.getElementById('btnReset').addEventListener('click', () => { localStorage.removeItem(LS_KEY); window.location.reload(); });
+  document.getElementById('btnClearStorage').addEventListener('click', () => { localStorage.removeItem(LS_KEY); alert('Guardado local eliminado'); });
+  document.getElementById('btnPDF').addEventListener('click', generatePDF);
 
   // INIT
-  loadFromStorage();
-  recalc();
+  (function init(){ loadFromStorage(); recalc(); })();
 </script>
 </body>
 </html>
