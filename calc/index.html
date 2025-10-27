@@ -37,6 +37,8 @@
     .delta{ @apply inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold border; }
     .delta.up{ @apply text-emerald-600 dark:text-emerald-400 border-emerald-300/40 bg-emerald-500/10; }
     .delta.down{ @apply text-rose-600 dark:text-rose-400 border-rose-300/40 bg-rose-500/10; }
+    /* Encendido/Apagado visual */
+    .off{ opacity:.5; filter:grayscale(.2); }
 
     /* ===== Charts ===== */
     .chart-wrap{ @apply rounded-2xl p-4 bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60; }
@@ -153,6 +155,27 @@
 
     <!-- COLUMNA DERECHA: KPIs + GRÁFICAS + COMPARATIVA + PDF -->
     <aside class="space-y-6">
+      <!-- Tipos de ahorro a incluir -->
+      <section class="card section">
+        <h2 class="h2">Tipos de ahorro</h2>
+        <p class="muted text-sm">Elige qué rubros participan en el cálculo del total.</p>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center gap-2"><input id="incProd" type="checkbox" checked><span>Mejora productiva</span></label>
+          <label class="flex items-center gap-2"><input id="incHerr" type="checkbox" checked><span>Vida de herramienta</span></label>
+          <label class="flex items-center gap-2"><input id="incPerd" type="checkbox" checked><span>Pérdidas/Ajuste</span></label>
+          <label class="flex items-center gap-2"><input id="incProg" type="checkbox" checked><span>Programación</span></label>
+          <label class="flex items-center gap-2 col-span-2"><input id="incProc" type="checkbox"><span>Proceso (hojas de proceso u otros)</span></label>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-3 items-end">
+          <div>
+            <label class="block text-sm font-semibold mb-1">Ahorro por proceso (USD/mes)</label>
+            <input id="procMensual" type="number" step="0.01" value="0" class="input" />
+          </div>
+          <div class="text-sm muted">Se suma solo si activas la casilla de <em>Proceso</em>.</div>
+        </div>
+      </section>
+
+      <!-- ROI / Payback -->
       <section class="card section">
         <h2 class="h2">ROI & Payback</h2>
         <div class="grid grid-cols-2 gap-4">
@@ -178,11 +201,22 @@
         </div>
       </section>
 
+      <!-- Resultados por rubro (compacto) -->
+      <section class="section">
+        <div id="cardProd" class="rounded-2xl p-4 bg-gradient-to-br from-indigo-600 to-sky-500 text-white"><div class="text-xs/5 opacity-90">Mejora productiva</div><div id="ahorroProd" class="text-2xl font-black mt-1 select-none">$0</div></div>
+        <div id="cardHerr" class="rounded-2xl p-4 bg-gradient-to-br from-emerald-600 to-lime-500 text-white"><div class="text-xs/5 opacity-90">Vida de herramienta</div><div id="ahorroHerr" class="text-2xl font-black mt-1 select-none">$0</div></div>
+        <div id="cardPerd" class="rounded-2xl p-4 bg-gradient-to-br from-fuchsia-600 to-pink-500 text-white"><div class="text-xs/5 opacity-90">Pérdidas/Ajuste</div><div id="ahorroPerdidas" class="text-2xl font-black mt-1 select-none">$0</div></div>
+        <div id="cardProg" class="rounded-2xl p-4 bg-gradient-to-br from-amber-600 to-orange-500 text-white"><div class="text-xs/5 opacity-90">Programación</div><div id="ahorroProg" class="text-2xl font-black mt-1 select-none">$0</div></div>
+        <div id="cardProc" class="rounded-2xl p-4 bg-gradient-to-br from-slate-700 to-slate-500 text-white"><div class="text-xs/5 opacity-90">Proceso (manual)</div><div id="ahorroProc" class="text-2xl font-black mt-1 select-none">$0</div></div>
+      </section>
+
+      <!-- GRÁFICAS -->
       <section class="section">
         <div class="chart-wrap"><canvas id="chartAhorros"></canvas></div>
         <div class="chart-wrap"><canvas id="chartProductividad"></canvas></div>
       </section>
 
+      <!-- Comparativa -->
       <section class="card section" id="comparativa">
         <h2 class="h2">Comparativa rápida</h2>
         <div class="overflow-x-auto">
@@ -218,14 +252,26 @@
   const $ = (id) => document.getElementById(id);
   const fmt = (n, d=2) => Number(n).toLocaleString(undefined, {maximumFractionDigits: d});
   const money = (n) => `$${fmt(n)}`;
-  const FIELD_IDS = ['diasMes','costoHora','costoPieza','horasTurno','horaComida','turnos','horasProductivas','cicloA','vidaA','ajusteMinA','progHA','cicloP','vidaP','ajusteMinP','progHP','costoHerr','metodoPerdidas','inversion'];
+  const FIELD_IDS = ['diasMes','costoHora','costoPieza','horasTurno','horaComida','turnos','horasProductivas','cicloA','vidaA','ajusteMinA','progHA','cicloP','vidaP','ajusteMinP','progHP','costoHerr','metodoPerdidas','inversion','procMensual'];
+  const CHECK_IDS = ['incProd','incHerr','incPerd','incProg','incProc'];
   const LS_KEY = 'calc_cb_config_v4';
   let chartA, chartB;
   let chartReady = false;
 
-  function loadFromStorage(){ try{ const raw = localStorage.getItem(LS_KEY); if(!raw) return; const obj = JSON.parse(raw); FIELD_IDS.forEach(id => { if(obj[id] !== undefined) $(id).value = obj[id]; }); }catch(e){}
+  function loadFromStorage(){
+    try{
+      const raw = localStorage.getItem(LS_KEY); if(!raw) return; const obj = JSON.parse(raw);
+      FIELD_IDS.forEach(id => { if(obj[id] !== undefined) $(id).value = obj[id]; });
+      CHECK_IDS.forEach(id => { if($(id) && obj[id] !== undefined) $(id).checked = !!obj[id]; });
+    }catch(e){}
+  }); }catch(e){}
   }
-  function saveToStorage(){ const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); localStorage.setItem(LS_KEY, JSON.stringify(payload)); }
+  function saveToStorage(){
+    const payload = {};
+    FIELD_IDS.forEach(id => payload[id] = $(id).value);
+    CHECK_IDS.forEach(id => payload[id] = $(id) ? $(id).checked : undefined);
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+  }; FIELD_IDS.forEach(id => payload[id] = $(id).value); localStorage.setItem(LS_KEY, JSON.stringify(payload)); }
 
   function recalc(){
     if(!chartReady){ scheduleChartsInit(); }
@@ -275,7 +321,18 @@
     }
 
     const ahorroProgMensual = Math.max(0, (progHA - progHP)) * costoHora;
-    const ahorroTotalMensual = mejoraProdMensual + ahorroHerrMensual + ahorroPerdidasMensual + ahorroAjusteMensual + ahorroProgMensual;
+
+    // Ahorro manual por proceso
+    const procMensual = +($('procMensual')?.value || 0);
+
+    // Inclusiones
+    const incProd = $('incProd')?.checked ?? true;
+    const incHerr = $('incHerr')?.checked ?? true;
+    const incPerd = $('incPerd')?.checked ?? true;
+    const incProg = $('incProg')?.checked ?? true;
+    const incProc = $('incProc')?.checked ?? false;
+
+    const ahorroTotalMensual = (incProd?mejoraProdMensual:0) + (incHerr?ahorroHerrMensual:0) + (incPerd?(ahorroPerdidasMensual+ahorroAjusteMensual):0) + (incProg?ahorroProgMensual:0) + (incProc?procMensual:0);
 
     const ahorroAnual = ahorroTotalMensual * 12;
     const paybackMeses = (inversion > 0 && ahorroTotalMensual > 0) ? (inversion / ahorroTotalMensual) : null;
@@ -289,8 +346,13 @@
     // Resultados
     $('ahorroProd').textContent = money(mejoraProdMensual);
     $('ahorroHerr').textContent = money(ahorroHerrMensual);
-    document.getElementById('ahorroPerdidas')?.replaceChildren(document.createTextNode(money(ahorroPerdidasMensual + ahorroAjusteMensual)));
+    const ap = document.getElementById('ahorroPerdidas'); if(ap) ap.textContent = money(ahorroPerdidasMensual + ahorroAjusteMensual);
     $('ahorroProg').textContent = money(ahorroProgMensual);
+    const aproc = document.getElementById('ahorroProc'); if(aproc) aproc.textContent = money(procMensual);
+
+    // Visual on/off
+    const setOnOff = (id, on) => { const el = document.getElementById(id); if(!el) return; el.classList.toggle('off', !on); };
+    setOnOff('cardProd', incProd); setOnOff('cardHerr', incHerr); setOnOff('cardPerd', incPerd); setOnOff('cardProg', incProg); setOnOff('cardProc', incProc);
 
     // Resumen comparativo
     $('pph').textContent = `${fmt(pphA)} → ${fmt(pphP)} pzas/h`;
@@ -300,10 +362,14 @@
     $('perdidasDia').textContent = `${fmt(perdidasDiaA)} → ${fmt(perdidasDiaP)} pzas/día`;
     $('ajusteH').textContent = `${fmt(ajusteMinA/60)} → ${fmt(ajusteMinP/60)} h/día`;
 
-    drawCharts({
-      labels:['Productividad','Herramienta','Pérdidas/Ajuste','Programación'],
-      data:[mejoraProdMensual, ahorroHerrMensual, (metodoPerdidas==='pieza'?ahorroPerdidasMensual:ahorroAjusteMensual), ahorroProgMensual]
-    }, { pphA, pphP, pdiaA, pdiaP });
+    drawCharts((() => { 
+      const labels = ['Productividad','Herramienta','Pérdidas/Ajuste','Programación','Proceso'];
+      const values = [mejoraProdMensual, ahorroHerrMensual, (ahorroPerdidasMensual+ahorroAjusteMensual), ahorroProgMensual, procMensual];
+      const flags  = [incProd, incHerr, incPerd, incProg, incProc];
+      const L = [], V = [];
+      for(let i=0;i<labels.length;i++){ if(flags[i]){ L.push(labels[i]); V.push(values[i]); } }
+      return { labels: L.length?L:labels.slice(0,1), data: V.length?V:[0] };
+    })(), { pphA, pphP, pdiaA, pdiaP });
 
     renderTabla([
       ['Tiempo de ciclo (s)', cicloA, cicloP, ((cicloA-cicloP)/cicloA*100)],
@@ -382,6 +448,22 @@
 
   // Eventos
   FIELD_IDS.forEach(id => $(id).addEventListener('input', recalc));
+  CHECK_IDS.forEach(id => { const el=$(id); if(el) el.addEventListener('change', recalc); });
+  // Controles de proceso
+  const modeSel = document.getElementById('procModo');
+  if(modeSel){
+    modeSel.addEventListener('change', () => {
+      const isPieza = modeSel.value==='por_pieza';
+      document.getElementById('wrapProcMensual').classList.toggle('hidden', isPieza);
+      document.getElementById('wrapProcPieza').classList.toggle('hidden', !isPieza);
+      recalc();
+    });
+  }
+  // Controles de charts
+  document.getElementById('tipoAhorros')?.addEventListener('change', recalc);
+  document.getElementById('prodMetric')?.addEventListener('change', recalc);
+  document.getElementById('btnSaveChartA')?.addEventListener('click', () => { if(chartA) saveChartAsPNG(chartA, 'ahorros.png'); });
+  document.getElementById('btnSaveChartB')?.addEventListener('click', () => { if(chartB) saveChartAsPNG(chartB, 'productividad.png'); });
   document.getElementById('btnExport').addEventListener('click', () => { const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href = url; a.download = 'config_calculadora.json'; a.click(); URL.revokeObjectURL(url); });
   document.getElementById('btnReset').addEventListener('click', () => { localStorage.removeItem(LS_KEY); window.location.reload(); });
   document.getElementById('btnClearStorage').addEventListener('click', () => { localStorage.removeItem(LS_KEY); alert('Guardado local eliminado'); });
