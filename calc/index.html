@@ -51,6 +51,20 @@
       <input id="pmes" type="number" value="10000">
       <label>Inversión inicial (USD)</label>
       <input id="inversion" type="number" value="2000">
+      <div class="grid2">
+        <div>
+          <label>Días productivos/mes</label>
+          <input id="diasMes" type="number" value="22">
+        </div>
+        <div>
+          <label>Tiempo muerto actual (min/día)</label>
+          <input id="tmuertoA" type="number" value="120">
+        </div>
+        <div>
+          <label>Tiempo muerto propuesto (min/día)</label>
+          <input id="tmuertoP" type="number" value="30">
+        </div>
+      </div>
       <button id="btnCalcular">Calcular</button>
     </section>
 
@@ -77,6 +91,10 @@
         <div id="ahorro" class="result">$0</div>
       </div>
       <div class="kpi-box">
+        <div>Ahorro por tiempo muerto (USD/mes):</div>
+        <div id="ahorroTM" class="result">$0.00</div>
+      </div>
+      <div class="kpi-box">
         <div>ROI anual:</div>
         <div id="roi" class="result">0%</div>
       </div>
@@ -98,6 +116,9 @@
       const costoHora = +document.getElementById('costoHora').value || 0;
       const pmes = +document.getElementById('pmes').value || 0;
       const inversion = +document.getElementById('inversion').value || 0;
+      const diasMes = +document.getElementById('diasMes').value || 0;
+      const tmuertoA = +document.getElementById('tmuertoA').value || 0;
+      const tmuertoP = +document.getElementById('tmuertoP').value || 0;
 
       // Ahorros
       const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
@@ -106,7 +127,8 @@
       const costoHerrA = consA * costoHerr;
       const costoHerrP = consP * costoHerr;
       const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
-      const ahorroTotal = Math.max(0, ahorroCiclo + ahorroHerr);
+      const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora * diasMes; // horas/día * costo * días
+      const ahorroTotal = Math.max(0, ahorroCiclo + ahorroHerr + ahorroTM);
 
       const roiAnual = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
       const payback = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
@@ -114,6 +136,7 @@
       document.getElementById('ahorro').textContent = `$${fmt(ahorroTotal)}`;
       document.getElementById('roi').textContent = `${fmt(roiAnual)}%`;
       document.getElementById('payback').textContent = fmt(payback);
+      document.getElementById('ahorroTM').textContent = `$${fmt(ahorroTM)}`;
 
       // ===== Comparativa visual A vs P =====
       const pphA = cicloA>0 ? 3600/cicloA : 0;
@@ -143,6 +166,8 @@
         row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
         row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
         row('Consumo mensual herramienta (USD)', costoHerrA, costoHerrP, {higherIsBetter:false}),
+        row('Tiempo muerto (min/día)', tmuertoA, tmuertoP, {higherIsBetter:false}),
+        row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
         row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
       ].join('');
       document.getElementById('tbodyComp').innerHTML = rows;
