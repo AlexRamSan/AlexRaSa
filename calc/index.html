@@ -40,7 +40,7 @@
 
     /* ===== Charts ===== */
     .chart-wrap{ @apply rounded-2xl p-4 bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60; }
-    canvas{ width:100% !important; height:260px !important; }
+    canvas{ display:block; width:100% !important; height:260px !important; }
 
     /* ===== Header compacto ===== */
     .hero{ @apply relative overflow-hidden border-b border-slate-200/60 dark:border-slate-800/60; }
@@ -221,12 +221,15 @@
   const FIELD_IDS = ['diasMes','costoHora','costoPieza','horasTurno','horaComida','turnos','horasProductivas','cicloA','vidaA','ajusteMinA','progHA','cicloP','vidaP','ajusteMinP','progHP','costoHerr','metodoPerdidas','inversion'];
   const LS_KEY = 'calc_cb_config_v4';
   let chartA, chartB;
+  let chartReady = false;
 
   function loadFromStorage(){ try{ const raw = localStorage.getItem(LS_KEY); if(!raw) return; const obj = JSON.parse(raw); FIELD_IDS.forEach(id => { if(obj[id] !== undefined) $(id).value = obj[id]; }); }catch(e){}
   }
   function saveToStorage(){ const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); localStorage.setItem(LS_KEY, JSON.stringify(payload)); }
 
   function recalc(){
+    if(!chartReady){ scheduleChartsInit(); }
+
     const diasMes = +$('diasMes').value || 0;
     const costoHora = +$('costoHora').value || 0;
     const costoPieza = +$('costoPieza').value || 0;
@@ -316,8 +319,20 @@
   function drawCharts(ahorros, prod){
     const ctxA = document.getElementById('chartAhorros');
     const ctxB = document.getElementById('chartProductividad');
+    if(!window.Chart || !ctxA || !ctxB){ return; }
     if(chartA) chartA.destroy(); if(chartB) chartB.destroy();
-    chartA = new Chart(ctxA, { type:'doughnut', data:{ labels:ahorros.labels, datasets:[{ data:ahorros.data }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } });
+    chartA = new Chart(ctxA, { type:'doughnut', data:{ labels:ahorros.labels, datasets:[{ data:ahorros.data }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } } } });
+    chartB = new Chart(ctxB, { type:'bar', data:{ labels:['Pzas/h (A)','Pzas/h (P)','Pzas/día (A)','Pzas/día (P)'], datasets:[{ data:[prod.pphA, prod.pphP, prod.pdiaA, prod.pdiaP] }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } } });
+  }
+  function scheduleChartsInit(){
+    // Espera a que Chart.js esté disponible y el layout esté pintado
+    const tryInit = () => {
+      const ok = !!window.Chart && document.getElementById('chartAhorros') && document.getElementById('chartProductividad');
+      if(ok){ chartReady = true; recalc(); }
+      else { setTimeout(tryInit, 100); }
+    };
+    if(!chartReady) setTimeout(tryInit, 100);
+  }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } });
     chartB = new Chart(ctxB, { type:'bar', data:{ labels:['Pzas/h (A)','Pzas/h (P)','Pzas/día (A)','Pzas/día (P)'], datasets:[{ data:[prod.pphA, prod.pphP, prod.pdiaA, prod.pdiaP] }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
   }
 
@@ -373,7 +388,15 @@
   document.getElementById('btnPDF').addEventListener('click', generatePDF);
 
   // INIT
-  (function init(){ loadFromStorage(); recalc(); })();
+  (function init(){
+    loadFromStorage();
+    // Asegurar que las gráficas se inicialicen cuando Chart.js esté listo
+    if(window.Chart){ chartReady = true; }
+    // Recalc inicial tras primer frame para que los canvas tengan tamaño
+    requestAnimationFrame(() => { recalc(); });
+    // Redibujar al redimensionar
+    window.addEventListener('resize', () => { if(chartA||chartB) recalc(); });
+  })();
 </script>
 </body>
 </html>
