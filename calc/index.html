@@ -453,13 +453,13 @@
     }
 
     function renderBars(targetId, pairs){
-      const el = document.getElementById(targetId);
-      const W = Math.max(260, Math.min((el?.clientWidth||320), 520));
-      const barMax = W - 120;
-      const rowH=32, pad=16; const H = pad + pairs.length*(rowH+12) + pad + 20;
+      const W = 360;                // ancho base del SVG (estable para evitar fallos de cálculo)
+      const barMax = 240;           // largo máximo de barra
+      const rowH = 32, pad = 16;    // altura de fila y padding
+      const H = pad + pairs.length*(rowH+12) + pad + 20;
       const maxVal = Math.max(...pairs.flatMap(p=>[p[1],p[2]].map(v=>Math.abs(v)||0)), 1);
       const rows = pairs.map((p,i)=>{
-        const [label,a,b,lowerIsBetter] = p; const y = pad + i*(rowH+10);
+        const [label,a,b,lowerIsBetter] = p; const y = pad + i*(rowH+12);
         const aw = Math.round((Math.abs(a)/maxVal)*barMax), bw = Math.round((Math.abs(b)/maxVal)*barMax);
         const goodB = lowerIsBetter ? (b<a) : (b>a);
         return `
@@ -469,6 +469,14 @@
           <text x="${90+aw+4}" y="${y+9}" font-size="10" fill="#475569">${isFinite(a)?a.toFixed(1):'—'}</text>
           <text x="${90+bw+4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(b)?b.toFixed(1):'—'}</text>`;
       }).join('');
+      const legend = `
+        <rect x="90" y="${H-18}" width="10" height="10" fill="#94a3b8"></rect>
+        <text x="104" y="${H-9}" font-size="10" fill="#334155">Actual</text>
+        <rect x="150" y="${H-18}" width="10" height="10" fill="#22C55E"></rect>
+        <text x="164" y="${H-9}" font-size="10" fill="#334155">Propuesta</text>`;
+      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
+      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+    }).join('');
       const legend = `
         <rect x="90" y="${H-18}" width="10" height="10" fill="#94a3b8"></rect>
         <text x="104" y="${H-9}" font-size="10" fill="#334155">Actual</text>
