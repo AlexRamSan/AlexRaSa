@@ -34,6 +34,7 @@
       .grid2 { grid-template-columns: 1fr; }
       section { flex: 1 1 100%; }
     }
+  .off { opacity: .5; }
   </style>
 </head>
 <body>
@@ -71,6 +72,14 @@
           <input id="tmuertoP" type="number" value="30">
         </div>
       </div>
+
+      <h2 style="margin-top:1.25rem">Tipos de ahorro a incluir</h2>
+      <div class="grid2">
+        <label><input id="incCiclo" type="checkbox" checked> Reducir tiempo de ciclo</label>
+        <label><input id="incHerr" type="checkbox" checked> Aumentar vida de herramienta</label>
+        <label><input id="incTM" type="checkbox" checked> Reducir tiempo muerto</label>
+      </div>
+
       <button id="btnCalcular">Calcular</button>
     </section>
 
@@ -138,7 +147,17 @@
       const costoHerrP = consP * costoHerr;
       const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
       const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora * diasMes; // horas/día * costo * días
-      const ahorroTotal = Math.max(0, ahorroCiclo + ahorroHerr + ahorroTM);
+
+      // Inclusiones seleccionables
+      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
+      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
+      const incTM    = document.getElementById('incTM')?.checked ?? true;
+
+      const ahorroTotal = Math.max(0,
+        (incCiclo ? ahorroCiclo : 0) +
+        (incHerr  ? ahorroHerr  : 0) +
+        (incTM    ? ahorroTM    : 0)
+      );
 
       const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
       const roiAnual = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
@@ -149,6 +168,9 @@
       document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
       document.getElementById('payback').textContent = fmt(payback);
       document.getElementById('ahorroTM').textContent = `$${fmt(ahorroTM)}`;
+      // Atenuar si está excluido
+      const tmEl = document.getElementById('ahorroTM');
+      if(tmEl){ tmEl.parentElement.classList.toggle('off', !(document.getElementById('incTM')?.checked)); }
 
       // ===== Comparativa visual A vs P =====
       const pphA = cicloA>0 ? 3600/cicloA : 0;
@@ -184,6 +206,25 @@
       ].join('');
       document.getElementById('tbodyComp').innerHTML = rows;
     });
-  </script>
+    // === Inclusión por tipo de ahorro ===
+  function setEnabled(ids, on){
+    ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.disabled = !on; });
+  }
+  function applyInclusions(){
+    const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
+    const incHerr  = document.getElementById('incHerr')?.checked ?? true;
+    const incTM    = document.getElementById('incTM')?.checked ?? true;
+    // Habilitar/deshabilitar campos específicos (evitamos los compartidos como costoHora)
+    setEnabled(['cicloA','cicloP'], incCiclo);
+    setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
+    setEnabled(['tmuertoA','tmuertoP'], incTM);
+  }
+
+  // Hook checkboxes
+  ['incCiclo','incHerr','incTM'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.addEventListener('change', ()=>{ applyInclusions(); document.getElementById('btnCalcular').click(); }); }
+  });
+</script>
 </body>
 </html>
