@@ -11,7 +11,6 @@
   <meta name="color-scheme" content="dark light">
   <style>
     :root{color-scheme:light dark}
-    /* ===== Layout Base ===== */
     .wrap{ @apply max-w-7xl mx-auto px-4 md:px-6 pb-16; }
     .card{ @apply rounded-2xl shadow p-5 md:p-6 bg-white/85 dark:bg-slate-900/75 border border-slate-200/60 dark:border-slate-800/60; }
     .section{ @apply space-y-4 md:space-y-5; }
@@ -19,8 +18,6 @@
     .h3{ @apply text-lg md:text-xl font-semibold; }
     .muted{ @apply text-slate-600 dark:text-slate-400; }
     .kpi{ @apply text-3xl font-extrabold tracking-tight; }
-
-    /* ===== Inputs compactos ===== */
     .input{ width:100%; border-radius:0.75rem; border:1px solid; padding:0.45rem 0.65rem; background:white; color:#0f172a; border-color:#cbd5e1; height:2.25rem; font-size:16px; }
     .dark .input{ background:#0f172a; color:#f8fafc; border-color:#1f2937; }
     .input:focus{ outline:none; box-shadow:0 0 0 3px rgba(99,102,241,.25); border-color:#6366f1; }
@@ -28,8 +25,6 @@
     input[type=number]::-webkit-outer-spin-button,
     input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
     input[type=number]{ -moz-appearance:textfield; }
-
-    /* ===== Tabla ===== */
     table.comp{ @apply w-full text-sm border-separate; border-spacing:0 8px; }
     table.comp th{ @apply text-left text-slate-500 dark:text-slate-400 px-4; }
     table.comp td{ @apply px-4 py-3; }
@@ -37,21 +32,14 @@
     .delta{ @apply inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold border; }
     .delta.up{ @apply text-emerald-600 dark:text-emerald-400 border-emerald-300/40 bg-emerald-500/10; }
     .delta.down{ @apply text-rose-600 dark:text-rose-400 border-rose-300/40 bg-rose-500/10; }
-    /* Encendido/Apagado visual */
     .off{ opacity:.5; filter:grayscale(.2); }
-
-    /* ===== Charts ===== */
     .chart-wrap{ @apply rounded-2xl p-4 bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60; }
     canvas{ display:block; width:100% !important; height:260px !important; }
-
-    /* ===== Header compacto ===== */
     .hero{ @apply relative overflow-hidden border-b border-slate-200/60 dark:border-slate-800/60; }
-    .hero .inner{ @apply wrap py-6 md:py-8; } /* menos alto */
+    .hero .inner{ @apply wrap py-6 md:py-8; }
     .hero h1{ @apply text-2xl md:text-3xl font-black tracking-tight; }
     .hero p{ @apply muted mt-2; }
     .hero-bg{ @apply absolute inset-0 -z-10 opacity-40; }
-
-    /* ===== Responsive Grid principal: izquierda (formularios) / derecha (KPIs+gráficas) ===== */
     .grid-main{ @apply wrap grid gap-8 lg:gap-10 lg:grid-cols-[520px,1fr]; }
     @media (max-width:1023px){ .grid-main{ @apply grid-cols-1; } }
   </style>
@@ -177,7 +165,36 @@
 
       <!-- ROI / Payback -->
       <section class="card section">
-        <h2 class="h2">ROI & Payback</h2>
+        <h2 class="h2">Tipos de ahorro</h2>
+        <p class="muted text-sm">Elige qué rubros participan en el cálculo del total.</p>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center gap-2"><input id="incProd" type="checkbox" checked><span>Mejora productiva</span></label>
+          <label class="flex items-center gap-2"><input id="incHerr" type="checkbox" checked><span>Vida de herramienta</span></label>
+          <label class="flex items-center gap-2"><input id="incPerd" type="checkbox" checked><span>Pérdidas/Ajuste</span></label>
+          <label class="flex items-center gap-2"><input id="incProg" type="checkbox" checked><span>Programación</span></label>
+          <label class="flex items-center gap-2 col-span-2"><input id="incProc" type="checkbox"><span>Proceso (hojas de proceso u otros)</span></label>
+        </div>
+        <div class="grid md:grid-cols-2 gap-3 items-end mt-3">
+          <div>
+            <label class="block text-sm font-semibold mb-1">Modo de proceso</label>
+            <select id="procModo" class="input">
+              <option value="mensual" selected>USD/mes (valor fijo)</option>
+              <option value="por_pieza">USD/pieza (se multiplica por producción propuesta)</option>
+            </select>
+          </div>
+          <div id="wrapProcMensual">
+            <label class="block text-sm font-semibold mb-1">Ahorro por proceso (USD/mes)</label>
+            <input id="procMensual" type="number" step="0.01" value="0" class="input" />
+          </div>
+          <div id="wrapProcPieza" class="hidden">
+            <label class="block text-sm font-semibold mb-1">Ahorro por proceso (USD/pieza)</label>
+            <input id="procPorPieza" type="number" step="0.0001" value="0" class="input" />
+          </div>
+        </div>
+      </section>
+
+      <section class="card section">
+        <h2 class="h2">ROI & Payback/h2>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <div class="muted text-xs">Ahorro mensual total</div>
@@ -212,11 +229,37 @@
 
       <!-- GRÁFICAS -->
       <section class="section">
-        <div class="chart-wrap"><canvas id="chartAhorros"></canvas></div>
-        <div class="chart-wrap"><canvas id="chartProductividad"></canvas></div>
+        <div class="card section">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="h2">Gráfico de ahorros</h2>
+            <div class="flex items-center gap-2">
+              <label class="text-sm">Tipo</label>
+              <select id="tipoAhorros" class="input" style="width: 11rem;">
+                <option value="donut" selected>Donut</option>
+                <option value="bar">Barras</option>
+              </select>
+              <button id="btnSaveChartA" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Descargar PNG</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="chartAhorros"></canvas></div>
+        </div>
+
+        <div class="card section">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="h2">Gráfico de productividad</h2>
+            <div class="flex items-center gap-2">
+              <label class="text-sm">Métrica</label>
+              <select id="prodMetric" class="input" style="width: 12rem;">
+                <option value="pph" selected>Piezas por hora</option>
+                <option value="pdia">Piezas por día</option>
+              </select>
+              <button id="btnSaveChartB" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Descargar PNG</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="chartProductividad"></canvas></div>
+        </div>
       </section>
 
-      <!-- Comparativa -->
       <section class="card section" id="comparativa">
         <h2 class="h2">Comparativa rápida</h2>
         <div class="overflow-x-auto">
@@ -252,7 +295,8 @@
   const $ = (id) => document.getElementById(id);
   const fmt = (n, d=2) => Number(n).toLocaleString(undefined, {maximumFractionDigits: d});
   const money = (n) => `$${fmt(n)}`;
-  const FIELD_IDS = ['diasMes','costoHora','costoPieza','horasTurno','horaComida','turnos','horasProductivas','cicloA','vidaA','ajusteMinA','progHA','cicloP','vidaP','ajusteMinP','progHP','costoHerr','metodoPerdidas','inversion','procMensual'];
+  const FIELD_IDS = ['diasMes','costoHora','costoPieza','horasTurno','horaComida','turnos','horasProductivas','cicloA','vidaA','ajusteMinA','progHA','cicloP','vidaP','ajusteMinP','progHP','costoHerr','metodoPerdidas','inversion','procMensual','procModo','procPorPieza','tipoAhorros','prodMetric'];
+  const CHECK_IDS = ['incProd','incHerr','incPerd','incProg','incProc'];
   const CHECK_IDS = ['incProd','incHerr','incPerd','incProg','incProc'];
   const LS_KEY = 'calc_cb_config_v4';
   let chartA, chartB;
@@ -275,7 +319,6 @@
 
   function recalc(){
     if(!chartReady){ scheduleChartsInit(); }
-
     const diasMes = +$('diasMes').value || 0;
     const costoHora = +$('costoHora').value || 0;
     const costoPieza = +$('costoPieza').value || 0;
@@ -298,17 +341,20 @@
     const metodoPerdidas = $('metodoPerdidas').value;
     const inversion = +$('inversion').value || 0;
 
-    // Productividad
+    // Productividad base
     const pphA = 3600 / cicloA, pphP = 3600 / cicloP;
     const pdiaA = pphA * horasProductivas, pdiaP = pphP * horasProductivas;
     const pmesA = pdiaA * diasMes, pmesP = pdiaP * diasMes;
 
+    // Mejora productiva valorada por pieza extra
     const mejoraProdMensual = Math.max(0, (pmesP - pmesA)) * costoPieza;
 
+    // Herramienta
     const costHerrDiaA = (vidaA>0) ? (pdiaA / vidaA) * costoHerr : 0;
     const costHerrDiaP = (vidaP>0) ? (pdiaP / vidaP) * costoHerr : 0;
     const ahorroHerrMensual = Math.max(0, (costHerrDiaA - costHerrDiaP)) * diasMes;
 
+    // Pérdidas / ajuste
     const perdidasDiaA = (ajusteMinA * 60) / cicloA;
     const perdidasDiaP = (ajusteMinP * 60) / cicloP;
 
@@ -322,8 +368,11 @@
 
     const ahorroProgMensual = Math.max(0, (progHA - progHP)) * costoHora;
 
-    // Ahorro manual por proceso
-    const procMensual = +($('procMensual')?.value || 0);
+    // Ahorro por proceso (mensual fijo o por pieza)
+    const modo = $('procModo')?.value || 'mensual';
+    const procMensualFijo = +($('procMensual')?.value || 0);
+    const procPorPieza = +($('procPorPieza')?.value || 0);
+    const ahorroProcCalc = (modo === 'por_pieza') ? (pmesP * procPorPieza) : procMensualFijo;
 
     // Inclusiones
     const incProd = $('incProd')?.checked ?? true;
@@ -332,7 +381,7 @@
     const incProg = $('incProg')?.checked ?? true;
     const incProc = $('incProc')?.checked ?? false;
 
-    const ahorroTotalMensual = (incProd?mejoraProdMensual:0) + (incHerr?ahorroHerrMensual:0) + (incPerd?(ahorroPerdidasMensual+ahorroAjusteMensual):0) + (incProg?ahorroProgMensual:0) + (incProc?procMensual:0);
+    const ahorroTotalMensual = (incProd?mejoraProdMensual:0) + (incHerr?ahorroHerrMensual:0) + (incPerd?(ahorroPerdidasMensual+ahorroAjusteMensual):0) + (incProg?ahorroProgMensual:0) + (incProc?ahorroProcCalc:0);
 
     const ahorroAnual = ahorroTotalMensual * 12;
     const paybackMeses = (inversion > 0 && ahorroTotalMensual > 0) ? (inversion / ahorroTotalMensual) : null;
@@ -348,7 +397,7 @@
     $('ahorroHerr').textContent = money(ahorroHerrMensual);
     const ap = document.getElementById('ahorroPerdidas'); if(ap) ap.textContent = money(ahorroPerdidasMensual + ahorroAjusteMensual);
     $('ahorroProg').textContent = money(ahorroProgMensual);
-    const aproc = document.getElementById('ahorroProc'); if(aproc) aproc.textContent = money(procMensual);
+    const aproc = document.getElementById('ahorroProc'); if(aproc) aproc.textContent = money(ahorroProcCalc);
 
     // Visual on/off
     const setOnOff = (id, on) => { const el = document.getElementById(id); if(!el) return; el.classList.toggle('off', !on); };
@@ -364,7 +413,7 @@
 
     drawCharts((() => { 
       const labels = ['Productividad','Herramienta','Pérdidas/Ajuste','Programación','Proceso'];
-      const values = [mejoraProdMensual, ahorroHerrMensual, (ahorroPerdidasMensual+ahorroAjusteMensual), ahorroProgMensual, procMensual];
+      const values = [mejoraProdMensual, ahorroHerrMensual, (ahorroPerdidasMensual+ahorroAjusteMensual), ahorroProgMensual, ahorroProcCalc];
       const flags  = [incProd, incHerr, incPerd, incProg, incProc];
       const L = [], V = [];
       for(let i=0;i<labels.length;i++){ if(flags[i]){ L.push(labels[i]); V.push(values[i]); } }
@@ -386,6 +435,33 @@
     const ctxA = document.getElementById('chartAhorros');
     const ctxB = document.getElementById('chartProductividad');
     if(!window.Chart || !ctxA || !ctxB){ return; }
+
+    const tipoA = (document.getElementById('tipoAhorros')?.value || 'donut');
+    const prodMetric = (document.getElementById('prodMetric')?.value || 'pph');
+
+    if(chartA) chartA.destroy(); if(chartB) chartB.destroy();
+
+    chartA = new Chart(ctxA, {
+      type: (tipoA==='bar'?'bar':'doughnut'),
+      data: { labels: ahorros.labels, datasets: [{ data: ahorros.data }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' }, tooltip:{ enabled:true } }, scales: (tipoA==='bar'?{ y:{ beginAtZero:true } }:{}) }
+    });
+
+    const labelsB = (prodMetric==='pdia') ? ['Pzas/día (A)','Pzas/día (P)'] : ['Pzas/h (A)','Pzas/h (P)'];
+    const valuesB = (prodMetric==='pdia') ? [prod.pdiaA, prod.pdiaP] : [prod.pphA, prod.pphP];
+
+    chartB = new Chart(ctxB, {
+      type: 'bar',
+      data: { labels: labelsB, datasets: [{ data: valuesB }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ enabled:true } }, scales:{ y:{ beginAtZero:true } } }
+    });
+  }
+  function saveChartAsPNG(chart, filename){
+    const link = document.createElement('a');
+    link.href = chart.toBase64Image('image/png', 1.0);
+    link.download = filename;
+    link.click();
+  }
     if(chartA) chartA.destroy(); if(chartB) chartB.destroy();
     chartA = new Chart(ctxA, { type:'doughnut', data:{ labels:ahorros.labels, datasets:[{ data:ahorros.data }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } } } });
     chartB = new Chart(ctxB, { type:'bar', data:{ labels:['Pzas/h (A)','Pzas/h (P)','Pzas/día (A)','Pzas/día (P)'], datasets:[{ data:[prod.pphA, prod.pphP, prod.pdiaA, prod.pdiaP] }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } } });
@@ -467,18 +543,29 @@
   document.getElementById('btnExport').addEventListener('click', () => { const payload = {}; FIELD_IDS.forEach(id => payload[id] = $(id).value); const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href = url; a.download = 'config_calculadora.json'; a.click(); URL.revokeObjectURL(url); });
   document.getElementById('btnReset').addEventListener('click', () => { localStorage.removeItem(LS_KEY); window.location.reload(); });
   document.getElementById('btnClearStorage').addEventListener('click', () => { localStorage.removeItem(LS_KEY); alert('Guardado local eliminado'); });
-  document.getElementById('btnPDF').addEventListener('click', generatePDF);
+  document.getElementById('btnPDF')?.addEventListener('click', generatePDF);
+  // También recalcular cuando cambia el método de pérdidas
+  document.getElementById('metodoPerdidas')?.addEventListener('change', recalc);
 
   // INIT
-  (function init(){
+  function init(){
     loadFromStorage();
-    // Asegurar que las gráficas se inicialicen cuando Chart.js esté listo
+    // Estado inicial del modo Proceso
+    const modeSel = document.getElementById('procModo');
+    if(modeSel){
+      const isPieza = modeSel.value==='por_pieza';
+      document.getElementById('wrapProcMensual').classList.toggle('hidden', isPieza);
+      document.getElementById('wrapProcPieza').classList.toggle('hidden', !isPieza);
+    }
     if(window.Chart){ chartReady = true; }
-    // Recalc inicial tras primer frame para que los canvas tengan tamaño
     requestAnimationFrame(() => { recalc(); });
-    // Redibujar al redimensionar
     window.addEventListener('resize', () => { if(chartA||chartB) recalc(); });
-  })();
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 </script>
 </body>
 </html>
