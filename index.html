@@ -22,6 +22,7 @@
   <meta property="og:site_name" content="AlexRaSa" />
   <meta property="og:locale" content="es_MX" />
   <meta name="twitter:card" content="summary_large_image" />
+
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
   <link rel="preload" as="image" href="/assets/hero-industrial.png" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -39,16 +40,44 @@
     .modal-enter{opacity:0}
     .modal-enter.modal-open{opacity:1;transition:opacity .2s ease}
 
-    /* === Backdrop móvil (fade-in, sólido) === */
+    /* === Backdrop móvil (ocupa toda la pantalla, con blur y fade) === */
     #mobileBackdrop{
-      transition: opacity .25s ease;
-      opacity: 0;
-      pointer-events: none;
+      position:fixed; inset:0; z-index:40;
+      background:rgba(15,23,42,.85); /* slate-900/85 */
+      backdrop-filter: blur(4px);
+      opacity:0; pointer-events:none; transition:opacity .25s ease;
     }
-    #mobileBackdrop.show{
-      opacity: 1;
-      pointer-events: all;
+    #mobileBackdrop.active{ opacity:1; pointer-events:auto; }
+
+    /* === Panel móvil full screen (fondo sólido blanco) === */
+    #mobilePanel{
+      position:fixed; inset:0; z-index:50;
+      background:#ffffff;
+      border-left: 1px solid #e5e7eb;
+      box-shadow: 0 10px 40px rgba(0,0,0,.18);
+      transform: translateY(100%);
+      transition: transform .25s ease;
+      display:flex; flex-direction:column;
     }
+    #mobilePanel.active{ transform: translateY(0); }
+
+    /* Evitar que el header tape el backdrop */
+    #siteHeader{ z-index:30; }
+
+    /* Estilos locales sección SOLUCIONES */
+    #soluciones .card{border-radius:14px;padding:16px;border:1px solid #e5e7eb;background:#fff;display:flex;flex-direction:column;gap:10px;height:100%;transition:box-shadow .25s,transform .25s;}
+    #soluciones .card:hover{box-shadow:0 8px 28px rgba(15,23,42,.08);transform:translateY(-2px);}
+    #soluciones .logo-top{height:40px;display:flex;align-items:center;}
+    #soluciones .logo-top img{max-height:40px;max-width:140px;object-fit:contain;}
+    #soluciones .card h3{font-weight:700;line-height:1.2;}
+    #soluciones .card ul{margin-top:6px;}
+    #soluciones .card li{font-size:13px;color:#374151;}
+    #soluciones .btn{font-size:12px;padding:8px 12px;border-radius:10px;}
+    #soluciones .scam{background:linear-gradient(180deg,#fff,#fff5f6);border-color:#fecaca;}
+    #soluciones .lantek{background:linear-gradient(180deg,#fff,#f0fdf4);border-color:#bbf7d0;}
+    #soluciones .logopress{background:linear-gradient(180deg,#fff,#eef2ff);border-color:#c7d2fe;}
+    #soluciones .artec{background:linear-gradient(180deg,#fff,#fff7ed);border-color:#fed7aa;}
+    #soluciones .d3s{background:linear-gradient(180deg,#fff,#eff6ff);border-color:#bfdbfe;}
   </style>
 
   <!-- GA4 -->
@@ -61,8 +90,7 @@
 <body class="bg-gray-50 text-gray-800 antialiased">
 
   <!-- ===== HEADER ===== -->
-  <!-- z-50 -> z-30 para que no tape el backdrop -->
-  <header id="siteHeader" class="safe-top sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
+  <header id="siteHeader" class="safe-top sticky top-0 bg-white/90 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4">
       <div class="h-16 flex items-center justify-between gap-3">
         <a href="/#inicio" class="flex items-center gap-2" aria-label="Inicio">
@@ -91,18 +119,17 @@
       </div>
     </div>
 
-    <!-- Backdrop y panel móvil -->
-    <!-- IMPORTANTE: SIN 'hidden' para que .show controle opacidad/punteros -->
-    <div id="mobileBackdrop" class="fixed inset-0 z-40 bg-slate-900/90 backdrop-blur-sm"></div>
+    <!-- Backdrop y Panel móvil (full-screen) -->
+    <div id="mobileBackdrop" class=""></div>
 
-    <aside id="mobilePanel" class="fixed inset-y-0 right-0 z-50 w-[88%] max-w-sm translate-x-full transition-transform bg-white border-l border-gray-200 shadow-xl">
+    <aside id="mobilePanel" class="">
       <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
         <span class="text-base font-semibold">Menú</span>
         <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar">
           <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-      <nav class="px-3 py-4 text-[15px]">
+      <nav class="px-3 py-4 text-[15px] grow overflow-y-auto">
         <a href="/#sobre-mi" class="block px-3 py-2 rounded hover:bg-gray-100">Sobre mí</a>
         <a href="/#soluciones" class="block px-3 py-2 rounded hover:bg-gray-100">Soluciones</a>
         <a href="/#videos" class="block px-3 py-2 rounded hover:bg-gray-100">Videos</a>
@@ -134,7 +161,7 @@
     </div>
   </section>
 
-  <!-- ===== SOBRE MÍ (ENFOQUE PROFESIONAL) ===== -->
+  <!-- ===== SOBRE MÍ ===== -->
   <section id="sobre-mi" class="py-16 md:py-24 bg-white reveal">
     <div class="max-w-6xl mx-auto px-4">
       <div class="grid md:grid-cols-3 gap-10 items-center">
@@ -243,27 +270,12 @@
 
   <!-- ===== SOLUCIONES ===== -->
   <section id="soluciones" class="py-16 md:py-24 reveal">
-    <style>
-      #soluciones .card{border-radius:14px;padding:16px;border:1px solid #e5e7eb;background:#fff;display:flex;flex-direction:column;gap:10px;height:100%;transition:box-shadow .25s,transform .25s;}
-      #soluciones .card:hover{box-shadow:0 8px 28px rgba(15,23,42,.08);transform:translateY(-2px);}
-      #soluciones .logo-top{height:40px;display:flex;align-items:center;}
-      #soluciones .logo-top img{max-height:40px;max-width:140px;object-fit:contain;}
-      #soluciones .card h3{font-weight:700;line-height:1.2;}
-      #soluciones .card ul{margin-top:6px;}
-      #soluciones .card li{font-size:13px;color:#374151;}
-      #soluciones .btn{font-size:12px;padding:8px 12px;border-radius:10px;}
-      #soluciones .scam{background:linear-gradient(180deg,#fff,#fff5f6);border-color:#fecaca;}
-      #soluciones .lantek{background:linear-gradient(180deg,#fff,#f0fdf4);border-color:#bbf7d0;}
-      #soluciones .logopress{background:linear-gradient(180deg,#fff,#eef2ff);border-color:#c7d2fe;}
-      #soluciones .artec{background:linear-gradient(180deg,#fff,#fff7ed);border-color:#fed7aa;}
-      #soluciones .d3s{background:linear-gradient(180deg,#fff,#eff6ff);border-color:#bfdbfe;}
-    </style>
-
     <div class="max-w-6xl mx-auto px-4">
       <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Soluciones destacadas</h2>
       <p class="mt-2 text-gray-800">Brochures y ofertas técnicas enfocadas a resultados medibles.</p>
 
       <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+
         <article class="card scam">
           <div class="logo-top">
             <picture>
@@ -358,6 +370,7 @@
             <a href="/#contacto" class="btn border border-sky-300 text-sky-800 hover:bg-sky-50">Solicitar info</a>
           </div>
         </article>
+
       </div>
     </div>
   </section>
@@ -470,7 +483,7 @@
           <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500"></div>
           <div class="flex items-center justify-between">
             <h3 class="font-semibold text-gray-900">Guía rápida — iMachining (7 ajustes clave)</h3>
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Guía</span>
+            <span class="text:[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Guía</span>
           </div>
           <p class="mt-2 text-sm text-gray-800">Puntos con mayor impacto para reducir ciclo y estabilizar la carga.</p>
           <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20recurso%3A%20Gu%C3%ADa%20r%C3%A1pida%20iMachining" class="mt-4 inline-flex items-center gap-2 text-emerald-700 hover:underline text-sm">Solicitar guía →</a>
@@ -613,17 +626,16 @@
           mPanel=document.getElementById('mobilePanel'),
           mBg=document.getElementById('mobileBackdrop');
 
-    const openM=()=>{
-      mPanel.classList.remove('translate-x-full');
-      mBg.classList.add('show');           // muestra backdrop (opaco)
+    function openM(){
+      mPanel.classList.add('active');
+      mBg.classList.add('active');
       document.body.style.overflow='hidden';
-    };
-    const closeM=()=>{
-      mPanel.classList.add('translate-x-full');
-      mBg.classList.remove('show');        // oculta backdrop
+    }
+    function closeM(){
+      mPanel.classList.remove('active');
+      mBg.classList.remove('active');
       document.body.style.overflow='';
-    };
-
+    }
     mOpen?.addEventListener('click',openM);
     mClose?.addEventListener('click',closeM);
     mBg?.addEventListener('click',closeM);
@@ -662,14 +674,11 @@
       const action=form.getAttribute('action')||'';
       if(action.includes('/f/XXXXXXXX')){ window.location.href='mailto:ramirez.miguel.alejandro@gmail.com?subject=Contacto%20desde%20AlexRaSa.store'; return; }
       msg.classList.remove('hidden'); msg.textContent='Enviando...'; msg.className='mt-3 text-sm text-gray-600';
-      try{
-        const fd=new FormData(form);
+      try{const fd=new FormData(form);
         const res=await fetch(action,{method:'POST',headers:{'Accept':'application/json'},body:fd});
         if(res.ok){ form.reset(); msg.textContent='¡Gracias! Te responderé en menos de 24 h hábiles.'; msg.className='mt-3 text-sm text-green-700'; }
         else{ msg.textContent='No se pudo enviar. Intenta de nuevo o usa WhatsApp/correo.'; msg.className='mt-3 text-sm text-red-600'; }
-      }catch{
-        msg.textContent='Error de red. Intenta de nuevo o usa WhatsApp/correo.'; msg.className='mt-3 text-sm text-red-600';
-      }
+      }catch{ msg.textContent='Error de red. Intenta de nuevo o usa WhatsApp/correo.'; msg.className='mt-3 text-sm text-red-600'; }
     });
   </script>
 </body>
