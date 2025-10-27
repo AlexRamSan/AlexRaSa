@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora de Costo-Beneficio</title>
   <style>
+    * { box-sizing: border-box; }
     body { font-family: system-ui, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
     header { background: #1e293b; color: #fff; padding: 1rem 2rem; text-align: center; font-size: 1.25rem; font-weight: bold; }
-    main { display: flex; flex-wrap: wrap; gap: 2rem; padding: 2rem; max-width: 1200px; margin: auto; }
-    section { flex: 1 1 480px; background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+    main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 2rem; padding: 2rem; max-width: 1200px; margin: auto; }
+    section { flex: 1 1 480px; min-width: 320px; background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
     h2 { font-size: 1.2rem; border-bottom: 2px solid #e2e8f0; padding-bottom: .5rem; margin-bottom: 1rem; }
     label { display: block; margin-top: .75rem; font-weight: 600; }
     input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .4rem .6rem; font-size: .9rem; }
@@ -28,6 +29,11 @@
     .chip { display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.75rem; font-weight:700; }
     .chip-up { color:#166534; background:#dcfce7; border:1px solid #86efac; }
     .chip-down { color:#991b1b; background:#fee2e2; border:1px solid #fecaca; }
+
+    @media (max-width: 900px){
+      .grid2 { grid-template-columns: 1fr; }
+      section { flex: 1 1 100%; }
+    }
   </style>
 </head>
 <body>
@@ -99,6 +105,10 @@
         <div id="roi" class="result">0%</div>
       </div>
       <div class="kpi-box">
+        <div>ROI mensual:</div>
+        <div id="roiMensual" class="result">0%</div>
+      </div>
+      <div class="kpi-box">
         <div>Payback (meses):</div>
         <div id="payback" class="result">0</div>
       </div>
@@ -130,11 +140,13 @@
       const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora * diasMes; // horas/día * costo * días
       const ahorroTotal = Math.max(0, ahorroCiclo + ahorroHerr + ahorroTM);
 
+      const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
       const roiAnual = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
       const payback = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
 
       document.getElementById('ahorro').textContent = `$${fmt(ahorroTotal)}`;
       document.getElementById('roi').textContent = `${fmt(roiAnual)}%`;
+      document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
       document.getElementById('payback').textContent = fmt(payback);
       document.getElementById('ahorroTM').textContent = `$${fmt(ahorroTM)}`;
 
