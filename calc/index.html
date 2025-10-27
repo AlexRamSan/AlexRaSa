@@ -18,6 +18,16 @@
     #btnCalcular { display: block; width: 100%; background: #2563eb; color: white; border: none; padding: .75rem; font-size: 1rem; border-radius: .75rem; margin-top: 1.5rem; cursor: pointer; }
     #btnCalcular:hover { background: #1d4ed8; }
     .kpi-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; border-radius: .75rem; margin-top: 1rem; }
+    table.comp { width:100%; border-collapse:separate; border-spacing:0 8px; }
+    table.comp th { text-align:left; padding:.25rem .5rem; color:#475569; font-size:.9rem }
+    table.comp td { padding:.5rem .5rem; }
+    tr.row { background:#f8fafc; border:1px solid #e2e8f0; border-radius:.75rem; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+    tr.row td:first-child { border-top-left-radius:.75rem; border-bottom-left-radius:.75rem; }
+    tr.row td:last-child { border-top-right-radius:.75rem; border-bottom-right-radius:.75rem; }
+    .num { text-align:right; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .chip { display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.75rem; font-weight:700; }
+    .chip-up { color:#166534; background:#dcfce7; border:1px solid #86efac; }
+    .chip-down { color:#991b1b; background:#fee2e2; border:1px solid #fecaca; }
   </style>
 </head>
 <body>
@@ -45,7 +55,23 @@
     </section>
 
     <section>
-      <h2>Resultados</h2>
+      <h2>Comparativa A vs P</h2>
+      <div style="overflow:auto">
+        <table class="comp">
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th class="num">Actual</th>
+              <th class="num">Propuesta</th>
+              <th class="num">Δ Mejora</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyComp"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section><h2>Resultados</h2>
       <div class="kpi-box">
         <div>Ahorro mensual estimado:</div>
         <div id="ahorro" class="result">$0</div>
@@ -73,15 +99,53 @@
       const pmes = +document.getElementById('pmes').value || 0;
       const inversion = +document.getElementById('inversion').value || 0;
 
-      const ahorroCiclo = (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600);
-      const ahorroHerr = (vidaP > vidaA) ? ((1 - vidaA / vidaP) * (pmes / vidaP) * costoHerr) : 0;
+      // Ahorros
+      const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
+      const consA = (vidaA>0) ? (pmes / vidaA) : 0; // n° herramientas
+      const consP = (vidaP>0) ? (pmes / vidaP) : 0;
+      const costoHerrA = consA * costoHerr;
+      const costoHerrP = consP * costoHerr;
+      const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
       const ahorroTotal = Math.max(0, ahorroCiclo + ahorroHerr);
+
       const roiAnual = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
       const payback = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
 
       document.getElementById('ahorro').textContent = `$${fmt(ahorroTotal)}`;
       document.getElementById('roi').textContent = `${fmt(roiAnual)}%`;
       document.getElementById('payback').textContent = fmt(payback);
+
+      // ===== Comparativa visual A vs P =====
+      const pphA = cicloA>0 ? 3600/cicloA : 0;
+      const pphP = cicloP>0 ? 3600/cicloP : 0;
+      const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
+      const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
+
+      function delta(a,p,{higherIsBetter=true}={}){
+        if(a===0 && p===0) return {val:0, up:false};
+        const d = (p-a) / (a===0 ? 1 : a) * 100; // relativo al actual
+        const up = higherIsBetter ? d>0 : d<0; // verde si mejora en el sentido correcto
+        return {val:d, up};
+      }
+      function row(name,a,p,opt){
+        const d = delta(a,p,opt||{});
+        const chipClass = d.up? 'chip chip-up' : 'chip chip-down';
+        return `<tr class="row">
+          <td>${name}</td>
+          <td class="num">${isFinite(a)?fmt(a):'—'}</td>
+          <td class="num">${isFinite(p)?fmt(p):'—'}</td>
+          <td class="num"><span class="${chipClass}">${(d.val>=0?'+':'')+fmt(d.val)}</span></td>
+        </tr>`;
+      }
+      const rows = [
+        row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
+        row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
+        row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
+        row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
+        row('Consumo mensual herramienta (USD)', costoHerrA, costoHerrP, {higherIsBetter:false}),
+        row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
+      ].join('');
+      document.getElementById('tbodyComp').innerHTML = rows;
     });
   </script>
 </body>
