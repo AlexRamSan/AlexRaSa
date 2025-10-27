@@ -159,9 +159,9 @@
   </section>
 
   <!-- ===== CALCULADORA ===== -->
-  <main id="calc" class="max-w-6xl mx-auto px-4 py-10 md:py-14 grid gap-6 lg:grid-cols-3 reveal">
+  <main id="calc" class="max-w-6xl mx-auto px-4 py-10 md:py-14 grid gap-6 lg:grid-cols-8 reveal">
     <!-- FORM -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-1">
+    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
       <h2 class="text-lg font-semibold text-gray-900">Parámetros del proceso</h2>
       <div class="grid gap-3 mt-3">
         <label class="text-sm">Tiempo de ciclo actual (s)
@@ -212,7 +212,7 @@
     </section>
 
     <!-- TABLA -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-1">
+    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-3">
       <h2 class="text-lg font-semibold text-gray-900">Comparativa A vs P</h2>
       <div class="mt-3 overflow-auto">
         <table class="w-full border-separate [border-spacing:0_8px] text-sm">
@@ -230,7 +230,7 @@
     </section>
 
     <!-- KPIs + VISUALES -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-1">
+    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-3">
       <h2 class="text-lg font-semibold text-gray-900">Resultados</h2>
       <div class="mt-3 grid gap-3">
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
@@ -256,7 +256,7 @@
       </div>
 
       <h3 class="mt-6 text-base font-semibold text-gray-900">Visuales</h3>
-      <div class="mt-2 grid gap-3">
+      <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="rounded-lg border border-gray-200 p-3">
           <p class="text-sm font-semibold text-gray-700">Distribución de ahorros</p>
           <div id="vizAhorros" class="mt-2"></div>
@@ -453,11 +453,14 @@
     }
 
     function renderBars(targetId, pairs){
-      const W=320, rowH=28, pad=16; const H = pad + pairs.length*(rowH+10) + pad + 10;
+      const el = document.getElementById(targetId);
+      const W = Math.max(260, Math.min((el?.clientWidth||320), 520));
+      const barMax = W - 120;
+      const rowH=32, pad=16; const H = pad + pairs.length*(rowH+12) + pad + 20;
       const maxVal = Math.max(...pairs.flatMap(p=>[p[1],p[2]].map(v=>Math.abs(v)||0)), 1);
       const rows = pairs.map((p,i)=>{
         const [label,a,b,lowerIsBetter] = p; const y = pad + i*(rowH+10);
-        const aw = Math.round((Math.abs(a)/maxVal)*200), bw = Math.round((Math.abs(b)/maxVal)*200);
+        const aw = Math.round((Math.abs(a)/maxVal)*barMax), bw = Math.round((Math.abs(b)/maxVal)*barMax);
         const goodB = lowerIsBetter ? (b<a) : (b>a);
         return `
           <text x="0" y="${y+12}" font-size="12" fill="#334155">${label}</text>
