@@ -39,17 +39,16 @@
     .modal-enter{opacity:0}
     .modal-enter.modal-open{opacity:1;transition:opacity .2s ease}
 
-    /* === Backdrop móvil (fade-in) === */
-   #mobileBackdrop {
-  transition: opacity .25s ease;
-  opacity: 0;
-  pointer-events: none;
-}
-#mobileBackdrop.show {
-  opacity: 1;
-  pointer-events: all;
-}
-
+    /* === Backdrop móvil (fade-in, sólido) === */
+    #mobileBackdrop{
+      transition: opacity .25s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #mobileBackdrop.show{
+      opacity: 1;
+      pointer-events: all;
+    }
   </style>
 
   <!-- GA4 -->
@@ -92,8 +91,10 @@
       </div>
     </div>
 
-    <!-- Panel móvil -->
-    <div id="mobileBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/80 backdrop-blur-sm"></div>
+    <!-- Backdrop y panel móvil -->
+    <!-- IMPORTANTE: SIN 'hidden' para que .show controle opacidad/punteros -->
+    <div id="mobileBackdrop" class="fixed inset-0 z-40 bg-slate-900/90 backdrop-blur-sm"></div>
+
     <aside id="mobilePanel" class="fixed inset-y-0 right-0 z-50 w-[88%] max-w-sm translate-x-full transition-transform bg-white border-l border-gray-200 shadow-xl">
       <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
         <span class="text-base font-semibold">Menú</span>
@@ -409,7 +410,7 @@
       </div>
     </div>
 
-  <!-- Modal -->
+    <!-- Modal -->
     <div id="videoModal" class="fixed inset-0 z-[60] hidden">
       <div class="absolute inset-0 bg-black/70"></div>
       <div class="relative max-w-5xl mx-auto px-4 h-full flex items-center">
@@ -479,7 +480,7 @@
           <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-600 via-blue-500 to-sky-500"></div>
           <div class="flex items-center justify-between">
             <h3 class="font-semibold text-gray-900">Power BI — Tablero OEE inicial</h3>
-          <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">Dashboard</span>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">Dashboard</span>
           </div>
           <p class="mt-2 text-sm text-gray-800">Visualiza disponibilidad, rendimiento y calidad desde el día 1.</p>
           <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20recurso%3A%20Tablero%20OEE%20inicial" class="mt-4 inline-flex items-center gap-2 text-indigo-700 hover:underline text-sm">Solicitar tablero →</a>
@@ -607,19 +608,25 @@
   <!-- ===== SCRIPTS ===== -->
   <script>
     // Mobile menu
-    const mOpen=document.getElementById('mobileOpenBtn'),mClose=document.getElementById('mobileCloseBtn'),
-          mPanel=document.getElementById('mobilePanel'),mBg=document.getElementById('mobileBackdrop');
+    const mOpen=document.getElementById('mobileOpenBtn'),
+          mClose=document.getElementById('mobileCloseBtn'),
+          mPanel=document.getElementById('mobilePanel'),
+          mBg=document.getElementById('mobileBackdrop');
+
     const openM=()=>{
-  mPanel.classList.remove('translate-x-full');
-  mBg.classList.add('show');
-  document.body.style.overflow='hidden';
-}
-const closeM=()=>{
-  mPanel.classList.add('translate-x-full');
-  mBg.classList.remove('show');
-  document.body.style.overflow='';
-}
-    mOpen?.addEventListener('click',openM);mClose?.addEventListener('click',closeM);mBg?.addEventListener('click',closeM);
+      mPanel.classList.remove('translate-x-full');
+      mBg.classList.add('show');           // muestra backdrop (opaco)
+      document.body.style.overflow='hidden';
+    };
+    const closeM=()=>{
+      mPanel.classList.add('translate-x-full');
+      mBg.classList.remove('show');        // oculta backdrop
+      document.body.style.overflow='';
+    };
+
+    mOpen?.addEventListener('click',openM);
+    mClose?.addEventListener('click',closeM);
+    mBg?.addEventListener('click',closeM);
 
     // Header shadow
     const siteHeader=document.getElementById('siteHeader');
@@ -655,11 +662,14 @@ const closeM=()=>{
       const action=form.getAttribute('action')||'';
       if(action.includes('/f/XXXXXXXX')){ window.location.href='mailto:ramirez.miguel.alejandro@gmail.com?subject=Contacto%20desde%20AlexRaSa.store'; return; }
       msg.classList.remove('hidden'); msg.textContent='Enviando...'; msg.className='mt-3 text-sm text-gray-600';
-      try{const fd=new FormData(form);
+      try{
+        const fd=new FormData(form);
         const res=await fetch(action,{method:'POST',headers:{'Accept':'application/json'},body:fd});
         if(res.ok){ form.reset(); msg.textContent='¡Gracias! Te responderé en menos de 24 h hábiles.'; msg.className='mt-3 text-sm text-green-700'; }
         else{ msg.textContent='No se pudo enviar. Intenta de nuevo o usa WhatsApp/correo.'; msg.className='mt-3 text-sm text-red-600'; }
-      }catch{ msg.textContent='Error de red. Intenta de nuevo o usa WhatsApp/correo.'; msg.className='mt-3 text-sm text-red-600'; }
+      }catch{
+        msg.textContent='Error de red. Intenta de nuevo o usa WhatsApp/correo.'; msg.className='mt-3 text-sm text-red-600';
+      }
     });
   </script>
 </body>
