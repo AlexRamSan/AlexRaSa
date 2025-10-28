@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrg-93tIvGCd-W0eQprDGrBIIkotM41McJplAItc_mPKDvjpjedFwmAziw9jWQWxRWvQ/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWk9LwQiIxeYxt7FWdzLLEOWaZQwjP4WAEEElwBVwZ99U-2WpVE1uYC5oxW7OwrEeXBQ/exec';
 
     // El cuerpo que mandó tu formulario
     const payload = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
