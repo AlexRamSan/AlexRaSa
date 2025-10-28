@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registro de Leads — Evento | AlexRaSa</title>
+  <meta name="description" content="Formulario offline para capturar leads durante un evento. Persiste en LocalStorage y exporta a Excel/CSV." />
+  <meta name="theme-color" content="#0F172A" />
+  <link rel="icon" href="/assets/favicon.ico" />
+
+  <!-- Tailwind CDN (modo JIT en el navegador) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { base: { 900: '#0F172A', 800: '#1E293B' } }
+        }
+      }
+    }
+  </script>
+  <!-- SheetJS para exportar a .xlsx -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="bg-base-900 text-white py-4">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold">Registro de Leads — Evento</h1>
+      <div class="text-sm opacity-80">Datos guardados localmente en tu navegador</div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 grid gap-6 md:grid-cols-3">
+    <!-- Formulario -->
+    <section class="md:col-span-1 bg-white rounded-2xl shadow p-4">
+      <h2 class="text-lg font-semibold mb-3">Nuevo lead</h2>
+      <form id="leadForm" class="grid gap-3">
+        <input type="hidden" id="leadId" />
+
+        <div>
+          <label class="block text-sm font-medium">Empresa *</label>
+          <input id="empresa" required class="mt-1 w-full rounded-xl border border-slate-300 p-2 focus:outline-none focus:ring focus:ring-slate-200" placeholder="Nombre de la empresa" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium">Contacto *</label>
+            <input id="contacto" required class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="Nombre completo" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Puesto</label>
+            <input id="puesto" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="Puesto / rol" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium">Teléfono</label>
+            <input id="telefono" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="WhatsApp / fijo" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Email</label>
+            <input id="email" type="email" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="correo@empresa.com" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium">Ciudad</label>
+            <input id="ciudad" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="Querétaro" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Estado</label>
+            <input id="estado" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="Qro." />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium">Industria</label>
+            <input id="industria" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="Automotriz, aeroespacial..." />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Tamaño (máquinas CNC)</label>
+            <input id="maquinas" type="number" min="0" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="p.ej. 5" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium">Interés</label>
+            <select id="interes" class="mt-1 w-full rounded-xl border border-slate-300 p-2">
+              <option value="">—</option>
+              <option>Bajo</option>
+              <option>Medio</option>
+              <option>Alto</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Origen</label>
+            <select id="origen" class="mt-1 w-full rounded-xl border border-slate-300 p-2">
+              <option>Evento</option>
+              <option>Webinar</option>
+              <option>Referencia</option>
+              <option>LinkedIn</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Siguiente paso (fecha)</label>
+          <input id="nextDate" type="date" class="mt-1 w-full rounded-xl border border-slate-300 p-2" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium">Notas</label>
+          <textarea id="notas" rows="3" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="Resumen, oportunidades, objetivos, módulos de interés (SolidCAM, Lantek, Logopress, 3D Systems, Artec)..."></textarea>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="px-3 py-2 rounded-xl bg-base-800 text-white font-medium hover:opacity-90" id="btnGuardar">Guardar</button>
+          <button type="button" class="px-3 py-2 rounded-xl border border-slate-300" id="btnLimpiar">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Panel derecho -->
+    <section class="md:col-span-2 grid gap-6">
+      <!-- Acciones -->
+      <div class="bg-white rounded-2xl shadow p-4 flex flex-wrap items-center gap-3">
+        <div class="flex gap-2">
+          <button id="btnExportXLSX" class="px-3 py-2 rounded-xl bg-base-800 text-white hover:opacity-90">Exportar Excel (.xlsx)</button>
+          <button id="btnExportCSV" class="px-3 py-2 rounded-xl border border-slate-300">Exportar CSV</button>
+          <button id="btnBackup" class="px-3 py-2 rounded-xl border border-slate-300">Descargar respaldo (.json)</button>
+        </div>
+        <div class="flex items-center gap-2 ml-auto">
+          <input id="fileImport" type="file" accept=".csv,.json" class="hidden" />
+          <button id="btnImport" class="px-3 py-2 rounded-xl border border-slate-300">Importar CSV/JSON</button>
+          <button id="btnBorrarTodo" class="px-3 py-2 rounded-xl border border-rose-300 text-rose-700">Borrar todo</button>
+        </div>
+      </div>
+
+      <!-- Filtros / búsqueda -->
+      <div class="bg-white rounded-2xl shadow p-4 grid md:grid-cols-4 gap-3">
+        <div class="col-span-2">
+          <label class="block text-sm font-medium">Buscar</label>
+          <input id="buscador" class="mt-1 w-full rounded-xl border border-slate-300 p-2" placeholder="Empresa, contacto, email, ciudad, industria..." />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Interés</label>
+          <select id="fInteres" class="mt-1 w-full rounded-xl border border-slate-300 p-2">
+            <option value="">Todos</option>
+            <option>Bajo</option>
+            <option>Medio</option>
+            <option>Alto</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Origen</label>
+          <select id="fOrigen" class="mt-1 w-full rounded-xl border border-slate-300 p-2">
+            <option value="">Todos</option>
+            <option>Evento</option>
+            <option>Webinar</option>
+            <option>Referencia</option>
+            <option>LinkedIn</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="bg-white rounded-2xl shadow overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm" id="tabla">
+            <thead class="bg-slate-100 text-slate-700">
+              <tr>
+                <th class="px-3 py-2 text-left">#</th>
+                <th class="px-3 py-2 text-left">Fecha</th>
+                <th class="px-3 py-2 text-left">Empresa</th>
+                <th class="px-3 py-2 text-left">Contacto</th>
+                <th class="px-3 py-2 text-left">Puesto</th>
+                <th class="px-3 py-2 text-left">Teléfono</th>
+                <th class="px-3 py-2 text-left">Email</th>
+                <th class="px-3 py-2 text-left">Ciudad</th>
+                <th class="px-3 py-2 text-left">Estado</th>
+                <th class="px-3 py-2 text-left">Industria</th>
+                <th class="px-3 py-2 text-left"># CNC</th>
+                <th class="px-3 py-2 text-left">Interés</th>
+                <th class="px-3 py-2 text-left">Origen</th>
+                <th class="px-3 py-2 text-left">Siguiente paso</th>
+                <th class="px-3 py-2 text-left">Notas</th>
+                <th class="px-3 py-2 text-left">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-4 pb-8 text-xs text-slate-500">
+    Sugerencia: mantén un respaldo diario (JSON) y al cierre exporta a Excel.
+  </footer>
+
+  <script>
+    // ====== Utilidades ======
+    const STORAGE_KEY = 'alexrasa_event_leads_v1';
+
+    const $ = (sel) => document.querySelector(sel);
+    const form = $('#leadForm');
+    const tbody = $('#tbody');
+
+    const inputs = {
+      id: $('#leadId'), empresa: $('#empresa'), contacto: $('#contacto'), puesto: $('#puesto'), telefono: $('#telefono'), email: $('#email'), ciudad: $('#ciudad'), estado: $('#estado'), industria: $('#industria'), maquinas: $('#maquinas'), interes: $('#interes'), origen: $('#origen'), nextDate: $('#nextDate'), notas: $('#notas')
+    };
+
+    const filtros = { q: $('#buscador'), interes: $('#fInteres'), origen: $('#fOrigen') };
+
+    const nowISO = () => new Date().toISOString();
+
+    function loadLeads() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveLeads(leads) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+    }
+
+    function clearForm() {
+      inputs.id.value = '';
+      form.reset();
+    }
+
+    function formToLead() {
+      return {
+        id: inputs.id.value || crypto.randomUUID(),
+        fecha: new Date().toLocaleDateString('es-MX'),
+        createdAt: nowISO(),
+        empresa: inputs.empresa.value.trim(),
+        contacto: inputs.contacto.value.trim(),
+        puesto: inputs.puesto.value.trim(),
+        telefono: inputs.telefono.value.trim(),
+        email: inputs.email.value.trim(),
+        ciudad: inputs.ciudad.value.trim(),
+        estado: inputs.estado.value.trim(),
+        industria: inputs.industria.value.trim(),
+        maquinas: inputs.maquinas.value ? Number(inputs.maquinas.value) : '',
+        interes: inputs.interes.value,
+        origen: inputs.origen.value,
+        nextDate: inputs.nextDate.value,
+        notas: inputs.notas.value.trim()
+      };
+    }
+
+    function leadToForm(lead) {
+      inputs.id.value = lead.id;
+      inputs.empresa.value = lead.empresa || '';
+      inputs.contacto.value = lead.contacto || '';
+      inputs.puesto.value = lead.puesto || '';
+      inputs.telefono.value = lead.telefono || '';
+      inputs.email.value = lead.email || '';
+      inputs.ciudad.value = lead.ciudad || '';
+      inputs.estado.value = lead.estado || '';
+      inputs.industria.value = lead.industria || '';
+      inputs.maquinas.value = lead.maquinas || '';
+      inputs.interes.value = lead.interes || '';
+      inputs.origen.value = lead.origen || '';
+      inputs.nextDate.value = lead.nextDate || '';
+      inputs.notas.value = lead.notas || '';
+    }
+
+    function matchesFilters(lead) {
+      const q = filtros.q.value.toLowerCase();
+      const hit = !q || [lead.empresa, lead.contacto, lead.email, lead.ciudad, lead.industria, lead.estado]
+        .filter(Boolean)
+        .some(v => String(v).toLowerCase().includes(q));
+      const f1 = !filtros.interes.value || filtros.interes.value === lead.interes;
+      const f2 = !filtros.origen.value || filtros.origen.value === lead.origen;
+      return hit && f1 && f2;
+    }
+
+    function render() {
+      const leads = loadLeads();
+      const rows = leads.filter(matchesFilters).map((lead, idx) => {
+        return `<tr class="border-b last:border-0 hover:bg-slate-50">
+          <td class="px-3 py-2 align-top">${idx + 1}</td>
+          <td class="px-3 py-2 align-top whitespace-nowrap">${lead.fecha || ''}</td>
+          <td class="px-3 py-2 align-top font-medium">${lead.empresa || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.contacto || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.puesto || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.telefono || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.email || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.ciudad || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.estado || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.industria || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.maquinas ?? ''}</td>
+          <td class="px-3 py-2 align-top">${lead.interes || ''}</td>
+          <td class="px-3 py-2 align-top">${lead.origen || ''}</td>
+          <td class="px-3 py-2 align-top whitespace-nowrap">${lead.nextDate || ''}</td>
+          <td class="px-3 py-2 align-top max-w-[28ch] truncate" title="${lead.notas || ''}">${lead.notas || ''}</td>
+          <td class="px-3 py-2 align-top">
+            <div class="flex gap-2">
+              <button class="px-2 py-1 rounded-lg border border-slate-300" data-edit="${lead.id}">Editar</button>
+              <button class="px-2 py-1 rounded-lg border border-rose-300 text-rose-700" data-del="${lead.id}">Eliminar</button>
+            </div>
+          </td>
+        </tr>`
+      }).join('');
+      tbody.innerHTML = rows || `<tr><td colspan="16" class="px-3 py-6 text-center text-slate-500">Sin leads aún</td></tr>`;
+    }
+
+    // ====== Eventos ======
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!inputs.empresa.value.trim() || !inputs.contacto.value.trim()) {
+        alert('Empresa y Contacto son obligatorios');
+        return;
+      }
+      const leads = loadLeads();
+      const draft = formToLead();
+      const idx = leads.findIndex(l => l.id === draft.id);
+      if (idx >= 0) {
+        leads[idx] = { ...leads[idx], ...draft };
+      } else {
+        leads.push(draft);
+      }
+      saveLeads(leads);
+      clearForm();
+      render();
+    });
+
+    $('#btnLimpiar').addEventListener('click', clearForm);
+
+    tbody.addEventListener('click', (e) => {
+      const idEdit = e.target.getAttribute('data-edit');
+      const idDel = e.target.getAttribute('data-del');
+      const leads = loadLeads();
+      if (idEdit) {
+        const lead = leads.find(l => l.id === idEdit);
+        if (lead) { leadToForm(lead); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      }
+      if (idDel) {
+        if (confirm('¿Eliminar este lead?')) {
+          saveLeads(leads.filter(l => l.id !== idDel));
+          render();
+        }
+      }
+    });
+
+    filtros.q.addEventListener('input', render);
+    filtros.interes.addEventListener('change', render);
+    filtros.origen.addEventListener('change', render);
+
+    // ====== Exportaciones ======
+    function exportCSV() {
+      const leads = loadLeads();
+      if (!leads.length) return alert('No hay datos para exportar');
+      const headers = ['fecha','empresa','contacto','puesto','telefono','email','ciudad','estado','industria','maquinas','interes','origen','nextDate','notas'];
+      const rows = [headers.join(',')].concat(leads.map(l => headers.map(h => {
+        const v = (l[h] ?? '').toString().replaceAll('"', '""');
+        return `"${v}"`;
+      }).join(',')));
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'leads_evento.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportXLSX() {
+      const leads = loadLeads();
+      if (!leads.length) return alert('No hay datos para exportar');
+      const ws = XLSX.utils.json_to_sheet(leads);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+      XLSX.writeFile(wb, 'leads_evento.xlsx');
+    }
+
+    function downloadBackup() {
+      const leads = loadLeads();
+      const blob = new Blob([JSON.stringify(leads, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'leads_evento_backup.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    $('#btnExportCSV').addEventListener('click', exportCSV);
+    $('#btnExportXLSX').addEventListener('click', exportXLSX);
+    $('#btnBackup').addEventListener('click', downloadBackup);
+
+    // ====== Importar ======
+    $('#btnImport').addEventListener('click', () => $('#fileImport').click());
+    $('#fileImport').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result;
+        try {
+          let imported = [];
+          if (file.name.endsWith('.json')) {
+            imported = JSON.parse(text);
+          } else { // CSV muy simple
+            const [header, ...lines] = text.split(/\r?\n/).filter(Boolean);
+            const cols = header.split(',').map(h=>h.replaceAll('"','').trim());
+            imported = lines.map(line => {
+              const parts = line.match(/\"([^\"]*)\"(?=,|$)/g)?.map(s=>s.slice(1,-1)) || line.split(',');
+              const obj = { id: crypto.randomUUID(), createdAt: nowISO() };
+              cols.forEach((c, i) => obj[c] = parts[i] || '');
+              return obj;
+            });
+          }
+          const current = loadLeads();
+          const merged = [...current, ...imported];
+          saveLeads(merged);
+          render();
+          e.target.value = '';
+        } catch (err) {
+          alert('Archivo no válido: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // ====== Borrar todo ======
+    $('#btnBorrarTodo').addEventListener('click', () => {
+      if (confirm('¿Borrar TODOS los leads almacenados en este navegador?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+      }
+    });
+
+    // ====== Init ======
+    render();
+  </script>
+</body>
+</html>
