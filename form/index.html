@@ -4,121 +4,144 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Registro de Leads — Evento | AlexRaSa</title>
-  <meta name="description" content="Formulario rápido para capturar leads. Guarda localmente y sincroniza con Google Sheets." />
+  <meta name="description" content="Formulario rápido para capturar leads con estilo AlexRaSa. Guarda localmente y sincroniza con Google Sheets." />
   <meta name="theme-color" content="#0F172A" />
-
-  <!-- Tailwind (rápido para evento). Si luego quieres build local, te paso guía. -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{base:{900:'#0F172A',800:'#1E293B'}}}}}</script>
+  <script>
+    tailwind.config={ theme:{ extend:{ colors:{ base:{900:'#0F172A',800:'#1E293B'}}}} }
+  </script>
 </head>
-<body class="bg-slate-50 text-slate-900">
-  <header class="bg-base-900 text-white">
-    <div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
-      <h1 class="text-base font-semibold">Registro de Leads — Evento</h1>
-      <span id="cloudStatus" class="text-xs inline-flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
-        Sincronización pendiente
-      </span>
+<body class="bg-base-900 text-gray-100 antialiased">
+
+  <!-- ===== HERO HEADER ===== -->
+  <header class="relative">
+    <div class="absolute inset-0 -z-10">
+      <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-50"></div>
+      <div class="absolute inset-0 bg-base-900/70"></div>
     </div>
+
+    <div class="bg-black/40 backdrop-blur-sm border-b border-white/10">
+      <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2 text-white" aria-label="Inicio">
+          <img src="/assets/logo.png" class="h-9 w-auto" alt="AlexRaSa" />
+          <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span class="text-sky-400">.store</span></span>
+        </a>
+        <span id="cloudStatus" class="text-xs inline-flex items-center gap-2 text-gray-200">
+          <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+          Sincronización pendiente
+        </span>
+      </div>
+    </div>
+
+    <section class="max-w-6xl mx-auto px-4 py-10 md:py-14 text-white">
+      <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">Registro de Leads — <span class="text-sky-300">Evento</span></h1>
+      <p class="mt-2 text-white/90 text-sm md:text-base">Captura tus prospectos fácilmente. Los datos se guardan localmente y se sincronizan con Google Sheets.</p>
+    </section>
   </header>
 
-  <main class="max-w-xl mx-auto px-4 py-6">
-    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-      <form id="leadForm" class="grid gap-3">
+  <!-- ===== FORMULARIO ===== -->
+  <main class="max-w-3xl mx-auto px-4 pb-12">
+    <!-- Logos -->
+    <div class="bg-white/10 rounded-xl border border-white/10 shadow-sm mb-6">
+      <div class="px-4 py-3 border-b border-white/10 text-sm text-gray-200">Soluciones</div>
+      <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 place-items-center">
+        <img src="/assets/logos/solidcam.png" alt="SolidCAM" class="h-8 w-auto object-contain" loading="lazy">
+        <img src="/assets/logos/lantek-blue.png" alt="Lantek" class="h-8 w-auto object-contain" loading="lazy">
+        <img src="/assets/logos/logopress-yellow.jpg" alt="Logopress" class="h-8 w-auto object-contain" loading="lazy">
+        <img src="/assets/artec/artec-logo.png" alt="Artec 3D" class="h-8 w-auto object-contain" loading="lazy">
+        <img src="/assets/logos/3D_Systems_Logo.png" alt="3D Systems" class="h-8 w-auto object-contain" loading="lazy">
+      </div>
+    </div>
+
+    <section class="bg-white/10 rounded-2xl border border-white/10 shadow-sm backdrop-blur-md p-5">
+      <form id="leadForm" class="grid gap-4">
         <input type="hidden" id="leadId" />
+
         <div>
-          <label class="block text-sm font-medium">Empresa *</label>
-          <input id="empresa" required class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Nombre de la empresa" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium">Contacto *</label>
-            <input id="contacto" required class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Nombre completo" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium">Puesto</label>
-            <input id="puesto" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Puesto / rol" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium">Teléfono</label>
-            <input id="telefono" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="WhatsApp / fijo" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium">Email</label>
-            <input id="email" type="email" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="correo@empresa.com" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium">Ciudad</label>
-            <input id="ciudad" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Querétaro" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium">Estado</label>
-            <input id="estado" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Qro." />
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium">Industria</label>
-          <input id="industria" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Automotriz, aeroespacial..." />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium"># Máquinas CNC</label>
-            <input id="maquinas" type="number" min="0" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="p.ej. 5" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium">Interés</label>
-            <select id="interes" class="mt-1 w-full rounded-md border border-slate-300 p-2">
-              <option value="">—</option><option>Bajo</option><option>Medio</option><option>Alto</option>
-            </select>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium">Origen</label>
-            <select id="origen" class="mt-1 w-full rounded-md border border-slate-300 p-2">
-              <option>Evento</option><option>Webinar</option><option>Referencia</option><option>LinkedIn</option><option>Otro</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium">Siguiente paso</label>
-            <input id="nextDate" type="date" class="mt-1 w-full rounded-md border border-slate-300 p-2" />
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium">Notas</label>
-          <textarea id="notas" rows="3" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Resumen, oportunidades, módulos de interés..."></textarea>
+          <label class="block text-sm font-medium text-gray-200">Empresa *</label>
+          <input id="empresa" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Nombre de la empresa" />
         </div>
 
-        <button type="submit" class="mt-1 px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-200">Contacto *</label>
+            <input id="contacto" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Nombre completo" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-200">Puesto</label>
+            <input id="puesto" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Puesto / rol" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-200">Teléfono</label>
+            <input id="telefono" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="WhatsApp / fijo" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-200">Email</label>
+            <input id="email" type="email" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="correo@empresa.com" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-200">Ciudad</label>
+            <input id="ciudad" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Querétaro" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-200">Estado</label>
+            <input id="estado" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Qro." />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-200">Industria</label>
+          <input id="industria" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Automotriz, aeroespacial..." />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-200">Interés</label>
+          <select id="interes" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white">
+            <option value="">— Selecciona —</option>
+            <option>Bajo</option><option>Medio</option><option>Alto</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-200">Área de interés y comentarios</label>
+          <textarea id="notas" rows="4" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Área de interés, oportunidades, observaciones..."></textarea>
+        </div>
+
+        <button type="submit" class="mt-1 px-4 py-2 rounded-md bg-sky-600 text-white font-medium hover:bg-sky-700 transition">
           Guardar lead
         </button>
 
-        <p id="miniMsg" class="text-xs text-slate-600 mt-1">Se guarda localmente y se sincroniza con la nube cuando hay conexión.</p>
+        <p id="miniMsg" class="text-xs text-gray-300 mt-1">Los datos se guardan localmente y se sincronizan automáticamente con Google Sheets.</p>
       </form>
     </section>
   </main>
 
-  <script>
-    /* ===== Config ===== */
-    const WEB_APP_URL = '/api/sendLead';               // proxy en Vercel (evita CORS)
-    const STORAGE_KEY = 'alexrasa_event_leads_v1';     // leads guardados
-    const PENDING_KEY = 'alexrasa_event_leads_pending_v1'; // cola para sincronizar
+  <!-- ===== FOOTER ===== -->
+  <footer class="bg-black/40 border-t border-white/10 py-4 mt-8 text-center text-xs text-gray-400">
+    © 2025 <strong>AlexRaSa</strong> — Ingeniería y Soluciones para Manufactura<br>
+    <a href="https://alexrasa.store" class="text-sky-400 hover:underline">alexrasa.store</a>
+  </footer>
 
-    /* ===== Helpers ===== */
+  <!-- ===== SCRIPT ===== -->
+  <script>
+    const WEB_APP_URL = '/api/sendLead';
+    const STORAGE_KEY = 'alexrasa_event_leads_v1';
+    const PENDING_KEY = 'alexrasa_event_leads_pending_v1';
+
     const $ = s => document.querySelector(s);
     const statusEl = $('#cloudStatus');
     const form = $('#leadForm');
     const miniMsg = $('#miniMsg');
-
     const inputs = {
       id: $('#leadId'), empresa: $('#empresa'), contacto: $('#contacto'), puesto: $('#puesto'),
       telefono: $('#telefono'), email: $('#email'), ciudad: $('#ciudad'), estado: $('#estado'),
-      industria: $('#industria'), maquinas: $('#maquinas'), interes: $('#interes'),
-      origen: $('#origen'), nextDate: $('#nextDate'), notas: $('#notas')
+      industria: $('#industria'), interes: $('#interes'), notas: $('#notas')
     };
 
     const nowISO = ()=> new Date().toISOString();
@@ -126,13 +149,12 @@
     const save  = (k,v) => localStorage.setItem(k, JSON.stringify(v));
 
     function setStatus(state){
-      // state: 'pending' | 'syncing' | 'ok'
       if(state==='syncing'){
-        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400"></span> Sincronizando...';
-      } else if(state==='ok'){
-        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sincronizado';
-      } else {
-        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente';
+        statusEl.innerHTML='<span class="w-2 h-2 rounded-full bg-blue-400"></span> Sincronizando...';
+      }else if(state==='ok'){
+        statusEl.innerHTML='<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sincronizado';
+      }else{
+        statusEl.innerHTML='<span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente';
       }
     }
 
@@ -149,73 +171,52 @@
         ciudad: inputs.ciudad.value.trim(),
         estado: inputs.estado.value.trim(),
         industria: inputs.industria.value.trim(),
-        maquinas: inputs.maquinas.value ? Number(inputs.maquinas.value) : '',
         interes: inputs.interes.value,
-        origen: inputs.origen.value,
-        nextDate: inputs.nextDate.value,
-        notas: inputs.notas.value.trim()
+        notas: inputs.notas.value.trim() || ''
       };
-    }
-
-    function queuePending(lead){
-      const q = load(PENDING_KEY,[]);
-      if (!q.find(x=>x.id===lead.id)) q.push(lead);
-      save(PENDING_KEY,q);
-      setStatus('pending');
     }
 
     async function sendToCloud(lead){
       try{
-        const r = await fetch(WEB_APP_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(lead) });
-        const text = await r.text(); let data=null; try{ data=JSON.parse(text) }catch{}
+        const r = await fetch(WEB_APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lead)});
+        const text = await r.text(); let data=null; try{data=JSON.parse(text)}catch{}
         return (r.ok && data && data.ok);
-      }catch{ return false; }
+      }catch{return false;}
+    }
+
+    function queuePending(lead){
+      const q=load(PENDING_KEY,[]); if(!q.find(x=>x.id===lead.id)) q.push(lead);
+      save(PENDING_KEY,q); setStatus('pending');
     }
 
     async function syncPending(){
-      const q = load(PENDING_KEY,[]);
-      if (!q.length){ setStatus('ok'); return; }
-      setStatus('syncing');
-      const okIds = [];
-      for (const it of q){
-        const ok = await sendToCloud(it);
-        if (ok) okIds.push(it.id);
-      }
-      const remaining = q.filter(x=>!okIds.includes(x.id));
-      save(PENDING_KEY, remaining);
-      setStatus(remaining.length ? 'pending' : 'ok');
+      const q=load(PENDING_KEY,[]); if(!q.length){setStatus('ok');return;}
+      setStatus('syncing'); const okIds=[];
+      for(const it of q){const ok=await sendToCloud(it); if(ok) okIds.push(it.id);}
+      const remaining=q.filter(x=>!okIds.includes(x.id)); save(PENDING_KEY,remaining);
+      setStatus(remaining.length?'pending':'ok');
     }
 
-    /* ===== Eventos ===== */
-    form.addEventListener('submit', async (e)=>{
+    form.addEventListener('submit',async e=>{
       e.preventDefault();
       if(!inputs.empresa.value.trim() || !inputs.contacto.value.trim()){
-        miniMsg.textContent = 'Empresa y Contacto son obligatorios.'; miniMsg.className='text-xs text-rose-700 mt-1';
-        return;
+        miniMsg.textContent='Empresa y Contacto son obligatorios.'; miniMsg.className='text-xs text-rose-400 mt-1'; return;
       }
-      const lead = formToLead();
+      const lead=formToLead();
+      const all=load(STORAGE_KEY,[]); const idx=all.findIndex(l=>l.id===lead.id);
+      if(idx>=0) all[idx]={...all[idx],...lead}; else all.push(lead); save(STORAGE_KEY,all);
 
-      // Guarda local
-      const all = load(STORAGE_KEY,[]);
-      const idx = all.findIndex(l=>l.id===lead.id);
-      if (idx>=0) all[idx] = { ...all[idx], ...lead }; else all.push(lead);
-      save(STORAGE_KEY, all);
-
-      // Intenta nube
-      const ok = await sendToCloud(lead);
+      const ok=await sendToCloud(lead);
       if(!ok) queuePending(lead); else setStatus('ok');
 
-      // Reset y feedback
       form.reset(); inputs.id.value='';
-      miniMsg.textContent = ok ? 'Guardado y sincronizado.' : 'Guardado local. Se sincronizará cuando haya conexión.';
-      miniMsg.className = ok ? 'text-xs text-emerald-700 mt-1' : 'text-xs text-amber-700 mt-1';
-      window.scrollTo({top:0,behavior:'smooth'});
+      miniMsg.textContent=ok?'Guardado y sincronizado.':'Guardado localmente. Se sincronizará al reconectar.';
+      miniMsg.className=ok?'text-xs text-emerald-400 mt-1':'text-xs text-amber-400 mt-1';
     });
 
-    // Sincroniza automáticamente cuando vuelva la conexión o al cargar
-    window.addEventListener('online', syncPending);
-    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncPending(); });
-    window.addEventListener('load', ()=>{ const pending = load(PENDING_KEY,[]); setStatus(pending.length ? 'pending' : 'ok'); syncPending(); });
+    window.addEventListener('online',syncPending);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncPending();});
+    window.addEventListener('load',()=>{const p=load(PENDING_KEY,[]);setStatus(p.length?'pending':'ok');syncPending();});
   </script>
 </body>
 </html>
