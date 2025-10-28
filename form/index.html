@@ -35,48 +35,14 @@
             AlexRaSa<span class="text-sky-400">.store</span>
           </span>
         </a>
-       <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Registro de Leads — Evento | AlexRaSa</title>
-  <meta name="theme-color" content="#0F172A" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: { colors: { base: { 900: '#0F172A', 800: '#1E293B' } } } }
-    };
-  </script>
-  <style>
-    @keyframes confettiFall {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
-    }
-  </style>
-</head>
-<body class="bg-base-900 text-gray-100 antialiased">
-
-  <!-- ===== HERO HEADER ===== -->
-  <header class="relative">
-    <div class="absolute inset-0 -z-10">
-      <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-50"></div>
-      <div class="absolute inset-0 bg-base-900/70"></div>
-    </div>
-
-    <div class="bg-black/40 backdrop-blur-sm border-b border-white/10">
-      <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <a href="/" class="flex items-center gap-2 text-white" aria-label="Inicio">
-          <img src="/assets/logo.png" class="h-9 w-auto" alt="AlexRaSa" />
-          <span class="hidden sm:inline text-base font-semibold tracking-tight">
-            AlexRaSa<span class="text-sky-400">.store</span>
-          </span>
-        </a>
-        <!-- Semáforo de conexión -->
-        <span id="cloudStatus" class="text-xs inline-flex items-center gap-2 text-gray-200">
+        <!-- Semáforo de conexión (clickeable) -->
+        <button id="cloudStatus"
+                class="text-xs inline-flex items-center gap-2 text-gray-200 hover:text-white transition cursor-pointer select-none"
+                type="button"
+                title="Probar conexión con Google Sheets (clic)">
           <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
           Sincronización pendiente
-        </span>
+        </button>
       </div>
     </div>
 
@@ -190,7 +156,7 @@
 
   <!-- ===== SCRIPT ===== -->
   <script>
-    // Tu endpoint de Google Apps Script (Web App) — ¡ya con tu URL!
+    // Tu endpoint de Google Apps Script (Web App)
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwrg-93tIvGCd-W0eQprDGrBIIkotM41McJplAItc_mPKDvjpjedFwmAziw9jWQWxRWvQ/exec';
 
     const $ = s => document.querySelector(s);
@@ -199,6 +165,8 @@
     const closeModal = $('#closeModal');
     const confettiContainer = $('#confettiContainer');
     const statusEl = $('#cloudStatus');
+
+    let testing = false; // evita doble clic durante prueba
 
     function setStatus(state){
       if(!statusEl) return;
@@ -226,248 +194,65 @@
       }
     }
 
-    async function sendToCloud(lead){
-      try{
-        setStatus('syncing');
-        const r = await fetch(WEB_APP_URL, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(lead)
-        });
-        // Intentamos leer { ok: true } del GAS
-        let ok = r.ok;
-        try {
-          const data = await r.json();
-          ok = ok && !!data.ok;
-        } catch(_) { /* si no hay JSON, usamos r.ok */ }
-        setStatus(ok ? 'ok' : 'pending');
-        return ok;
-      }catch(e){
-        setStatus('pending');
-        return false;
-      }
+    async function postToGAS(payload){
+      const r = await fetch(WEB_APP_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      let ok = r.ok;
+      try {
+        const data = await r.json();
+        ok = ok && !!data.ok;
+      } catch(_) {}
+      return ok;
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!form.checkValidity()) { form.reportValidity(); return; }
+    // === Probar conexión al hacer clic en el semáforo ===
+    statusEl?.addEventListener('click', async () => {
+      if (testing) return;
+      testing = true;
+      setStatus('syncing');
 
-      const f = Object.fromEntries(new FormData(form).entries());
-
-      // Payload alineado con tus columnas del Sheet
-      const lead = {
+      const testLead = {
         id: crypto.randomUUID(),
         fecha: new Date().toLocaleDateString('es-MX'),
         createdAt: new Date().toISOString(),
-        empresa: f.empresa,
-        contacto: f.contacto,
-        puesto: f.puesto,
-        telefono: f.telefono,
-        email: f.email,
-        ciudad: f.ciudad,
-        estado: f.estado,
-        industria: f.industria,
-        interes: f.interes,
-        // columnas no visibles en UI pero existentes en tu hoja
+        empresa: 'TEST',
+        contacto: 'Prueba de conexión',
+        puesto: '—',
+        telefono: '—',
+        email: 'test@alexrasa.store',
+        ciudad: '—',
+        estado: '—',
+        industria: '—',
+        interes: 'Otro',
         maquinas: '',
-        origen: 'Evento',
+        origen: 'Prueba',
         nextDate: '',
-        notas: f.notas || ''
+        notas: 'Registro de prueba desde el botón de estado'
       };
 
-      await sendToCloud(lead);
-
-      // UX: limpiar y mostrar modal
-      form.reset();
-      modal.classList.remove('hidden');
-      launchConfetti();
+      try {
+        const ok = await postToGAS(testLead);
+        setStatus(ok ? 'ok' : 'pending');
+        alert(ok ? '✅ Conexión OK. Revisa tu Google Sheet: deberá aparecer un registro TEST.' :
+                   '⚠️ No se pudo conectar con Google Sheets. Revisa tu Apps Script/Web App.');
+      } catch (e) {
+        setStatus('pending');
+        alert('⚠️ Error de red al probar conexión.');
+      } finally {
+        testing = false;
+      }
     });
 
-    closeModal.addEventListener('click', () => modal.classList.add('hidden'));
-
-    // Estado inicial del semáforo
-    setStatus('pending');
-  </script>
-</body>
-</html>
-
-      </div>
-    </div>
-
-    <section class="max-w-6xl mx-auto px-4 py-10 md:py-14 text-white">
-      <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">
-        Registro — <span class="text-sky-300">Evento</span>
-      </h1>
-      <p class="mt-2 text-white/90 text-sm md:text-base">Completa el registro de interés en nuestras soluciones.</p>
-    </section>
-  </header>
-
-  <!-- ===== FORMULARIO ===== -->
-  <main class="max-w-3xl mx-auto px-4 pb-12">
-    <!-- Logos (fondo blanco para contraste) -->
-    <div class="bg-white rounded-xl border border-white/10 shadow-sm mb-6">
-      <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 place-items-center">
-        <img src="/assets/logos/solidcam.png" alt="SolidCAM" class="h-8 w-auto object-contain" loading="lazy">
-        <img src="/assets/logos/lantek-blue.svg" alt="Lantek" class="h-8 w-auto object-contain" loading="lazy">
-        <img src="/assets/logos/logopress-yellow.jpg" alt="Logopress" class="h-8 w-auto object-contain" loading="lazy">
-        <img src="/assets/artec/artec-logo.png" alt="Artec 3D" class="h-8 w-auto object-contain" loading="lazy">
-        <img src="/assets/logos/3D_Systems_Logo.png.png" alt="3D Systems" class="h-8 w-auto object-contain" loading="lazy">
-      </div>
-    </div>
-
-    <section class="bg-white/10 rounded-2xl border border-white/10 shadow-sm backdrop-blur-md p-5">
-      <form id="leadForm" class="grid gap-4" novalidate>
-        <div>
-          <label class="block text-sm font-medium text-gray-200">Empresa *</label>
-          <input id="empresa" name="empresa" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Nombre de la empresa">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-200">Contacto *</label>
-            <input id="contacto" name="contacto" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Nombre completo">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-200">Puesto *</label>
-            <input id="puesto" name="puesto" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Puesto o rol">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-200">Teléfono *</label>
-            <input id="telefono" name="telefono" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="WhatsApp / fijo">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-200">Email *</label>
-            <input id="email" name="email" type="email" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="correo@empresa.com">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-200">Ciudad *</label>
-            <input id="ciudad" name="ciudad" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Querétaro">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-200">Estado *</label>
-            <input id="estado" name="estado" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Qro.">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-200">Industria *</label>
-          <input id="industria" name="industria" required class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Automotriz, aeroespacial...">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-200">Área de interés *</label>
-          <select id="interes" name="interes" required class="mt-1 w-full rounded-md border border-white/20 bg-white p-2 text-gray-900">
-            <option value="">— Selecciona —</option>
-            <option>SolidCAM & iMachining</option>
-            <option>Lantek — Corte & Nesting</option>
-            <option>Logopress — Troqueles</option>
-            <option>Artec 3D — Escáneres</option>
-            <option>3D Systems — Impresión 3D</option>
-            <option>Otro</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-200">Área de interés y comentarios *</label>
-          <textarea id="notas" name="notas" required rows="4" class="mt-1 w-full rounded-md border border-white/20 bg-white/5 p-2 text-white placeholder-gray-400" placeholder="Área de interés, oportunidades, observaciones..."></textarea>
-        </div>
-
-        <button type="submit" class="mt-1 px-4 py-2 rounded-md bg-sky-600 text-white font-medium hover:bg-sky-700 transition">
-          Guardar información
-        </button>
-      </form>
-    </section>
-  </main>
-
-  <!-- ===== MODAL DE CONFIRMACIÓN ===== -->
-  <div id="thankModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 text-center text-gray-800 max-w-sm mx-4 relative overflow-hidden">
-      <div id="confettiContainer" class="absolute inset-0 pointer-events-none"></div>
-      <div class="text-5xl mb-2">✅</div>
-      <h2 class="text-2xl font-bold text-emerald-600">¡Muchas gracias!</h2>
-      <p class="mt-2 text-sm text-gray-700">Tu información ha sido registrada correctamente.<br>Estaremos en contacto pronto.</p>
-      <button id="closeModal" class="mt-5 px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Aceptar</button>
-    </div>
-  </div>
-
-  <footer class="bg-black/40 border-t border-white/10 py-4 mt-8 text-center text-xs text-gray-400">
-    © 2025 <strong>AlexRaSa</strong> — Ingeniería y Soluciones para Manufactura<br>
-    <a href="https://alexrasa.store" class="text-sky-400 hover:underline">alexrasa.store</a>
-  </footer>
-
-  <!-- ===== SCRIPT ===== -->
-  <script>
-    // Tu endpoint de Google Apps Script (Web App) — ¡ya con tu URL!
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwrg-93tIvGCd-W0eQprDGrBIIkotM41McJplAItc_mPKDvjpjedFwmAziw9jWQWxRWvQ/exec';
-
-    const $ = s => document.querySelector(s);
-    const form = $('#leadForm');
-    const modal = $('#thankModal');
-    const closeModal = $('#closeModal');
-    const confettiContainer = $('#confettiContainer');
-    const statusEl = $('#cloudStatus');
-
-    function setStatus(state){
-      if(!statusEl) return;
-      if(state==='syncing'){
-        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400"></span> Sincronizando...';
-      }else if(state==='ok'){
-        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sincronizado';
-      }else{
-        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente';
-      }
-    }
-
-    function launchConfetti() {
-      for (let i = 0; i < 40; i++) {
-        const piece = document.createElement('div');
-        piece.className = 'absolute w-2 h-2';
-        piece.style.background = `hsl(${Math.random() * 360},100%,60%)`;
-        piece.style.left = Math.random() * 100 + '%';
-        piece.style.top = '-10px';
-        piece.style.opacity = 0.9;
-        piece.style.animation = 'confettiFall 2s linear forwards';
-        piece.style.animationDelay = (Math.random() * 1) + 's';
-        confettiContainer.appendChild(piece);
-        setTimeout(() => piece.remove(), 2500);
-      }
-    }
-
-    async function sendToCloud(lead){
-      try{
-        setStatus('syncing');
-        const r = await fetch(WEB_APP_URL, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(lead)
-        });
-        // Intentamos leer { ok: true } del GAS
-        let ok = r.ok;
-        try {
-          const data = await r.json();
-          ok = ok && !!data.ok;
-        } catch(_) { /* si no hay JSON, usamos r.ok */ }
-        setStatus(ok ? 'ok' : 'pending');
-        return ok;
-      }catch(e){
-        setStatus('pending');
-        return false;
-      }
-    }
-
+    // === Envío del formulario real ===
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!form.checkValidity()) { form.reportValidity(); return; }
 
       const f = Object.fromEntries(new FormData(form).entries());
 
-      // Payload alineado con tus columnas del Sheet
       const lead = {
         id: crypto.randomUUID(),
         fecha: new Date().toLocaleDateString('es-MX'),
@@ -481,14 +266,19 @@
         estado: f.estado,
         industria: f.industria,
         interes: f.interes,
-        // columnas no visibles en UI pero existentes en tu hoja
         maquinas: '',
         origen: 'Evento',
         nextDate: '',
         notas: f.notas || ''
       };
 
-      await sendToCloud(lead);
+      setStatus('syncing');
+      try{
+        const ok = await postToGAS(lead);
+        setStatus(ok ? 'ok' : 'pending');
+      }catch{
+        setStatus('pending');
+      }
 
       // UX: limpiar y mostrar modal
       form.reset();
