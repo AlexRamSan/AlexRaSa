@@ -4,325 +4,115 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Registro de Leads — Evento | AlexRaSa</title>
-
-  <!-- Metas coherentes con tu home -->
-  <meta name="description" content="Formulario para capturar leads durante un evento. Guarda localmente, sincroniza con Google Sheets y exporta a Excel/CSV." />
+  <meta name="description" content="Formulario rápido para capturar leads. Guarda localmente y sincroniza con Google Sheets." />
   <meta name="theme-color" content="#0F172A" />
-  <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://alexrasa.store/evento-leads/" />
-  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/evento-leads/" />
-  <link rel="alternate" hreflang="es" href="https://alexrasa.store/evento-leads/" />
-  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/evento-leads/" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="manifest" href="/site.webmanifest" />
-  <meta property="og:title" content="Registro de Leads — Evento | AlexRaSa" />
-  <meta property="og:description" content="Captura leads durante el evento con una UI rápida y exporta a Excel/CSV. Sincroniza con Google Sheets." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://alexrasa.store/evento-leads/" />
-  <meta property="og:image" content="https://alexrasa.store/og/og-image.png" />
-  <meta property="og:site_name" content="AlexRaSa" />
-  <meta property="og:locale" content="es_MX" />
-  <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Tailwind (CDN rápido; si luego quieres build local te paso el paso a paso) -->
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <!-- Tailwind (rápido para evento). Si luego quieres build local, te paso guía. -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { theme: { extend: { colors: { base: { 900:'#0F172A', 800:'#1E293B' } } } } }
-  </script>
-
-  <!-- SheetJS para exportar a .xlsx -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <style>
-    html{scroll-behavior:smooth}
-    .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
-    .reveal.show{opacity:1;transform:none}
-    .safe-top{padding-top:env(safe-area-inset-top)}
-    /* Tablas compactas */
-    .table th,.table td{border-bottom:1px solid #e5e7eb}
-  </style>
+  <script>tailwind.config={theme:{extend:{colors:{base:{900:'#0F172A',800:'#1E293B'}}}}}</script>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased">
-
-  <!-- ===== HEADER (idéntico a home) ===== -->
-  <header id="siteHeader" class="safe-top sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between gap-3">
-        <a href="/" class="flex items-center gap-2" aria-label="Inicio">
-          <img src="/assets/logo.png" class="h-10 w-auto" alt="AlexRaSa" />
-          <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span class="text-blue-600">.store</span></span>
-        </a>
-
-        <nav class="hidden lg:flex items-center gap-6 text-sm">
-          <a href="/#sobre-mi"   class="hover:text-blue-600">Sobre mí</a>
-          <a href="/#soluciones" class="hover:text-blue-600">Soluciones</a>
-          <a href="/#videos"     class="hover:text-blue-600">Videos</a>
-          <a href="/#servicios"  class="hover:text-blue-600">Servicios</a>
-          <a href="/#recursos"   class="hover:text-blue-600">Recursos</a>
-          <a href="/#agenda"     class="hover:text-blue-600">Agenda</a>
-          <a href="/#contacto"   class="hover:text-blue-600">Contacto</a>
-        </nav>
-
-        <div class="hidden md:flex items-center gap-2">
-          <a href="/#soporte" class="px-3 py-2 rounded-md border border-gray-300 text-gray-900 hover:bg-gray-100 text-sm">Soporte</a>
-          <a href="/#agenda" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Agendar cita</a>
-        </div>
-
-        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-      </div>
+<body class="bg-slate-50 text-slate-900">
+  <header class="bg-base-900 text-white">
+    <div class="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+      <h1 class="text-base font-semibold">Registro de Leads — Evento</h1>
+      <span id="cloudStatus" class="text-xs inline-flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+        Sincronización pendiente
+      </span>
     </div>
-
-    <!-- Backdrop -->
-    <div id="mobileBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/70 backdrop-blur-sm"></div>
-
-    <!-- Menú móvil -->
-    <aside id="mobilePanel" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
-      <div class="absolute inset-0 bg-white flex flex-col">
-        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          <span class="text-base font-semibold">Menú</span>
-          <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar menú">
-            <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="flex-1 overflow-y-auto">
-          <nav class="p-4">
-            <ul class="space-y-1 text-[17px]">
-              <li><a href="/#sobre-mi"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Sobre mí</a></li>
-              <li><a href="/#soluciones"  class="block px-3 py-3 rounded-lg hover:bg-gray-100">Soluciones</a></li>
-              <li><a href="/#videos"      class="block px-3 py-3 rounded-lg hover:bg-gray-100">Videos</a></li>
-              <li><a href="/#servicios"   class="block px-3 py-3 rounded-lg hover:bg-gray-100">Servicios</a></li>
-              <li><a href="/#recursos"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Recursos</a></li>
-              <li><a href="/#agenda"      class="block px-3 py-3 rounded-lg hover:bg-gray-100">Agenda</a></li>
-              <li><a href="/#contacto"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Contacto</a></li>
-            </ul>
-          </nav>
-        </div>
-      </div>
-    </aside>
   </header>
 
-  <!-- ===== HERO simple para la página ===== -->
-  <section class="relative">
-    <div class="absolute inset-0 -z-10">
-      <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-70"></div>
-      <div class="absolute inset-0 bg-slate-900/60"></div>
-    </div>
-    <div class="max-w-6xl mx-auto px-4 py-10 md:py-14 text-white">
-      <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">Registro de leads — <span class="text-sky-300">Evento</span></h1>
-      <p class="mt-2 text-white/90">UI rápida, offline-first, exportaciones y sincronización a Google Sheets.</p>
-    </div>
-  </section>
-
-  <!-- ===== CONTENIDO: Form + Acciones + Tabla ===== -->
-  <main class="max-w-6xl mx-auto px-4 py-8 grid gap-6 md:grid-cols-3">
-    <!-- Formulario -->
-    <section class="md:col-span-1 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-      <h2 class="text-lg font-semibold mb-3">Nuevo lead</h2>
+  <main class="max-w-xl mx-auto px-4 py-6">
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
       <form id="leadForm" class="grid gap-3">
         <input type="hidden" id="leadId" />
         <div>
           <label class="block text-sm font-medium">Empresa *</label>
-          <input id="empresa" required class="mt-1 w-full rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-blue-200" placeholder="Nombre de la empresa" />
+          <input id="empresa" required class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Nombre de la empresa" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium">Contacto *</label>
-            <input id="contacto" required class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="Nombre completo" />
+            <input id="contacto" required class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Nombre completo" />
           </div>
           <div>
             <label class="block text-sm font-medium">Puesto</label>
-            <input id="puesto" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="Puesto / rol" />
+            <input id="puesto" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Puesto / rol" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium">Teléfono</label>
-            <input id="telefono" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="WhatsApp / fijo" />
+            <input id="telefono" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="WhatsApp / fijo" />
           </div>
           <div>
             <label class="block text-sm font-medium">Email</label>
-            <input id="email" type="email" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="correo@empresa.com" />
+            <input id="email" type="email" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="correo@empresa.com" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium">Ciudad</label>
-            <input id="ciudad" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="Querétaro" />
+            <input id="ciudad" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Querétaro" />
           </div>
           <div>
             <label class="block text-sm font-medium">Estado</label>
-            <input id="estado" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="Qro." />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium">Industria</label>
-            <input id="industria" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="Automotriz, aeroespacial..." />
-          </div>
-          <div>
-            <label class="block text-sm font-medium"># Máquinas CNC</label>
-            <input id="maquinas" type="number" min="0" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="p.ej. 5" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium">Interés</label>
-            <select id="interes" class="mt-1 w-full rounded-md border border-gray-300 p-2">
-              <option value="">—</option>
-              <option>Bajo</option>
-              <option>Medio</option>
-              <option>Alto</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium">Origen</label>
-            <select id="origen" class="mt-1 w-full rounded-md border border-gray-300 p-2">
-              <option>Evento</option>
-              <option>Webinar</option>
-              <option>Referencia</option>
-              <option>LinkedIn</option>
-              <option>Otro</option>
-            </select>
+            <input id="estado" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Qro." />
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium">Siguiente paso (fecha)</label>
-          <input id="nextDate" type="date" class="mt-1 w-full rounded-md border border-gray-300 p-2" />
+          <label class="block text-sm font-medium">Industria</label>
+          <input id="industria" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Automotriz, aeroespacial..." />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium"># Máquinas CNC</label>
+            <input id="maquinas" type="number" min="0" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="p.ej. 5" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Interés</label>
+            <select id="interes" class="mt-1 w-full rounded-md border border-slate-300 p-2">
+              <option value="">—</option><option>Bajo</option><option>Medio</option><option>Alto</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium">Origen</label>
+            <select id="origen" class="mt-1 w-full rounded-md border border-slate-300 p-2">
+              <option>Evento</option><option>Webinar</option><option>Referencia</option><option>LinkedIn</option><option>Otro</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Siguiente paso</label>
+            <input id="nextDate" type="date" class="mt-1 w-full rounded-md border border-slate-300 p-2" />
+          </div>
         </div>
         <div>
           <label class="block text-sm font-medium">Notas</label>
-          <textarea id="notas" rows="3" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="Resumen, oportunidades, módulos de interés (SolidCAM, Lantek, Logopress, 3D Systems, Artec)..."></textarea>
+          <textarea id="notas" rows="3" class="mt-1 w-full rounded-md border border-slate-300 p-2" placeholder="Resumen, oportunidades, módulos de interés..."></textarea>
         </div>
-        <div class="flex gap-2 pt-1">
-          <button type="submit" class="px-3 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700" id="btnGuardar">Guardar</button>
-          <button type="button" class="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100" id="btnLimpiar">Limpiar</button>
-        </div>
+
+        <button type="submit" class="mt-1 px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
+          Guardar lead
+        </button>
+
+        <p id="miniMsg" class="text-xs text-slate-600 mt-1">Se guarda localmente y se sincroniza con la nube cuando hay conexión.</p>
       </form>
-    </section>
-
-    <!-- Panel derecho: Acciones + Filtros + Tabla -->
-    <section class="md:col-span-2 grid gap-6">
-      <!-- Acciones -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-wrap items-center gap-3">
-        <div class="flex gap-2">
-          <button id="btnExportXLSX" class="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">Exportar Excel (.xlsx)</button>
-          <button id="btnExportCSV"  class="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100">Exportar CSV</button>
-          <button id="btnBackup"     class="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100">Respaldo (.json)</button>
-        </div>
-        <div class="flex items-center gap-2 ml-auto">
-          <span id="cloudStatus" class="text-sm inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente</span>
-          <button id="btnTestCloud" class="px-3 py-2 rounded-md border border-emerald-300 text-emerald-700 hover:bg-emerald-50">Probar conexión</button>
-          <button id="btnSync"      class="px-3 py-2 rounded-md border border-blue-300 text-blue-700 hover:bg-blue-50">Sincronizar</button>
-          <button id="btnBorrarTodo"class="px-3 py-2 rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50">Borrar todo</button>
-        </div>
-      </div>
-
-      <!-- Filtros -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 grid md:grid-cols-4 gap-3">
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium">Buscar</label>
-          <input id="buscador" class="mt-1 w-full rounded-md border border-gray-300 p-2" placeholder="Empresa, contacto, email, ciudad, industria..." />
-        </div>
-        <div>
-          <label class="block text-sm font-medium">Interés</label>
-          <select id="fInteres" class="mt-1 w-full rounded-md border border-gray-300 p-2">
-            <option value="">Todos</option><option>Bajo</option><option>Medio</option><option>Alto</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium">Origen</label>
-          <select id="fOrigen" class="mt-1 w-full rounded-md border border-gray-300 p-2">
-            <option value="">Todos</option><option>Evento</option><option>Webinar</option><option>Referencia</option><option>LinkedIn</option><option>Otro</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Tabla -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm table" id="tabla">
-            <thead class="bg-slate-100 text-slate-700">
-              <tr>
-                <th class="px-3 py-2 text-left">#</th>
-                <th class="px-3 py-2 text-left">Fecha</th>
-                <th class="px-3 py-2 text-left">Empresa</th>
-                <th class="px-3 py-2 text-left">Contacto</th>
-                <th class="px-3 py-2 text-left">Puesto</th>
-                <th class="px-3 py-2 text-left">Teléfono</th>
-                <th class="px-3 py-2 text-left">Email</th>
-                <th class="px-3 py-2 text-left">Ciudad</th>
-                <th class="px-3 py-2 text-left">Estado</th>
-                <th class="px-3 py-2 text-left">Industria</th>
-                <th class="px-3 py-2 text-left"># CNC</th>
-                <th class="px-3 py-2 text-left">Interés</th>
-                <th class="px-3 py-2 text-left">Origen</th>
-                <th class="px-3 py-2 text-left">Siguiente paso</th>
-                <th class="px-3 py-2 text-left">Notas</th>
-                <th class="px-3 py-2 text-left">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-      </div>
     </section>
   </main>
 
-  <!-- ===== FOOTER (igual a home) ===== -->
-  <footer class="bg-gray-100 py-6 border-t border-gray-300 mt-16 text-center pb-24">
-    <div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
-      <div class="flex items-center gap-3">
-        <img src="/assets/logo.png" alt="AlexRaSa" class="h-8 w-auto" loading="lazy" />
-        <p class="text-sm text-gray-600">© 2025 AlexRaSa — Ingeniería, innovación y eficiencia.</p>
-      </div>
-      <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
-        <a href="/SolidCAM/" class="hover:underline">SolidCAM</a><span>·</span>
-        <a href="/lantek/" class="hover:underline">Lantek</a><span>·</span>
-        <a href="/logopress/" class="hover:underline">Logopress</a><span>·</span>
-        <a href="/artec" class="hover:underline">Artec 3D</a><span>·</span>
-        <a href="/3dsystems" class="hover:underline">3D Systems</a>
-      </div>
-      <a href="#top" class="inline-block mt-3 px-5 py-2 bg-blue-600 text-white text-sm rounded-full shadow hover:bg-blue-700 transition">↑ Volver arriba</a>
-    </div>
-  </footer>
-
-  <!-- WhatsApp flotante -->
-  <a href="https://wa.me/524425992802?text=Hola%20Miguel,%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20tus%20soluciones."
-     class="fixed bottom-6 right-6 inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-500 text-white hover:bg-green-600 transition"
-     aria-label="WhatsApp" rel="noopener noreferrer">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 32 32" fill="currentColor"><path d="M19.11 17.44c-.27-.14-1.58-.78-1.83-.86-.25-.09-.43-.14-.61.14-.18.27-.7.86-.86 1.04-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.18-1.34-.81-.72-1.36-1.61-1.52-1.88-.16-.27-.02-.42.12-.55.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.46h-.52c-.18 0 -.48 .07 -.73 .34 -.25 .27 -.96 .94 -.96 2.28 s .98 2.64 1.11 2.82 c .14 .18 1.93 2.95 4.68 4.14 .65 .28 1.16 .45 1.55 .58 .65 .21 1.24 .18 1.71 .11 .52 -.08 1.58 -.65 1.81 -1.27 .23 -.62 .23 -1.15 .16 -1.27 -.07 -.11 -.25 -.18 -.52 -.32 z"/><path d="M26.02 5.97A12.9 12.9 0 0 0 16 2C8.83 2 3 7.83 3 15c0 2.29.6 4.44 1.66 6.31L3 30l8.88-1.63A12.96 12.96 0 0 0 16 28c7.17 0 13-5.83 13-13 0-3.47-1.35-6.72-3.98-9.03z"/></svg>
-    <span class="font-medium">WhatsApp</span>
-  </a>
-
-  <!-- ===== SCRIPTS ===== -->
   <script>
-    /* ===== Menú móvil + header sombra ===== */
-    const mOpen  = document.getElementById('mobileOpenBtn');
-    const mClose = document.getElementById('mobileCloseBtn');
-    const mPanel = document.getElementById('mobilePanel');
-    const mBg    = document.getElementById('mobileBackdrop');
-    function openM(){ mPanel.classList.remove('hidden'); mBg.classList.remove('hidden'); document.body.style.overflow='hidden'; setTimeout(()=>mClose?.focus(), 0); }
-    function closeM(){ mPanel.classList.add('hidden'); mBg.classList.add('hidden'); document.body.style.overflow=''; mOpen?.focus(); }
-    mOpen?.addEventListener('click', openM);
-    mClose?.addEventListener('click', closeM);
-    mBg?.addEventListener('click', closeM);
-    window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeM(); });
-    const siteHeader=document.getElementById('siteHeader');
-    window.addEventListener('scroll',()=>siteHeader.classList.toggle('shadow',window.scrollY>2),{passive:true});
+    /* ===== Config ===== */
+    const WEB_APP_URL = '/api/sendLead';               // proxy en Vercel (evita CORS)
+    const STORAGE_KEY = 'alexrasa_event_leads_v1';     // leads guardados
+    const PENDING_KEY = 'alexrasa_event_leads_pending_v1'; // cola para sincronizar
 
-    /* ===== Config & helpers ===== */
-    const WEB_APP_URL = '/api/sendLead'; // usa el proxy de Vercel para evitar CORS
-    const STORAGE_KEY = 'alexrasa_event_leads_v1';
-    const PENDING_KEY = 'alexrasa_event_leads_pending_v1';
-
+    /* ===== Helpers ===== */
     const $ = s => document.querySelector(s);
-    const statusEl = $('#cloudStatus'), tbody = $('#tbody'), form = $('#leadForm');
+    const statusEl = $('#cloudStatus');
+    const form = $('#leadForm');
+    const miniMsg = $('#miniMsg');
 
     const inputs = {
       id: $('#leadId'), empresa: $('#empresa'), contacto: $('#contacto'), puesto: $('#puesto'),
@@ -330,16 +120,20 @@
       industria: $('#industria'), maquinas: $('#maquinas'), interes: $('#interes'),
       origen: $('#origen'), nextDate: $('#nextDate'), notas: $('#notas')
     };
-    const filtros = { q: $('#buscador'), interes: $('#fInteres'), origen: $('#fOrigen') };
 
     const nowISO = ()=> new Date().toISOString();
-    const load  = (k,d=[]) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } };
+    const load  = (k,d=[]) => { try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } };
     const save  = (k,v) => localStorage.setItem(k, JSON.stringify(v));
 
-    function setStatus(syncing, ok){
-      if (syncing) statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400"></span> Sincronizando...';
-      else if (ok) statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Todo en la nube';
-      else statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente';
+    function setStatus(state){
+      // state: 'pending' | 'syncing' | 'ok'
+      if(state==='syncing'){
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400"></span> Sincronizando...';
+      } else if(state==='ok'){
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sincronizado';
+      } else {
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente';
+      }
     }
 
     function formToLead(){
@@ -362,172 +156,66 @@
         notas: inputs.notas.value.trim()
       };
     }
-    function leadToForm(l){
-      inputs.id.value=l.id; inputs.empresa.value=l.empresa||''; inputs.contacto.value=l.contacto||'';
-      inputs.puesto.value=l.puesto||''; inputs.telefono.value=l.telefono||''; inputs.email.value=l.email||'';
-      inputs.ciudad.value=l.ciudad||''; inputs.estado.value=l.estado||''; inputs.industria.value=l.industria||'';
-      inputs.maquinas.value=l.maquinas||''; inputs.interes.value=l.interes||''; inputs.origen.value=l.origen||'';
-      inputs.nextDate.value=l.nextDate||''; inputs.notas.value=l.notas||'';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    function matchesFilters(l){
-      const q = (filtros.q?.value||'').toLowerCase();
-      const hit = !q || [l.empresa,l.contacto,l.email,l.ciudad,l.industria,l.estado].filter(Boolean).some(v=>String(v).toLowerCase().includes(q));
-      const f1 = !filtros.interes?.value || filtros.interes.value===l.interes;
-      const f2 = !filtros.origen?.value  || filtros.origen.value===l.origen;
-      return hit && f1 && f2;
-    }
-    function render(){
-      const leads = load(STORAGE_KEY,[]);
-      const rows = leads.filter(matchesFilters).map((l,i)=>`
-        <tr class="hover:bg-slate-50">
-          <td class="px-3 py-2 align-top">${i+1}</td>
-          <td class="px-3 py-2 align-top whitespace-nowrap">${l.fecha||''}</td>
-          <td class="px-3 py-2 align-top font-medium">${l.empresa||''}</td>
-          <td class="px-3 py-2 align-top">${l.contacto||''}</td>
-          <td class="px-3 py-2 align-top">${l.puesto||''}</td>
-          <td class="px-3 py-2 align-top">${l.telefono||''}</td>
-          <td class="px-3 py-2 align-top">${l.email||''}</td>
-          <td class="px-3 py-2 align-top">${l.ciudad||''}</td>
-          <td class="px-3 py-2 align-top">${l.estado||''}</td>
-          <td class="px-3 py-2 align-top">${l.industria||''}</td>
-          <td class="px-3 py-2 align-top">${l.maquinas??''}</td>
-          <td class="px-3 py-2 align-top">${l.interes||''}</td>
-          <td class="px-3 py-2 align-top">${l.origen||''}</td>
-          <td class="px-3 py-2 align-top whitespace-nowrap">${l.nextDate||''}</td>
-          <td class="px-3 py-2 align-top max-w-[28ch] truncate" title="${l.notas||''}">${l.notas||''}</td>
-          <td class="px-3 py-2 align-top">
-            <div class="flex gap-2">
-              <button class="px-2 py-1 rounded-md border border-gray-300" data-edit="${l.id}">Editar</button>
-              <button class="px-2 py-1 rounded-md border border-rose-300 text-rose-700" data-del="${l.id}">Eliminar</button>
-            </div>
-          </td>
-        </tr>`).join('');
-      tbody.innerHTML = rows || `<tr><td colspan="16" class="px-3 py-6 text-center text-slate-500">Sin leads aún</td></tr>`;
-    }
 
-    /* ===== Sync cloud (via proxy) ===== */
     function queuePending(lead){
       const q = load(PENDING_KEY,[]);
       if (!q.find(x=>x.id===lead.id)) q.push(lead);
       save(PENDING_KEY,q);
+      setStatus('pending');
     }
+
     async function sendToCloud(lead){
       try{
         const r = await fetch(WEB_APP_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(lead) });
         const text = await r.text(); let data=null; try{ data=JSON.parse(text) }catch{}
-        if (r.ok && data && data.ok){ setStatus(false, load(PENDING_KEY,[]).length===0); return true; }
-        queuePending(lead); setStatus(false,false); return false;
-      }catch{ queuePending(lead); setStatus(false,false); return false; }
+        return (r.ok && data && data.ok);
+      }catch{ return false; }
     }
+
     async function syncPending(){
       const q = load(PENDING_KEY,[]);
-      if (!q.length){ setStatus(false,true); return; }
-      setStatus(true);
-      const okIds=[];
+      if (!q.length){ setStatus('ok'); return; }
+      setStatus('syncing');
+      const okIds = [];
       for (const it of q){
-        try{
-          const r = await fetch(WEB_APP_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(it) });
-          const text = await r.text(); let data=null; try{ data=JSON.parse(text) }catch{}
-          if (r.ok && data && data.ok) okIds.push(it.id);
-        }catch{}
+        const ok = await sendToCloud(it);
+        if (ok) okIds.push(it.id);
       }
       const remaining = q.filter(x=>!okIds.includes(x.id));
       save(PENDING_KEY, remaining);
-      setStatus(false, remaining.length===0);
-    }
-
-    /* ===== Export/backup ===== */
-    function exportCSV(){
-      const leads = load(STORAGE_KEY,[]);
-      if(!leads.length) return alert('No hay datos para exportar');
-      const headers = ['fecha','empresa','contacto','puesto','telefono','email','ciudad','estado','industria','maquinas','interes','origen','nextDate','notas'];
-      const rows = [headers.join(',')].concat(leads.map(l => headers.map(h => `"${(l[h]??'').toString().replaceAll('"','""')}"`).join(',')));
-      const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob); const a=document.createElement('a');
-      a.href=url; a.download='leads_evento.csv'; a.click(); URL.revokeObjectURL(url);
-    }
-    function exportXLSX(){
-      const leads = load(STORAGE_KEY,[]);
-      if(!leads.length) return alert('No hay datos para exportar');
-      const ws = XLSX.utils.json_to_sheet(leads);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Leads');
-      XLSX.writeFile(wb, 'leads_evento.xlsx');
-    }
-    function downloadBackup(){
-      const leads = load(STORAGE_KEY,[]);
-      const blob = new Blob([JSON.stringify(leads, null, 2)], { type:'application/json' });
-      const url = URL.createObjectURL(blob); const a=document.createElement('a');
-      a.href=url; a.download='leads_evento_backup.json'; a.click(); URL.revokeObjectURL(url);
+      setStatus(remaining.length ? 'pending' : 'ok');
     }
 
     /* ===== Eventos ===== */
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
-      if (!inputs.empresa.value.trim() || !inputs.contacto.value.trim()){
-        alert('Empresa y Contacto son obligatorios'); return;
+      if(!inputs.empresa.value.trim() || !inputs.contacto.value.trim()){
+        miniMsg.textContent = 'Empresa y Contacto son obligatorios.'; miniMsg.className='text-xs text-rose-700 mt-1';
+        return;
       }
-      const leads = load(STORAGE_KEY,[]);
-      const draft = formToLead();
-      const idx = leads.findIndex(l=>l.id===draft.id);
-      if (idx>=0) leads[idx] = { ...leads[idx], ...draft }; else leads.push(draft);
-      save(STORAGE_KEY,leads);
+      const lead = formToLead();
+
+      // Guarda local
+      const all = load(STORAGE_KEY,[]);
+      const idx = all.findIndex(l=>l.id===lead.id);
+      if (idx>=0) all[idx] = { ...all[idx], ...lead }; else all.push(lead);
+      save(STORAGE_KEY, all);
+
+      // Intenta nube
+      const ok = await sendToCloud(lead);
+      if(!ok) queuePending(lead); else setStatus('ok');
+
+      // Reset y feedback
       form.reset(); inputs.id.value='';
-      render();
-      await sendToCloud(draft);
+      miniMsg.textContent = ok ? 'Guardado y sincronizado.' : 'Guardado local. Se sincronizará cuando haya conexión.';
+      miniMsg.className = ok ? 'text-xs text-emerald-700 mt-1' : 'text-xs text-amber-700 mt-1';
+      window.scrollTo({top:0,behavior:'smooth'});
     });
 
-    $('#btnLimpiar').addEventListener('click', ()=>{ form.reset(); inputs.id.value=''; });
-    $('#btnExportCSV').addEventListener('click', exportCSV);
-    $('#btnExportXLSX').addEventListener('click', exportXLSX);
-    $('#btnBackup').addEventListener('click', downloadBackup);
-    $('#btnSync').addEventListener('click', syncPending);
+    // Sincroniza automáticamente cuando vuelva la conexión o al cargar
     window.addEventListener('online', syncPending);
-
-    tbody.addEventListener('click', (e)=>{
-      const idEdit = e.target.getAttribute('data-edit');
-      const idDel  = e.target.getAttribute('data-del');
-      const leads  = load(STORAGE_KEY,[]);
-      if (idEdit){
-        const lead = leads.find(l=>l.id===idEdit);
-        if (lead) leadToForm(lead);
-      }
-      if (idDel){
-        if (confirm('¿Eliminar este lead?')){
-          save(STORAGE_KEY, leads.filter(l=>l.id!==idDel));
-          render();
-        }
-      }
-    });
-
-    // Búsqueda / filtros
-    filtros.q?.addEventListener('input', render);
-    filtros.interes?.addEventListener('change', render);
-    filtros.origen?.addEventListener('change', render);
-
-    // Probar conexión (inserta un TEST)
-    $('#btnTestCloud').addEventListener('click', async ()=>{
-      setStatus(true);
-      try{
-        const testLead = {
-          id: crypto.randomUUID(),
-          fecha: new Date().toLocaleDateString('es-MX'),
-          createdAt: nowISO(),
-          empresa:'TEST', contacto:'Conexión', puesto:'',
-          telefono:'', email:'', ciudad:'', estado:'', industria:'',
-          maquinas:'', interes:'Test', origen:'Prueba', nextDate:'', notas:'Ping de prueba'
-        };
-        const r = await fetch(WEB_APP_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(testLead) });
-        const text = await r.text(); let data=null; try{ data=JSON.parse(text) }catch{}
-        if (r.ok && data && data.ok){ alert('✅ Conectado correctamente a Google Sheets. Revisa tu hoja (registro TEST).'); setStatus(false, true); }
-        else { alert('⚠️ Error al conectar. Revisa el proxy /api/sendLead y Apps Script.'); setStatus(false,false); }
-      }catch{ alert('⚠️ No hay conexión.'); setStatus(false,false); }
-    });
-
-    // Init
-    render();
-    setStatus(false, load(PENDING_KEY,[]).length===0);
+    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncPending(); });
+    window.addEventListener('load', ()=>{ const pending = load(PENDING_KEY,[]); setStatus(pending.length ? 'pending' : 'ok'); syncPending(); });
   </script>
 </body>
 </html>
