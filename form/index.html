@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Registro de Leads — Evento | AlexRaSa</title>
-  <meta name="description" content="Formulario rápido para capturar leads con estilo AlexRaSa. Guarda localmente y sincroniza con Google Sheets." />
   <meta name="theme-color" content="#0F172A" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -41,8 +40,8 @@
 
   <!-- ===== FORMULARIO ===== -->
   <main class="max-w-3xl mx-auto px-4 pb-12">
-    <!-- Logos (fondo blanco para contraste) -->
     <div class="bg-white rounded-xl border border-white/10 shadow-sm mb-6">
+      <div class="px-4 py-3 border-b border-gray-200 text-sm text-gray-700">Soluciones</div>
       <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 place-items-center">
         <img src="/assets/logos/solidcam.png" alt="SolidCAM" class="h-8 w-auto object-contain" loading="lazy">
         <img src="/assets/logos/lantek-blue.svg" alt="Lantek" class="h-8 w-auto object-contain" loading="lazy">
@@ -101,7 +100,6 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-200">Área de interés</label>
-          <!-- bg-white + texto oscuro para contraste del desplegable -->
           <select id="interes" class="mt-1 w-full rounded-md border border-white/20 bg-white p-2 text-gray-900">
             <option value="">— Selecciona —</option>
             <option>SolidCAM & iMachining</option>
@@ -121,11 +119,18 @@
         <button type="submit" class="mt-1 px-4 py-2 rounded-md bg-sky-600 text-white font-medium hover:bg-sky-700 transition">
           Guardar información
         </button>
-
-        <p id="miniMsg" class="text-xs text-gray-300 mt-1"></p>
       </form>
     </section>
   </main>
+
+  <!-- Modal de confirmación -->
+  <div id="thankModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 text-center text-gray-800 max-w-sm mx-4">
+      <h2 class="text-2xl font-bold text-emerald-600">¡Muchas gracias!</h2>
+      <p class="mt-2 text-sm text-gray-700">Tu información ha sido registrada correctamente.<br>Estaremos en contacto pronto.</p>
+      <button id="closeModal" class="mt-5 px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Aceptar</button>
+    </div>
+  </div>
 
   <!-- ===== FOOTER ===== -->
   <footer class="bg-black/40 border-t border-white/10 py-4 mt-8 text-center text-xs text-gray-400">
@@ -138,20 +143,11 @@
     const WEB_APP_URL = '/api/sendLead';
     const STORAGE_KEY = 'alexrasa_event_leads_v1';
     const PENDING_KEY = 'alexrasa_event_leads_pending_v1';
-
     const $ = s => document.querySelector(s);
     const statusEl = $('#cloudStatus');
     const form = $('#leadForm');
-    const miniMsg = $('#miniMsg');
-    const inputs = {
-      id: $('#leadId'), empresa: $('#empresa'), contacto: $('#contacto'), puesto: $('#puesto'),
-      telefono: $('#telefono'), email: $('#email'), ciudad: $('#ciudad'), estado: $('#estado'),
-      industria: $('#industria'), interes: $('#interes'), notas: $('#notas')
-    };
-
-    const nowISO = ()=> new Date().toISOString();
-    const load  = (k,d=[]) => { try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } };
-    const save  = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+    const modal = $('#thankModal');
+    const closeModal = $('#closeModal');
 
     function setStatus(state){
       if(state==='syncing'){
@@ -164,64 +160,40 @@
     }
 
     function formToLead(){
+      const get = id => $(id).value.trim();
       return {
-        id: inputs.id.value || crypto.randomUUID(),
+        id: crypto.randomUUID(),
         fecha: new Date().toLocaleDateString('es-MX'),
-        createdAt: nowISO(),
-        empresa: inputs.empresa.value.trim(),
-        contacto: inputs.contacto.value.trim(),
-        puesto: inputs.puesto.value.trim(),
-        telefono: inputs.telefono.value.trim(),
-        email: inputs.email.value.trim(),
-        ciudad: inputs.ciudad.value.trim(),
-        estado: inputs.estado.value.trim(),
-        industria: inputs.industria.value.trim(),
-        interes: inputs.interes.value,
-        notas: inputs.notas.value.trim() || ''
+        empresa: get('#empresa'),
+        contacto: get('#contacto'),
+        puesto: get('#puesto'),
+        telefono: get('#telefono'),
+        email: get('#email'),
+        ciudad: get('#ciudad'),
+        estado: get('#estado'),
+        industria: get('#industria'),
+        interes: get('#interes'),
+        notas: get('#notas')
       };
     }
 
     async function sendToCloud(lead){
       try{
         const r = await fetch(WEB_APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lead)});
-        const text = await r.text(); let data=null; try{data=JSON.parse(text)}catch{}
-        return (r.ok && data && data.ok);
+        return r.ok;
       }catch{return false;}
-    }
-
-    function queuePending(lead){
-      const q=load(PENDING_KEY,[]); if(!q.find(x=>x.id===lead.id)) q.push(lead);
-      save(PENDING_KEY,q); setStatus('pending');
-    }
-
-    async function syncPending(){
-      const q=load(PENDING_KEY,[]); if(!q.length){setStatus('ok');return;}
-      setStatus('syncing'); const okIds=[];
-      for(const it of q){const ok=await sendToCloud(it); if(ok) okIds.push(it.id);}
-      const remaining=q.filter(x=>!okIds.includes(x.id)); save(PENDING_KEY,remaining);
-      setStatus(remaining.length?'pending':'ok');
     }
 
     form.addEventListener('submit',async e=>{
       e.preventDefault();
-      if(!inputs.empresa.value.trim() || !inputs.contacto.value.trim()){
-        miniMsg.textContent='Empresa y Contacto son obligatorios.'; miniMsg.className='text-xs text-rose-400 mt-1'; return;
-      }
       const lead=formToLead();
-      const all=load(STORAGE_KEY,[]); const idx=all.findIndex(l=>l.id===lead.id);
-      if(idx>=0) all[idx]={...all[idx],...lead}; else all.push(lead); save(STORAGE_KEY,all);
-
-      const ok=await sendToCloud(lead);
-      if(!ok) queuePending(lead); else setStatus('ok');
-
-      form.reset(); inputs.id.value='';
-      miniMsg.textContent= ok ? 'Información guardada y sincronizada.' : 'Información guardada. Se sincronizará al reconectar.';
-      miniMsg.className= ok ? 'text-xs text-emerald-400 mt-1' : 'text-xs text-amber-400 mt-1';
+      await sendToCloud(lead);
+      form.reset();
+      modal.classList.remove('hidden');
+      setStatus('ok');
     });
 
-    window.addEventListener('online',syncPending);
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncPending();});
-    window.addEventListener('load',()=>{const p=load(PENDING_KEY,[]);setStatus(p.length?'pending':'ok');syncPending();});
+    closeModal.addEventListener('click',()=>modal.classList.add('hidden'));
   </script>
 </body>
 </html>
