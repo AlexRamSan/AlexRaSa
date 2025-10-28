@@ -4,20 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Registro de Leads — Evento | AlexRaSa</title>
-  <meta name="description" content="Formulario offline para capturar leads durante un evento. Persiste en LocalStorage y exporta a Excel/CSV." />
+  <meta name="description" content="Formulario offline para capturar leads durante un evento. Persiste en LocalStorage y también sube a Google Sheets." />
   <meta name="theme-color" content="#0F172A" />
   <link rel="icon" href="/assets/favicon.ico" />
 
-  <!-- Tailwind CDN (modo JIT en el navegador) -->
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { base: { 900: '#0F172A', 800: '#1E293B' } }
-        }
-      }
-    }
+    tailwind.config = { theme: { extend: { colors: { base: { 900: '#0F172A', 800: '#1E293B' } } } } }
   </script>
   <!-- SheetJS para exportar a .xlsx -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -26,7 +20,9 @@
   <header class="bg-base-900 text-white py-4">
     <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
       <h1 class="text-xl font-bold">Registro de Leads — Evento</h1>
-      <div class="text-sm opacity-80">Datos guardados localmente en tu navegador</div>
+      <div class="text-sm opacity-80 flex items-center gap-2">
+        <span id="cloudStatus" class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente</span>
+      </div>
     </div>
   </header>
 
@@ -137,6 +133,7 @@
         <div class="flex items-center gap-2 ml-auto">
           <input id="fileImport" type="file" accept=".csv,.json" class="hidden" />
           <button id="btnImport" class="px-3 py-2 rounded-xl border border-slate-300">Importar CSV/JSON</button>
+          <button id="btnSync" class="px-3 py-2 rounded-xl border border-emerald-300 text-emerald-700">Sincronizar pendientes</button>
           <button id="btnBorrarTodo" class="px-3 py-2 rounded-xl border border-rose-300 text-rose-700">Borrar todo</button>
         </div>
       </div>
@@ -201,16 +198,20 @@
   </main>
 
   <footer class="max-w-6xl mx-auto px-4 pb-8 text-xs text-slate-500">
-    Sugerencia: mantén un respaldo diario (JSON) y al cierre exporta a Excel.
+    Los datos se guardan localmente y se suben a Google Sheets cuando hay internet. Usa "Sincronizar pendientes" si ves el punto amarillo arriba.
   </footer>
 
   <script>
-    // ====== Utilidades ======
+    // ====== Config ======
     const STORAGE_KEY = 'alexrasa_event_leads_v1';
+    const PENDING_KEY = 'alexrasa_event_leads_pending_v1';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/PEGAR_AQUI_TU_URL/exec'; // <-- REEMPLAZA
 
+    // ====== Helpers ======
     const $ = (sel) => document.querySelector(sel);
     const form = $('#leadForm');
     const tbody = $('#tbody');
+    const statusEl = $('#cloudStatus');
 
     const inputs = {
       id: $('#leadId'), empresa: $('#empresa'), contacto: $('#contacto'), puesto: $('#puesto'), telefono: $('#telefono'), email: $('#email'), ciudad: $('#ciudad'), estado: $('#estado'), industria: $('#industria'), maquinas: $('#maquinas'), interes: $('#interes'), origen: $('#origen'), nextDate: $('#nextDate'), notas: $('#notas')
@@ -220,19 +221,23 @@
 
     const nowISO = () => new Date().toISOString();
 
-    function loadLeads() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-      catch { return []; }
+    const load = (k, d=[]) => { try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } };
+    const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+    function loadLeads() { return load(STORAGE_KEY, []); }
+    function saveLeads(leads) { save(STORAGE_KEY, leads); }
+
+    function setStatus(syncing, ok) {
+      if (syncing) {
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400"></span> Sincronizando...';
+      } else if (ok) {
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Todo en la nube';
+      } else {
+        statusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-400"></span> Sincronización pendiente';
+      }
     }
 
-    function saveLeads(leads) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-    }
-
-    function clearForm() {
-      inputs.id.value = '';
-      form.reset();
-    }
+    function clearForm() { inputs.id.value = ''; form.reset(); }
 
     function formToLead() {
       return {
@@ -312,8 +317,49 @@
       tbody.innerHTML = rows || `<tr><td colspan="16" class="px-3 py-6 text-center text-slate-500">Sin leads aún</td></tr>`;
     }
 
+    // ====== Cloud sync (Google Sheets) ======
+    async function sendToCloud(lead) {
+      if (!WEB_APP_URL || WEB_APP_URL.includes('PEGAR_AQUI_TU_URL')) {
+        queuePending(lead); setStatus(false, false); return; // aún sin URL configurada
+      }
+      try {
+        const r = await fetch(WEB_APP_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lead)
+        });
+        const data = await r.json().catch(()=>({ ok:false }));
+        if (!r.ok || !data.ok) { queuePending(lead); setStatus(false, false); }
+        else { setStatus(false, load(PENDING_KEY, []).length === 0); }
+      } catch (e) {
+        queuePending(lead); setStatus(false, false);
+      }
+    }
+
+    function queuePending(lead) {
+      const q = load(PENDING_KEY, []);
+      // Evita duplicados por id
+      if (!q.find(x => x.id === lead.id)) q.push(lead);
+      save(PENDING_KEY, q);
+    }
+
+    async function syncPending() {
+      const q = load(PENDING_KEY, []);
+      if (!q.length) { setStatus(false, true); return; }
+      setStatus(true);
+      const okList = [];
+      for (const item of q) {
+        try {
+          const r = await fetch(WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) });
+          const data = await r.json().catch(()=>({ ok:false }));
+          if (r.ok && data.ok) okList.push(item.id);
+        } catch {}
+      }
+      const remaining = q.filter(x => !okList.includes(x.id));
+      save(PENDING_KEY, remaining);
+      setStatus(false, remaining.length === 0);
+    }
+
     // ====== Eventos ======
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!inputs.empresa.value.trim() || !inputs.contacto.value.trim()) {
         alert('Empresa y Contacto son obligatorios');
@@ -322,14 +368,13 @@
       const leads = loadLeads();
       const draft = formToLead();
       const idx = leads.findIndex(l => l.id === draft.id);
-      if (idx >= 0) {
-        leads[idx] = { ...leads[idx], ...draft };
-      } else {
-        leads.push(draft);
-      }
+      if (idx >= 0) { leads[idx] = { ...leads[idx], ...draft }; }
+      else { leads.push(draft); }
       saveLeads(leads);
       clearForm();
       render();
+      // Enviar a la nube (con cola si falla)
+      sendToCloud(draft);
     });
 
     $('#btnLimpiar').addEventListener('click', clearForm);
@@ -363,7 +408,8 @@
         const v = (l[h] ?? '').toString().replaceAll('"', '""');
         return `"${v}"`;
       }).join(',')));
-      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([rows.join('
+')], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = 'leads_evento.csv'; a.click();
@@ -404,8 +450,10 @@
           let imported = [];
           if (file.name.endsWith('.json')) {
             imported = JSON.parse(text);
-          } else { // CSV muy simple
-            const [header, ...lines] = text.split(/\r?\n/).filter(Boolean);
+          } else { // CSV simple entrecomillado
+            const [header, ...lines] = text.split(/
+?
+/).filter(Boolean);
             const cols = header.split(',').map(h=>h.replaceAll('"','').trim());
             imported = lines.map(line => {
               const parts = line.match(/\"([^\"]*)\"(?=,|$)/g)?.map(s=>s.slice(1,-1)) || line.split(',');
@@ -426,16 +474,22 @@
       reader.readAsText(file);
     });
 
-    // ====== Borrar todo ======
+    // ====== Borrar todo / Sync ======
     $('#btnBorrarTodo').addEventListener('click', () => {
       if (confirm('¿Borrar TODOS los leads almacenados en este navegador?')) {
         localStorage.removeItem(STORAGE_KEY);
-        render();
+        localStorage.removeItem(PENDING_KEY);
+        render(); setStatus(false, true);
       }
     });
 
+    $('#btnSync').addEventListener('click', syncPending);
+    window.addEventListener('online', syncPending);
+
     // ====== Init ======
     render();
+    // Estado inicial
+    setStatus(false, load(PENDING_KEY, []).length === 0);
   </script>
 </body>
 </html>
