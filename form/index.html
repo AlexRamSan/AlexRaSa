@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Registro de Leads — Evento | AlexRaSa</title>
+  <title>Registro — Evento | AlexRaSa</title>
   <meta name="theme-color" content="#0F172A" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -35,7 +35,7 @@
             AlexRaSa<span class="text-sky-400">.store</span>
           </span>
         </a>
-        <!-- Semáforo de conexión (clickeable) -->
+        <!-- Semáforo clickeable para probar conexión -->
         <button id="cloudStatus"
                 class="text-xs inline-flex items-center gap-2 text-gray-200 hover:text-white transition cursor-pointer select-none"
                 type="button"
@@ -48,7 +48,7 @@
 
     <section class="max-w-6xl mx-auto px-4 py-10 md:py-14 text-white">
       <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">
-        Registro de Leads — <span class="text-sky-300">Evento</span>
+        Registro — <span class="text-sky-300">Evento</span>
       </h1>
       <p class="mt-2 text-white/90 text-sm md:text-base">Completa el registro de interés en nuestras soluciones.</p>
     </section>
@@ -56,9 +56,7 @@
 
   <!-- ===== FORMULARIO ===== -->
   <main class="max-w-3xl mx-auto px-4 pb-12">
-    <!-- Logos (fondo blanco para contraste) -->
     <div class="bg-white rounded-xl border border-white/10 shadow-sm mb-6">
-      <div class="px-4 py-3 border-b border-gray-200 text-sm text-gray-700">Soluciones</div>
       <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 place-items-center">
         <img src="/assets/logos/solidcam.png" alt="SolidCAM" class="h-8 w-auto object-contain" loading="lazy">
         <img src="/assets/logos/lantek-blue.svg" alt="Lantek" class="h-8 w-auto object-contain" loading="lazy">
@@ -138,7 +136,7 @@
     </section>
   </main>
 
-  <!-- ===== MODAL DE CONFIRMACIÓN ===== -->
+  <!-- ===== MODAL ===== -->
   <div id="thankModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center">
     <div class="bg-white rounded-2xl shadow-2xl p-8 text-center text-gray-800 max-w-sm mx-4 relative overflow-hidden">
       <div id="confettiContainer" class="absolute inset-0 pointer-events-none"></div>
@@ -154,10 +152,8 @@
     <a href="https://alexrasa.store" class="text-sky-400 hover:underline">alexrasa.store</a>
   </footer>
 
-  <!-- ===== SCRIPT ===== -->
   <script>
-    // Tu endpoint de Google Apps Script (Web App)
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwrg-93tIvGCd-W0eQprDGrBIIkotM41McJplAItc_mPKDvjpjedFwmAziw9jWQWxRWvQ/exec';
+    const WEB_APP_URL = '/api/sendLead'; // ahora pasa por tu serverless (sin CORS)
 
     const $ = s => document.querySelector(s);
     const form = $('#leadForm');
@@ -165,8 +161,6 @@
     const closeModal = $('#closeModal');
     const confettiContainer = $('#confettiContainer');
     const statusEl = $('#cloudStatus');
-
-    let testing = false; // evita doble clic durante prueba
 
     function setStatus(state){
       if(!statusEl) return;
@@ -194,21 +188,18 @@
       }
     }
 
-    async function postToGAS(payload){
-      const r = await fetch(WEB_APP_URL, {
+    async function postJSON(url, payload){
+      const r = await fetch(url, {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
       });
-      let ok = r.ok;
-      try {
-        const data = await r.json();
-        ok = ok && !!data.ok;
-      } catch(_) {}
-      return ok;
+      const data = await r.json().catch(()=>({}));
+      return { ok: r.ok && (data.ok !== false), data };
     }
 
-    // === Probar conexión al hacer clic en el semáforo ===
+    // Probar conexión al clicar el semáforo
+    let testing = false;
     statusEl?.addEventListener('click', async () => {
       if (testing) return;
       testing = true;
@@ -234,11 +225,11 @@
       };
 
       try {
-        const ok = await postToGAS(testLead);
+        const { ok } = await postJSON(WEB_APP_URL, testLead);
         setStatus(ok ? 'ok' : 'pending');
-        alert(ok ? '✅ Conexión OK. Revisa tu Google Sheet: deberá aparecer un registro TEST.' :
-                   '⚠️ No se pudo conectar con Google Sheets. Revisa tu Apps Script/Web App.');
-      } catch (e) {
+        alert(ok ? '✅ Conexión OK. Revisa tu Google Sheet: verás un TEST.' :
+                   '⚠️ No se pudo conectar. Revisa tu deployment en Vercel y el Apps Script.');
+      } catch {
         setStatus('pending');
         alert('⚠️ Error de red al probar conexión.');
       } finally {
@@ -246,13 +237,12 @@
       }
     });
 
-    // === Envío del formulario real ===
+    // Envío del formulario
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!form.checkValidity()) { form.reportValidity(); return; }
 
       const f = Object.fromEntries(new FormData(form).entries());
-
       const lead = {
         id: crypto.randomUUID(),
         fecha: new Date().toLocaleDateString('es-MX'),
@@ -274,21 +264,18 @@
 
       setStatus('syncing');
       try{
-        const ok = await postToGAS(lead);
+        const { ok } = await postJSON(WEB_APP_URL, lead);
         setStatus(ok ? 'ok' : 'pending');
       }catch{
         setStatus('pending');
       }
 
-      // UX: limpiar y mostrar modal
       form.reset();
       modal.classList.remove('hidden');
       launchConfetti();
     });
 
     closeModal.addEventListener('click', () => modal.classList.add('hidden'));
-
-    // Estado inicial del semáforo
     setStatus('pending');
   </script>
 </body>
