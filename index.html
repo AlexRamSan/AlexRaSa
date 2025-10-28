@@ -32,39 +32,35 @@
     .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
     .reveal.show{opacity:1;transform:none}
     .safe-top{padding-top:env(safe-area-inset-top)}
-    /* Tarjetas compactas */
     .card{padding:1rem}
     .logo-wrap{height:28px;width:auto;display:flex;align-items:center;justify-content:flex-end}
     .logo-wrap img{max-height:28px;max-width:110px;object-fit:contain;object-position:right}
-    /* Modal vídeo */
     .modal-enter{opacity:0}
     .modal-enter.modal-open{opacity:1;transition:opacity .2s ease}
 
-    /* === Backdrop móvil (ocupa toda la pantalla, con blur y fade) === */
+    /* === Backdrop móvil (cubre todo, oscuro con blur) === */
     #mobileBackdrop{
       position:fixed; inset:0; z-index:40;
-      background:rgba(15,23,42,.85); /* slate-900/85 */
+      background:rgba(15,23,42,.75); /* slate-900/75 */
       backdrop-filter: blur(4px);
       opacity:0; pointer-events:none; transition:opacity .25s ease;
     }
     #mobileBackdrop.active{ opacity:1; pointer-events:auto; }
 
-    /* === Panel móvil full screen (fondo sólido blanco) === */
+    /* === Panel móvil lateral derecho (drawer) === */
     #mobilePanel{
-      position:fixed; inset:0; z-index:50;
-      background:#ffffff;
-      border-left: 1px solid #e5e7eb;
-      box-shadow: 0 10px 40px rgba(0,0,0,.18);
-      transform: translateY(100%);
-      transition: transform .25s ease;
+      position:fixed; inset-y:0; top:0; bottom:0; right:0; z-index:50;
+      width:88vw; max-width:420px; background:#fff;
+      border-left:1px solid #e5e7eb; box-shadow:-8px 0 28px rgba(0,0,0,.18);
+      transform:translateX(100%); transition:transform .25s ease;
       display:flex; flex-direction:column;
     }
-    #mobilePanel.active{ transform: translateY(0); }
+    #mobilePanel.active{ transform:translateX(0); }
 
-    /* Evitar que el header tape el backdrop */
+    /* Header por debajo del panel/backdrop */
     #siteHeader{ z-index:30; }
 
-    /* Estilos locales sección SOLUCIONES */
+    /* Estilos locales SOLUCIONES */
     #soluciones .card{border-radius:14px;padding:16px;border:1px solid #e5e7eb;background:#fff;display:flex;flex-direction:column;gap:10px;height:100%;transition:box-shadow .25s,transform .25s;}
     #soluciones .card:hover{box-shadow:0 8px 28px rgba(15,23,42,.08);transform:translateY(-2px);}
     #soluciones .logo-top{height:40px;display:flex;align-items:center;}
@@ -119,10 +115,10 @@
       </div>
     </div>
 
-    <!-- Backdrop y Panel móvil (full-screen) -->
-    <div id="mobileBackdrop" class=""></div>
+    <!-- Backdrop y Panel móvil lateral -->
+    <div id="mobileBackdrop"></div>
 
-    <aside id="mobilePanel" class="">
+    <aside id="mobilePanel">
       <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
         <span class="text-base font-semibold">Menú</span>
         <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar">
@@ -493,7 +489,7 @@
           <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-600 via-blue-500 to-sky-500"></div>
           <div class="flex items-center justify-between">
             <h3 class="font-semibold text-gray-900">Power BI — Tablero OEE inicial</h3>
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">Dashboard</span>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">Dashboard</span>
           </div>
           <p class="mt-2 text-sm text-gray-800">Visualiza disponibilidad, rendimiento y calidad desde el día 1.</p>
           <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20recurso%3A%20Tablero%20OEE%20inicial" class="mt-4 inline-flex items-center gap-2 text-indigo-700 hover:underline text-sm">Solicitar tablero →</a>
@@ -620,7 +616,7 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script>
-    // Mobile menu
+    // Mobile menu (drawer lateral)
     const mOpen=document.getElementById('mobileOpenBtn'),
           mClose=document.getElementById('mobileCloseBtn'),
           mPanel=document.getElementById('mobilePanel'),
@@ -639,6 +635,8 @@
     mOpen?.addEventListener('click',openM);
     mClose?.addEventListener('click',closeM);
     mBg?.addEventListener('click',closeM);
+    // Cerrar con ESC
+    window.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeM(); });
 
     // Header shadow
     const siteHeader=document.getElementById('siteHeader');
