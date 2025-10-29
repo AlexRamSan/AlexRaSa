@@ -1,101 +1,94 @@
-// File: api/new-post.js  (Vercel serverless)
-// Node 18+
-// Crea blog/posts/slug.html con front-matter y lo commitea al repo por GitHub API
+// /api/new-post.js  (Vercel)
+// Env: GITHUB_TOKEN, GITHUB_REPO=AlexRamSan/AlexRaSa, GITHUB_BRANCH=main, ADMIN_KEY
 
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  }
+
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
-    }
-
-    // 1) Autenticación simple por clave compartida
-    const adminKeyHeader = req.headers.authorization || '';
-    const adminKey = adminKeyHeader.startsWith('Bearer ') ? adminKeyHeader.slice(7) : null;
-
+    const auth = req.headers.authorization || '';
+    const adminKey = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
       return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    // 2) Payload
-    const { title, description, image, body, date } = await readJson(req);
-    if (!title || !body) {
-      return res.status(400).json({ ok: false, error: 'title and body are required' });
+    const { title, description, image, body, date } = await req.json?.() || req.body;
+    if (!title || !description || !body) {
+      return res.status(400).json({ ok: false, error: 'Missing fields' });
     }
 
-    // 3) Slug + fecha
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const isoDate = date || `${yyyy}-${mm}-${dd}`;
+    const slug = slugify(title);
+    const y = (date || new Date().toISOString().slice(0, 10));
 
-    const slug = title
-      .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-    const content = [
+    const front = [
       '---',
-      `title: "${escapeYAML(title)}"`,
-      `description: "${escapeYAML(description || '')}"`,
-      `image: "${(image || '').replace(/"/g, '\\"')}"`,
-      `date: "${isoDate}"`,
-      '---',
-      '',
-      body
-    ].join('\n');
+      `title: "${escapeYaml(title)}"`,
+      `description: "${escapeYaml(description)}"`,
+      image ? `image: "${image}"` : null,
+      `date: ${y}`,
+      '---'
+    ].filter(Boolean).join('\n');
 
-    // 4) GitHub
-    const repo   = process.env.GITHUB_REPO   || 'AlexRamSan/AlexRaSa';
+    const html = `<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)} | Blog — AlexRaSa</title>
+<meta name="description" content="${escapeHtml(description)}">
+<link rel="canonical" href="https://alexrasa.store/blog/posts/${slug}.html">
+<link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+<script src="https://cdn.tailwindcss.com"></script>
+</head><body class="bg-gray-50 text-gray-900">
+<main class="max-w-3xl mx-auto px-6 py-10">
+<article class="prose max-w-none">
+${front}
+${body}
+</article>
+</main>
+</body></html>`;
+
+    // Commit a GitHub
+    const token  = process.env.GITHUB_TOKEN;
+    const repo   = process.env.GITHUB_REPO;   // ej: AlexRamSan/AlexRaSa
     const branch = process.env.GITHUB_BRANCH || 'main';
-    const token  = process.env.GITHUB_TOKEN; // PAT de GitHub con acceso al repo
-    if (!token) return res.status(500).json({ ok: false, error: 'Missing GITHUB_TOKEN' });
+    const path   = `blog/posts/${slug}.html`;
 
-    const path = `blog/posts/${slug}.html`;
-    const api  = `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}`;
-
-    // Evitar sobreescritura si ya existe
-    const head = await fetch(api, { headers: ghHeaders(token) });
-    if (head.ok) {
-      return res.status(409).json({ ok: false, error: 'Post already exists (slug conflict). Change the title.' });
-    }
-
-    const commit = await fetch(api, {
+    const api = `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}`;
+    const resp = await fetch(api, {
       method: 'PUT',
-      headers: { ...ghHeaders(token), 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'alexrasa-store-bot'
+      },
       body: JSON.stringify({
         message: `chore(blog): create ${slug}.html`,
-        content: Buffer.from(content, 'utf8').toString('base64'),
+        content: Buffer.from(html, 'utf8').toString('base64'),
         branch,
         committer: { name: 'Blog Bot', email: 'bot@alexrasa.store' }
       })
     });
 
-    if (!commit.ok) {
-      const txt = await commit.text();
-      return res.status(500).json({ ok: false, error: 'GitHub commit failed', detail: txt });
+    const text = await resp.text();
+    if (!resp.ok) {
+      return res.status(resp.status).json({ ok: false, error: 'GitHub commit failed', gh: text });
     }
 
     return res.status(201).json({ ok: true, slug, url: `/blog/posts/${slug}.html` });
 
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ ok: false, error: 'Server error' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, error: 'Server error', detail: String(err) });
   }
 }
 
-function ghHeaders(token) {
-  return { Authorization: `Bearer ${token}`, 'User-Agent': 'alexrasa-blog-fn' };
+function slugify(s) {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    .slice(0, 80);
 }
-
-async function readJson(req) {
-  if (req.body && typeof req.body === 'object') return req.body;
-  const chunks = [];
-  for await (const c of req) chunks.push(c);
-  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-}
-
-function escapeYAML(s = '') {
-  return String(s).replace(/"/g, '\\"').replace(/\r?\n/g, ' ');
+function escapeYaml(s='') { return s.replace(/"/g, '\\"'); }
+function escapeHtml(s='') {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
