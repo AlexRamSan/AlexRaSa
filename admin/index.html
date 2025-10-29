@@ -1,52 +1,25 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Panel — AlexRaSa</title>
-  <meta name="robots" content="noindex,nofollow" />
-  <style>
-    html,body{height:100%;margin:0;background:#0f172a;color:#e5e7eb;font-family:system-ui;display:flex;align-items:center;justify-content:center;}
-    h1{font-size:1.25rem;}
-  </style>
-</head>
-<body>
-  <h1>Iniciando panel AlexRaSa...</h1>
+<script>
+  // Si llega con access_token en el hash, vuelve al admin
+  if (location.hash.includes('access_token=')) location.href = '/admin/#/collections/posts/new';
 
-  <!-- Widget de Netlify Identity -->
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <script>
-    // Corrige la redirección con access_token
-    if (window.location.hash.includes('access_token=')) {
-      // Elimina los fragmentos del token de la URL
-      window.location.href = '/admin/';
-    }
+  if (window.netlifyIdentity) {
+    netlifyIdentity.init({
+      APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
+    });
 
-    if (window.netlifyIdentity) {
-      window.netlifyIdentity.init({
-        APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
-      });
+    // Si ya hay sesión, ve directo a "Nuevo post"
+    netlifyIdentity.on('init', (user) => {
+      if (user) location.href = '/admin/#/collections/posts/new';
+    });
 
-      window.netlifyIdentity.on('init', user => {
-        if (!user) {
-          window.netlifyIdentity.on('login', () => {
-            location.href = '/admin/';
-          });
-        }
-      });
+    // Al iniciar sesión, manda a "Nuevo post"
+    netlifyIdentity.on('login', () => {
+      location.href = '/admin/#/collections/posts/new';
+    });
 
-      // Si ya hay sesión, entra al CMS
-      window.netlifyIdentity.on('login', () => {
-        location.href = '/admin/';
-      });
-
-      window.netlifyIdentity.on('logout', () => {
-        location.href = '/';
-      });
-    }
-  </script>
-
-  <!-- Decap CMS -->
-  <script src="https://unpkg.com/decap-cms@3.1.9/dist/decap-cms.js"></script>
-</body>
-</html>
+    // Al cerrar sesión, regresa a la home
+    netlifyIdentity.on('logout', () => {
+      location.href = '/';
+    });
+  }
+</script>
