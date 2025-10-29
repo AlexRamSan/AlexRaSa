@@ -135,124 +135,161 @@
     </aside>
   </main>
 
-  <script>
-    // ---- Editor ----
-    const editor = new toastui.Editor({
-      el: document.querySelector('#editor'),
-      height: '500px',
-      initialEditType: 'wysiwyg',
-      previewStyle: 'vertical',
-      usageStatistics: false,
-      toolbarItems: [
-        ['heading','bold','italic','strike'],
-        ['hr','quote'],
-        ['ul','ol','task'],
-        ['table','link'],
-        ['code','codeblock'],
-        ['image']
-      ],
-      hooks: {
-        addImageBlobHook: async (blob, callback) => {
-          const url = prompt('URL de la imagen:');
-          if (url) callback(url, 'image');
-        }
-      }
-    });
+ <script>
+/* ========= CONFIG ========= */
+const GIT = {
+  owner: "TU_USUARIO_GITHUB",   // ejemplo: alexrasa
+  repo: "TU_REPO",              // ejemplo: alexrasa.store
+  branch: "main",
+  token: "GITHUB_TOKEN"         // PAT con permisos de repo
+};
+const PATHS = {
+  postsJson: "blog/posts.json",
+  blogDir: "blog/",
+  imgDir: "assets/blog/"
+};
+/* ========================== */
 
-    // ---- DOM ----
-    const $ = (s)=>document.querySelector(s);
-    const titleEl = $('#title');
-    const dateEl  = $('#date');
-    const descEl  = $('#description');
-    const imageUrlEl = $('#imageUrl');
-    const imagePrev = $('#imagePreview');
-    const statusEl = $('#status');
-    const cardImg = $('#cardImg');
-    const cardTitle = $('#cardTitle');
-    const cardDesc  = $('#cardDesc');
-    const cardDate  = $('#cardDate');
-    const postPreview = $('#postPreview');
+// Helpers
+const toBase64Text = (txt) => btoa(unescape(encodeURIComponent(txt)));
+const slugify = (s) => (s || "post")
+  .toLowerCase()
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-+|-+$/g, "")
+  .slice(0, 60);
 
-    // Imagen por archivo
-    let imageData=null, imageExt=null, imageName=null;
-    const coverInput=$('#coverInput');
-    const clearCover=$('#clearCover');
-    const drop=$('#drop');
-
-    // Fecha por defecto hoy
-    dateEl.valueAsDate = new Date();
-
-    // Preview URL
-    imageUrlEl.addEventListener('input', ()=>{
-      const v=imageUrlEl.value.trim();
-      if(v){ imagePrev.src=v; imagePrev.classList.remove('hidden'); cardImg.src=v; cardImg.classList.remove('hidden'); }
-      else { imagePrev.classList.add('hidden'); cardImg.classList.add('hidden'); }
-    });
-
-    // Archivo -> base64 + preview
-    coverInput.addEventListener('change', async ()=>{
-      const f = coverInput.files?.[0]; if(!f) return clearImage();
-      if (f.size > 6*1024*1024) { alert('Imagen > 6 MB'); return clearImage(); }
-      imageExt=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
-      imageName=f.name;
-      const r=new FileReader();
-      r.onload=()=>{ const u=String(r.result); imageData=u.split(',')[1]; imagePrev.src=u; imagePrev.classList.remove('hidden'); cardImg.src=u; cardImg.classList.remove('hidden'); };
-      r.readAsDataURL(f);
-    });
-    clearCover.addEventListener('click', clearImage);
-    function clearImage(){ imageData=null; imageExt=null; imageName=null; coverInput.value=''; imagePrev.removeAttribute('src'); imagePrev.classList.add('hidden'); }
-
-    // Drag & drop
-    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('ring','ring-blue-300');}));
-    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('ring','ring-blue-300');}));
-    drop.addEventListener('drop', e => { const f=e.dataTransfer.files?.[0]; if(f){ coverInput.files=e.dataTransfer.files; coverInput.dispatchEvent(new Event('change')); }});
-
-    // Tarjeta y preview
-    function updateCard(){
-      cardTitle.textContent = titleEl.value || 'Título de ejemplo';
-      cardDesc.textContent  = descEl.value || 'Aquí se verá la descripción corta del post.';
-      cardDate.textContent  = dateEl.value || new Date().toISOString().slice(0,10);
+const gh = async (path, opt={}) => {
+  const url = `https://api.github.com/repos/${GIT.owner}/${GIT.repo}/${path}`;
+  const res = await fetch(url, {
+    ...opt,
+    headers: {
+      "Authorization": `token ${GIT.token}`,
+      "Accept": "application/vnd.github+json",
+      ...(opt.headers || {})
     }
-    titleEl.addEventListener('input', updateCard);
-    descEl.addEventListener('input', updateCard);
-    dateEl.addEventListener('change', updateCard);
-    updateCard();
+  });
+  if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
+  return res.json();
+};
 
-    function renderPreview(){ postPreview.innerHTML = editor.getHTML(); }
-    $('#btnPreview').addEventListener('click', renderPreview);
-    renderPreview();
+const getContent = (p) => gh(`contents/${encodeURIComponent(p)}?ref=${GIT.branch}`);
+const putContent = (p, base64, msg, sha=null) =>
+  gh(`contents/${encodeURIComponent(p)}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      message: msg,
+      content: base64,
+      branch: GIT.branch,
+      ...(sha ? { sha } : {})
+    })
+  });
 
-    // ---- Publicar ----
-    $('#postForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      statusEl.textContent = 'Publicando…';
+// ===== Imagen =====
+async function uploadImage(base64, ext, slug) {
+  const filename = `${slug}.${ext}`;
+  const path = `${PATHS.imgDir}${filename}`;
+  let sha=null;
+  try { const cur=await getContent(path); sha=cur.sha; } catch(_) {}
+  await putContent(path, base64, `blog: add image ${filename}`, sha);
+  return `/${path}`;
+}
 
-      const payload = {
-        title: titleEl.value.trim(),
-        description: descEl.value.trim(),
-        image: imageUrlEl.value.trim(),   // si pegaste URL
-        imageData, imageExt, imageName,   // si subiste archivo
-        content: editor.getHTML(),        // HTML del editor
-        date: dateEl.value || undefined
-      };
+// ===== HTML del post =====
+function buildPostHTML({title, description, date, image, content, slug}) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${title} | AlexRaSa</title>
+  <meta name="description" content="${description.replace(/"/g,'&quot;')}" />
+  <link rel="canonical" href="https://alexrasa.store/${PATHS.blogDir}${slug}.html" />
+  <meta name="robots" content="index,follow" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <main class="max-w-3xl mx-auto px-4 py-10">
+    <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <img src="${image}" alt="${title}" class="w-full h-auto object-cover aspect-[1200/630] bg-slate-200" />
+      <div class="p-6">
+        <h1 class="text-3xl font-bold">${title}</h1>
+        <p class="mt-2 text-sm text-slate-500">${date}</p>
+        <div class="prose prose-slate max-w-none mt-6">${content}</div>
+        <div class="mt-8 border-t pt-6">
+          <a href="/#contacto" class="inline-flex items-center px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
+            Quiero optimizar mi proceso
+          </a>
+        </div>
+      </div>
+    </article>
+  </main>
+</body>
+</html>`;
+}
 
-      const adminKey = $('#adminKey').value.trim();
+// ===== posts.json =====
+async function readPostsJson() {
+  try {
+    const r = await getContent(PATHS.postsJson);
+    return { list: JSON.parse(atob(r.content)), sha: r.sha };
+  } catch {
+    return { list: [], sha: null };
+  }
+}
+async function updatePostsJson(newPost) {
+  const { list, sha } = await readPostsJson();
+  const clean = list.filter(p => p.url !== newPost.url);
+  clean.unshift(newPost);
+  const b64 = toBase64Text(JSON.stringify(clean, null, 2));
+  await putContent(PATHS.postsJson, b64, `blog: update posts.json (${newPost.slug})`, sha);
+}
 
-      try {
-        const resp = await fetch('/api/new-post', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+adminKey },
-          body: JSON.stringify(payload)
-        });
-        const data = await resp.json();
-        if(!resp.ok) throw new Error(data?.error || 'Error al publicar');
+// ===== Eventos =====
+document.querySelector("#postForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const statusEl = document.querySelector("#status");
+  const adminKey = document.querySelector("#adminKey").value.trim();
+  const btn = document.querySelector("#btnPublish");
+  btn.disabled = true; statusEl.textContent = "Publicando…";
 
-        statusEl.innerHTML = `✔️ Publicado: <a class="text-blue-600 underline" href="${data.url}" target="_blank" rel="noopener">${data.url}</a>`;
-      } catch(err){
-        statusEl.textContent = 'Error: '+err.message;
-        console.error(err);
-      }
-    });
-  </script>
+  try {
+    // Campos
+    const title = document.querySelector("#title").value.trim();
+    const description = document.querySelector("#description").value.trim();
+    const content = editor.getHTML();
+    const date = document.querySelector("#date").value || new Date().toISOString().slice(0,10);
+    const imageUrl = document.querySelector("#imageUrl").value.trim();
+    const slug = slugify(title);
+
+    if (!title || !description || !content)
+      throw new Error("Completa título, descripción y contenido.");
+
+    // Imagen
+    let imageFinal = imageUrl;
+    if (!imageUrl && imageData) {
+      imageFinal = await uploadImage(imageData, imageExt || "jpg", slug);
+    }
+
+    // Crear HTML del post
+    const html = buildPostHTML({title, description, date, image: imageFinal, content, slug});
+    const htmlPath = `${PATHS.blogDir}${slug}.html`;
+    let sha=null; try { const cur=await getContent(htmlPath); sha=cur.sha; } catch(_) {}
+    await putContent(htmlPath, toBase64Text(html), `blog: publish ${slug}`, sha);
+
+    // Actualizar JSON
+    const newPost = { title, description, image: imageFinal, url:`/${htmlPath}`, date, slug };
+    await updatePostsJson(newPost);
+
+    statusEl.innerHTML = `✅ Publicado: <a href="${newPost.url}" target="_blank" class="text-blue-600 underline">${newPost.url}</a>`;
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Error: " + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+
 </body>
 </html>
