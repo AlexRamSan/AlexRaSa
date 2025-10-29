@@ -5,25 +5,41 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Panel — AlexRaSa</title>
   <meta name="robots" content="noindex,nofollow" />
-  <style>html,body{height:100%;margin:0;background:#0f172a;color:#e5e7eb;font-family:system-ui}</style>
+  <style>
+    html,body{height:100%;margin:0;background:#0f172a;color:#e5e7eb;font-family:system-ui;display:flex;align-items:center;justify-content:center;}
+    h1{font-size:1.25rem;}
+  </style>
 </head>
 <body>
-  <!-- Widget Identity -->
+  <h1>Iniciando panel AlexRaSa...</h1>
+
+  <!-- Widget de Netlify Identity -->
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script>
+    // Corrige la redirección con access_token
+    if (window.location.hash.includes('access_token=')) {
+      // Elimina los fragmentos del token de la URL
+      window.location.href = '/admin/';
+    }
+
     if (window.netlifyIdentity) {
-      // Apunta Identity al sitio de Netlify
       window.netlifyIdentity.init({
         APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
       });
 
-      // Si inicia sesión, vuelve aquí (evita que te mande a la home)
-      window.netlifyIdentity.on('login', () => {
-        if (location.pathname !== '/admin/') location.href = '/admin/';
-        else location.reload();
+      window.netlifyIdentity.on('init', user => {
+        if (!user) {
+          window.netlifyIdentity.on('login', () => {
+            location.href = '/admin/';
+          });
+        }
       });
 
-      // Si cierra sesión, mándalo a la home
+      // Si ya hay sesión, entra al CMS
+      window.netlifyIdentity.on('login', () => {
+        location.href = '/admin/';
+      });
+
       window.netlifyIdentity.on('logout', () => {
         location.href = '/';
       });
