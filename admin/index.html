@@ -5,36 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Panel — AlexRaSa</title>
   <meta name="robots" content="noindex,nofollow" />
-  <style>
-    html,body{height:100%;margin:0;background:#0f172a;color:#e5e7eb;font-family:system-ui}
-  </style>
+  <style>html,body{height:100%;margin:0;background:#0f172a;color:#e5e7eb;font-family:system-ui}</style>
 </head>
 <body>
-  <!-- No metas DIVs de “cargando…”, Decap limpia el body y puede chocar -->
+  <!-- Widget Identity -->
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script>
-    // Apuntar Identity a tu sitio de Netlify (clave)
     if (window.netlifyIdentity) {
+      // Apunta Identity al sitio de Netlify
       window.netlifyIdentity.init({
         APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
+      });
+
+      // Si inicia sesión, vuelve aquí (evita que te mande a la home)
+      window.netlifyIdentity.on('login', () => {
+        if (location.pathname !== '/admin/') location.href = '/admin/';
+        else location.reload();
+      });
+
+      // Si cierra sesión, mándalo a la home
+      window.netlifyIdentity.on('logout', () => {
+        location.href = '/';
       });
     }
   </script>
 
+  <!-- Decap CMS -->
   <script src="https://unpkg.com/decap-cms@3.1.9/dist/decap-cms.js"></script>
-  <script>
-    // NO dupliques inicialización; deja que Decap cargue /admin/config.yml
-    // Si quieres abrir el login automáticamente si no hay sesión:
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.netlifyIdentity && !window.netlifyIdentity.currentUser()) {
-        // espera a que el widget esté listo
-        window.netlifyIdentity.on('init', () => {
-          if (!window.netlifyIdentity.currentUser()) {
-            window.netlifyIdentity.open();
-          }
-        });
-      }
-    });
-  </script>
 </body>
 </html>
