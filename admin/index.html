@@ -3,18 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Panel — Blog AlexRaSa</title>
+  <title>Panel — AlexRaSa</title>
   <meta name="robots" content="noindex,nofollow" />
+  <style>
+    html,body{height:100%;margin:0;background:#0f172a;color:#e5e7eb;font-family:system-ui}
+  </style>
 </head>
-<body style="display:grid;place-items:center;height:100vh;font-family:system-ui;background:#0f172a;color:#e5e7eb">
-  <div>Iniciando panel AlexRaSa…</div>
-
-  <!-- 1) Carga el widget de Identity -->
+<body>
+  <!-- No metas DIVs de “cargando…”, Decap limpia el body y puede chocar -->
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-
-  <!-- 2) APUNTA explícitamente a TU sitio de Netlify -->
   <script>
-    // Importante: usar init({ APIUrl }) y NO setSettings
+    // Apuntar Identity a tu sitio de Netlify (clave)
     if (window.netlifyIdentity) {
       window.netlifyIdentity.init({
         APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
@@ -22,19 +21,18 @@
     }
   </script>
 
-  <!-- 3) Carga Decap CMS -->
   <script src="https://unpkg.com/decap-cms@3.1.9/dist/decap-cms.js"></script>
-
-  <!-- 4) Inicializa el CMS -->
   <script>
-    window.CMS_MANUAL_INIT = true;
-    CMS.init();
-
-    // (Opcional) abrir login manual si no se muestra
+    // NO dupliques inicialización; deja que Decap cargue /admin/config.yml
+    // Si quieres abrir el login automáticamente si no hay sesión:
     document.addEventListener('DOMContentLoaded', () => {
-      if (window.netlifyIdentity && !netlifyIdentity.currentUser()) {
-        // abre el modal después de inicializar
-        setTimeout(() => netlifyIdentity.open(), 200);
+      if (window.netlifyIdentity && !window.netlifyIdentity.currentUser()) {
+        // espera a que el widget esté listo
+        window.netlifyIdentity.on('init', () => {
+          if (!window.netlifyIdentity.currentUser()) {
+            window.netlifyIdentity.open();
+          }
+        });
       }
     });
   </script>
