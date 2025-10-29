@@ -1,25 +1,50 @@
-<script>
-  // Si llega con access_token en el hash, vuelve al admin
-  if (location.hash.includes('access_token=')) location.href = '/admin/#/collections/posts/new';
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Panel — AlexRaSa</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    html,body{height:100%;margin:0;background:#0f172a;color:#e5e7eb;
+      font-family:system-ui;display:flex;align-items:center;justify-content:center}
+  </style>
+</head>
+<body>
+  <div>Iniciando panel AlexRaSa…</div>
 
-  if (window.netlifyIdentity) {
-    netlifyIdentity.init({
-      APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
-    });
+  <!-- Netlify Identity (oficial) -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script>
+    // Si vuelve con #access_token desde Identity, redirige al editor "Nuevo post"
+    if (location.hash.includes('access_token=')) {
+      location.replace('/admin/#/collections/posts/new');
+    }
 
-    // Si ya hay sesión, ve directo a "Nuevo post"
-    netlifyIdentity.on('init', (user) => {
-      if (user) location.href = '/admin/#/collections/posts/new';
-    });
+    if (window.netlifyIdentity) {
+      netlifyIdentity.init({
+        // TU sitio de Netlify (donde vive Identity)
+        APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
+      });
 
-    // Al iniciar sesión, manda a "Nuevo post"
-    netlifyIdentity.on('login', () => {
-      location.href = '/admin/#/collections/posts/new';
-    });
+      // Si ya hay sesión, entra directo a "Nuevo post"
+      netlifyIdentity.on('init', (user) => {
+        if (user) location.replace('/admin/#/collections/posts/new');
+      });
 
-    // Al cerrar sesión, regresa a la home
-    netlifyIdentity.on('logout', () => {
-      location.href = '/';
-    });
-  }
-</script>
+      // Al iniciar sesión, manda a "Nuevo post"
+      netlifyIdentity.on('login', () => {
+        location.replace('/admin/#/collections/posts/new');
+      });
+
+      // Al cerrar sesión, vete a inicio público (opcional)
+      netlifyIdentity.on('logout', () => {
+        location.replace('/');
+      });
+    }
+  </script>
+
+  <!-- Decap CMS -->
+  <script src="https://unpkg.com/decap-cms@3.1.9/dist/decap-cms.js"></script>
+</body>
+</html>
