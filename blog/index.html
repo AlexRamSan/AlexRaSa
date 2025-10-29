@@ -1,66 +1,47 @@
-<!DOCTYPE html><html lang="es"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Blog — AlexRaSa</title>
-<meta name="description" content="Notas técnicas y casos de manufactura, CNC y optimización."/>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>.reveal{opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s}.reveal.show{opacity:1;transform:none}</style>
-</head><body class="bg-slate-50 text-slate-900 antialiased">
-<header class="bg-slate-900 text-white">
-  <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-    <a href="/" class="font-semibold">AlexRaSa</a>
-    <nav class="flex gap-4 text-sm">
-      <a href="/SolidCAM/" class="hover:underline">SolidCAM</a>
-      <a href="/lantek/" class="hover:underline">Lantek</a>
-      <a href="/logopress/" class="hover:underline">Logopress</a>
-      <a href="/3dsystems/" class="hover:underline">3D Systems</a>
-      <a href="/blog/" class="font-semibold underline">Blog</a>
-    </nav>
-  </div>
-</header>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blog — AlexRaSa</title>
+  <meta name="description" content="Casos de éxito, tecnología CNC y optimización de procesos.">
+  <meta name="theme-color" content="#0F172A" />
+  <link rel="canonical" href="https://alexrasa.store/blog/" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
 
-<main class="max-w-6xl mx-auto px-6 py-10">
-  <h1 class="text-3xl font-bold mb-6">Blog</h1>
-  <p class="text-slate-600 mb-8">Posts generados desde el panel admin. Se actualiza en automático.</p>
-  <section id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold tracking-tight">Blog</h1>
+      <p class="text-slate-600">Posts generados desde el panel admin. Se actualiza en automático.</p>
+    </header>
 
-  <template id="card">
-    <article class="reveal bg-white rounded-2xl shadow p-5 hover:shadow-md transition">
-      <a class="block" target="_self">
-        <img class="w-full aspect-[16/9] object-cover rounded-xl mb-4" alt="">
-        <h2 class="text-xl font-semibold mb-2"></h2>
-        <p class="text-sm text-slate-600 line-clamp-3 mb-3"></p>
-        <div class="text-xs text-slate-500"></div>
-      </a>
-    </article>
-  </template>
-</main>
+    <section id="posts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
 
-<script>
-const grid = document.getElementById('grid');
-const tpl  = document.getElementById('card');
+    <!-- Template de tarjeta -->
+    <template id="post-card-tpl">
+      <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+        <a class="block" data-post-link>
+          <div class="relative w-full overflow-hidden">
+            <img data-post-img
+                 class="w-full h-auto aspect-[1200/630] object-cover bg-slate-200 select-none"
+                 alt="Imagen del post">
+          </div>
+        </a>
+        <div class="p-4">
+          <a class="block" data-post-link>
+            <h3 data-post-title class="text-lg font-semibold leading-snug"></h3>
+          </a>
+          <p data-post-desc class="mt-1 text-sm text-slate-600 line-clamp-2"></p>
+          <time data-post-date class="mt-3 block text-xs text-slate-500"></time>
+        </div>
+      </article>
+    </template>
 
-async function fetchPosts(){
-  const r = await fetch('/api/list-posts', { headers: { 'Accept': 'application/json' }});
-  if (!r.ok) throw new Error('No pude listar posts');
-  const { items=[] } = await r.json();
-  return items;
-}
-function renderCard(item){
-  const a = tpl.content.cloneNode(true);
-  const link=a.querySelector('a'); const img=a.querySelector('img');
-  const h2=a.querySelector('h2'); const p=a.querySelector('p'); const meta=a.querySelector('div');
-  link.href = `/blog/${item.slug}.html`;
-  h2.textContent = item.title;
-  p.textContent  = item.description;
-  meta.textContent = item.date;
-  img.src = item.image || '/og-image.png';
-  img.alt = item.title;
-  grid.appendChild(a);
-  requestAnimationFrame(()=> grid.lastElementChild.classList.add('show'));
-}
-(async()=>{
-  try { (await fetchPosts()).forEach(renderCard); }
-  catch(e){ grid.innerHTML = `<div class="text-red-600">Error cargando posts: ${e.message}</div>`; console.error(e); }
-})();
-</script>
-</body></html>
+    <p id="empty-msg" class="hidden text-slate-600">No hay posts por ahora.</p>
+  </main>
+
+  <script src="/blog/blog.js" defer></script>
+</body>
+</html>
