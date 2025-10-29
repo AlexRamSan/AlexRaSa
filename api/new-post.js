@@ -1,32 +1,37 @@
 // /api/new-post.js  (Vercel)
-// Env: GITHUB_TOKEN, GITHUB_REPO=AlexRamSan/AlexRaSa, GITHUB_BRANCH=main, ADMIN_KEY
+// Requiere las envs en Vercel: GITHUB_TOKEN, GITHUB_REPO=AlexRamSan/AlexRaSa, GITHUB_BRANCH=main, ADMIN_KEY
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
-  }
-
   try {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ ok: false, error: 'Method not allowed' });
+    }
+
+    // --- body JSON robusto (Node puro en Vercel) ---
+    const raw = await readRaw(req);
+    let payload = {};
+    try { payload = raw ? JSON.parse(raw) : {}; } catch { payload = {}; }
+
     const auth = req.headers.authorization || '';
     const adminKey = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
       return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    const { title, description, image, body, date } = await req.json?.() || req.body;
+    const { title, description, image, body, date } = payload;
     if (!title || !description || !body) {
       return res.status(400).json({ ok: false, error: 'Missing fields' });
     }
 
     const slug = slugify(title);
-    const y = (date || new Date().toISOString().slice(0, 10));
+    const ymd = date || new Date().toISOString().slice(0,10);
 
     const front = [
       '---',
       `title: "${escapeYaml(title)}"`,
       `description: "${escapeYaml(description)}"`,
       image ? `image: "${image}"` : null,
-      `date: ${y}`,
+      `date: ${ymd}`,
       '---'
     ].filter(Boolean).join('\n');
 
@@ -35,28 +40,25 @@ export default async function handler(req, res) {
 <title>${escapeHtml(title)} | Blog — AlexRaSa</title>
 <meta name="description" content="${escapeHtml(description)}">
 <link rel="canonical" href="https://alexrasa.store/blog/posts/${slug}.html">
-<link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
 <script src="https://cdn.tailwindcss.com"></script>
 </head><body class="bg-gray-50 text-gray-900">
-<main class="max-w-3xl mx-auto px-6 py-10">
-<article class="prose max-w-none">
+<main class="max-w-3xl mx-auto px-6 py-10"><article class="prose max-w-none">
 ${front}
 ${body}
-</article>
-</main>
+</article></main>
 </body></html>`;
 
-    // Commit a GitHub
+    // --- Commit a GitHub ---
     const token  = process.env.GITHUB_TOKEN;
-    const repo   = process.env.GITHUB_REPO;   // ej: AlexRamSan/AlexRaSa
+    const repo   = process.env.GITHUB_REPO;    // AlexRamSan/AlexRaSa
     const branch = process.env.GITHUB_BRANCH || 'main';
     const path   = `blog/posts/${slug}.html`;
 
     const api = `https://api.github.com/repos/${repo}/contents/${encodeURIComponent(path)}`;
-    const resp = await fetch(api, {
+    const ghResp = await fetch(api, {
       method: 'PUT',
       headers: {
-        'Authorization': `token ${token}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github+json',
         'User-Agent': 'alexrasa-store-bot'
       },
@@ -68,27 +70,30 @@ ${body}
       })
     });
 
-    const text = await resp.text();
-    if (!resp.ok) {
-      return res.status(resp.status).json({ ok: false, error: 'GitHub commit failed', gh: text });
+    const ghText = await ghResp.text();
+    if (!ghResp.ok) {
+      return res.status(ghResp.status).json({ ok: false, error: 'GitHub commit failed', gh: ghText });
     }
 
     return res.status(201).json({ ok: true, slug, url: `/blog/posts/${slug}.html` });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ ok: false, error: 'Server error', detail: String(err) });
   }
 }
 
-function slugify(s) {
+// ---- helpers ----
+async function readRaw(req) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+function slugify(s='') {
   return s.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    .slice(0, 80);
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,80);
 }
-function escapeYaml(s='') { return s.replace(/"/g, '\\"'); }
-function escapeHtml(s='') {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')
-          .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function escapeYaml(s=''){ return s.replace(/"/g,'\\"'); }
+function escapeHtml(s=''){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
