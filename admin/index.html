@@ -5,25 +5,38 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Panel — Blog AlexRaSa</title>
   <meta name="robots" content="noindex,nofollow" />
-  <!-- Identity primero -->
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <!-- Decap CMS -->
-  <script src="https://unpkg.com/decap-cms@3.1.9/dist/decap-cms.js"></script>
 </head>
 <body style="display:grid;place-items:center;height:100vh;font-family:system-ui;background:#0f172a;color:#e5e7eb">
   <div>Iniciando panel AlexRaSa…</div>
 
+  <!-- 1) Carga el widget de Identity -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+  <!-- 2) APUNTA explícitamente a TU sitio de Netlify -->
   <script>
-    // *** PUNTO CLAVE: forzar Identity a usar tu sitio de Netlify ***
+    // Importante: usar init({ APIUrl }) y NO setSettings
     if (window.netlifyIdentity) {
-      window.netlifyIdentity.setSettings({
+      window.netlifyIdentity.init({
         APIUrl: 'https://alexrasa.netlify.app/.netlify/identity'
       });
     }
+  </script>
 
-    // Inicializar CMS
+  <!-- 3) Carga Decap CMS -->
+  <script src="https://unpkg.com/decap-cms@3.1.9/dist/decap-cms.js"></script>
+
+  <!-- 4) Inicializa el CMS -->
+  <script>
     window.CMS_MANUAL_INIT = true;
     CMS.init();
+
+    // (Opcional) abrir login manual si no se muestra
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.netlifyIdentity && !netlifyIdentity.currentUser()) {
+        // abre el modal después de inicializar
+        setTimeout(() => netlifyIdentity.open(), 200);
+      }
+    });
   </script>
 </body>
 </html>
