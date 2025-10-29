@@ -13,11 +13,8 @@
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 
   <style>
-    :root{
-      --brand:#0F172A;
-      --sc-red:#E30613;
-    }
-    .brand-gradient{ background:linear-gradient(45deg,#0b1220,#101827);}
+    :root{ --brand:#0F172A; --sc-red:#E30613; }
+    .brand-gradient{ background:linear-gradient(45deg,#0b1220,#101827); }
     .shadow-soft{ box-shadow:0 10px 30px rgba(2,8,23,.18); }
   </style>
 </head>
@@ -55,16 +52,27 @@
           <textarea id="description" rows="2" required class="mt-1 w-full border rounded-md p-2" placeholder="Resumen breve que aparece en tarjetas y buscadores."></textarea>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-4 items-end">
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium">Imagen principal (URL o ruta)</label>
-            <input id="image" class="mt-1 w-full border rounded-md p-2" placeholder="/assets/blog/post.jpg" />
-          </div>
-          <div class="text-sm text-gray-500">
-            <div class="aspect-[16/9] rounded-md border overflow-hidden bg-gray-100">
-              <img id="imagePreview" alt="" class="w-full h-full object-cover hidden">
+        <!-- Imagen: URL + archivo con preview y drag&drop -->
+        <div class="space-y-3">
+          <label class="block text-sm font-medium">Imagen principal</label>
+
+          <div class="grid md:grid-cols-3 gap-4 items-start">
+            <div class="md:col-span-2 space-y-2">
+              <input id="imageUrl" class="w-full border rounded-md p-2" placeholder="/assets/blog/post.jpg (opcional si subes archivo)" />
+
+              <div id="drop" class="flex items-center gap-3 p-3 border rounded-md bg-white">
+                <input id="coverInput" type="file" accept="image/*" class="block text-sm">
+                <button id="clearCover" type="button" class="px-2 py-1 text-xs border rounded">Quitar archivo</button>
+                <span class="text-xs text-gray-500">Arrastra una imagen aquí o selecciónala.</span>
+              </div>
             </div>
-            <p class="mt-2">Se muestra en la tarjeta y en la cabecera del post.</p>
+
+            <div class="text-sm text-gray-500">
+              <div class="aspect-[16/9] rounded-md border overflow-hidden bg-gray-100">
+                <img id="imagePreview" alt="" class="w-full h-full object-cover hidden">
+              </div>
+              <p class="mt-2">Se usa en la tarjeta y en la cabecera del post. Sugerido 1200×630.</p>
+            </div>
           </div>
         </div>
 
@@ -132,20 +140,19 @@
     const editor = new toastui.Editor({
       el: document.querySelector('#editor'),
       height: '500px',
-      initialEditType: 'wysiwyg', // 'markdown' si prefieres
+      initialEditType: 'wysiwyg',
       previewStyle: 'vertical',
       usageStatistics: false,
       toolbarItems: [
-        ['heading', 'bold', 'italic', 'strike'],
-        ['hr', 'quote'],
-        ['ul', 'ol', 'task'],
-        ['table', 'link'],
-        ['code', 'codeblock'],
-        ['image'] // imagen via URL (hook abajo)
+        ['heading','bold','italic','strike'],
+        ['hr','quote'],
+        ['ul','ol','task'],
+        ['table','link'],
+        ['code','codeblock'],
+        ['image']
       ],
       hooks: {
         addImageBlobHook: async (blob, callback) => {
-          // Para simplificar: pedimos URL. (Podemos implementar subida a GitHub luego)
           const url = prompt('URL de la imagen:');
           if (url) callback(url, 'image');
         }
@@ -157,7 +164,7 @@
     const titleEl = $('#title');
     const dateEl  = $('#date');
     const descEl  = $('#description');
-    const imageEl = $('#image');
+    const imageUrlEl = $('#imageUrl');
     const imagePrev = $('#imagePreview');
     const statusEl = $('#status');
     const cardImg = $('#cardImg');
@@ -166,22 +173,41 @@
     const cardDate  = $('#cardDate');
     const postPreview = $('#postPreview');
 
+    // Imagen por archivo
+    let imageData=null, imageExt=null, imageName=null;
+    const coverInput=$('#coverInput');
+    const clearCover=$('#clearCover');
+    const drop=$('#drop');
+
     // Fecha por defecto hoy
     dateEl.valueAsDate = new Date();
 
-    // Imagen preview
-    imageEl.addEventListener('input', ()=>{
-      const v = imageEl.value.trim();
-      if (v) {
-        imagePrev.src = v; imagePrev.classList.remove('hidden');
-        cardImg.src = v;  cardImg.classList.remove('hidden');
-      } else {
-        imagePrev.classList.add('hidden');
-        cardImg.classList.add('hidden');
-      }
+    // Preview URL
+    imageUrlEl.addEventListener('input', ()=>{
+      const v=imageUrlEl.value.trim();
+      if(v){ imagePrev.src=v; imagePrev.classList.remove('hidden'); cardImg.src=v; cardImg.classList.remove('hidden'); }
+      else { imagePrev.classList.add('hidden'); cardImg.classList.add('hidden'); }
     });
 
-    // Actualiza tarjeta y preview
+    // Archivo -> base64 + preview
+    coverInput.addEventListener('change', async ()=>{
+      const f = coverInput.files?.[0]; if(!f) return clearImage();
+      if (f.size > 6*1024*1024) { alert('Imagen > 6 MB'); return clearImage(); }
+      imageExt=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+      imageName=f.name;
+      const r=new FileReader();
+      r.onload=()=>{ const u=String(r.result); imageData=u.split(',')[1]; imagePrev.src=u; imagePrev.classList.remove('hidden'); cardImg.src=u; cardImg.classList.remove('hidden'); };
+      r.readAsDataURL(f);
+    });
+    clearCover.addEventListener('click', clearImage);
+    function clearImage(){ imageData=null; imageExt=null; imageName=null; coverInput.value=''; imagePrev.removeAttribute('src'); imagePrev.classList.add('hidden'); }
+
+    // Drag & drop
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('ring','ring-blue-300');}));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('ring','ring-blue-300');}));
+    drop.addEventListener('drop', e => { const f=e.dataTransfer.files?.[0]; if(f){ coverInput.files=e.dataTransfer.files; coverInput.dispatchEvent(new Event('change')); }});
+
+    // Tarjeta y preview
     function updateCard(){
       cardTitle.textContent = titleEl.value || 'Título de ejemplo';
       cardDesc.textContent  = descEl.value || 'Aquí se verá la descripción corta del post.';
@@ -192,60 +218,21 @@
     dateEl.addEventListener('change', updateCard);
     updateCard();
 
-    // Plantillas rápidas
-    document.querySelectorAll('.tpl-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const t = btn.dataset.tpl;
-        if (t==='exito'){
-          editor.setHTML(`
-<h2>Resumen</h2>
-<ul>
-  <li><strong>Pieza / Material:</strong> …</li>
-  <li><strong>Máquina / Control:</strong> …</li>
-  <li><strong>Herramienta:</strong> …</li>
-  <li><strong>Reducción de ciclo:</strong> …</li>
-  <li><strong>Vida de herramienta:</strong> …</li>
-</ul>
-<h2>Proceso</h2>
-<p>Describe parámetros clave (ap, ae, fz, rpm) y estrategia (iMachining, HEM, etc.).</p>
-<h2>Resultados</h2>
-<p>Incluye métricas antes vs después y breve conclusión.</p>`);
-        } else if (t==='tecnologia'){
-          editor.setHTML(`
-<h2>¿Qué es?</h2>
-<p>Breve explicación de la tecnología.</p>
-<h2>Ventajas</h2>
-<ul>
-  <li>–</li><li>–</li><li>–</li>
-</ul>
-<h2>Cuándo aplicarla</h2>
-<p>Casos típicos y recomendaciones.</p>`);
-        } else {
-          editor.setMarkdown(`**Nota rápida** — ${new Date().toLocaleString()}\n\n- Punto 1\n- Punto 2`);
-        }
-        renderPreview();
-      });
-    });
-
-    // Render de preview del contenido
-    function renderPreview(){
-      // Toast UI puede darnos HTML directo:
-      const html = editor.getHTML();
-      postPreview.innerHTML = html;
-    }
+    function renderPreview(){ postPreview.innerHTML = editor.getHTML(); }
     $('#btnPreview').addEventListener('click', renderPreview);
+    renderPreview();
 
     // ---- Publicar ----
     $('#postForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
       statusEl.textContent = 'Publicando…';
 
-      const bodyHTML = editor.getHTML(); // guardamos en HTML (tu backend ya lo acepta)
       const payload = {
         title: titleEl.value.trim(),
         description: descEl.value.trim(),
-        image: imageEl.value.trim(),
-        body: bodyHTML,
+        image: imageUrlEl.value.trim(),   // si pegaste URL
+        imageData, imageExt, imageName,   // si subiste archivo
+        content: editor.getHTML(),        // HTML del editor
         date: dateEl.value || undefined
       };
 
@@ -254,26 +241,18 @@
       try {
         const resp = await fetch('/api/new-post', {
           method:'POST',
-          headers:{
-            'Content-Type':'application/json',
-            'Authorization':'Bearer '+adminKey
-          },
+          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+adminKey },
           body: JSON.stringify(payload)
         });
         const data = await resp.json();
-        if(!resp.ok) throw new Error((data && (data.error + (data.gh? ' → '+data.gh:''))) || 'Error al publicar');
+        if(!resp.ok) throw new Error(data?.error || 'Error al publicar');
 
         statusEl.innerHTML = `✔️ Publicado: <a class="text-blue-600 underline" href="${data.url}" target="_blank" rel="noopener">${data.url}</a>`;
-        // Opcional: limpiar formulario.
-        // e.target.reset(); editor.reset();
       } catch(err){
         statusEl.textContent = 'Error: '+err.message;
         console.error(err);
       }
     });
-
-    // Autopreview inicial
-    renderPreview();
   </script>
 </body>
 </html>
