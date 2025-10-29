@@ -1,121 +1,71 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Blog — AlexRaSa</title>
-  <meta name="description" content="Notas técnicas y casos de manufactura, CNC y optimización." />
-  <link rel="canonical" href="https://alexrasa.store/blog/" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .reveal{opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s}
-    .reveal.show{opacity:1;transform:none}
-  </style>
-</head>
-<body class="bg-slate-50 text-slate-900 antialiased">
-  <header class="bg-slate-900 text-white">
-    <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-      <a href="/" class="font-semibold">AlexRaSa</a>
-      <nav class="flex gap-4 text-sm">
-        <a href="/SolidCAM/" class="hover:underline">SolidCAM</a>
-        <a href="/lantek/" class="hover:underline">Lantek</a>
-        <a href="/logopress/" class="hover:underline">Logopress</a>
-        <a href="/3dsystems/" class="hover:underline">3D Systems</a>
-        <a href="/blog/" class="font-semibold underline">Blog</a>
-      </nav>
-    </div>
-  </header>
+<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Blog — AlexRaSa</title>
+<meta name="description" content="Notas técnicas y casos de manufactura, CNC y optimización."/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>.reveal{opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s}.reveal.show{opacity:1;transform:none}</style>
+</head><body class="bg-slate-50 text-slate-900 antialiased">
+<header class="bg-slate-900 text-white">
+  <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+    <a href="/" class="font-semibold">AlexRaSa</a>
+    <nav class="flex gap-4 text-sm">
+      <a href="/SolidCAM/" class="hover:underline">SolidCAM</a>
+      <a href="/lantek/" class="hover:underline">Lantek</a>
+      <a href="/logopress/" class="hover:underline">Logopress</a>
+      <a href="/3dsystems/" class="hover:underline">3D Systems</a>
+      <a href="/blog/" class="font-semibold underline">Blog</a>
+    </nav>
+  </div>
+</header>
 
-  <main class="max-w-6xl mx-auto px-6 py-10">
-    <h1 class="text-3xl font-bold mb-6">Blog</h1>
-    <p class="text-slate-600 mb-8">Posts generados desde el panel admin. Se actualiza en automático.</p>
-    <section id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
+<main class="max-w-6xl mx-auto px-6 py-10">
+  <h1 class="text-3xl font-bold mb-6">Blog</h1>
+  <p class="text-slate-600 mb-8">Posts generados desde el panel admin. Se actualiza en automático.</p>
+  <section id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
 
-    <template id="card">
-      <article class="reveal bg-white rounded-2xl shadow p-5 hover:shadow-md transition">
-        <a class="block" target="_self">
-          <img class="w-full aspect-[16/9] object-cover rounded-xl mb-4" alt="">
-          <h2 class="text-xl font-semibold mb-2"></h2>
-          <p class="text-sm text-slate-600 line-clamp-3 mb-3"></p>
-          <div class="text-xs text-slate-500"></div>
-        </a>
-      </article>
-    </template>
-  </main>
+  <template id="card">
+    <article class="reveal bg-white rounded-2xl shadow p-5 hover:shadow-md transition">
+      <a class="block" target="_self">
+        <img class="w-full aspect-[16/9] object-cover rounded-xl mb-4" alt="">
+        <h2 class="text-xl font-semibold mb-2"></h2>
+        <p class="text-sm text-slate-600 line-clamp-3 mb-3"></p>
+        <div class="text-xs text-slate-500"></div>
+      </a>
+    </article>
+  </template>
+</main>
 
-  <script>
-  const OWNER_REPO = (window.OWNER_REPO || 'USUARIO/REPO'); // cambia a tu "usuario/Repo"
-  const BRANCH = (window.BRANCH || 'main');
-  const GITHUB_API = `https://api.github.com/repos/${OWNER_REPO}/contents/blog?ref=${BRANCH}`;
-  const RAW_BASE = `https://raw.githubusercontent.com/${OWNER_REPO}/${BRANCH}/blog/`;
+<script>
+const grid = document.getElementById('grid');
+const tpl  = document.getElementById('card');
 
-  const grid = document.getElementById('grid');
-  const tpl  = document.getElementById('card');
-
-  async function listFiles() {
-    const r = await fetch(GITHUB_API, { headers: { 'Accept':'application/vnd.github+json' }});
-    if (!r.ok) throw new Error('No pude listar /blog en GitHub');
-    const files = await r.json();
-    return files.filter(f => f.type === 'file' && /\.html?$/i.test(f.name));
+async function fetchPosts(){
+  const r = await fetch('/api/list-posts', { headers: { 'Accept': 'application/json' }});
+  if (!r.ok) throw new Error('No pude listar posts');
+  const { items=[] } = await r.json();
+  return items;
+}
+function renderCard(item){
+  const a = tpl.content.cloneNode(true);
+  const link=a.querySelector('a'); const img=a.querySelector('img');
+  const h2=a.querySelector('h2'); const p=a.querySelector('p'); const meta=a.querySelector('div');
+  link.href = `/blog/${item.slug}.html`;
+  h2.textContent = item.title;
+  p.textContent  = item.description;
+  meta.textContent = item.date;
+  img.src = item.image || '/og-image.png';
+  img.alt = item.title;
+  grid.appendChild(a);
+  requestAnimationFrame(()=> grid.lastElementChild.classList.add('show'));
+}
+(async()=>{
+  try {
+    const items = await fetchPosts();
+    items.forEach(renderCard);
+  } catch(e) {
+    grid.innerHTML = `<div class="text-red-600">Error cargando posts: ${e.message}</div>`;
+    console.error(e);
   }
-
-  async function fetchFrontMatter(name) {
-    const r = await fetch(RAW_BASE + name);
-    if (!r.ok) throw new Error('No pude leer ' + name);
-    const txt = await r.text();
-
-    // Front matter YAML con o sin comentario <!-- ... -->
-    const m = txt.match(/^(\s*<!--\s*)?---\s*([\s\S]*?)\s*---(\s*-->)?/);
-    const fm = {};
-    if (m) {
-      const block = m[2] || ""; // grupo 2 contiene el YAML
-      block.split(/\r?\n/).forEach(line => {
-        const i = line.indexOf(':');
-        if (i === -1) return;
-        const k = line.slice(0,i).trim();
-        const v = line.slice(i+1).trim().replace(/^"|"$/g,'');
-        if (k) fm[k] = v;
-      });
-    }
-    return { front: fm, name };
-  }
-
-  function renderCard({ front, name }) {
-    const a = tpl.content.cloneNode(true);
-    const link = a.querySelector('a');
-    const img  = a.querySelector('img');
-    const h2   = a.querySelector('h2');
-    const p    = a.querySelector('p');
-    const meta = a.querySelector('div');
-
-    const url = `/blog/${name}`;
-    link.href = url;
-    h2.textContent = front.title || name.replace(/\.html?$/,'');
-    p.textContent  = front.description || '';
-    meta.textContent = front.date || '';
-
-    img.src = front.image || '/og-image.png';
-    img.alt = front.title || 'post';
-
-    grid.appendChild(a);
-    requestAnimationFrame(() => grid.lastElementChild.classList.add('show'));
-  }
-
-  (async () => {
-    try {
-      const files = await listFiles();
-      const items = await Promise.all(files.map(f => fetchFrontMatter(f.name)));
-      items.sort((a,b) => {
-        const da = Date.parse(a.front.date || '') || 0;
-        const db = Date.parse(b.front.date || '') || 0;
-        return db - da || a.name.localeCompare(b.name);
-      });
-      items.forEach(renderCard);
-    } catch (err) {
-      grid.innerHTML = `<div class="text-red-600">Error cargando posts: ${err.message}</div>`;
-      console.error(err);
-    }
-  })();
-  </script>
-</body>
-</html>
+})();
+</script>
+</body></html>
