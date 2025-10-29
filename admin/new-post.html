@@ -3,251 +3,277 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nuevo Post | Admin AlexRaSa</title>
-  <meta name="robots" content="noindex,nofollow" />
+  <title>Nuevo Post — AlexRaSa</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Toast UI Editor (WYSIWYG) -->
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+  <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#0F172A;
+      --sc-red:#E30613;
+    }
+    .brand-gradient{ background:linear-gradient(45deg,#0b1220,#101827);}
+    .shadow-soft{ box-shadow:0 10px 30px rgba(2,8,23,.18); }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
-  <main class="max-w-3xl mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">Nuevo Post</h1>
-
-    <form id="postForm" class="space-y-6">
-      <div>
-        <label class="block text-sm font-medium">Título *</label>
-        <input id="title" type="text" required class="mt-1 w-full rounded-lg border-slate-300" placeholder="Caso de éxito: …" />
+<body class="bg-gray-50 text-gray-900 antialiased">
+  <!-- Header -->
+  <header class="brand-gradient text-white">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="/assets/logo.png" class="h-8 w-auto" alt="AlexRaSa" />
+        <h1 class="font-semibold">Panel de Blog</h1>
       </div>
+      <a href="/blog/" class="text-sm opacity-90 hover:opacity-100 underline">Ver blog</a>
+    </div>
+  </header>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium">Fecha *</label>
-          <input id="date" type="date" required class="mt-1 w-full rounded-lg border-slate-300" />
+  <main class="max-w-7xl mx-auto px-6 py-8 grid lg:grid-cols-2 gap-8">
+    <!-- Lado izquierdo: Formulario + Editor -->
+    <section class="bg-white rounded-2xl border border-gray-200 shadow-soft p-6">
+      <h2 class="text-xl font-semibold mb-5">Nuevo Post</h2>
+
+      <form id="postForm" class="space-y-5">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium">Título <span class="text-red-500">*</span></label>
+            <input id="title" required class="mt-1 w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Caso de éxito: 80% menos ciclo con iMachining" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium">Fecha</label>
+            <input id="date" type="date" class="mt-1 w-full border rounded-md p-2" />
+          </div>
         </div>
+
         <div>
-          <label class="block text-sm font-medium">Slug (opcional)</label>
-          <input id="slug" type="text" class="mt-1 w-full rounded-lg border-slate-300" placeholder="imachining-success" />
-          <p class="text-xs text-slate-500 mt-1">Si lo dejas vacío se genera del título.</p>
+          <label class="block text-sm font-medium">Descripción (SEO) <span class="text-red-500">*</span></label>
+          <textarea id="description" rows="2" required class="mt-1 w-full border rounded-md p-2" placeholder="Resumen breve que aparece en tarjetas y buscadores."></textarea>
         </div>
-      </div>
 
-      <div>
-        <label class="block text-sm font-medium">Descripción (SEO) *</label>
-        <textarea id="description" required rows="3" class="mt-1 w-full rounded-lg border-slate-300" placeholder="Resumen breve…"></textarea>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium">Contenido HTML *</label>
-        <textarea id="content" required rows="10" class="mt-1 w-full rounded-lg border-slate-300" placeholder="<h2>…"></textarea>
-        <p class="text-xs text-slate-500 mt-1">Pega HTML limpio. Se envuelve con Tailwind automáticamente.</p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium">Imagen principal</label>
-          <input id="image" type="file" accept="image/*" class="mt-1 w-full rounded-lg border-slate-300" />
-          <p class="text-xs text-slate-500 mt-1">Se sube a <code>/assets/blog/</code>. Tamaño sugerido 1200×630.</p>
+        <div class="grid md:grid-cols-3 gap-4 items-end">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium">Imagen principal (URL o ruta)</label>
+            <input id="image" class="mt-1 w-full border rounded-md p-2" placeholder="/assets/blog/post.jpg" />
+          </div>
+          <div class="text-sm text-gray-500">
+            <div class="aspect-[16/9] rounded-md border overflow-hidden bg-gray-100">
+              <img id="imagePreview" alt="" class="w-full h-full object-cover hidden">
+            </div>
+            <p class="mt-2">Se muestra en la tarjeta y en la cabecera del post.</p>
+          </div>
         </div>
+
+        <!-- Botones rápidos de plantillas -->
+        <div class="flex flex-wrap gap-2 text-sm">
+          <span class="text-gray-500 mr-1">Plantillas:</span>
+          <button type="button" data-tpl="exito" class="tpl-btn px-3 py-1 rounded-full border hover:bg-gray-50">Caso de éxito</button>
+          <button type="button" data-tpl="tecnologia" class="tpl-btn px-3 py-1 rounded-full border hover:bg-gray-50">Tecnología</button>
+          <button type="button" data-tpl="nota" class="tpl-btn px-3 py-1 rounded-full border hover:bg-gray-50">Nota rápida</button>
+        </div>
+
+        <!-- Editor visual -->
         <div>
-          <label class="block text-sm font-medium">Previsualización</label>
-          <div class="mt-1 rounded-xl overflow-hidden bg-slate-200">
-            <img id="preview" alt="Preview" class="w-full h-auto aspect-[1200/630] object-cover" />
+          <label class="block text-sm font-medium mb-2">Contenido</label>
+          <div id="editor" class="border rounded-md overflow-hidden"></div>
+          <p class="text-xs text-gray-500 mt-2">Puedes alternar WYSIWYG/Markdown en la barra del editor.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium">Clave de administrador <span class="text-red-500">*</span></label>
+            <input id="adminKey" type="password" required class="mt-1 w-full border rounded-md p-2" placeholder="ADMIN_KEY" />
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="btnPreview" type="button" class="px-4 py-2 rounded-md border">Previsualizar</button>
+            <button id="btnPublish" type="submit" class="px-5 py-2 rounded-md text-white" style="background:var(--sc-red)">Publicar</button>
+          </div>
+        </div>
+
+        <div id="status" class="text-sm mt-1"></div>
+      </form>
+    </section>
+
+    <!-- Lado derecho: Preview con estilo del sitio -->
+    <aside class="space-y-6">
+      <!-- Tarjeta estilo /blog -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-soft p-0 overflow-hidden">
+        <div class="aspect-[16/9] bg-gray-100">
+          <img id="cardImg" class="w-full h-full object-cover hidden" alt="">
+        </div>
+        <div class="p-5">
+          <span class="text-xs uppercase tracking-wide text-gray-500">Blog</span>
+          <h3 id="cardTitle" class="text-xl font-bold mt-1">Título de ejemplo</h3>
+          <p id="cardDesc" class="text-gray-600 mt-2">Aquí se verá la descripción corta del post.</p>
+          <div class="mt-4 text-sm text-gray-500 flex items-center gap-2">
+            <svg viewBox="0 0 24 24" class="h-4 w-4"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-6a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Zm9 7h-2a1 1 0 1 1 0-2h2a1 1 0 1 1 0 2ZM5 10H3a1 1 0 1 1 0-2h2a1 1 0 1 1 0 2Zm12.657 7.657a1 1 0 0 1 1.414 1.415l-1.414 1.414a1 1 0 0 1-1.415-1.414l1.415-1.415ZM6.343 4.929A1 1 0 0 1 7.758 6.34L6.343 7.757A1 1 0 1 1 4.93 6.343L6.343 4.93Zm11.314 0 1.414 1.414A1 1 0 1 1 17.657 7.76L16.24 6.343A1 1 0 1 1 17.657 4.93ZM6.343 17.657l1.414 1.414a1 1 0 1 1-1.414 1.415L4.93 19.07a1 1 0 1 1 1.414-1.414Z"/></svg>
+            <span id="cardDate">—</span>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <button id="publishBtn" type="submit" class="px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">Publicar</button>
-        <span id="status" class="text-sm text-slate-600"></span>
+      <!-- Preview del contenido renderizado -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-soft p-6">
+        <h4 class="text-sm font-semibold text-gray-700 mb-3">Preview del contenido</h4>
+        <article id="postPreview" class="prose max-w-none">
+          <h2>Encabezado de ejemplo</h2>
+          <p>Tu contenido renderizado aparecerá aquí.</p>
+        </article>
       </div>
-    </form>
+    </aside>
   </main>
 
   <script>
-  /** ====== CONFIG ====== */
-  const GIT = {
-    owner: "TU_USUARIO_GITHUB",   // ej: AlexRaSa
-    repo:  "TU_REPO",             // ej: alexrasa.store
-    branch:"main",
-    token: "GITHUB_TOKEN"         // PAT con scope repo
-  };
-  const PATHS = {
-    postsJson: "blog/posts.json",
-    blogDir:   "blog/",
-    imgDir:    "assets/blog/"
-  };
-  const PLACEHOLDER = "/assets/blog/placeholder.jpg";
-  /** ===================== */
-
-  // Preview
-  document.getElementById("image").addEventListener("change", e => {
-    const f = e.target.files?.[0];
-    if (!f) return document.getElementById("preview").src = PLACEHOLDER;
-    const url = URL.createObjectURL(f);
-    document.getElementById("preview").src = url;
-  });
-
-  // Helpers GitHub
-  const gh = async (path, opt = {}) => {
-    const url = `https://api.github.com/repos/${GIT.owner}/${GIT.repo}/${path}`;
-    const res = await fetch(url, {
-      ...opt,
-      headers: {
-        "Authorization": `token ${GIT.token}`,
-        "Accept": "application/vnd.github+json",
-        ...(opt.headers || {})
+    // ---- Editor ----
+    const editor = new toastui.Editor({
+      el: document.querySelector('#editor'),
+      height: '500px',
+      initialEditType: 'wysiwyg', // 'markdown' si prefieres
+      previewStyle: 'vertical',
+      usageStatistics: false,
+      toolbarItems: [
+        ['heading', 'bold', 'italic', 'strike'],
+        ['hr', 'quote'],
+        ['ul', 'ol', 'task'],
+        ['table', 'link'],
+        ['code', 'codeblock'],
+        ['image'] // imagen via URL (hook abajo)
+      ],
+      hooks: {
+        addImageBlobHook: async (blob, callback) => {
+          // Para simplificar: pedimos URL. (Podemos implementar subida a GitHub luego)
+          const url = prompt('URL de la imagen:');
+          if (url) callback(url, 'image');
+        }
       }
     });
-    if (!res.ok) throw new Error(`GitHub ${res.status}: ${await res.text()}`);
-    return res.json();
-  };
 
-  const getContent = (path) =>
-    gh(`contents/${encodeURIComponent(path)}?ref=${GIT.branch}`);
+    // ---- DOM ----
+    const $ = (s)=>document.querySelector(s);
+    const titleEl = $('#title');
+    const dateEl  = $('#date');
+    const descEl  = $('#description');
+    const imageEl = $('#image');
+    const imagePrev = $('#imagePreview');
+    const statusEl = $('#status');
+    const cardImg = $('#cardImg');
+    const cardTitle = $('#cardTitle');
+    const cardDesc  = $('#cardDesc');
+    const cardDate  = $('#cardDate');
+    const postPreview = $('#postPreview');
 
-  const putContent = (path, contentBase64, message, sha = null) =>
-    gh(`contents/${encodeURIComponent(path)}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        message, content: contentBase64, branch: GIT.branch, ...(sha ? { sha } : {})
-      })
+    // Fecha por defecto hoy
+    dateEl.valueAsDate = new Date();
+
+    // Imagen preview
+    imageEl.addEventListener('input', ()=>{
+      const v = imageEl.value.trim();
+      if (v) {
+        imagePrev.src = v; imagePrev.classList.remove('hidden');
+        cardImg.src = v;  cardImg.classList.remove('hidden');
+      } else {
+        imagePrev.classList.add('hidden');
+        cardImg.classList.add('hidden');
+      }
     });
 
-  const toBase64Text = (str) => btoa(unescape(encodeURIComponent(str)));
-
-  const fileToBase64 = (file) => new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => {
-      const bytes = new Uint8Array(fr.result);
-      let bin = "";
-      for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-      resolve(btoa(bin));
-    };
-    fr.onerror = () => reject(fr.error);
-    fr.readAsArrayBuffer(file);
-  });
-
-  const slugify = (s) =>
-    (s || "post")
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
-      .slice(0, 60);
-
-  async function uploadImage(file, baseName) {
-    if (!file) return PLACEHOLDER; // no imagen -> placeholder
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const fname = `${baseName}.${ext}`;
-    const path = `${PATHS.imgDir}${fname}`;
-    const b64 = await fileToBase64(file);
-
-    let sha = null;
-    try { const cur = await getContent(path); sha = cur.sha; } catch(_) {}
-    await putContent(path, b64, `blog: add image ${fname}`, sha);
-    return `/${path}`;
-  }
-
-  function buildPostHTML({ title, date, description, image, content, slug }) {
-    const safeDesc = description.replace(/"/g, "&quot;");
-    const canonical = `https://alexrasa.store/${PATHS.blogDir}${slug}.html`;
-    return `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title} | AlexRaSa</title>
-  <meta name="description" content="${safeDesc}" />
-  <link rel="canonical" href="${canonical}" />
-  <meta name="robots" content="index,follow" />
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-50 text-slate-900">
-  <main class="max-w-3xl mx-auto px-4 py-10">
-    <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-      <img src="${image}" alt="${title}" class="w-full h-auto object-cover aspect-[1200/630] bg-slate-200" />
-      <div class="p-6">
-        <h1 class="text-3xl font-bold">${title}</h1>
-        <p class="mt-2 text-sm text-slate-500">${date}</p>
-        <div class="prose prose-slate max-w-none mt-6">${content}</div>
-        <div class="mt-8 border-t pt-6">
-          <a href="/#contacto" class="inline-flex items-center px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
-            Quiero optimizar mi proceso
-          </a>
-        </div>
-      </div>
-    </article>
-  </main>
-</body>
-</html>`;
-  }
-
-  async function readPostsJson() {
-    try {
-      const r = await getContent(PATHS.postsJson);
-      const list = JSON.parse(atob(r.content));
-      return { list: Array.isArray(list) ? list : [], sha: r.sha };
-    } catch {
-      return { list: [], sha: null };
+    // Actualiza tarjeta y preview
+    function updateCard(){
+      cardTitle.textContent = titleEl.value || 'Título de ejemplo';
+      cardDesc.textContent  = descEl.value || 'Aquí se verá la descripción corta del post.';
+      cardDate.textContent  = dateEl.value || new Date().toISOString().slice(0,10);
     }
-  }
+    titleEl.addEventListener('input', updateCard);
+    descEl.addEventListener('input', updateCard);
+    dateEl.addEventListener('change', updateCard);
+    updateCard();
 
-  async function updatePostsJson(newPost) {
-    const { list, sha } = await readPostsJson();
-    const filtered = list.filter(p => p.url !== newPost.url);
-    filtered.unshift(newPost);
-    const b64 = toBase64Text(JSON.stringify(filtered, null, 2));
-    await putContent(PATHS.postsJson, b64, `blog: update posts.json (${newPost.slug})`, sha);
-  }
+    // Plantillas rápidas
+    document.querySelectorAll('.tpl-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const t = btn.dataset.tpl;
+        if (t==='exito'){
+          editor.setHTML(`
+<h2>Resumen</h2>
+<ul>
+  <li><strong>Pieza / Material:</strong> …</li>
+  <li><strong>Máquina / Control:</strong> …</li>
+  <li><strong>Herramienta:</strong> …</li>
+  <li><strong>Reducción de ciclo:</strong> …</li>
+  <li><strong>Vida de herramienta:</strong> …</li>
+</ul>
+<h2>Proceso</h2>
+<p>Describe parámetros clave (ap, ae, fz, rpm) y estrategia (iMachining, HEM, etc.).</p>
+<h2>Resultados</h2>
+<p>Incluye métricas antes vs después y breve conclusión.</p>`);
+        } else if (t==='tecnologia'){
+          editor.setHTML(`
+<h2>¿Qué es?</h2>
+<p>Breve explicación de la tecnología.</p>
+<h2>Ventajas</h2>
+<ul>
+  <li>–</li><li>–</li><li>–</li>
+</ul>
+<h2>Cuándo aplicarla</h2>
+<p>Casos típicos y recomendaciones.</p>`);
+        } else {
+          editor.setMarkdown(`**Nota rápida** — ${new Date().toLocaleString()}\n\n- Punto 1\n- Punto 2`);
+        }
+        renderPreview();
+      });
+    });
 
-  async function createOrUpdate(path, text) {
-    let sha = null;
-    try { const cur = await getContent(path); sha = cur.sha; } catch(_) {}
-    const b64 = toBase64Text(text);
-    await putContent(path, b64, `blog: publish ${path}`, sha);
-  }
+    // Render de preview del contenido
+    function renderPreview(){
+      // Toast UI puede darnos HTML directo:
+      const html = editor.getHTML();
+      postPreview.innerHTML = html;
+    }
+    $('#btnPreview').addEventListener('click', renderPreview);
 
-  // Submit
-  document.getElementById("postForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const status = document.getElementById("status");
-    const btn = document.getElementById("publishBtn");
-    btn.disabled = true; status.textContent = "Publicando…";
+    // ---- Publicar ----
+    $('#postForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      statusEl.textContent = 'Publicando…';
 
-    try {
-      const title = document.getElementById("title").value.trim();
-      const date  = document.getElementById("date").value || new Date().toISOString().slice(0,10);
-      const description = document.getElementById("description").value.trim();
-      const content = document.getElementById("content").value.trim();
-      const imageFile = document.getElementById("image").files[0] || null;
-      const slugInput = document.getElementById("slug").value.trim();
-      const slug = slugInput || slugify(title);
-
-      if (!title || !description || !content) throw new Error("Faltan campos obligatorios.");
-
-      // 1) Imagen
-      const imageUrl = await uploadImage(imageFile, slug); // absoluta /assets/blog/...
-      // 2) HTML del post
-      const html = buildPostHTML({ title, date, description, image: imageUrl, content, slug });
-      await createOrUpdate(`${PATHS.blogDir}${slug}.html`, html);
-      // 3) posts.json
-      const newPost = {
-        title,
-        description,
-        image: imageUrl,              // absoluta -> el grid la mostrará
-        url: `/${PATHS.blogDir}${slug}.html`,
-        date,
-        slug
+      const bodyHTML = editor.getHTML(); // guardamos en HTML (tu backend ya lo acepta)
+      const payload = {
+        title: titleEl.value.trim(),
+        description: descEl.value.trim(),
+        image: imageEl.value.trim(),
+        body: bodyHTML,
+        date: dateEl.value || undefined
       };
-      await updatePostsJson(newPost);
 
-      status.textContent = "Listo. Abre /blog/ para ver el post.";
-      console.log("Publicado:", newPost);
-    } catch (err) {
-      console.error(err);
-      status.textContent = "Error: " + err.message;
-      alert(err.message);
-    } finally {
-      btn.disabled = false;
-    }
-  });
+      const adminKey = $('#adminKey').value.trim();
+
+      try {
+        const resp = await fetch('/api/new-post', {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'Authorization':'Bearer '+adminKey
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if(!resp.ok) throw new Error((data && (data.error + (data.gh? ' → '+data.gh:''))) || 'Error al publicar');
+
+        statusEl.innerHTML = `✔️ Publicado: <a class="text-blue-600 underline" href="${data.url}" target="_blank" rel="noopener">${data.url}</a>`;
+        // Opcional: limpiar formulario.
+        // e.target.reset(); editor.reset();
+      } catch(err){
+        statusEl.textContent = 'Error: '+err.message;
+        console.error(err);
+      }
+    });
+
+    // Autopreview inicial
+    renderPreview();
   </script>
 </body>
 </html>
