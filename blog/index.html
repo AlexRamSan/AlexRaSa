@@ -1,59 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Blog — AlexRaSa</title>
-  <meta name="description" content="Casos de éxito, tecnologías CNC, SolidCAM e iMachining." />
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root { --sc-red:#E30613; }
-  </style>
+  <link rel="stylesheet" href="https://cdn.tailwindcss.com" />
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased">
-  <header class="bg-white border-b border-gray-200 sticky top-0">
-    <div class="max-w-7xl mx-auto h-16 flex items-center justify-between px-4">
-      <a href="/" class="flex items-center gap-2">
-        <img src="/assets/logo.png" alt="AlexRaSa" class="h-8 w-auto"/>
-        <span class="hidden sm:inline font-semibold">AlexRaSa<span class="text-blue-600">.store</span></span>
-      </a>
-      <nav class="hidden md:flex gap-6 text-sm">
-        <a href="/">Inicio</a>
-        <a href="/SolidCAM/">SolidCAM</a>
-        <a href="/blog/">Blog</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="max-w-6xl mx-auto px-6 py-16">
-    <h1 class="text-4xl font-bold text-center mb-8">Blog | Casos de éxito & tecnología CNC</h1>
-    <div id="posts" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+<body class="bg-gray-50 text-gray-900 antialiased">
+  <main class="max-w-5xl mx-auto py-10 px-6">
+    <h1 class="text-3xl font-bold mb-6">Blog</h1>
+    <div id="list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
   </main>
 
-  <footer class="bg-gray-100 border-t border-gray-200 text-center py-6 text-sm text-gray-600">
-    © 2025 AlexRaSa — Ingeniería, innovación y eficiencia.
-  </footer>
-
   <script>
-    // Carga dinámica de artículos generados por Decap CMS
-    fetch('/blog/posts.json')
-      .then(r => r.json())
-      .then(data => {
-        const grid = document.getElementById('posts');
-        grid.innerHTML = data.posts.map(p => `
-          <a href="${p.href}" class="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
-            <img src="${p.img}" alt="${p.title}" class="w-full aspect-[16/9] object-cover"/>
-            <div class="p-5">
-              <h2 class="font-semibold text-lg">${p.title}</h2>
-              <p class="text-sm text-gray-600 mt-1">${p.desc}</p>
-            </div>
-          </a>
-        `).join('');
-      })
-      .catch(() => {
-        document.getElementById('posts').innerHTML = '<p class="text-center text-gray-500">No hay publicaciones disponibles.</p>';
-      });
+    const REPO = 'AlexRamSan/AlexRaSa';
+    async function listPosts() {
+      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/blog/posts`);
+      if (!r.ok) return [];
+      const items = await r.json();
+      return items.filter(x => x.type === 'file' && x.name.endsWith('.html'));
+    }
+
+    async function getFrontMatter(url) {
+      const t = await fetch(url); if (!t.ok) return null;
+      const s = await t.text();
+      const m = s.match(/^---\\s*([\\s\\S]*?)\\s*---/);
+      if (!m) return null;
+      const fm = Object.fromEntries(
+        m[1].split(/\\r?\\n/).filter(Boolean).map(line => {
+          const idx = line.indexOf(':');
+          return [line.slice(0, idx).trim(), line.slice(idx + 1).trim().replace(/^"|"$|^'|'$/g, '')];
+        })
+      );
+      return fm;
+    }
+
+    (async () => {
+      const container = document.getElementById('list');
+      const files = await listPosts();
+
+      // Trae front-matter en paralelo
+      const cards = await Promise.all(files.map(async f => {
+        const raw = `https://raw.githubusercontent.com/${REPO}/main/blog/posts/${encodeURIComponent(f.name)}`;
+        const fm = await getFrontMatter(raw);
+        if (!fm) return null;
+        return { url: `/blog/posts/${f.name}`, ...fm };
+      }));
+
+      // Ordena por fecha desc
+      cards
+        .filter(Boolean)
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+        .forEach(p => {
+          const el = document.createElement('a');
+          el.href = p.url;
+          el.className = 'block rounded-xl overflow-hidden bg-white border hover:shadow transition';
+          el.innerHTML = `
+            ${p.image ? `<img src="${p.image}" alt="" class="w-full h-40 object-cover">` : ''}
+            <div class="p-4">
+              <h2 class="font-semibold text-lg">${p.title || 'Sin título'}</h2>
+              <p class="text-sm text-gray-500">${p.date || ''}</p>
+              <p class="mt-2 text-gray-700 text-sm">${p.description || ''}</p>
+            </div>`;
+          container.appendChild(el);
+        });
+    })();
   </script>
 </body>
 </html>
