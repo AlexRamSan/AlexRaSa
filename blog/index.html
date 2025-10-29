@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blog — AlexRaSa</title>
+  <meta name="description" content="Casos de éxito, tecnologías CNC, SolidCAM e iMachining." />
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --sc-red:#E30613; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+  <header class="bg-white border-b border-gray-200 sticky top-0">
+    <div class="max-w-7xl mx-auto h-16 flex items-center justify-between px-4">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/assets/logo.png" alt="AlexRaSa" class="h-8 w-auto"/>
+        <span class="hidden sm:inline font-semibold">AlexRaSa<span class="text-blue-600">.store</span></span>
+      </a>
+      <nav class="hidden md:flex gap-6 text-sm">
+        <a href="/">Inicio</a>
+        <a href="/SolidCAM/">SolidCAM</a>
+        <a href="/blog/">Blog</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-16">
+    <h1 class="text-4xl font-bold text-center mb-8">Blog | Casos de éxito & tecnología CNC</h1>
+    <div id="posts" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+  </main>
+
+  <footer class="bg-gray-100 border-t border-gray-200 text-center py-6 text-sm text-gray-600">
+    © 2025 AlexRaSa — Ingeniería, innovación y eficiencia.
+  </footer>
+
+  <script>
+    // Carga dinámica de artículos generados por Decap CMS
+    fetch('/blog/posts.json')
+      .then(r => r.json())
+      .then(data => {
+        const grid = document.getElementById('posts');
+        grid.innerHTML = data.posts.map(p => `
+          <a href="${p.href}" class="block bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
+            <img src="${p.img}" alt="${p.title}" class="w-full aspect-[16/9] object-cover"/>
+            <div class="p-5">
+              <h2 class="font-semibold text-lg">${p.title}</h2>
+              <p class="text-sm text-gray-600 mt-1">${p.desc}</p>
+            </div>
+          </a>
+        `).join('');
+      })
+      .catch(() => {
+        document.getElementById('posts').innerHTML = '<p class="text-center text-gray-500">No hay publicaciones disponibles.</p>';
+      });
+  </script>
+</body>
+</html>
