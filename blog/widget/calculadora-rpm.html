@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de RPM y Avance — AlexRaSa</title>
+  <meta name="description" content="Calculadora interactiva para calcular RPM y avance en fresado CNC. Compatible con métrico e imperial, presets por material y validación contra límite de máquina.">
+  <style>
+    :root{color-scheme:light dark}
+    body{font-family:system-ui,Segoe UI,Roboto,Inter,sans-serif;margin:0;background:#f8fafc;color:#0f172a;line-height:1.5}
+    .arsa-calc{--b:#e5e7eb;--t:#111827;--note:#64748b;max-width:1080px;margin:24px auto;padding:0 16px}
+    .arsa-calc h2{font-size:clamp(22px,3vw,30px);margin:8px 0 6px}
+    .arsa-calc p.lead{color:#475569;margin:0 0 14px}
+    .arsa-calc .grid{display:grid;gap:16px}
+    @media(min-width:980px){.arsa-calc .grid{grid-template-columns:1.1fr .9fr}}
+    .arsa-calc .card{background:#fff;border:1px solid var(--b);border-radius:14px;padding:16px}
+    .arsa-calc label{font-size:12px;color:#6b7280;display:block;margin-bottom:6px}
+    .arsa-calc input,.arsa-calc select{width:100%;border:1px solid var(--b);border-radius:12px;padding:10px 12px;font-size:14px;background:#fff}
+    .arsa-calc input:focus,.arsa-calc select:focus{outline:2px solid #cbd5e1}
+    .arsa-calc .row{display:grid;gap:12px}
+    .arsa-calc .row.cols-2{grid-template-columns:1fr 1fr}
+    .arsa-calc .row.cols-3{grid-template-columns:1fr 1fr 1fr}
+    .arsa-calc .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 14px;font-size:14px;border:1px solid var(--b);background:#fff;color:var(--t);cursor:pointer;transition:.15s}
+    .arsa-calc .btn.primary{background:#0f172a;color:#fff;border-color:#0f172a}
+    .arsa-calc .btn:hover{background:#f1f5f9}
+    .arsa-calc .btn.primary:hover{background:#1e293b}
+    .arsa-calc .note{font-size:12px;color:var(--note);margin-top:12px}
+    .arsa-calc .kpi{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--b);border-radius:12px;background:#fff}
+    .arsa-calc .kpi .val{font-weight:700;font-size:24px;letter-spacing:.2px}
+    .arsa-calc .warn{color:#b45309;font-size:12px;margin-top:6px;display:none}
+    .arsa-calc ul{margin:8px 0 0 18px;color:#334155}
+    .arsa-calc .cta{display:grid;gap:10px;margin-top:14px}
+    @media(min-width:760px){.arsa-calc .cta{grid-template-columns:repeat(3,1fr)}}
+    .arsa-calc .hero{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--b);margin:16px 0}
+    .arsa-calc .hero img{width:100%;height:260px;object-fit:cover;filter:brightness(.78)}
+    .arsa-calc .hero .txt{position:absolute;inset:auto 0 0 0;padding:14px 16px;color:#fff;background:linear-gradient(180deg,transparent,rgba(0,0,0,.55))}
+    .arsa-calc code{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:0 6px}
+  </style>
+</head>
+<body>
+<section class="arsa-calc">
+  <div class="hero">
+    <img src="/assets/blog/hero-calculadora-rpm.jpg" alt="Macro de fresado CNC">
+    <div class="txt">
+      <h2>Calculadora de RPM y avance</h2>
+      <p class="lead">Métrico o imperial. Presets por material. Cap por límite de máquina.</p>
+    </div>
+  </div>
+
+  <p class="lead">Regla práctica: <strong>RPM</strong> define periferia, <strong>avance</strong> define viruta. Calcula, valida, documenta.</p>
+
+  <div class="grid">
+    <!-- Inputs -->
+    <section class="card">
+      <div class="row cols-2">
+        <div>
+          <label>Unidades</label>
+          <div class="row cols-2">
+            <button type="button" class="btn primary" id="uMetric">Métrico</button>
+            <button type="button" class="btn" id="uImperial">Imperial</button>
+          </div>
+        </div>
+        <div>
+          <label>Preset</label>
+          <div class="row cols-2">
+            <select id="mat">
+              <option value="alu">Aluminio (carburo)</option>
+              <option value="steel">Acero baja aleación</option>
+              <option value="sst">Inox austenítico</option>
+            </select>
+            <select id="op">
+              <option value="rough">Desbaste</option>
+              <option value="finish">Acabado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row cols-3" style="margin-top:8px">
+        <div>
+          <label>Diámetro herramienta</label>
+          <input id="diam" type="number" step="0.001" placeholder="10">
+          <div class="note" id="diamU">mm</div>
+        </div>
+        <div>
+          <label>Filos (z)</label>
+          <input id="flutes" type="number" step="1" min="1" value="3">
+        </div>
+        <div>
+          <label id="lblVc">Velocidad de corte Vc</label>
+          <input id="vc" type="number" step="0.1" placeholder="250">
+          <div class="note" id="vcU">m/min</div>
+        </div>
+      </div>
+
+      <div class="row cols-3" style="margin-top:8px">
+        <div>
+          <label>Chip por diente f<sub>z</sub></label>
+          <input id="fz" type="number" step="0.001" placeholder="0.06">
+          <div class="note" id="fzU">mm/diente</div>
+        </div>
+        <div>
+          <label>Límite de RPM de máquina</label>
+          <input id="rpmLimit" type="number" step="1" value="12000">
+        </div>
+        <div>
+          <label>Factor prudencia avance (0.7–1.0)</label>
+          <input id="prudence" type="number" step="0.05" value="0.90">
+        </div>
+      </div>
+
+      <div class="row cols-3" style="margin-top:10px">
+        <button id="presetBtn" class="btn">Aplicar preset</button>
+        <button id="calcBtn" class="btn primary">Calcular</button>
+        <button id="resetBtn" class="btn">Reiniciar</button>
+      </div>
+
+      <p class="note">Métrico: <code>RPM = (Vc·1000)/(π·D_mm)</code>, <code>F = RPM·z·f<sub>z</sub></code>. Imperial: <code>RPM = (SFM·3.82)/D_in</code>, <code>F = RPM·z·f<sub>z</sub></code>.</p>
+    </section>
+
+    <!-- Resultados -->
+    <aside class="card">
+      <div class="kpi">
+        <div>
+          <div class="note">RPM teórico</div>
+          <div id="rpmOut" class="val">—</div>
+        </div>
+        <button id="copyRpm" class="btn">Copiar</button>
+      </div>
+      <div id="rpmWarn" class="warn">Advertencia: excede el límite. Se aplicó cap.</div>
+
+      <div class="kpi" style="margin-top:12px">
+        <div>
+          <div class="note">Avance programado</div>
+          <div id="feedOut" class="val">—</div>
+        </div>
+        <button id="copyFeed" class="btn">Copiar</button>
+      </div>
+      <div class="note" id="feedUnitLbl">mm/min</div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="note">Resumen</div>
+        <div id="summary" style="margin-top:4px">Ingresa datos y calcula.</div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <strong style="font-size:14px">Referencia rápida</strong>
+        <ul id="refList">
+          <li>Aluminio desbaste: Vc 300–500 m/min, f<sub>z</sub> 0.06–0.12 mm</li>
+          <li>Acero baja aleación desbaste: Vc 120–180 m/min, f<sub>z</sub> 0.04–0.08 mm</li>
+          <li>Inox austenítico desbaste: Vc 80–140 m/min, f<sub>z</sub> 0.03–0.07 mm</li>
+        </ul>
+        <p class="note">Valores típicos con carburo y refrigerante. Ajusta por rigidez, sujeción y potencia.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="cta">
+    <a class="btn" href="/form">Abrir formulario de contacto</a>
+    <a class="btn primary" href="/agenda" target="_blank" rel="noopener">Agendar reunión técnica</a>
+    <a class="btn" href="https://wa.me/524425992802" target="_blank" rel="noopener">Enviar WhatsApp</a>
+  </div>
+
+  <p class="note">Si usas iMachining en SolidCAM, el Technology Wizard optimiza avances y velocidades según carga.</p>
+</section>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const state={
+    units:'metric',
+    presets:{
+      alu:{rough:{vc:[300,500],fz:[0.06,0.12]},finish:{vc:[400,800],fz:[0.03,0.08]}},
+      steel:{rough:{vc:[120,180],fz:[0.04,0.08]},finish:{vc:[160,220],fz:[0.02,0.06]}},
+      sst:{rough:{vc:[80,140],fz:[0.03,0.07]},finish:{vc:[100,160],fz:[0.02,0.05]}}
+    }
+  };
+  const uMetric=$('uMetric'),uImperial=$('uImperial');
+  const mat=$('mat'),op=$('op'),diam=$('diam'),flutes=$('flutes'),vc=$('vc'),fz=$('fz'),rpmLimit=$('rpmLimit'),prudence=$('prudence');
+  const diamU=$('diamU'),vcU=$('vcU'),fzU=$('fzU'),lblVc=$('lblVc'),feedUnitLbl=$('feedUnitLbl');
+  const rpmOut=$('rpmOut'),feedOut=$('feedOut'),rpmWarn=$('rpmWarn'),summary=$('summary'),refList=$('refList');
+  function setUnits(u){state.units=u;const m=u==='metric';uMetric.classList.toggle('primary',m);uImperial.classList.toggle('primary',!m);diamU.textContent=m?'mm':'in';vcU.textContent=m?'m/min':'SFM';fzU.textContent=m?'mm/diente':'in/diente';lblVc.textContent=m?'Velocidad de corte Vc':'Superficie de corte SFM';feedUnitLbl.textContent=m?'mm/min':'IPM';clearResults();}
+  function clearResults(){rpmOut.textContent='—';feedOut.textContent='—';rpmWarn.style.display='none';summary.textContent='Ingresa datos y calcula.';}
+  uMetric.onclick=()=>setUnits('metric');uImperial.onclick=()=>setUnits('imperial');setUnits('metric');
+  function matLabel(k){return k==='alu'?'Aluminio':k==='steel'?'Acero baja aleación':'Inox austenítico'}
+  function opLabel(k){return k==='rough'?'desbaste':'acabado'}
+  $('presetBtn').onclick=()=>{const p=state.presets[mat.value][op.value];if(state.units==='metric'){const vcAvg=Math.round((p.vc[0]+p.vc[1])/2);const fzAvg=((p.fz[0]+p.fz[1])/2).toFixed(3);vc.value=vcAvg;fz.value=fzAvg;refList.innerHTML=`<li>${matLabel(mat.value)} ${opLabel(op.value)}: Vc ${p.vc[0]}–${p.vc[1]} m/min, f<sub>z</sub> ${p.fz[0]}–${p.fz[1]} mm</li>`;}else{const sfm0=Math.round(p.vc[0]*3.281),sfm1=Math.round(p.vc[1]*3.281),sfmAvg=Math.round((p.vc[0]*3.281+p.vc[1]*3.281)/2);const fz0=(p.fz[0]/25.4).toFixed(3),fz1=(p.fz[1]/25.4).toFixed(3),fzAvg=((p.fz[0]/25.4+p.fz[1]/25.4)/2).toFixed(3);vc.value=sfmAvg;fz.value=fzAvg;refList.innerHTML=`<li>${matLabel(mat.value)} ${opLabel(op.value)}: ${sfm0}–${sfm1} SFM, f<sub>z</sub> ${fz0}–${fz1} in</li>`;}clearResults();};
+  $('resetBtn').onclick=()=>{diam.value='';flutes.value=3;vc.value='';fz.value='';rpmLimit.value=12000;prudence.value=0.9;clearResults();}
+  const fmt=(n,d=0)=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
+  $('calcBtn').onclick=()=>{const m=state.units==='metric';const D=parseFloat(diam.value),z=parseInt(flutes.value,10),V=parseFloat(vc.value),FZ=parseFloat(fz.value);const limit=parseFloat(rpmLimit.value||'0');const prud=parseFloat(prudence.value||'1');if(!(D>0&&z>0&&V>0&&FZ>0)){summary.textContent='Datos incompletos o inválidos.';return;}let rpmTheo=m?(V*1000)/(Math.PI*D):(V*3.82)/D;let rpm=Math.max(1,Math.round(rpmTheo));let capped=false;if(limit>0&&rpm>limit){rpm=Math.round(limit);capped=true;}rpmOut.textContent=fmt(rpm,0);rpmWarn.style.display=capped?'block':'none';let feed=rpm*z*FZ;feed*=Number.isFinite(prud)?prud:1;feedOut.textContent=fmt(feed,m?0:1);const uD=m?'mm':'in',uV=m?'m/min':'SFM',uF=m?'mm/min':'IPM',uFZ=m?'mm':'in';summary.innerHTML=`D=${D} ${uD}, z=${z}, ${m?'Vc':'SFM'}=${V} ${uV}, f<sub>z</sub>=${FZ} ${uFZ}/diente. ${capped?'RPM limitado por máquina. ':''}Programa <strong>F=${fmt(feed,m?0:1)} ${uF}</strong>.`;};
+  $('copyRpm').onclick=()=>{const t=rpmOut.textContent.replace(/,/g,'');if(t&&t!=='—')navigator.clipboard.writeText(t);}
+  $('copyFeed').onclick=()=>{const t=feedOut.textContent.replace(/,/g,'');if(t&&t!=='—')navigator.clipboard.writeText(t);}
+})();
+</script>
+</body>
+</html>
