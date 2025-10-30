@@ -1,13 +1,14 @@
-// /api/new-post.js  — crea el post + sube portada opcional
+// /api/new-post.js — crea el post + sube portada opcional
 import fs from "node:fs";
 import path from "node:path";
 
 const {
   ADMIN_KEY,
   GITHUB_TOKEN,
-  GITHUB_REPO_FULLNAME,   // ej: "AlexRaSa/alexrasa.store"
+  GITHUB_REPO_FULLNAME,   // ej: "AlexRaSa/AlexRaSa"
   GITHUB_DEFAULT_BRANCH,  // ej: "main"
-  SITE_BASE_URL           // ej: "https://alexrasa.store"
+  SITE_BASE_URL,          // ej: "https://alexrasa.store"
+  DEPLOY_HOOK_URL         // ← añade esta variable en tu hosting
 } = process.env;
 
 const GH_API = "https://api.github.com";
@@ -16,7 +17,7 @@ export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-    // auth básica
+    // --- Autenticación básica ---
     const auth = req.headers.authorization || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (!ADMIN_KEY || token !== ADMIN_KEY) return res.status(401).json({ error: "Unauthorized" });
@@ -25,6 +26,7 @@ export default async function handler(req, res) {
       .filter(k => !process.env[k]);
     if (miss.length) return res.status(500).json({ error: "Missing env vars: " + miss.join(", ") });
 
+    // --- Leer cuerpo JSON ---
     const body = await readJson(req);
     let {
       title = "",
@@ -33,10 +35,8 @@ export default async function handler(req, res) {
       author = "Miguel Ramírez",
       date = "",
       slug = "",
-      // imagen por URL o hero
       image = "",
       heroImage = "",
-      // imagen subida desde admin
       imageData = "",
       imageExt = "",
       imageName = ""
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     slug = slugify(slug || title);
     if (!date) date = new Date().toISOString().slice(0,10);
 
-    // 1) Portada: si mandan archivo, súbelo a /assets/blog/{slug}.{ext}
+    // --- Portada ---
     let coverPath = image || heroImage || "";
     if (imageData && imageExt) {
       const safeExt = imageExt.replace(/[^a-z0-9]/gi,'').toLowerCase() || "jpg";
@@ -65,18 +65,17 @@ export default async function handler(req, res) {
     }
     const ogImage = coverPath || "/og-image.png";
 
-    // 2) Lee template
+    // --- Plantilla base ---
     const templatePath = path.join(process.cwd(), "_templates", "post-template.html");
     let template;
     try { template = fs.readFileSync(templatePath, "utf8"); }
     catch { template = fallbackTemplate(); }
 
-    // 3) Hero opcional dentro del hero global
     const heroBlock = heroImage
       ? `<img src="${escapeHtml(heroImage)}" alt="${escapeHtml(title)}" class="w-full rounded-xl mt-4">`
       : "";
 
-    // 4) Front-matter comentado + reemplazos
+    // --- Front-matter + reemplazos ---
     const pageHtml =
 `<!--
 ---
@@ -96,10 +95,10 @@ slug: "${escapeYaml(slug)}"
       .replaceAll("{{author}}", escapeHtml(author))
       .replaceAll("{{slug}}", escapeHtml(slug))
       .replace("{{hero}}", heroBlock)
-      .replace("{{content}}", content); // HTML ya listo
+      .replace("{{content}}", content);
 
-    // 5) Escribe el archivo del post
-    const postPath = `blog/${slug}.html`; // si sirves desde /public, cambia a "public/blog/..."
+    // --- Escribir el HTML del post ---
+    const postPath = `blog/${slug}.html`;
     await githubPutFile({
       ownerRepo: GITHUB_REPO_FULLNAME,
       branch: GITHUB_DEFAULT_BRANCH,
@@ -108,6 +107,11 @@ slug: "${escapeYaml(slug)}"
       message: `chore(blog): add ${slug}.html`,
       token: GITHUB_TOKEN
     });
+
+    // --- Disparar redeploy (no bloquea respuesta) ---
+    if (DEPLOY_HOOK_URL) {
+      fetch(DEPLOY_HOOK_URL, { method: "POST" }).catch(() => {});
+    }
 
     const url = `${SITE_BASE_URL.replace(/\/$/,"")}/blog/${slug}.html`;
     return res.status(200).json({ ok: true, url, path: postPath });
@@ -123,8 +127,8 @@ function slugify(s){ return String(s||"").normalize("NFKD").replace(/[\u0300-\u0
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
 function escapeYaml(s){ return String(s).replace(/"/g,'\\"'); }
 function ghHeaders(t){ return {"Authorization":`Bearer ${t}`,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"alexrasa-blog"}; }
+
 async function githubPutFile({ ownerRepo, branch, path, content, message, token }){
-  // sha si existe
   let sha;
   const get = await fetch(`${GH_API}/repos/${ownerRepo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`,{headers:ghHeaders(token)});
   if (get.ok) sha = (await get.json()).sha;
@@ -135,7 +139,9 @@ async function githubPutFile({ ownerRepo, branch, path, content, message, token 
   if (!r.ok) throw new Error(`GitHub PUT failed ${r.status}`);
   return r.json();
 }
-function fallbackTemplate(){ return `<!DOCTYPE html><html lang="es"><head>
+
+function fallbackTemplate(){
+  return `<!DOCTYPE html><html lang="es"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>{{title}} — Blog | AlexRaSa</title>
 <meta name="description" content="{{description}}"/>
@@ -157,4 +163,5 @@ function fallbackTemplate(){ return `<!DOCTYPE html><html lang="es"><head>
 </main>
 <script>(function(){const s="{{image}}";if(s&&s!=="/og-image.png"){const f=document.getElementById('postCover');const i=document.getElementById('postCoverImg');i.src=s;i.alt="{{title}}";f.hidden=false}
 const b=document.getElementById('postBody');const h=b.innerHTML.trim();if(h&&!h.match(/<\/?[a-z][\\s\\S]*>/i)){b.innerHTML='<p>'+b.textContent.trim().replace(/\\n{2,}/g,'</p><p>').replace(/\\n/g,'<br>')+'</p>'}})();</script>
-</body></html>`; }
+</body></html>`;
+}
