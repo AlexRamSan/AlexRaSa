@@ -234,34 +234,72 @@
   const label  = document.getElementById("sweetLabel");
   const bar    = document.getElementById("sweetBar");
 
-  // ⚙️ Variables base del cálculo (enlaza con tus valores reales)
-  let baseFeed = window.feed ?? 1000; // mm/min
-  let baseRPM  = window.rpm ?? 5000;
-  let maxMachineLoad = 1.0; // normalizado
-
   slider.addEventListener("input", () => {
     const scale = parseFloat(slider.value);
-    const feedAdj = baseFeed * scale;
-    const rpmAdj  = baseRPM  * scale;
+    if (!window.rpm || !window.feed) return;
 
-    // Simulación: relación de carga y vibración
-    const torqueLoad = Math.min(1, Math.abs(feedAdj * rpmAdj / (baseFeed * baseRPM)));
-    const vibration  = Math.abs(scale - 1);
-    const sweetIndex = Math.max(0, 1 - (Math.abs(0.85 - torqueLoad) + vibration * 0.6));
+    const rpmAdj = window.rpm * scale;
+    const feedAdj = window.feed * scale;
 
-    // Color visual dinámico
+    // === Actualiza valores base en pantalla ===
+    document.getElementById("rpmOut").textContent = Math.round(rpmAdj).toLocaleString("es-MX");
+    document.getElementById("feedOut").textContent = Math.round(feedAdj).toLocaleString("es-MX");
+
+    // === Parámetros fijos de entorno ===
+    const z = parseInt(document.getElementById("flutes").value, 10);
+    const D = parseFloat(document.getElementById("diam").value);
+    const units = (window.units === "imperial") ? "imperial" : "metric";
+    const mat = (window.DATA?.materials || []).find(m => m.id === document.getElementById("material").value);
+    const mach = (window.DATA?.machine_profiles || []).find(m => m.id === document.getElementById("machine").value);
+    const band = (window.DATA?.vibration?.avoid_band_hz) || [600, 900];
+    const Kc = mat?.Kc_N_per_mm2 || 1500;
+    const eta = window.DATA?.defaults?.efficiency || 0.8;
+
+    // === Cálculos físicos ===
+    const Dmm = (units === "metric") ? D : D * 25.4;
+    const aePct = parseFloat(document.getElementById("aePct").value) || 30;
+    const ap = parseFloat(document.getElementById("ap").value) || 5;
+    const ae = (aePct / 100) * Dmm;
+    const MRR = ae * ap * feedAdj;              // mm³/min
+    const PkW = (Kc * (MRR / 60)) / (1000 * eta);
+    const torque = (60 * PkW * 1000) / (2 * Math.PI * rpmAdj);
+
+    // === Carga del husillo ===
+    let loadPct = NaN;
+    if (mach?.power_kw) loadPct = Math.min(200, 100 * PkW / mach.power_kw);
+
+    // === Vibración (Gauss) ===
+    const toothHz = (rpmAdj * z) / 60;
+    const inBand = toothHz >= band[0] && toothHz <= band[1];
+    const L = parseFloat(document.getElementById("stickout").value) || 25;
+    const L_D = L / Dmm;
+    const W = window.DATA?.vibration?.weights || { ld: 0.55, ae: 0.2, ap: 0.15, fz: 0.1 };
+    let risk = (W.ld * (L_D / 2) + W.ae * (aePct / 100) + W.ap * (ap / Dmm) + W.fz * Math.abs(scale - 1));
+    risk = Math.max(0, Math.min(2, risk + (inBand ? 0.3 : 0)));
+
+    // === Actualiza KPIs ===
+    document.getElementById("mrrOut").textContent = (MRR / 1000).toFixed(1);
+    document.getElementById("pwrOut").textContent = PkW.toFixed(2);
+    document.getElementById("tqOut").textContent = torque.toFixed(2);
+    document.getElementById("loadOut").textContent = loadPct ? loadPct.toFixed(1) : "—";
+    document.getElementById("toothHzOut").textContent = Math.round(toothHz);
+    document.getElementById("vibeMsg").innerHTML = `${inBand ? "⚠️ En banda crítica " : ""}f<sub>tp</sub>=${Math.round(toothHz)} Hz · riesgo=${risk.toFixed(2)}`;
+
+    // === Color visual dinámico ===
     let color = "from-rose-600 to-rose-700";
-    if (sweetIndex > 0.7) color = "from-yellow-400 to-yellow-500";
-    if (sweetIndex > 0.85) color = "from-emerald-500 to-emerald-600";
-
+    if (risk < 0.65) color = "from-emerald-500 to-emerald-600";
+    else if (risk < 1.0) color = "from-yellow-400 to-yellow-500";
     bar.className = `h-3 mt-3 rounded-full transition-all duration-300 bg-gradient-to-r ${color}`;
-    label.textContent = `${Math.round(scale * 100)} % — ${sweetIndex > 0.85 ? "Sweet spot óptimo" : sweetIndex > 0.7 ? "Bueno" : "Riesgo alto"}`;
 
-    // Actualiza en tiempo real (opcional)
-    if (window.updateResults) window.updateResults(feedAdj, rpmAdj);
+    // === Etiqueta ===
+    label.textContent = `${Math.round(scale * 100)} % — ${(risk < 0.65) ? "Sweet spot óptimo" : (risk < 1.0) ? "Bueno" : "Riesgo alto"}`;
+
+    // === Actualiza la gráfica ===
+    if (window.chart?.draw) window.chart.draw(risk);
   });
 })();
 </script>
+
 
       <!-- Vibración con campana Gauss -->
       <div class="vibe-box mt-6">
