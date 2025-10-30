@@ -238,30 +238,21 @@
       </div>
 
       <!-- Vibración -->
-      <div class="vibe-box mt-6">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold">Vibración estimada</h3>
-          <span class="pill">Auto con tu entrada</span>
-        </div>
+<div class="vibe-box mt-6">
+  <h3 class="font-semibold mb-2">Vibración estimada</h3>
 
-        <!-- Holder sincronizado -->
-        <div class="grid md:grid-cols-3 gap-3 items-end">
-          <div class="field">
-            <label>Tipo de sujeción</label>
-            <input id="holderDisplay" class="w-full border rounded-lg px-3 py-2 bg-black/20" value="—" disabled>
-            <div class="hint">Usa el “Holder” de arriba.</div>
-          </div>
-          <div class="md:col-span-2 text-sm" id="vibeInfo">L/D, a<sub>e</sub> y a<sub>p</sub> se estiman del diámetro, operación y L.</div>
-        </div>
+  <div class="text-sm" id="vibeInfo">
+    L/D, a<sub>e</sub> y a<sub>p</sub> se estiman del diámetro, operación y L.
+  </div>
 
-        <!-- Gráfica Gauss -->
-        <div class="canvas-wrap mt-3">
-          <canvas id="vibeChart"></canvas>
-        </div>
+  <!-- Gráfica Gauss -->
+  <div class="canvas-wrap mt-3">
+    <canvas id="vibeChart"></canvas>
+  </div>
 
-        <p class="text-sm mt-2" id="vibeMsg"></p>
-        <div class="text-xs hint" id="avoidBandNote"></div>
-      </div>
+  <p class="text-sm mt-2" id="vibeMsg"></p>
+  <div class="text-xs hint" id="avoidBandNote"></div>
+</div>
 
       <!-- Referencia rápida -->
       <div class="mt-6 text-sm text-slate-300" id="refQuick"></div>
@@ -337,7 +328,6 @@
       $('stickout').value = DATA.defaults.stickout_mm || 25;
       $('ap').value = DATA.defaults.ap_mm || 5;
       const mat=getMaterial(); $('matNotes').textContent = mat?.notes || ''; $('matBadge').textContent = mat ? `ID: ${mat.id}` : '';
-      syncHolderDisplay();
     }
 
     function getMaterial(){ const id=$('material').value; return DATA.materials.find(m=>m.id===id); }
@@ -544,7 +534,6 @@
       // Holder sincronizado
       const holderId = $('holder').value;
       const holder = DATA.holders.find(h=>h.id===holderId) || DATA.holders[0];
-      syncHolderDisplay();
 
       // Riesgo de vibración
       const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
@@ -589,7 +578,6 @@
       applyPreset();
       const vb = document.querySelector('.vibe-box'); vb.classList.remove('ok','warn','bad');
       chart.draw(0.5);
-      syncHolderDisplay();
     }
 
     function buildQuickRef(mat){
@@ -650,7 +638,7 @@
       $('resetBtn').addEventListener('click',resetAll);
       $('material').addEventListener('change',()=>{ applyPreset(); });
       $('operation').addEventListener('change',applyPreset);
-      $('holder').addEventListener('change',()=>{ syncHolderDisplay(); calc(); });
+      $('holder').addEventListener('change', calc);
       $('machine').addEventListener('change',calc);
 
       // Modo: siempre avanzado
