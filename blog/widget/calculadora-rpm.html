@@ -5,429 +5,152 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Calculadora de RPM y Avance — AlexRaSa</title>
-  <meta name="description" content="Calcula RPM y avance en fresado CNC. Métrico/imperial, presets por material y verificación contra el límite de máquina. Copia rápida de resultados." />
+  <meta name="description" content="Calcula RPM y avance en fresado CNC. Métrico/imperial, presets por material y verificación contra el límite de máquina." />
   <meta name="theme-color" content="#0F172A" />
   <meta name="robots" content="index,follow" />
 
-  <!-- Canonical / Hreflang -->
   <link rel="canonical" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
   <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
-  <link rel="alternate" hreflang="es" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
-  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
 
-  <!-- Favicon / PWA -->
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="manifest" href="/site.webmanifest" />
-
-  <!-- Open Graph / Twitter -->
+  <!-- OG / Twitter -->
   <meta property="og:title" content="Calculadora de RPM y Avance — AlexRaSa" />
   <meta property="og:description" content="Métrico o imperial. Presets por material. Cap contra límite de máquina." />
-  <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
-  <meta property="og:image" content="https://alexrasa.store/assets/blog/hero-calculadora-rpm.jpg" />
-  <meta property="og:site_name" content="AlexRaSa" />
-  <meta property="og:locale" content="es_MX" />
+  <meta property="og:image" content="https://alexrasa.store/assets/blog/hero-calculadora-rpm.png" />
   <meta name="twitter:card" content="summary_large_image" />
 
-  <!-- Perf hints -->
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
-  <link rel="preload" as="image" href="/assets/blog/hero-calculadora-rpm.jpg" />
-
-  <!-- Tailwind (quita si ya compilas tu build) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Paleta gris-azul + acentos por solución -->
   <style>
+    /* Paleta gris-azul con contraste alto */
     :root{
-      color-scheme: light dark;
-      --bg:#f8fafc;         /* fondo */
-      --ink:#0f172a;        /* texto */
-      --card:#ffffff;       /* tarjetas */
-      --muted:#64748b;      /* texto secundario */
-      --border:#e2e8f0;     /* bordes */
-      --accent:#0ea5e9;     /* azul por defecto */
-      --accent-ink:#ffffff; /* texto sobre acento */
+      --bg:#f8fafc;
+      --ink:#0a0f1a;
+      --card:#ffffff;
+      --muted:#475569;
+      --border:#d0d8e0;
+      --accent:#0ea5e9;
+      --accent-ink:#ffffff;
     }
-    /* Acentos por solución */
-    :root[data-accent="solidcam"]{ --accent:#e11d48; }   /* rose-600 */
-    :root[data-accent="lantek"]  { --accent:#10b981; }   /* emerald-500 */
-    :root[data-accent="logopress"]{--accent:#4f46e5; }   /* indigo-600 */
 
-    /* Aplicación de paleta sin romper Tailwind */
-    body{ background:var(--bg); color:var(--ink); }
-    .bg-white{ background:var(--card) !important; }
-    .bg-gray-50{ background:#f9fafb !important; }
-    .text-gray-600,.text-gray-700{ color:var(--muted) !important; }
-    .border-gray-200,.border-gray-300{ border-color:var(--border) !important; }
-    .capsule{ border-radius:12px; }
-    .kpi-shadow{ box-shadow:0 10px 30px rgba(2,8,23,.08); }
+    :root[data-accent="solidcam"]{--accent:#e11d48;}
+    :root[data-accent="lantek"]{--accent:#10b981;}
+    :root[data-accent="logopress"]{--accent:#4f46e5;}
 
-    /* Botón acento: añade class="is-accent" donde quieras reforzar marca */
-    .is-accent{
-      background:var(--accent) !important;
-      color:var(--accent-ink) !important;
-      border-color:var(--accent) !important;
-    }
-    .is-accent:hover{ filter:brightness(.92); }
+    body{background:var(--bg);color:var(--ink);}
+    .capsule{border-radius:12px;}
+    .bg-white{background:var(--card)!important;}
+    .border-gray-200,.border-gray-300{border-color:var(--border)!important;}
+    .text-gray-700,.text-gray-800{color:var(--ink)!important;}
+    .text-gray-500,.text-gray-600{color:var(--muted)!important;}
+    .is-accent{background:var(--accent)!important;color:var(--accent-ink)!important;border-color:var(--accent)!important;}
+    .is-accent:hover{filter:brightness(.92);}
+    input,select{background:#fff;color:#0a0f1a;border:1px solid var(--border);}
+    .kpi-shadow{box-shadow:0 10px 30px rgba(2,8,23,.12);}
+    .text-2xl,.font-bold{color:#0a0f1a;}
+    h1,h2,h3,h4,strong{color:#0a0f1a;}
 
-    /* Inputs coherentes */
-    input,select{
-      background:#fff; color:var(--ink);
-      border:1px solid var(--border);
-    }
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
-    input[type="number"]{ appearance:textfield; }
-
-    /* Dark limpio y aceroso */
+    /* modo oscuro */
     @media (prefers-color-scheme: dark){
       :root{
-        --bg:#0b1220;
-        --ink:#e5e7eb;
+        --bg:#0a0f1a;
         --card:#111827;
+        --ink:#f8fafc;
         --muted:#cbd5e1;
         --border:#334155;
       }
-      .bg-gray-50,.bg-white{ background:var(--card) !important; }
-      input,select{ background:#0f172a; color:var(--ink); border-color:var(--border); }
+      body{background:var(--bg);color:var(--ink);}
+      input,select{background:#1e293b;color:#f8fafc;border-color:#334155;}
+      .bg-white{background:#1e293b!important;}
+      .text-2xl,.font-bold{color:#f8fafc;}
+      h1,h2,h3,h4,strong{color:#f8fafc;}
     }
   </style>
-
-  <!-- GA4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
-  <script>
-    window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
-    gtag('js', new Date()); gtag('config','G-GDQ8NN6T6Q');
-  </script>
-
-  <!-- JSON-LD -->
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"TechArticle",
-    "headline":"Calculadora de RPM y Avance",
-    "description":"Calculadora para RPM y avance en fresado CNC con presets y validación.",
-    "image":"https://alexrasa.store/assets/blog/hero-calculadora-rpm.jpg",
-    "author":{"@type":"Person","name":"Miguel Alejandro Ramírez Sánchez"},
-    "datePublished":"2025-10-30",
-    "dateModified":"2025-10-30",
-    "publisher":{"@type":"Organization","name":"AlexRaSa"},
-    "mainEntityOfPage":{"@type":"WebPage","@id":"https://alexrasa.store/blog/calculadora-rpm-avance.html"}
-  }
-  </script>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased">
 
-  <!-- HEADER -->
-  <header id="siteHeader" class="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between gap-3">
-        <a href="/" class="flex items-center gap-2" aria-label="Inicio">
-          <img src="/assets/logo.png" class="h-10 w-auto" alt="AlexRaSa" />
-          <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span class="text-blue-600">.store</span></span>
-        </a>
-        <nav class="hidden lg:flex items-center gap-6 text-sm">
-          <a href="/#sobre-mi"   class="hover:text-blue-600">Sobre mí</a>
-          <a href="/#soluciones" class="hover:text-blue-600">Soluciones</a>
-          <a href="/#videos"     class="hover:text-blue-600">Videos</a>
-          <a href="/#servicios"  class="hover:text-blue-600">Servicios</a>
-          <a href="/#recursos"   class="hover:text-blue-600">Recursos</a>
-          <a href="/blog/"       class="text-gray-900 font-medium">Blog</a>
-          <a href="/#agenda"     class="hover:text-blue-600">Agenda</a>
-          <a href="/#contacto"   class="hover:text-blue-600">Contacto</a>
-        </nav>
-        <div class="hidden md:flex items-center gap-2">
-          <a href="/#soporte" class="px-3 py-2 rounded-md border border-gray-300 text-gray-900 hover:bg-gray-100 text-sm">Soporte</a>
-          <a href="/#agenda" class="px-3 py-2 rounded-md is-accent text-sm font-medium">Agendar cita</a>
-        </div>
+<body class="antialiased">
+
+<header class="border-b border-gray-200 bg-white/90 backdrop-blur">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <a href="/" class="font-semibold tracking-tight text-xl text-gray-900">AlexRaSa<span class="text-sky-600">.store</span></a>
+    <nav class="hidden md:flex gap-5 text-sm text-gray-800">
+      <a href="/#soluciones" class="hover:text-sky-600">Soluciones</a>
+      <a href="/blog/" class="font-semibold text-sky-700">Blog</a>
+      <a href="/form" class="hover:text-sky-600">Contacto</a>
+    </nav>
+  </div>
+</header>
+
+<section class="relative">
+  <div class="max-w-6xl mx-auto px-4 py-10">
+    <div class="relative overflow-hidden rounded-2xl bg-gray-900">
+      <img src="/assets/blog/hero-calculadora-rpm.png" alt="Macro de fresado CNC" class="h-56 md:h-80 w-full object-cover opacity-70" />
+      <div class="absolute inset-0 bg-gradient-to-t from-gray-900/85 via-gray-900/20 to-transparent"></div>
+      <div class="absolute inset-0 flex flex-col justify-end p-8">
+        <h1 class="text-4xl font-bold text-white drop-shadow">Calculadora de RPM y Avance</h1>
+        <p class="text-gray-200 mt-2 text-lg">Métrico o imperial. Presets por material. Cap contra límite de máquina.</p>
       </div>
     </div>
-  </header>
+  </div>
+</section>
 
-  <!-- HERO -->
-  <section class="relative">
-    <div class="mx-auto max-w-6xl px-4 py-8 md:py-12">
-      <div class="relative overflow-hidden rounded-2xl bg-gray-900">
-        <img src="/assets/blog/hero-calculadora-rpm.jpg" alt="Macro de fresado CNC" class="h-48 w-full object-cover md:h-80 opacity-70" />
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent"></div>
-        <div class="absolute inset-0 p-6 md:p-10 flex flex-col justify-end">
-          <h1 class="text-2xl md:text-4xl font-bold text-white">Calculadora de RPM y Avance</h1>
-          <p class="mt-2 max-w-3xl text-gray-200">Métrico o imperial. Presets por material. Cap contra límite de máquina.</p>
-        </div>
+<main class="max-w-6xl mx-auto px-4 pb-16">
+  <div class="rounded-2xl border border-gray-200 bg-white p-6 md:p-8 kpi-shadow">
+    <h2 class="text-2xl font-bold mb-4">Simulador CNC</h2>
+    <p class="text-gray-700 mb-6">Define diámetro, filos, Vc y fz para obtener RPM y avance programado. Compatible con sistemas métricos e imperiales.</p>
+
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <button id="uMetric" class="capsule px-4 py-2 text-sm font-semibold is-accent">Métrico</button>
+      <button id="uImperial" class="capsule px-4 py-2 text-sm font-semibold border border-gray-300 bg-white">Imperial</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+      <input id="diam" type="number" placeholder="Diámetro (mm)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      <input id="flutes" type="number" placeholder="Filos (z)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      <input id="vc" type="number" placeholder="Velocidad de corte Vc" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      <input id="fz" type="number" placeholder="Chip por diente fz" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+    </div>
+
+    <div class="flex gap-3 mb-6">
+      <button id="calc" class="is-accent capsule px-4 py-2 text-sm font-medium">Calcular</button>
+      <button id="reset" class="capsule px-4 py-2 text-sm font-medium border border-gray-300 bg-white">Reiniciar</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-gray-300 bg-gray-50 p-4">
+        <div class="text-sm text-gray-600">RPM teórico</div>
+        <div id="rpmOut" class="text-4xl font-bold mt-1 text-gray-900">—</div>
+      </div>
+      <div class="rounded-xl border border-gray-300 bg-gray-50 p-4">
+        <div class="text-sm text-gray-600">Avance programado</div>
+        <div id="feedOut" class="text-4xl font-bold mt-1 text-gray-900">—</div>
       </div>
     </div>
-  </section>
+  </div>
+</main>
 
-  <!-- CONTENIDO -->
-  <main class="mx-auto max-w-6xl px-4 pb-16">
-    <article class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <!-- Cuerpo -->
-      <div class="lg:col-span-8">
-        <div class="rounded-2xl border border-gray-200 bg-white p-6 md:p-8">
-          <div class="prose prose-slate max-w-none">
-            <p>Regla práctica: <strong>RPM</strong> define periferia. <strong>Avance</strong> define viruta. Calcula y valida.</p>
-            <h2>Fórmulas</h2>
-            <ul>
-              <li><strong>Métrico</strong>: <code>RPM = (Vc · 1000) / (π · D_mm)</code>, <code>F = RPM · z · fz_mm</code></li>
-              <li><strong>Imperial</strong>: <code>RPM = (SFM · 3.82) / D_in</code>, <code>F = RPM · z · fz_in</code></li>
-            </ul>
-          </div>
+<footer class="border-t border-gray-200 bg-white py-6 text-center text-sm text-gray-600">
+  © <span id="y"></span> AlexRaSa — Ingeniería, Innovación y Eficiencia.
+</footer>
 
-          <!-- CALCULADORA -->
-          <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Inputs -->
-            <section class="lg:col-span-7 space-y-4">
-              <div class="grid grid-cols-2 gap-3">
-                <button id="uMetric"   class="capsule px-4 py-2 text-sm font-medium is-accent">Métrico</button>
-                <button id="uImperial" class="capsule px-4 py-2 text-sm font-medium border border-gray-300 bg-white">Imperial</button>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <select id="material" class="w-full capsule border border-gray-300 px-3 py-2 text-sm">
-                  <option value="alu">Aluminio (carburo)</option>
-                  <option value="steel">Acero baja aleación</option>
-                  <option value="sst">Inox austenítico</option>
-                </select>
-                <select id="op" class="w-full capsule border border-gray-300 px-3 py-2 text-sm">
-                  <option value="rough">Desbaste</option>
-                  <option value="finish">Acabado</option>
-                </select>
-                <button id="applyPreset" class="capsule px-4 py-2 text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50">Aplicar preset</button>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="text-xs text-gray-600">Diámetro herramienta</label>
-                  <div class="flex">
-                    <input id="diam" type="number" step="0.001" class="w-full rounded-l-xl border border-gray-300 px-3 py-2 text-sm" placeholder="10" />
-                    <span id="diamUnit" class="rounded-r-xl border border-l-0 border-gray-300 px-3 py-2 text-sm bg-gray-50">mm</span>
-                  </div>
-                </div>
-                <div>
-                  <label class="text-xs text-gray-600">Filos (z)</label>
-                  <input id="flutes" type="number" min="1" step="1" value="3" class="w-full capsule border border-gray-300 px-3 py-2 text-sm" />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label id="lblVc" class="text-xs text-gray-600">Velocidad de corte Vc</label>
-                  <div class="flex">
-                    <input id="vc" type="number" step="0.1" class="w-full rounded-l-xl border border-gray-300 px-3 py-2 text-sm" placeholder="250" />
-                    <span id="vcUnit" class="rounded-r-xl border border-l-0 border-gray-300 px-3 py-2 text-sm bg-gray-50">m/min</span>
-                  </div>
-                </div>
-                <div>
-                  <label class="text-xs text-gray-600">Chip por diente f<sub>z</sub></label>
-                  <div class="flex">
-                    <input id="fz" type="number" step="0.001" class="w-full rounded-l-xl border border-gray-300 px-3 py-2 text-sm" placeholder="0.06" />
-                    <span id="fzUnit" class="rounded-r-xl border border-l-0 border-gray-300 px-3 py-2 text-sm bg-gray-50">mm</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="text-xs text-gray-600">Límite de RPM de máquina</label>
-                  <input id="rpmLimit" type="number" step="1" value="12000" class="w-full capsule border border-gray-300 px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label class="text-xs text-gray-600">Factor prudencia avance (0.7–1.0)</label>
-                  <input id="prudence" type="number" step="0.05" value="0.9" class="w-full capsule border border-gray-300 px-3 py-2 text-sm" />
-                </div>
-              </div>
-
-              <div class="flex gap-3">
-                <button id="calc"  class="capsule px-4 py-2 text-sm font-medium is-accent">Calcular</button>
-                <button id="reset" class="capsule px-4 py-2 text-sm font-medium border border-gray-300 bg-white">Reiniciar</button>
-              </div>
-            </section>
-
-            <!-- Resultados -->
-            <section class="lg:col-span-5">
-              <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 kpi-shadow">
-                <h3 class="text-base font-semibold text-gray-900">Resultados</h3>
-                <div class="mt-3 grid grid-cols-1 gap-3">
-                  <div class="rounded-xl bg-white border border-gray-200 p-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <div class="text-xs text-gray-500">RPM teórico</div>
-                        <div id="rpmOut" class="text-2xl font-bold">—</div>
-                      </div>
-                      <button id="copyRpm" class="text-xs px-3 py-1 capsule border border-gray-300 hover:bg-gray-100">copiar</button>
-                    </div>
-                    <div id="rpmWarn" class="mt-2 text-xs text-amber-700 hidden">Advertencia: excede el límite de máquina. Se aplicó cap.</div>
-                  </div>
-
-                  <div class="rounded-xl bg-white border border-gray-200 p-4">
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <div class="text-xs text-gray-500">Avance programado</div>
-                        <div id="feedOut" class="text-2xl font-bold">—</div>
-                      </div>
-                      <button id="copyFeed" class="text-xs px-3 py-1 capsule border border-gray-300 hover:bg-gray-100">copiar</button>
-                    </div>
-                    <div class="mt-1 text-xs text-gray-500" id="feedUnitLbl">mm/min</div>
-                  </div>
-
-                  <div class="rounded-xl bg-white border border-gray-200 p-4">
-                    <div class="text-xs text-gray-500">Resumen</div>
-                    <div id="summary" class="mt-1 text-sm text-gray-800">Ingresa datos y calcula.</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
-                <h4 class="text-sm font-semibold text-gray-900">Referencia rápida</h4>
-                <ul class="mt-2 text-sm text-gray-700 space-y-1" id="refList">
-                  <li>Aluminio desbaste: Vc 300–500 m/min, f<sub>z</sub> 0.06–0.12 mm</li>
-                  <li>Acero baja aleación desbaste: Vc 120–180 m/min, f<sub>z</sub> 0.04–0.08 mm</li>
-                  <li>Inox austenítico desbaste: Vc 80–140 m/min, f<sub>z</sub> 0.03–0.07 mm</li>
-                </ul>
-                <p class="mt-2 text-xs text-gray-500">Valores típicos con carburo y refrigerante. Ajusta por rigidez, sujeción y potencia.</p>
-              </div>
-            </section>
-          </div>
-
-          <p class="mt-6 text-xs text-gray-500">Confirma con catálogo de herramienta y tu post. Con iMachining en SolidCAM, el Technology Wizard ajusta por carga.</p>
-
-          <!-- CTA -->
-          <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <a href="/form" class="inline-flex items-center justify-center capsule border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Quiero ayuda para mis piezas</a>
-            <a href="https://outlook.office.com/bookwithme/user/c53758f6cac443108f6f112c6eedf95b@solidservicios.com?anonymous&ismsaljsauthenabled&ep=plink" target="_blank" rel="noopener" class="inline-flex items-center justify-center capsule px-4 py-3 text-sm font-medium is-accent">Agendar reunión técnica</a>
-            <a href="https://wa.me/524425992802" target="_blank" rel="noopener" class="inline-flex items-center justify-center capsule border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Escribir por WhatsApp</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Aside -->
-      <aside class="lg:col-span-4 space-y-6">
-        <div class="rounded-2xl border border-gray-200 bg-white p-6">
-          <h3 class="text-base font-semibold text-gray-900">Entradas relacionadas</h3>
-          <ul class="mt-4 space-y-3 text-sm">
-            <li><a href="/blog/" class="text-gray-700 hover:text-gray-900">Cómo elegir fresa y f<sub>z</sub> por rigidez</a></li>
-            <li><a href="/blog/" class="text-gray-700 hover:text-gray-900">iMachining: control de carga y vida de herramienta</a></li>
-            <li><a href="/blog/" class="text-gray-700 hover:text-gray-900">Checklist de sujeción para desbaste</a></li>
-          </ul>
-        </div>
-      </aside>
-    </article>
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="bg-gray-100 py-6 border-t border-gray-300 text-center">
-    <div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
-      <div class="flex items-center gap-3">
-        <img src="/assets/logo.png" alt="AlexRaSa" class="h-8 w-auto" loading="lazy" />
-        <p class="text-sm text-gray-600">© <span id="y"></span> AlexRaSa — Ingeniería, innovación y eficiencia.</p>
-      </div>
-      <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
-        <a href="/SolidCAM/" class="hover:underline">SolidCAM</a><span>·</span>
-        <a href="/lantek/" class="hover:underline">Lantek</a><span>·</span>
-        <a href="/logopress/" class="hover:underline">Logopress</a><span>·</span>
-        <a href="/artec" class="hover:underline">Artec 3D</a><span>·</span>
-        <a href="/3dsystems" class="hover:underline">3D Systems</a>
-      </div>
-    </div>
-    <p class="text-[11px] text-gray-400 mt-2 max-w-4xl mx-auto px-4 leading-tight">
-      SolidCAM, Lantek, Logopress, Artec y 3D Systems son marcas registradas de sus respectivos propietarios. Uso informativo.
-    </p>
-  </footer>
-
-  <!-- Selector de acento: ?accent=solidcam|lantek|logopress o fija data-accent en <html> -->
-  <script>
-    (function(){
-      const q = new URLSearchParams(location.search).get('accent');
-      const ok = new Set(['solidcam','lantek','logopress']);
-      const html = document.documentElement;
-      if(ok.has(q)) html.setAttribute('data-accent', q);
-      document.getElementById('y').textContent = new Date().getFullYear();
-    })();
-  </script>
-
-  <!-- LÓGICA CALCULADORA -->
-  <script>
-    const state = {
-      units:'metric',
-      presets:{
-        alu:{rough:{vc:[300,500],fz:[0.06,0.12]},finish:{vc:[400,800],fz:[0.03,0.08]}},
-        steel:{rough:{vc:[120,180],fz:[0.04,0.08]},finish:{vc:[160,220],fz:[0.02,0.06]}},
-        sst:{rough:{vc:[80,140],fz:[0.03,0.07]},finish:{vc:[100,160],fz:[0.02,0.05]}}
-      }
-    };
-    const $=(id)=>document.getElementById(id);
-    const fmt=(n,d=0)=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
-
-    const uM=$('uMetric'), uI=$('uImperial');
-    function setUnits(u){
-      state.units=u;
-      const m=u==='metric';
-      uM.classList.toggle('is-accent', m);
-      uI.classList.toggle('is-accent', !m);
-      $('diamUnit').textContent=m?'mm':'in';
-      $('vcUnit').textContent=m?'m/min':'SFM';
-      $('fzUnit').textContent=m?'mm':'in';
-      $('feedUnitLbl').textContent=m?'mm/min':'IPM';
-      $('lblVc').textContent=m?'Velocidad de corte Vc':'Superficie de corte SFM';
-      clearResults();
-    }
-    function clearResults(){
-      $('rpmOut').textContent='—';
-      $('feedOut').textContent='—';
-      $('rpmWarn').classList.add('hidden');
-      $('summary').textContent='Ingresa datos y calcula.';
-    }
-    uM.addEventListener('click',()=>setUnits('metric'));
-    uI.addEventListener('click',()=>setUnits('imperial'));
-    setUnits('metric');
-
-    function matLabel(k){return k==='alu'?'Aluminio':k==='steel'?'Acero baja aleación':'Inox austenítico'}
-    function opLabel(k){return k==='rough'?'desbaste':'acabado'}
-
-    $('applyPreset').addEventListener('click',()=>{
-      const p=state.presets[$('material').value][$('op').value];
-      if(state.units==='metric'){
-        $('vc').value=Math.round((p.vc[0]+p.vc[1])/2);
-        $('fz').value=((p.fz[0]+p.fz[1])/2).toFixed(3);
-        $('refList').innerHTML=`<li>${matLabel($('material').value)} ${opLabel($('op').value)}: Vc ${p.vc[0]}–${p.vc[1]} m/min, f<sub>z</sub> ${p.fz[0]}–${p.fz[1]} mm</li>`;
-      }else{
-        const sfm0=Math.round(p.vc[0]*3.281), sfm1=Math.round(p.vc[1]*3.281);
-        const sfmAvg=Math.round((p.vc[0]*3.281+p.vc[1]*3.281)/2);
-        const fz0=(p.fz[0]/25.4).toFixed(3), fz1=(p.fz[1]/25.4).toFixed(3);
-        const fzAvg=((p.fz[0]/25.4+p.fz[1]/25.4)/2).toFixed(3);
-        $('vc').value=sfmAvg; $('fz').value=fzAvg;
-        $('refList').innerHTML=`<li>${matLabel($('material').value)} ${opLabel($('op').value)}: ${sfm0}–${sfm1} SFM, f<sub>z</sub> ${fz0}–${fz1} in</li>`;
-      }
-      clearResults();
-    });
-
-    $('calc').addEventListener('click',()=>{
-      const m=state.units==='metric';
-      const D=parseFloat($('diam').value), z=parseInt($('flutes').value,10);
-      const V=parseFloat($('vc').value), FZ=parseFloat($('fz').value);
-      const limit=parseFloat($('rpmLimit').value||'0'), prud=parseFloat($('prudence').value||'1');
-      if(!(D>0&&z>0&&V>0&&FZ>0)){ $('summary').textContent='Datos incompletos o inválidos.'; return; }
-
-      let rpmTheo=m?(V*1000)/(Math.PI*D):(V*3.82)/D;
-      let rpm=Math.max(1,Math.round(rpmTheo)); let capped=false;
-      if(limit>0&&rpm>limit){ rpm=Math.round(limit); capped=true; }
-      $('rpmOut').textContent=fmt(rpm,0); $('rpmWarn').classList.toggle('hidden',!capped);
-
-      let feed=rpm*z*FZ; feed*=Number.isFinite(prud)?prud:1;
-      $('feedOut').textContent=fmt(feed,m?0:1);
-
-      const uD=m?'mm':'in', uV=m?'m/min':'SFM', uF=m?'mm/min':'IPM', uFZ=m?'mm':'in';
-      $('summary').innerHTML=`D=${D} ${uD}, z=${z}, ${m?'Vc':'SFM'}=${V} ${uV}, f<sub>z</sub>=${FZ} ${uFZ}/diente. ${capped?'RPM limitado por máquina. ':''}Programa <strong>F = ${fmt(feed,m?0:1)} ${uF}</strong>.`;
-    });
-
-    $('reset').addEventListener('click',()=>{
-      $('diam').value=''; $('flutes').value=3; $('vc').value=''; $('fz').value='';
-      $('rpmLimit').value=12000; $('prudence').value=0.9; clearResults();
-    });
-
-    $('copyRpm').addEventListener('click',()=>{ const t=$('rpmOut').textContent.replace(/,/g,''); if(t&&t!=='—') navigator.clipboard.writeText(t); });
-    $('copyFeed').addEventListener('click',()=>{ const t=$('feedOut').textContent.replace(/,/g,''); if(t&&t!=='—') navigator.clipboard.writeText(t); });
-  </script>
+<script>
+(function(){
+  document.getElementById('y').textContent=new Date().getFullYear();
+  const $=(id)=>document.getElementById(id);
+  let metric=true;
+  const fmt=(n)=>Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:0}):'—';
+  function clear(){ $('rpmOut').textContent='—';$('feedOut').textContent='—'; }
+  $('uMetric').addEventListener('click',()=>{metric=true;clear();$('uMetric').classList.add('is-accent');$('uImperial').classList.remove('is-accent');});
+  $('uImperial').addEventListener('click',()=>{metric=false;clear();$('uImperial').classList.add('is-accent');$('uMetric').classList.remove('is-accent');});
+  $('calc').addEventListener('click',()=>{
+    const D=parseFloat($('diam').value),z=parseInt($('flutes').value,10),Vc=parseFloat($('vc').value),fz=parseFloat($('fz').value);
+    if(!(D>0&&z>0&&Vc>0&&fz>0)){clear();return;}
+    const rpm=metric?(Vc*1000)/(Math.PI*D):(Vc*3.82)/D;
+    const feed=rpm*z*fz;
+    $('rpmOut').textContent=fmt(rpm);
+    $('feedOut').textContent=fmt(feed);
+  });
+  $('reset').addEventListener('click',()=>{['diam','flutes','vc','fz'].forEach(i=>$(`${i}`).value='');clear();});
+})();
+</script>
 </body>
 </html>
