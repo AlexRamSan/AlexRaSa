@@ -49,7 +49,6 @@
     .badge.warn{background:#3a2801;color:#fde68a;border-color:#b45309}
     .badge.bad{background:#3b0a0a;color:#fecaca;border-color:#b91c1c}
     .hint{color:var(--muted);font-size:.75rem}
-    /* Canvas responsive */
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
   </style>
@@ -94,7 +93,6 @@
           <button id="uMetric" class="tab is-on" type="button">Métrico</button>
           <button id="uImperial" class="tab" type="button">Imperial</button>
         </div>
-        <!-- Sin modo simple/avanzado: siempre avanzado -->
         <div class="ml-auto text-sm text-slate-400 select-none">Modo avanzado activo</div>
       </div>
 
@@ -215,7 +213,7 @@
           <div class="kpi">Torque</div>
           <div class="kpi-value"><span id="tqOut">—</span> <span class="text-slate-400 text-base">N·m</span></div>
         </div>
-        <div class="bg-black/20 rounded-lg p-4">
+      <div class="bg-black/20 rounded-lg p-4">
           <div class="kpi">Carga husillo</div>
           <div class="kpi-value"><span id="loadOut">—</span> <span class="text-slate-400 text-base">%</span></div>
         </div>
@@ -239,22 +237,12 @@
 
       <!-- Vibración -->
       <div class="vibe-box mt-6">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold">Vibración estimada</h3>
-          <span class="pill">Auto con tu entrada</span>
+        <h3 class="font-semibold mb-2">Vibración estimada</h3>
+
+        <div class="text-sm" id="vibeInfo">
+          L/D, a<sub>e</sub> y a<sub>p</sub> se estiman del diámetro, operación y L.
         </div>
 
-        <!-- Holder sincronizado -->
-        <div class="grid md:grid-cols-3 gap-3 items-end">
-          <div class="field">
-            <label>Tipo de sujeción</label>
-            <input id="holderDisplay" class="w-full border rounded-lg px-3 py-2 bg-black/20" value="—" disabled>
-            <div class="hint">Usa el “Holder” de arriba.</div>
-          </div>
-          <div class="md:col-span-2 text-sm" id="vibeInfo">L/D, a<sub>e</sub> y a<sub>p</sub> se estiman del diámetro, operación y L.</div>
-        </div>
-
-        <!-- Gráfica Gauss -->
         <div class="canvas-wrap mt-3">
           <canvas id="vibeChart"></canvas>
         </div>
@@ -289,7 +277,6 @@
         const r=await fetch('/data/cutting-data.json',{cache:'no-store'});
         if(r.ok){ DATA = await r.json(); }
       }catch(e){
-        // Fallback mínimo si no carga el JSON
         DATA = {
           defaults:{rpm_limit:12000,prudence:0.9,stickout_mm:25,ap_mm:5,efficiency:0.8},
           holders:[
@@ -337,7 +324,6 @@
       $('stickout').value = DATA.defaults.stickout_mm || 25;
       $('ap').value = DATA.defaults.ap_mm || 5;
       const mat=getMaterial(); $('matNotes').textContent = mat?.notes || ''; $('matBadge').textContent = mat ? `ID: ${mat.id}` : '';
-      syncHolderDisplay();
     }
 
     function getMaterial(){ const id=$('material').value; return DATA.materials.find(m=>m.id===id); }
@@ -371,7 +357,6 @@
       }
       $('matNotes').textContent = mat?.notes || ''; $('matBadge').textContent = mat ? `ID: ${mat.id}` : '';
       buildQuickRef(mat);
-      // autollenar ae/ap sugeridos
       const est = estimateVibeParams(((units==='metric')?D:D*25.4), op);
       $('aePct').value = Math.round(est.ae_pct);
       if(!$('ap').value) $('ap').value = fmt2(est.ap_mm);
@@ -395,7 +380,7 @@
     // ===== Gauss chart helpers
     const chart = {
       el: null, ctx: null, w: 0, h: 0,
-      xMin: 0, xMax: 2, mu: 0.5, sigma: 0.18, // centro “sweet” y dispersión
+      xMin: 0, xMax: 2, mu: 0.5, sigma: 0.18,
       init(){
         this.el = $('vibeChart'); this.ctx = this.el.getContext('2d');
         const resize = ()=>{ this.w = this.el.clientWidth; this.h = this.el.clientHeight;
@@ -407,11 +392,10 @@
       pdf(x){ const a=1/(this.sigma*Math.sqrt(2*Math.PI)); const e=Math.exp(-0.5*((x-this.mu)/this.sigma)**2); return a*e; },
       drawBase(){
         const ctx=this.ctx; ctx.clearRect(0,0,this.el.width,this.el.height);
-        // Zonas coloreadas bajo la curva
         const segments=[
-          {from:0,to:0.65,color:'rgba(34,197,94,0.25)'},   // verde
-          {from:0.65,to:1.0,color:'rgba(245,158,11,0.25)'},// amarillo
-          {from:1.0,to:2.0,color:'rgba(239,68,68,0.25)'}   // rojo
+          {from:0,to:0.65,color:'rgba(34,197,94,0.25)'},
+          {from:0.65,to:1.0,color:'rgba(245,158,11,0.25)'},
+          {from:1.0,to:2.0,color:'rgba(239,68,68,0.25)'}
         ];
         segments.forEach(s=>{
           ctx.beginPath();
@@ -424,7 +408,6 @@
           ctx.lineTo(this.xToPx(s.to), this.yToPx(0));
           ctx.closePath(); ctx.fillStyle=s.color; ctx.fill();
         });
-        // Curva
         ctx.beginPath(); ctx.lineWidth=4; ctx.strokeStyle='rgba(226,232,240,0.9)';
         const step=(this.xMax-this.xMin)/280;
         for(let x=this.xMin;x<=this.xMax;x+=step){
@@ -432,29 +415,23 @@
           if(x===this.xMin) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
         }
         ctx.stroke();
-        // Ejes simples
         ctx.lineWidth=1.5; ctx.strokeStyle='rgba(148,163,184,0.5)';
         ctx.beginPath(); ctx.moveTo(30,this.yToPx(0)); ctx.lineTo(this.el.width-30,this.yToPx(0)); ctx.stroke();
-        // marcas SWEET/WARN
         const sweet=0.65, warn=1.0;
         [sweet,warn].forEach((x,i)=>{
           ctx.setLineDash([6,6]); ctx.strokeStyle=i? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)';
           ctx.beginPath(); ctx.moveTo(this.xToPx(x),20); ctx.lineTo(this.xToPx(x),this.el.height-30); ctx.stroke();
         });
         ctx.setLineDash([]);
-        // leyenda simple
         ctx.fillStyle='rgba(148,163,184,0.95)'; ctx.font='28px system-ui';
         ctx.fillText('Riesgo de vibración', 30, 34);
       },
       drawMarker(risk){
         const ctx=this.ctx;
         const X=this.xToPx(Math.max(this.xMin, Math.min(this.xMax, risk)));
-        // color por estado
         let col='rgba(34,197,94,1)'; if(risk>=1.0) col='rgba(239,68,68,1)'; else if(risk>=0.65) col='rgba(245,158,11,1)';
-        // línea
         ctx.lineWidth=3; ctx.strokeStyle=col;
         ctx.beginPath(); ctx.moveTo(X,20); ctx.lineTo(X,this.el.height-30); ctx.stroke();
-        // marcador
         ctx.fillStyle=col; ctx.beginPath(); ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI*2); ctx.fill();
       },
       draw(risk=0.5){ this.drawBase(); this.drawMarker(risk); }
@@ -480,25 +457,23 @@
       const Vc_m_min = (units==='metric') ? V : (V/3.281);
       let fz_mm = (units==='metric') ? FZ : FZ*25.4;
 
-      // Chip thinning si ae < 50%
       let aePct = Number(parseFloat($('aePct').value));
       if(!Number.isFinite(aePct) || aePct<=0){ const est=estimateVibeParams(Dmm,op); aePct = est.ae_pct; }
       const {fzEff, k:ctK} = chipThinningAdjustedFz(fz_mm, Dmm, aePct);
       const usedFz = fzEff;
       $('feedAdjNote').textContent = ctK>1 ? `Chip-thinning aplicado ×${fmt2(ctK)} (ae=${Math.round(aePct)}%D)` : '';
 
-      // RPM y feed
       let rpm = (Vc_m_min*1000)/(Math.PI*Dmm);
       let capped=false; if(rpmLimit>0 && rpm>rpmLimit){ rpm=rpmLimit; capped=true; }
       let feed_mm_min = rpm * z * usedFz * (Number.isFinite(prud) ? prud : 1);
 
       $('rpmOut').textContent = fmt0(rpm);
       $('feedOut').textContent = (units==='metric') ? fmt0(feed_mm_min) : fmt1(feed_mm_min/25.4);
-      $('feedUnit').textContent = (units==='metric') ? 'mm/min' : 'IPM';
+      $('feedUnit').textContent = (u
+its==='metric') ? 'mm/min' : 'IPM';
       $('rpmCap').classList.toggle('hidden', !capped);
       $('sumOut').textContent = `D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
 
-      // Engagement reales
       const ap_input = Number(parseFloat($('ap').value));
       const L_input  = Number(parseFloat($('stickout').value));
       const est = estimateVibeParams(Dmm, op);
@@ -508,45 +483,36 @@
       const L_mm  = Number.isFinite(L_input) && L_input>0 ? L_input : est.L;
       $('vibeInfo').innerHTML = `Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
 
-      // MRR [mm^3/min -> cm^3/min]
       const MRR_mm3_min = ap_mm * ae_mm * feed_mm_min;
       const MRR_cm3_min = MRR_mm3_min / 1000;
       $('mrrOut').textContent = fmt1(MRR_cm3_min);
 
-      // Potencia y torque
-      const Kc = mat?.Kc_N_per_mm2 || 1500; // N/mm^2
+      const Kc = mat?.Kc_N_per_mm2 || 1500;
       const eta = DATA.defaults.efficiency || 0.8;
       const P_kW = (Kc * (MRR_mm3_min/60)) / (1000*eta);
       const T_Nm = (60 * P_kW*1000) / (2*Math.PI * rpm);
       $('pwrOut').textContent = fmt2(P_kW);
       $('tqOut').textContent  = fmt2(T_Nm);
 
-      // Carga de husillo
       let loadPct = NaN;
       if(mach?.power_kw){ loadPct = Math.min(200, 100 * P_kW / mach.power_kw); }
       $('loadOut').textContent = Number.isFinite(loadPct) ? fmt1(loadPct) : '—';
       $('pwrNote').textContent = Number.isFinite(loadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : '';
 
-      // f_tp y banda evitada
       const toothHz = (rpm * z)/60; $('toothHzOut').textContent = fmt1(toothHz);
       const band = DATA.vibration?.avoid_band_hz || [600,900];
       $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
 
-      // Ra estimado
       const Re = 0.02 * Dmm; const Ra_um = (usedFz*usedFz)/(8*Re) * 1000;
       $('raOut').textContent = fmt2(Ra_um);
 
-      // Vida de herramienta (Taylor)
       let lifeMin = NaN;
       if(mat?.taylor?.n && mat?.taylor?.C){ lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n))); }
       $('lifeOut').textContent = Number.isFinite(lifeMin) ? fmt1(lifeMin) : '—';
 
-      // Holder sincronizado
       const holderId = $('holder').value;
       const holder = DATA.holders.find(h=>h.id===holderId) || DATA.holders[0];
-      syncHolderDisplay();
 
-      // Riesgo de vibración
       const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
       const stiff = holder?.stiffness_factor || 1.0;
       const L_over_D = L_mm / Dmm;
@@ -557,7 +523,7 @@
       const SWEET=0.65, WARN=1.00; let state='ok'; if (risk >= WARN || inBand) state='bad'; else if (risk >= SWEET) state='warn';
       const vb = document.querySelector('.vibe-box'); vb.classList.remove('ok','warn','bad'); vb.classList.add(state);
       const badge = `<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
-      let msg = `${badge} · L/D=${fmt2(L_over_D)} · ${holder?.label||'N/A'} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+      let msg = `${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
       if(state==='bad' && inBand){
         const shift = DATA.vibration?.rpm_shift_pct || 0.12;
         const targetHz = (Math.abs(toothHz-band[0]) < Math.abs(toothHz-band[1])) ? band[0] : band[1];
@@ -568,15 +534,12 @@
       }
       $('vibeMsg').innerHTML = msg;
 
-      // Cap por feed máximo
       if(mach?.feed_max_mm_min && feed_mm_min>mach.feed_max_mm_min){
         $('feedAdjNote').textContent += ` Cap por máquina: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
       }
 
-      // Redibuja Gauss con el riesgo actual
       chart.draw(risk);
 
-      // GA4 evento si existe
       try{ window.gtag && gtag('event','calc_submit',{units,op,material:mat?.id,machine:mach?.id,vibe_state:state}); }catch(_){}
     }
 
@@ -589,7 +552,6 @@
       applyPreset();
       const vb = document.querySelector('.vibe-box'); vb.classList.remove('ok','warn','bad');
       chart.draw(0.5);
-      syncHolderDisplay();
     }
 
     function buildQuickRef(mat){
@@ -607,7 +569,7 @@
     }
 
     async function loadRelated(){
-      try{ const r=await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) throw 0; const j=await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){/* silent */}
+      try{ const r=await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) throw 0; const j=await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){}
     }
     function renderRel(items){
       const GRID=$('relGrid'), EMPTY=$('relEmpty'); if(!items||!items.length){ EMPTY.classList.remove('hidden'); return; }
@@ -628,37 +590,26 @@
       });
     }
 
-    function syncHolderDisplay(){
-      const holderId = $('holder').value;
-      const holder = DATA.holders.find(h=>h.id===holderId);
-      $('holderDisplay').value = holder ? holder.label : '—';
-    }
-
-    // ===== Init
     (async function(){
       await loadData();
       fillSelectors();
       buildQuickRef(getMaterial());
 
-      // Unidades
       $('uMetric').addEventListener('click',()=>{ setUnits('metric'); applyPreset(); });
       $('uImperial').addEventListener('click',()=>{ setUnits('imperial'); applyPreset(); });
 
-      // Listeners
       $('apply').addEventListener('click',applyPreset);
       $('calcBtn').addEventListener('click',calc);
       $('resetBtn').addEventListener('click',resetAll);
-      $('material').addEventListener('change',()=>{ applyPreset(); });
+      $('material').addEventListener('change',applyPreset);
       $('operation').addEventListener('change',applyPreset);
-      $('holder').addEventListener('change',()=>{ syncHolderDisplay(); calc(); });
+      $('holder').addEventListener('change',calc);
       $('machine').addEventListener('change',calc);
 
-      // Modo: siempre avanzado
       setUnits('metric');
       applyPreset();
       loadRelated();
 
-      // Chart
       chart.init(); chart.draw(0.5);
     })();
   </script>
