@@ -4,44 +4,214 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Blog — AlexRaSa</title>
-  <meta name="description" content="Casos de éxito, tecnología CNC y optimización de procesos.">
+  <meta name="description" content="Casos de éxito, tips de mecanizado y mejoras rápidas en taller." />
   <meta name="theme-color" content="#0F172A" />
+  <meta name="robots" content="index,follow" />
   <link rel="canonical" href="https://alexrasa.store/blog/" />
+  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/blog/" />
+  <link rel="alternate" hreflang="es" href="https://alexrasa.store/blog/" />
+  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/blog/" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <!-- Open Graph / Twitter para consistencia -->
+  <meta property="og:title" content="Blog — AlexRaSa" />
+  <meta property="og:description" content="Casos de éxito, tips de mecanizado y mejoras rápidas en taller." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://alexrasa.store/blog/" />
+  <meta property="og:image" content="https://alexrasa.store/og/og-image.png" />
+  <meta property="og:site_name" content="AlexRaSa" />
+  <meta property="og:locale" content="es_MX" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html{scroll-behavior:smooth}
+    .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+    .reveal.show{opacity:1;transform:none}
+    .safe-top{padding-top:env(safe-area-inset-top)}
+    /* Backdrop móvil */
+    #mobileBackdrop{transition:opacity .25s ease}
+    #mobileBackdrop.hidden{opacity:0;pointer-events:none}
+    #mobileBackdrop:not(.hidden){opacity:1}
+  </style>
+
+  <!-- GA4 igual que en home -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
+  <script>
+    window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
+    gtag('js', new Date()); gtag('config','G-GDQ8NN6T6Q');
+  </script>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-gray-50 text-gray-800 antialiased">
 
-  <main class="max-w-6xl mx-auto px-4 py-10">
-    <header class="mb-8">
-      <h1 class="text-3xl font-bold tracking-tight">Blog</h1>
-      <p class="text-slate-600">Casos reales, tips de mecanizado y mejoras rápidas en taller.</p>
-    </header>
-
-    <section id="posts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
-
-    <!-- Template de tarjeta -->
-    <template id="post-card-tpl">
-      <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
-        <a class="block" data-post-link>
-          <div class="relative w-full overflow-hidden">
-            <img data-post-img
-                 class="w-full h-auto aspect-[1200/630] object-cover bg-slate-200 select-none"
-                 alt="Imagen del post">
-          </div>
+  <!-- ===== HEADER idéntico al de la home ===== -->
+  <header id="siteHeader" class="safe-top sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="h-16 flex items-center justify-between gap-3">
+        <a href="/" class="flex items-center gap-2" aria-label="Inicio">
+          <img src="/assets/logo.png" class="h-10 w-auto" alt="AlexRaSa" />
+          <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span class="text-blue-600">.store</span></span>
         </a>
-        <div class="p-4">
-          <a class="block" data-post-link>
-            <h3 data-post-title class="text-lg font-semibold leading-snug"></h3>
-          </a>
-          <p data-post-desc class="mt-1 text-sm text-slate-600 line-clamp-2"></p>
-          <time data-post-date class="mt-3 block text-xs text-slate-500"></time>
-        </div>
-      </article>
-    </template>
 
-    <p id="empty-msg" class="hidden text-slate-600">No hay posts por ahora.</p>
+        <nav class="hidden lg:flex items-center gap-6 text-sm">
+          <a href="/#sobre-mi"   class="hover:text-blue-600">Sobre mí</a>
+          <a href="/#soluciones" class="hover:text-blue-600">Soluciones</a>
+          <a href="/#videos"     class="hover:text-blue-600">Videos</a>
+          <a href="/#servicios"  class="hover:text-blue-600">Servicios</a>
+          <a href="/#recursos"   class="hover:text-blue-600">Recursos</a>
+          <a href="/#blog"       class="hover:text-blue-600">Blog</a>
+          <a href="/#agenda"     class="hover:text-blue-600">Agenda</a>
+          <a href="/#contacto"   class="hover:text-blue-600">Contacto</a>
+        </nav>
+
+        <div class="hidden md:flex items-center gap-2">
+          <a href="/#soporte" class="px-3 py-2 rounded-md border border-gray-300 text-gray-900 hover:bg-gray-100 text-sm">Soporte</a>
+          <a href="/#agenda" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Agendar cita</a>
+        </div>
+
+        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú" aria-haspopup="dialog" aria-controls="mobilePanel">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div id="mobileBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/70 backdrop-blur-sm"></div>
+
+    <!-- Menú móvil fullscreen -->
+    <aside id="mobilePanel" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle">
+      <div class="absolute inset-0 bg-white flex flex-col">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+          <span id="mobileMenuTitle" class="text-base font-semibold">Menú</span>
+          <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar menú">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <nav class="p-4">
+            <ul class="space-y-1 text-[17px]">
+              <li><a href="/#sobre-mi"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Sobre mí</a></li>
+              <li><a href="/#soluciones"  class="block px-3 py-3 rounded-lg hover:bg-gray-100">Soluciones</a></li>
+              <li><a href="/#videos"      class="block px-3 py-3 rounded-lg hover:bg-gray-100">Videos</a></li>
+              <li><a href="/#servicios"   class="block px-3 py-3 rounded-lg hover:bg-gray-100">Servicios</a></li>
+              <li><a href="/#recursos"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Recursos</a></li>
+              <li><a href="/#blog"        class="block px-3 py-3 rounded-lg hover:bg-gray-100">Blog</a></li>
+              <li><a href="/#agenda"      class="block px-3 py-3 rounded-lg hover:bg-gray-100">Agenda</a></li>
+              <li><a href="/#contacto"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Contacto</a></li>
+            </ul>
+
+            <div class="mt-6 grid grid-cols-2 gap-2 px-1">
+              <a href="/#soporte" class="px-3 py-2 text-center rounded-md border border-gray-300 hover:bg-gray-100">Soporte</a>
+              <a href="/#agenda"  class="px-3 py-2 text-center rounded-md bg-blue-600 text-white hover:bg-blue-700">Agendar</a>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </aside>
+  </header>
+
+  <!-- ===== HERO del blog para mantener estética ===== -->
+  <section class="relative">
+    <div class="absolute inset-0 -z-10">
+      <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-70"></div>
+      <div class="absolute inset-0 bg-slate-900/60"></div>
+    </div>
+    <div class="max-w-6xl mx-auto px-4 py-12 md:py-16 text-white">
+      <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">Blog</h1>
+      <p class="mt-2 text-white/90">Casos reales, tips de mecanizado y mejoras rápidas en taller.</p>
+    </div>
+  </section>
+
+  <!-- ===== CONTENIDO DEL BLOG: sin cambios funcionales ===== -->
+  <main class="py-16 md:py-20 bg-white reveal">
+    <div class="max-w-6xl mx-auto px-4">
+      <!-- Grid de posts -->
+      <section id="posts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></section>
+
+      <!-- Template de tarjeta -->
+      <template id="post-card-tpl">
+        <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+          <a class="block" data-post-link>
+            <div class="relative w-full overflow-hidden">
+              <img data-post-img
+                   class="w-full h-auto aspect-[1200/630] object-cover bg-slate-200 select-none"
+                   alt="Imagen del post">
+            </div>
+          </a>
+          <div class="p-4">
+            <a class="block" data-post-link>
+              <h3 data-post-title class="text-lg font-semibold leading-snug text-slate-900"></h3>
+            </a>
+            <p data-post-desc class="mt-1 text-sm text-slate-600 line-clamp-2"></p>
+            <time data-post-date class="mt-3 block text-xs text-slate-500"></time>
+          </div>
+        </article>
+      </template>
+
+      <p id="empty-msg" class="hidden text-slate-600 mt-6">No hay posts por ahora.</p>
+    </div>
   </main>
 
+  <!-- ===== FOOTER igual al de la home ===== -->
+  <footer class="bg-gray-100 py-6 border-t border-gray-300 mt-16 text-center">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
+      <div class="flex items-center gap-3">
+        <img src="/assets/logo.png" alt="AlexRaSa" class="h-8 w-auto" loading="lazy" />
+        <p class="text-sm text-gray-600">© 2025 AlexRaSa — Ingeniería, innovación y eficiencia.</p>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
+        <a href="/SolidCAM/" class="hover:underline">SolidCAM</a><span>·</span>
+        <a href="/lantek/" class="hover:underline">Lantek</a><span>·</span>
+        <a href="/logopress/" class="hover:underline">Logopress</a><span>·</span>
+        <a href="/artec" class="hover:underline">Artec 3D</a><span>·</span>
+        <a href="/3dsystems" class="hover:underline">3D Systems</a>
+      </div>
+      <a href="#siteHeader" class="inline-block mt-3 px-5 py-2 bg-blue-600 text-white text-sm rounded-full shadow hover:bg-blue-700 transition">↑ Volver al inicio</a>
+    </div>
+    <p class="text-[11px] text-gray-400 mt-2 max-w-4xl mx-auto px-4 leading-tight">
+      SolidCAM, Lantek, Logopress, Artec y 3D Systems son marcas registradas de sus respectivos propietarios.
+      Su uso en este sitio es únicamente informativo y no implica afiliación, patrocinio o aprobación directa.
+    </p>
+  </footer>
+
+  <!-- ===== SCRIPTS compartidos del sitio ===== -->
+  <script>
+    // Menú móvil
+    const mOpen  = document.getElementById('mobileOpenBtn');
+    const mClose = document.getElementById('mobileCloseBtn');
+    const mPanel = document.getElementById('mobilePanel');
+    const mBg    = document.getElementById('mobileBackdrop');
+    function openM(){ mPanel.classList.remove('hidden'); mBg.classList.remove('hidden'); document.body.style.overflow='hidden'; setTimeout(()=>mClose?.focus(),0); }
+    function closeM(){ mPanel.classList.add('hidden'); mBg.classList.add('hidden'); document.body.style.overflow=''; mOpen?.focus(); }
+    mOpen?.addEventListener('click', openM);
+    mClose?.addEventListener('click', closeM);
+    mBg?.addEventListener('click', closeM);
+    window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeM(); });
+    mPanel?.querySelectorAll('a[href]').forEach(a=>a.addEventListener('click',closeM));
+
+    // Sombra del header
+    const siteHeader=document.getElementById('siteHeader');
+    window.addEventListener('scroll',()=>siteHeader.classList.toggle('shadow',window.scrollY>2),{passive:true});
+
+    // Reveal
+    (function(){
+      const els=document.querySelectorAll('.reveal');
+      if(!('IntersectionObserver'in window)){els.forEach(el=>el.classList.add('show'));return;}
+      const io=new IntersectionObserver((entries,obs)=>{
+        entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('show'); obs.unobserve(e.target);} })
+      },{threshold:0.12});
+      els.forEach(el=>io.observe(el));
+    })();
+  </script>
+
+  <!-- Tu lógica del blog intacta -->
   <script src="/blog/blog.js" defer></script>
 </body>
 </html>
