@@ -228,77 +228,111 @@
   <div id="sweetBar" class="h-3 mt-3 rounded-full transition-all duration-300 bg-gradient-to-r from-rose-600 via-yellow-400 to-emerald-500"></div>
 </div>
 
+<!-- ==== AJUSTE FINO DUAL ==== -->
+<div id="sweetspot-section" class="mt-6 bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg">
+  <h3 class="text-cyan-400 font-semibold mb-3 text-sm uppercase tracking-wider">Ajuste fino — RPM / Avance</h3>
+
+  <label class="block text-slate-300 text-sm mb-1">RPM</label>
+  <input type="range" id="rpmSlider" min="0.8" max="1.2" step="0.01" value="1" class="w-full accent-cyan-500 cursor-pointer">
+  <div id="rpmLabel" class="text-center mt-1 text-sm text-slate-400">100 % — RPM base</div>
+
+  <label class="block text-slate-300 text-sm mt-4 mb-1">Avance</label>
+  <input type="range" id="feedSlider" min="0.8" max="1.2" step="0.01" value="1" class="w-full accent-cyan-500 cursor-pointer">
+  <div id="feedLabel" class="text-center mt-1 text-sm text-slate-400">100 % — Avance base</div>
+
+  <div id="sweetBar" class="h-3 mt-4 rounded-full transition-all duration-300 bg-gradient-to-r from-rose-600 via-yellow-400 to-emerald-500"></div>
+</div>
+
 <script>
 (() => {
-  const slider = document.getElementById("sweetSlider");
-  const label  = document.getElementById("sweetLabel");
-  const bar    = document.getElementById("sweetBar");
+  const rpmSlider = $("rpmSlider");
+  const feedSlider = $("feedSlider");
+  const rpmLabel = $("rpmLabel");
+  const feedLabel = $("feedLabel");
+  const bar = $("sweetBar");
 
-  slider.addEventListener("input", () => {
-    const scale = parseFloat(slider.value);
+  const recalc = () => {
     if (!window.rpm || !window.feed) return;
 
-    const rpmAdj = window.rpm * scale;
-    const feedAdj = window.feed * scale;
+    const rpmScale = parseFloat(rpmSlider.value);
+    const feedScale = parseFloat(feedSlider.value);
 
-    // === Actualiza valores base en pantalla ===
-    document.getElementById("rpmOut").textContent = Math.round(rpmAdj).toLocaleString("es-MX");
-    document.getElementById("feedOut").textContent = Math.round(feedAdj).toLocaleString("es-MX");
+    const rpmLimit = window.rpmLimit || 12000;
+    const rpmAdj = Math.min(window.rpm * rpmScale, rpmLimit);
+    const feedAdj = window.feed * feedScale;
 
-    // === Parámetros fijos de entorno ===
-    const z = parseInt(document.getElementById("flutes").value, 10);
-    const D = parseFloat(document.getElementById("diam").value);
-    const units = (window.units === "imperial") ? "imperial" : "metric";
-    const mat = (window.DATA?.materials || []).find(m => m.id === document.getElementById("material").value);
-    const mach = (window.DATA?.machine_profiles || []).find(m => m.id === document.getElementById("machine").value);
+    // === Actualiza pantalla ===
+    $("rpmOut").textContent = Math.round(rpmAdj).toLocaleString("es-MX");
+    $("feedOut").textContent = Math.round(feedAdj).toLocaleString("es-MX");
+
+    // === Parámetros base ===
+    const D = parseFloat($("diam").value);
+    const z = parseInt($("flutes").value, 10);
+    const aePct = parseFloat($("aePct").value) || 30;
+    const ap = parseFloat($("ap").value) || 5;
+    const L = parseFloat($("stickout").value) || 25;
+    const units = window.units || "metric";
+    const mat = (window.DATA?.materials || []).find(m => m.id === $("material").value);
+    const mach = (window.DATA?.machine_profiles || []).find(m => m.id === $("machine").value);
     const band = (window.DATA?.vibration?.avoid_band_hz) || [600, 900];
     const Kc = mat?.Kc_N_per_mm2 || 1500;
     const eta = window.DATA?.defaults?.efficiency || 0.8;
-
-    // === Cálculos físicos ===
     const Dmm = (units === "metric") ? D : D * 25.4;
-    const aePct = parseFloat(document.getElementById("aePct").value) || 30;
-    const ap = parseFloat(document.getElementById("ap").value) || 5;
     const ae = (aePct / 100) * Dmm;
-    const MRR = ae * ap * feedAdj;              // mm³/min
+
+    // === Cálculos principales ===
+    const MRR = ae * ap * feedAdj;
     const PkW = (Kc * (MRR / 60)) / (1000 * eta);
     const torque = (60 * PkW * 1000) / (2 * Math.PI * rpmAdj);
+    const loadPct = mach?.power_kw ? Math.min(200, 100 * PkW / mach.power_kw) : NaN;
 
-    // === Carga del husillo ===
-    let loadPct = NaN;
-    if (mach?.power_kw) loadPct = Math.min(200, 100 * PkW / mach.power_kw);
+    $("mrrOut").textContent = (MRR / 1000).toFixed(1);
+    $("pwrOut").textContent = PkW.toFixed(2);
+    $("tqOut").textContent = torque.toFixed(2);
+    $("loadOut").textContent = loadPct ? loadPct.toFixed(1) : "—";
 
-    // === Vibración (Gauss) ===
+    // === Vibración ===
     const toothHz = (rpmAdj * z) / 60;
     const inBand = toothHz >= band[0] && toothHz <= band[1];
-    const L = parseFloat(document.getElementById("stickout").value) || 25;
-    const L_D = L / Dmm;
     const W = window.DATA?.vibration?.weights || { ld: 0.55, ae: 0.2, ap: 0.15, fz: 0.1 };
-    let risk = (W.ld * (L_D / 2) + W.ae * (aePct / 100) + W.ap * (ap / Dmm) + W.fz * Math.abs(scale - 1));
-    risk = Math.max(0, Math.min(2, risk + (inBand ? 0.3 : 0)));
+    let risk = (W.ld * (L / Dmm / 2) + W.ae * (aePct / 100) + W.ap * (ap / Dmm) + W.fz * Math.abs(feedScale - 1));
+    if (inBand) risk += 0.3;
+    risk = Math.max(0, Math.min(2, risk));
 
-    // === Actualiza KPIs ===
-    document.getElementById("mrrOut").textContent = (MRR / 1000).toFixed(1);
-    document.getElementById("pwrOut").textContent = PkW.toFixed(2);
-    document.getElementById("tqOut").textContent = torque.toFixed(2);
-    document.getElementById("loadOut").textContent = loadPct ? loadPct.toFixed(1) : "—";
-    document.getElementById("toothHzOut").textContent = Math.round(toothHz);
-    document.getElementById("vibeMsg").innerHTML = `${inBand ? "⚠️ En banda crítica " : ""}f<sub>tp</sub>=${Math.round(toothHz)} Hz · riesgo=${risk.toFixed(2)}`;
+    $("vibeMsg").innerHTML = `${inBand ? "⚠️ En banda crítica " : ""}f<sub>tp</sub>=${Math.round(toothHz)} Hz · riesgo=${risk.toFixed(2)}`;
 
-    // === Color visual dinámico ===
+    // === Ra ===
+    const fz = (feedAdj / (rpmAdj * z)) || 0;
+    const Re = 0.02 * Dmm;
+    const Ra_um = (fz * fz) / (8 * Re) * 1000;
+    $("raOut").textContent = Ra_um.toFixed(2);
+
+    // === Vida (Taylor) ===
+    const Vc_m_min = (Math.PI * Dmm * rpmAdj) / 1000;
+    let lifeMin = NaN;
+    if (mat?.taylor?.n && mat?.taylor?.C) {
+      lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1 / mat.taylor.n));
+      lifeMin *= (1 - (risk * 0.4));
+    }
+    $("lifeOut").textContent = Number.isFinite(lifeMin) ? lifeMin.toFixed(1) : "—";
+
+    // === Color barra ===
     let color = "from-rose-600 to-rose-700";
     if (risk < 0.65) color = "from-emerald-500 to-emerald-600";
     else if (risk < 1.0) color = "from-yellow-400 to-yellow-500";
-    bar.className = `h-3 mt-3 rounded-full transition-all duration-300 bg-gradient-to-r ${color}`;
+    bar.className = `h-3 mt-4 rounded-full transition-all duration-300 bg-gradient-to-r ${color}`;
 
-    // === Etiqueta ===
-    label.textContent = `${Math.round(scale * 100)} % — ${(risk < 0.65) ? "Sweet spot óptimo" : (risk < 1.0) ? "Bueno" : "Riesgo alto"}`;
-
-    // === Actualiza la gráfica ===
+    // === Etiquetas sliders ===
+    rpmLabel.textContent = `${Math.round(rpmScale * 100)} % — RPM`;
+    feedLabel.textContent = `${Math.round(feedScale * 100)} % — Avance`;
     if (window.chart?.draw) window.chart.draw(risk);
-  });
+  };
+
+  rpmSlider.addEventListener("input", recalc);
+  feedSlider.addEventListener("input", recalc);
 })();
 </script>
+
 
 
       <!-- Vibración con campana Gauss -->
