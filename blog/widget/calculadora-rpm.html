@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-accent="">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -25,26 +25,73 @@
   <meta property="og:description" content="Métrico o imperial. Presets por material. Cap contra límite de máquina." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
-  <meta property="og:image" content="https://alexrasa.store/assets/blog/hero-calculadora-rpm.png" />
+  <meta property="og:image" content="https://alexrasa.store/assets/blog/hero-calculadora-rpm.jpg" />
   <meta property="og:site_name" content="AlexRaSa" />
   <meta property="og:locale" content="es_MX" />
   <meta name="twitter:card" content="summary_large_image" />
 
   <!-- Perf hints -->
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
-  <link rel="preload" as="image" href="/assets/blog/hero-calculadora-rpm.png" />
+  <link rel="preload" as="image" href="/assets/blog/hero-calculadora-rpm.jpg" />
 
   <!-- Tailwind (quita si ya compilas tu build) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- Paleta gris-azul + acentos por solución -->
   <style>
-    :root{color-scheme:light dark}
-    html{scroll-behavior:smooth}
-    .capsule{border-radius:12px}
-    .kpi-shadow{box-shadow:0 10px 30px rgba(2,8,23,.08)}
+    :root{
+      color-scheme: light dark;
+      --bg:#f8fafc;         /* fondo */
+      --ink:#0f172a;        /* texto */
+      --card:#ffffff;       /* tarjetas */
+      --muted:#64748b;      /* texto secundario */
+      --border:#e2e8f0;     /* bordes */
+      --accent:#0ea5e9;     /* azul por defecto */
+      --accent-ink:#ffffff; /* texto sobre acento */
+    }
+    /* Acentos por solución */
+    :root[data-accent="solidcam"]{ --accent:#e11d48; }   /* rose-600 */
+    :root[data-accent="lantek"]  { --accent:#10b981; }   /* emerald-500 */
+    :root[data-accent="logopress"]{--accent:#4f46e5; }   /* indigo-600 */
+
+    /* Aplicación de paleta sin romper Tailwind */
+    body{ background:var(--bg); color:var(--ink); }
+    .bg-white{ background:var(--card) !important; }
+    .bg-gray-50{ background:#f9fafb !important; }
+    .text-gray-600,.text-gray-700{ color:var(--muted) !important; }
+    .border-gray-200,.border-gray-300{ border-color:var(--border) !important; }
+    .capsule{ border-radius:12px; }
+    .kpi-shadow{ box-shadow:0 10px 30px rgba(2,8,23,.08); }
+
+    /* Botón acento: añade class="is-accent" donde quieras reforzar marca */
+    .is-accent{
+      background:var(--accent) !important;
+      color:var(--accent-ink) !important;
+      border-color:var(--accent) !important;
+    }
+    .is-accent:hover{ filter:brightness(.92); }
+
+    /* Inputs coherentes */
+    input,select{
+      background:#fff; color:var(--ink);
+      border:1px solid var(--border);
+    }
     input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-    input[type="number"]{appearance:textfield}
+    input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
+    input[type="number"]{ appearance:textfield; }
+
+    /* Dark limpio y aceroso */
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0b1220;
+        --ink:#e5e7eb;
+        --card:#111827;
+        --muted:#cbd5e1;
+        --border:#334155;
+      }
+      .bg-gray-50,.bg-white{ background:var(--card) !important; }
+      input,select{ background:#0f172a; color:var(--ink); border-color:var(--border); }
+    }
   </style>
 
   <!-- GA4 -->
@@ -61,7 +108,7 @@
     "@type":"TechArticle",
     "headline":"Calculadora de RPM y Avance",
     "description":"Calculadora para RPM y avance en fresado CNC con presets y validación.",
-    "image":"https://alexrasa.store/assets/blog/hero-calculadora-rpm.png",
+    "image":"https://alexrasa.store/assets/blog/hero-calculadora-rpm.jpg",
     "author":{"@type":"Person","name":"Miguel Alejandro Ramírez Sánchez"},
     "datePublished":"2025-10-30",
     "dateModified":"2025-10-30",
@@ -72,7 +119,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
 
-  <!-- ===== HEADER (igual a la principal) ===== -->
+  <!-- HEADER -->
   <header id="siteHeader" class="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4">
       <div class="h-16 flex items-center justify-between gap-3">
@@ -92,17 +139,17 @@
         </nav>
         <div class="hidden md:flex items-center gap-2">
           <a href="/#soporte" class="px-3 py-2 rounded-md border border-gray-300 text-gray-900 hover:bg-gray-100 text-sm">Soporte</a>
-          <a href="/#agenda" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Agendar cita</a>
+          <a href="/#agenda" class="px-3 py-2 rounded-md is-accent text-sm font-medium">Agendar cita</a>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- ===== HERO ===== -->
+  <!-- HERO -->
   <section class="relative">
     <div class="mx-auto max-w-6xl px-4 py-8 md:py-12">
       <div class="relative overflow-hidden rounded-2xl bg-gray-900">
-        <img src="/assets/blog/hero-calculadora-rpm.png" alt="Macro de fresado CNC" class="h-48 w-full object-cover md:h-80 opacity-70" />
+        <img src="/assets/blog/hero-calculadora-rpm.jpg" alt="Macro de fresado CNC" class="h-48 w-full object-cover md:h-80 opacity-70" />
         <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent"></div>
         <div class="absolute inset-0 p-6 md:p-10 flex flex-col justify-end">
           <h1 class="text-2xl md:text-4xl font-bold text-white">Calculadora de RPM y Avance</h1>
@@ -112,7 +159,7 @@
     </div>
   </section>
 
-  <!-- ===== CONTENIDO ===== -->
+  <!-- CONTENIDO -->
   <main class="mx-auto max-w-6xl px-4 pb-16">
     <article class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <!-- Cuerpo -->
@@ -127,12 +174,12 @@
             </ul>
           </div>
 
-          <!-- ===== CALCULADORA ===== -->
+          <!-- CALCULADORA -->
           <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Inputs -->
             <section class="lg:col-span-7 space-y-4">
               <div class="grid grid-cols-2 gap-3">
-                <button id="uMetric"   class="capsule px-4 py-2 text-sm font-medium bg-gray-900 text-white">Métrico</button>
+                <button id="uMetric"   class="capsule px-4 py-2 text-sm font-medium is-accent">Métrico</button>
                 <button id="uImperial" class="capsule px-4 py-2 text-sm font-medium border border-gray-300 bg-white">Imperial</button>
               </div>
 
@@ -192,7 +239,7 @@
               </div>
 
               <div class="flex gap-3">
-                <button id="calc"  class="capsule px-4 py-2 text-sm font-medium bg-gray-900 text-white">Calcular</button>
+                <button id="calc"  class="capsule px-4 py-2 text-sm font-medium is-accent">Calcular</button>
                 <button id="reset" class="capsule px-4 py-2 text-sm font-medium border border-gray-300 bg-white">Reiniciar</button>
               </div>
             </section>
@@ -248,7 +295,7 @@
           <!-- CTA -->
           <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <a href="/form" class="inline-flex items-center justify-center capsule border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Quiero ayuda para mis piezas</a>
-            <a href="https://outlook.office.com/bookwithme/user/c53758f6cac443108f6f112c6eedf95b@solidservicios.com?anonymous&ismsaljsauthenabled&ep=plink" target="_blank" rel="noopener" class="inline-flex items-center justify-center capsule bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-800">Agendar reunión técnica</a>
+            <a href="https://outlook.office.com/bookwithme/user/c53758f6cac443108f6f112c6eedf95b@solidservicios.com?anonymous&ismsaljsauthenabled&ep=plink" target="_blank" rel="noopener" class="inline-flex items-center justify-center capsule px-4 py-3 text-sm font-medium is-accent">Agendar reunión técnica</a>
             <a href="https://wa.me/524425992802" target="_blank" rel="noopener" class="inline-flex items-center justify-center capsule border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Escribir por WhatsApp</a>
           </div>
         </div>
@@ -268,7 +315,7 @@
     </article>
   </main>
 
-  <!-- ===== FOOTER ===== -->
+  <!-- FOOTER -->
   <footer class="bg-gray-100 py-6 border-t border-gray-300 text-center">
     <div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
       <div class="flex items-center gap-3">
@@ -288,7 +335,18 @@
     </p>
   </footer>
 
-  <!-- ===== LÓGICA CALCULADORA ===== -->
+  <!-- Selector de acento: ?accent=solidcam|lantek|logopress o fija data-accent en <html> -->
+  <script>
+    (function(){
+      const q = new URLSearchParams(location.search).get('accent');
+      const ok = new Set(['solidcam','lantek','logopress']);
+      const html = document.documentElement;
+      if(ok.has(q)) html.setAttribute('data-accent', q);
+      document.getElementById('y').textContent = new Date().getFullYear();
+    })();
+  </script>
+
+  <!-- LÓGICA CALCULADORA -->
   <script>
     const state = {
       units:'metric',
@@ -301,12 +359,12 @@
     const $=(id)=>document.getElementById(id);
     const fmt=(n,d=0)=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
 
-    const uM=$('uMetric'),uI=$('uImperial');
+    const uM=$('uMetric'), uI=$('uImperial');
     function setUnits(u){
       state.units=u;
       const m=u==='metric';
-      uM.classList.toggle('bg-gray-900',m); uM.classList.toggle('text-white',m);
-      uI.classList.toggle('bg-gray-900',!m);uI.classList.toggle('text-white',!m);
+      uM.classList.toggle('is-accent', m);
+      uI.classList.toggle('is-accent', !m);
       $('diamUnit').textContent=m?'mm':'in';
       $('vcUnit').textContent=m?'m/min':'SFM';
       $('fzUnit').textContent=m?'mm':'in';
@@ -315,8 +373,10 @@
       clearResults();
     }
     function clearResults(){
-      $('rpmOut').textContent='—'; $('feedOut').textContent='—';
-      $('rpmWarn').classList.add('hidden'); $('summary').textContent='Ingresa datos y calcula.';
+      $('rpmOut').textContent='—';
+      $('feedOut').textContent='—';
+      $('rpmWarn').classList.add('hidden');
+      $('summary').textContent='Ingresa datos y calcula.';
     }
     uM.addEventListener('click',()=>setUnits('metric'));
     uI.addEventListener('click',()=>setUnits('imperial'));
@@ -368,8 +428,6 @@
 
     $('copyRpm').addEventListener('click',()=>{ const t=$('rpmOut').textContent.replace(/,/g,''); if(t&&t!=='—') navigator.clipboard.writeText(t); });
     $('copyFeed').addEventListener('click',()=>{ const t=$('feedOut').textContent.replace(/,/g,''); if(t&&t!=='—') navigator.clipboard.writeText(t); });
-
-    document.getElementById('y').textContent=new Date().getFullYear();
   </script>
 </body>
 </html>
