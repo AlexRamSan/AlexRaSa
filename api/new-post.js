@@ -1,4 +1,4 @@
-// /api/new-post.js — crea el post + sube portada opcional
+// /api/new-post.js — crea el post + sube portada + actualiza /blog/posts.json
 import fs from "node:fs";
 import path from "node:path";
 
@@ -8,7 +8,7 @@ const {
   GITHUB_REPO_FULLNAME,   // ej: "AlexRaSa/AlexRaSa"
   GITHUB_DEFAULT_BRANCH,  // ej: "main"
   SITE_BASE_URL,          // ej: "https://alexrasa.store"
-  DEPLOY_HOOK_URL         // ← añade esta variable en tu hosting
+  DEPLOY_HOOK_URL         // opcional
 } = process.env;
 
 const GH_API = "https://api.github.com";
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-    // --- Autenticación básica ---
+    // --- Autenticación ---
     const auth = req.headers.authorization || "";
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     if (!ADMIN_KEY || token !== ADMIN_KEY) return res.status(401).json({ error: "Unauthorized" });
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       .filter(k => !process.env[k]);
     if (miss.length) return res.status(500).json({ error: "Missing env vars: " + miss.join(", ") });
 
-    // --- Leer cuerpo JSON ---
+    // --- JSON body ---
     const body = await readJson(req);
     let {
       title = "",
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
       ? `<img src="${escapeHtml(heroImage)}" alt="${escapeHtml(title)}" class="w-full rounded-xl mt-4">`
       : "";
 
-    // --- Front-matter + reemplazos ---
+    // --- Front-matter + render ---
     const pageHtml =
 `<!--
 ---
@@ -97,7 +97,7 @@ slug: "${escapeYaml(slug)}"
       .replace("{{hero}}", heroBlock)
       .replace("{{content}}", content);
 
-    // --- Escribir el HTML del post ---
+    // --- Escribir HTML del post ---
     const postPath = `blog/${slug}.html`;
     await githubPutFile({
       ownerRepo: GITHUB_REPO_FULLNAME,
@@ -108,12 +108,47 @@ slug: "${escapeYaml(slug)}"
       token: GITHUB_TOKEN
     });
 
-    // --- Disparar redeploy (no bloquea respuesta) ---
-    if (DEPLOY_HOOK_URL) {
-      fetch(DEPLOY_HOOK_URL, { method: "POST" }).catch(() => {});
-    }
+    // --- Actualizar /blog/posts.json ---
+    const postsJsonPath = "blog/posts.json";
+    const { content: existingJson, sha } = await githubGetFileOrEmpty({
+      ownerRepo: GITHUB_REPO_FULLNAME,
+      branch: GITHUB_DEFAULT_BRANCH,
+      path: postsJsonPath,
+      token: GITHUB_TOKEN
+    });
+
+    let items = [];
+    try { items = JSON.parse(existingJson || "[]"); } catch { items = []; }
 
     const url = `${SITE_BASE_URL.replace(/\/$/,"")}/blog/${slug}.html`;
+
+    // quitar duplicado por slug o url
+    const norm = (s)=>String(s||"").trim().toLowerCase();
+    items = items.filter(x => norm(x.url) !== norm(`/blog/${slug}.html`) && norm(x.url) !== norm(url));
+
+    // insertar nuevo y ordenar por fecha desc
+    items.push({
+      title,
+      description,
+      image: ogImage,
+      url: `/blog/${slug}.html`,
+      date
+    });
+    items.sort((a,b)=> (Date.parse(b.date||0)-Date.parse(a.date||0)) || String(a.title).localeCompare(String(b.title)));
+
+    await githubPutFile({
+      ownerRepo: GITHUB_REPO_FULLNAME,
+      branch: GITHUB_DEFAULT_BRANCH,
+      path: postsJsonPath,
+      content: Buffer.from(JSON.stringify(items, null, 2), "utf8").toString("base64"),
+      message: `chore(blog): update posts.json with ${slug}`,
+      token: GITHUB_TOKEN,
+      sha
+    });
+
+    // --- Redeploy no bloqueante ---
+    if (DEPLOY_HOOK_URL) fetch(DEPLOY_HOOK_URL, { method: "POST" }).catch(()=>{});
+
     return res.status(200).json({ ok: true, url, path: postPath });
   } catch (err) {
     console.error(err);
@@ -128,12 +163,20 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<"
 function escapeYaml(s){ return String(s).replace(/"/g,'\\"'); }
 function ghHeaders(t){ return {"Authorization":`Bearer ${t}`,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"alexrasa-blog"}; }
 
-async function githubPutFile({ ownerRepo, branch, path, content, message, token }){
-  let sha;
-  const get = await fetch(`${GH_API}/repos/${ownerRepo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`,{headers:ghHeaders(token)});
-  if (get.ok) sha = (await get.json()).sha;
+async function githubGetFileOrEmpty({ ownerRepo, branch, path, token }){
+  const url = `${GH_API}/repos/${ownerRepo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
+  const r = await fetch(url, { headers: ghHeaders(token) });
+  if (r.status === 404) return { content: "[]", sha: undefined };
+  if (!r.ok) throw new Error(`GitHub GET failed ${r.status}`);
+  const j = await r.json();
+  const content = Buffer.from(j.content || "", "base64").toString("utf8");
+  return { content, sha: j.sha };
+}
+
+async function githubPutFile({ ownerRepo, branch, path, content, message, token, sha }){
   const r = await fetch(`${GH_API}/repos/${ownerRepo}/contents/${encodeURIComponent(path)}`,{
-    method:"PUT", headers:{...ghHeaders(token),"Content-Type":"application/json"},
+    method:"PUT",
+    headers:{...ghHeaders(token),"Content-Type":"application/json"},
     body: JSON.stringify({ message, content, branch, ...(sha?{sha}:{}) })
   });
   if (!r.ok) throw new Error(`GitHub PUT failed ${r.status}`);
