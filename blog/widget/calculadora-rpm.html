@@ -4,15 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora de RPM y avance — AlexRaSa</title>
-  <meta name="description" content="Calcula RPM, avance y riesgo de vibración a partir de Vc/SFM, fz, diámetros y presets por material. Compatible métrico/imperial." />
+  <meta name="description" content="Calcula RPM, avance e identifica riesgo de vibración por sujeción. Presets por material. Métrico/imperial." />
   <link rel="canonical" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
 
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    :root{ --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a; --accent:#0ea5e9;
-           --rose:#e11d48; --emerald:#10b981; --indigo:#6366f1; }
+    :root{
+      --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
+      --accent:#0ea5e9; --rose:#e11d48; --emerald:#10b981; --indigo:#6366f1;
+    }
     @media (prefers-color-scheme: light){
       :root{ --bg:#f7fafc; --card:#ffffff; --ink:#0b1220; --muted:#475569; --border:#d4dbe5; --accent:#2563eb; }
     }
@@ -32,9 +34,26 @@
     .kpi{font-weight:700}
     .kpi-value{font-size:1.4rem;color:#eaf2ff;text-shadow:0 0 0.5px #a5c3ff,0 0 12px rgba(56,189,248,.35)}
     .pill{font-size:.7rem;border:1px solid var(--border);border-radius:999px;padding:.12rem .5rem;color:var(--muted)}
-    .vibe-box{background:rgba(148,163,184,.08);border:1px dashed var(--border);border-radius:12px;padding:16px}
+    .vibe-box{background:rgba(148,163,184,.08);border:1px dashed var(--border);border-radius:12px;padding:16px;transition:background .18s,border-color .18s}
     .vibe-box code{color:#cde6ff}
     #matNotes{white-space:normal;overflow:visible;text-overflow:unset;display:block;color:var(--muted)}
+
+    /* Selects y menú desplegado con contraste alto */
+    select, option{ color: var(--ink); background-color: var(--card); }
+    select:focus{ outline:2px solid var(--accent); outline-offset:1px }
+    @supports (color-scheme: dark){ select, option{ color-scheme: dark; } }
+    @media (prefers-color-scheme: light){
+      select, option{ color:#0b1220; background:#ffffff; }
+    }
+
+    /* estados de vibración + badges */
+    .vibe-box.ok   { border-color:#16a34a; background:rgba(22,163,74,.08) }
+    .vibe-box.warn { border-color:#f59e0b; background:rgba(245,158,11,.10) }
+    .vibe-box.bad  { border-color:#ef4444; background:rgba(239,68,68,.10) }
+    .badge{font-size:.72rem;border-radius:999px;padding:.15rem .5rem;border:1px solid var(--border)}
+    .badge.ok{background:#052e1b;color:#86efac;border-color:#166534}
+    .badge.warn{background:#3a2801;color:#fde68a;border-color:#b45309}
+    .badge.bad{background:#3b0a0a;color:#fecaca;border-color:#b91c1c}
   </style>
 </head>
 <body>
@@ -53,9 +72,7 @@
         Métrico o imperial. Presets por material. Estimación de vibración por sujeción. Verifica contra el límite de máquina.
       </p>
       <div class="mt-4 flex gap-2">
-        <span class="pill">SolidCAM</span>
-        <span class="pill">Lantek</span>
-        <span class="pill">Logopress</span>
+        <span class="pill">SolidCAM</span><span class="pill">Lantek</span><span class="pill">Logopress</span>
       </div>
     </div>
   </section>
@@ -309,6 +326,7 @@
       const Vc_m_min = (units==='metric') ? V : (V/3.281);
       const fz_mm = (units==='metric') ? FZ : FZ*25.4;
 
+      // RPM y feed
       let rpm = (Vc_m_min*1000)/(Math.PI*Dmm);
       let capped=false; if(rpmLimit>0 && rpm>rpmLimit){ rpm=rpmLimit; capped=true; }
       let feed = rpm * z * fz_mm * (Number.isFinite(prud) ? prud : 1);
@@ -319,7 +337,7 @@
       $('rpmCap').classList.toggle('hidden', !capped);
       $('sumOut').textContent = `D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
 
-      // Vibración
+      // Vibración con semáforo
       const holderId = $('holder').value;
       const holder = DATA.holders.find(h=>h.id===holderId) || DATA.holders[0];
       const est = estimateVibeParams(Dmm, op);
@@ -336,21 +354,29 @@
 
       const band = DATA.vibration?.avoid_band_hz || [600,900];
       const shift = DATA.vibration?.rpm_shift_pct || 0.12;
-      const riskTh = DATA.vibration?.risk_threshold || 0.85;
-
       const toothHz = (rpm * z)/60;
-      let msg = `L/D=${fmt2(L_over_D)}, sujeción=${holder?.label||'N/A'}, f<sub>tp</sub>=${fmt1(toothHz)} Hz, riesgo=${fmt2(risk)}.`;
-      if(risk >= riskTh && toothHz >= band[0] && toothHz <= band[1]){
+      const inBand = (toothHz >= band[0] && toothHz <= band[1]);
+
+      const SWEET = 0.65;  // verde
+      const WARN  = 1.00;  // rojo a partir de aquí o si cae en banda
+      let state = 'ok';
+      if (risk >= WARN || inBand) state = 'bad';
+      else if (risk >= SWEET)     state = 'warn';
+
+      const vb = document.querySelector('.vibe-box');
+      vb.classList.remove('ok','warn','bad'); vb.classList.add(state);
+
+      let badge = `<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
+      let msg = `${badge} · L/D=${fmt2(L_over_D)} · sujeción=${holder?.label||'N/A'} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+
+      if(state==='bad' && inBand){
         const targetHz = (Math.abs(toothHz-band[0]) < Math.abs(toothHz-band[1])) ? band[0] : band[1];
         let rpmAlt = (targetHz * 60) / z;
         rpmAlt *= (toothHz < targetHz ? (1+shift) : (1-shift));
         if(rpmLimit>0 && rpmAlt>rpmLimit) rpmAlt = rpmLimit;
         const feedAlt = rpmAlt * z * fz_mm * (Number.isFinite(prud)?prud:1);
-        msg += ` <br><span class="text-amber-400">Sugerencia:</span> ${fmt0(rpmAlt)} RPM y ` +
-               ((units==='metric') ? `${fmt0(feedAlt)} mm/min` : `${fmt1(feedAlt/25.4)} IPM`) +
-               ` para salir de ${band[0]}–${band[1]} Hz.`;
-      }else{
-        msg += ` Sin alerta de banda ${band[0]}–${band[1]} Hz.`;
+        msg += ` Sugerido salir de ${band[0]}–${band[1]} Hz → ${fmt0(rpmAlt)} RPM y ` +
+               ((units==='metric') ? `${fmt0(feedAlt)} mm/min` : `${fmt1(feedAlt/25.4)} IPM`)+`.`;
       }
       $('vibeMsg').innerHTML = msg;
     }
@@ -362,6 +388,7 @@
       $('sumOut').textContent='Ingresa datos y calcula.'; $('vibeMsg').textContent='';
       $('rpmCap').classList.add('hidden');
       applyPreset();
+      const vb = document.querySelector('.vibe-box'); vb.classList.remove('ok','warn','bad');
     }
 
     function buildQuickRef(mat){
@@ -385,9 +412,7 @@
         const j=await r.json();
         const items = (j.items||[]).slice(0,3);
         renderRel(items);
-      }catch(e){
-        // fallback silencioso
-      }
+      }catch(e){/* silent */}
     }
     function renderRel(items){
       const GRID=$('relGrid'), EMPTY=$('relEmpty');
