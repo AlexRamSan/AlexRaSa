@@ -5,70 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Calculadora de RPM y Avance — AlexRaSa</title>
-  <meta name="description" content="Calcula RPM y avance en fresado CNC. Métrico/imperial, presets por material y verificación contra el límite de máquina." />
+  <meta name="description" content="Calcula RPM y avance en fresado CNC con datos externos por material. Métrico/imperial, presets automáticos y sugerencia anti-vibración." />
   <meta name="theme-color" content="#0F172A" />
   <meta name="robots" content="index,follow" />
-
   <link rel="canonical" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
-  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
-
-  <!-- OG / Twitter -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
   <meta property="og:title" content="Calculadora de RPM y Avance — AlexRaSa" />
-  <meta property="og:description" content="Métrico o imperial. Presets por material. Cap contra límite de máquina." />
+  <meta property="og:description" content="Datos por material desde /data/cutting-data.json. Ajuste anti-vibración según L/D, sujeción y parámetros." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
   <meta property="og:image" content="https://alexrasa.store/assets/blog/hero-calculadora-rpm.png" />
+  <meta property="og:site_name" content="AlexRaSa" />
+  <meta property="og:locale" content="es_MX" />
   <meta name="twitter:card" content="summary_large_image" />
 
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <link rel="preload" as="image" href="/assets/blog/hero-calculadora-rpm.png" />
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Paleta gris-azul con contraste alto */
     :root{
-      --bg:#f8fafc;
-      --ink:#0a0f1a;
-      --card:#ffffff;
-      --muted:#475569;
-      --border:#d0d8e0;
-      --accent:#0ea5e9;
-      --accent-ink:#ffffff;
+      color-scheme: light dark;
+      --bg:#f8fafc; --ink:#0a0f1a; --card:#ffffff;
+      --muted:#475569; --border:#d0d8e0;
+      --accent:#0ea5e9; --accent-ink:#ffffff;
     }
-
     :root[data-accent="solidcam"]{--accent:#e11d48;}
-    :root[data-accent="lantek"]{--accent:#10b981;}
+    :root[data-accent="lantek"]  {--accent:#10b981;}
     :root[data-accent="logopress"]{--accent:#4f46e5;}
 
     body{background:var(--bg);color:var(--ink);}
     .capsule{border-radius:12px;}
+    .is-accent{background:var(--accent)!important;color:var(--accent-ink)!important;border-color:var(--accent)!important;}
+    .is-accent:hover{filter:brightness(.92);}
     .bg-white{background:var(--card)!important;}
     .border-gray-200,.border-gray-300{border-color:var(--border)!important;}
     .text-gray-700,.text-gray-800{color:var(--ink)!important;}
     .text-gray-500,.text-gray-600{color:var(--muted)!important;}
-    .is-accent{background:var(--accent)!important;color:var(--accent-ink)!important;border-color:var(--accent)!important;}
-    .is-accent:hover{filter:brightness(.92);}
     input,select{background:#fff;color:#0a0f1a;border:1px solid var(--border);}
     .kpi-shadow{box-shadow:0 10px 30px rgba(2,8,23,.12);}
-    .text-2xl,.font-bold{color:#0a0f1a;}
-    h1,h2,h3,h4,strong{color:#0a0f1a;}
 
-    /* modo oscuro */
+    /* KPI glow más iluminado */
+    .kpi-value{
+      color:#0a0f1a;
+      text-shadow:0 0 0.5px rgba(2,8,23,.35), 0 0 10px rgba(14,165,233,.22);
+    }
     @media (prefers-color-scheme: dark){
-      :root{
-        --bg:#0a0f1a;
-        --card:#111827;
-        --ink:#f8fafc;
-        --muted:#cbd5e1;
-        --border:#334155;
-      }
-      body{background:var(--bg);color:var(--ink);}
+      :root{--bg:#0a0f1a;--card:#111827;--ink:#f8fafc;--muted:#cbd5e1;--border:#334155;}
       input,select{background:#1e293b;color:#f8fafc;border-color:#334155;}
       .bg-white{background:#1e293b!important;}
-      .text-2xl,.font-bold{color:#f8fafc;}
-      h1,h2,h3,h4,strong{color:#f8fafc;}
+      .kpi-value{color:#f8fafc;text-shadow:0 0 0.5px rgba(248,250,252,.4), 0 0 12px rgba(14,165,233,.45);}
     }
   </style>
+
+  <!-- GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js', new Date());gtag('config','G-GDQ8NN6T6Q');</script>
 </head>
-
 <body class="antialiased">
-
 <header class="border-b border-gray-200 bg-white/90 backdrop-blur">
   <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
     <a href="/" class="font-semibold tracking-tight text-xl text-gray-900">AlexRaSa<span class="text-sky-600">.store</span></a>
@@ -87,44 +83,107 @@
       <div class="absolute inset-0 bg-gradient-to-t from-gray-900/85 via-gray-900/20 to-transparent"></div>
       <div class="absolute inset-0 flex flex-col justify-end p-8">
         <h1 class="text-4xl font-bold text-white drop-shadow">Calculadora de RPM y Avance</h1>
-        <p class="text-gray-200 mt-2 text-lg">Métrico o imperial. Presets por material. Cap contra límite de máquina.</p>
+        <p class="text-gray-200 mt-2 text-lg">Datos por material desde archivo externo y sugerencias anti-vibración.</p>
       </div>
     </div>
   </div>
 </section>
 
 <main class="max-w-6xl mx-auto px-4 pb-16">
-  <div class="rounded-2xl border border-gray-200 bg-white p-6 md:p-8 kpi-shadow">
-    <h2 class="text-2xl font-bold mb-4">Simulador CNC</h2>
-    <p class="text-gray-700 mb-6">Define diámetro, filos, Vc y fz para obtener RPM y avance programado. Compatible con sistemas métricos e imperiales.</p>
+  <!-- Tarjeta de fórmulas -->
+  <section class="rounded-2xl border border-gray-200 bg-white p-6 md:p-8 mb-6">
+    <h2 class="text-xl md:text-2xl font-bold">Fórmulas</h2>
+    <p class="text-sm text-gray-700 mt-2">Usa Vc/SFM según unidad. Verifica contra límite de máquina.</p>
+    <div class="mt-4 grid sm:grid-cols-2 gap-4">
+      <article class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <h3 class="text-sm font-semibold text-gray-900">Métrico</h3>
+        <p class="mt-1 text-sm"><code>RPM = (Vc · 1000) / (π · D<sub>mm</sub>)</code></p>
+        <p class="text-sm"><code>F = RPM · z · f<sub>z,mm</sub></code></p>
+      </article>
+      <article class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <h3 class="text-sm font-semibold text-gray-900">Imperial</h3>
+        <p class="mt-1 text-sm"><code>RPM = (SFM · 3.82) / D<sub>in</sub></code></p>
+        <p class="text-sm"><code>F = RPM · z · f<sub>z,in</sub></code></p>
+      </article>
+    </div>
+  </section>
 
+  <!-- Calculadora -->
+  <div class="rounded-2xl border border-gray-200 bg-white p-6 md:p-8 kpi-shadow">
     <div class="grid grid-cols-2 gap-3 mb-4">
-      <button id="uMetric" class="capsule px-4 py-2 text-sm font-semibold is-accent">Métrico</button>
+      <button id="uMetric"   class="capsule px-4 py-2 text-sm font-semibold is-accent">Métrico</button>
       <button id="uImperial" class="capsule px-4 py-2 text-sm font-semibold border border-gray-300 bg-white">Imperial</button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-      <input id="diam" type="number" placeholder="Diámetro (mm)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
-      <input id="flutes" type="number" placeholder="Filos (z)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
-      <input id="vc" type="number" placeholder="Velocidad de corte Vc" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
-      <input id="fz" type="number" placeholder="Chip por diente fz" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+      <select id="material" class="capsule px-3 py-2 border border-gray-300 text-sm"></select>
+      <select id="operation" class="capsule px-3 py-2 border border-gray-300 text-sm">
+        <option value="rough">Desbaste</option>
+        <option value="finish">Acabado</option>
+      </select>
+      <button id="applyPreset" class="capsule px-4 py-2 text-sm font-semibold border border-gray-300 bg-white hover:bg-gray-50">Aplicar preset</button>
+      <div class="text-sm text-gray-600 flex items-center"><span id="matNotes" class="truncate"></span></div>
     </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      <input id="diam" type="number" step="0.001" placeholder="Diámetro herramienta (mm/in)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      <input id="flutes" type="number" min="1" step="1" value="3" placeholder="Filos (z)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      <input id="rpmLimit" type="number" step="1" placeholder="Límite de RPM máquina" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      <input id="vc" type="number" step="0.1" placeholder="Velocidad de corte Vc (m/min o SFM)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      <input id="fz" type="number" step="0.001" placeholder="Chip por diente fz (mm/in)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      <input id="prudence" type="number" step="0.01" placeholder="Factor prudencia F (0.7–1.0)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+    </div>
+
+    <!-- Parámetros para vibración -->
+    <details class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+      <summary class="cursor-pointer font-semibold text-sm text-gray-900">Parámetros de vibración (opcional)</summary>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+        <input id="stickout" type="number" step="0.1" placeholder="Stickout L (mm)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+        <select id="holder" class="capsule px-3 py-2 border border-gray-300 text-sm"></select>
+        <input id="ae" type="number" step="1" placeholder="ae (% de D)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+        <input id="ap" type="number" step="0.1" placeholder="ap (mm/in)" class="capsule px-3 py-2 border border-gray-300 text-gray-800" />
+      </div>
+      <p class="text-xs text-gray-600 mt-2">Usamos una heurística de riesgo basada en L/D, rigidez del porta, ae/ap y f<sub>z</sub>. Si el riesgo es alto y la frecuencia de paso de dientes cae en 600–900 Hz, sugerimos un RPM alterno fuera de esa banda.</p>
+    </details>
+
     <div class="flex gap-3 mb-6">
-      <button id="calc" class="is-accent capsule px-4 py-2 text-sm font-medium">Calcular</button>
+      <button id="calc"  class="is-accent capsule px-4 py-2 text-sm font-medium">Calcular</button>
       <button id="reset" class="capsule px-4 py-2 text-sm font-medium border border-gray-300 bg-white">Reiniciar</button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="rounded-xl border border-gray-300 bg-gray-50 p-4">
-        <div class="text-sm text-gray-600">RPM teórico</div>
-        <div id="rpmOut" class="text-4xl font-bold mt-1 text-gray-900">—</div>
+        <div class="text-sm text-gray-600">RPM resultante</div>
+        <div id="rpmOut" class="text-4xl font-bold mt-1 kpi-value">—</div>
+        <div id="rpmCap" class="text-xs text-amber-700 mt-1 hidden">Se aplicó límite de máquina.</div>
       </div>
       <div class="rounded-xl border border-gray-300 bg-gray-50 p-4">
         <div class="text-sm text-gray-600">Avance programado</div>
-        <div id="feedOut" class="text-4xl font-bold mt-1 text-gray-900">—</div>
+        <div id="feedOut" class="text-4xl font-bold mt-1 kpi-value">—</div>
+        <div id="feedUnit" class="text-xs text-gray-600 mt-1">mm/min</div>
+      </div>
+      <div class="rounded-xl border border-gray-300 bg-gray-50 p-4">
+        <div class="text-sm text-gray-600">Anti-vibración</div>
+        <div id="vibeMsg" class="mt-1 text-sm text-gray-800">—</div>
       </div>
     </div>
+  </div>
+
+  <!-- Entradas relacionadas (dinámico, usa tu posts.json si existe) -->
+  <aside class="mt-8 rounded-2xl border border-gray-200 bg-white p-6">
+    <h3 class="text-base font-semibold text-gray-900">Entradas relacionadas</h3>
+    <ul id="relList" class="mt-4 space-y-3 text-sm"></ul>
+    <div id="relEmpty" class="mt-3 text-sm text-gray-600 hidden">Aún no hay artículos relacionados.</div>
+  </aside>
+
+  <!-- CTA -->
+  <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <a href="/form" class="inline-flex items-center justify-center capsule border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Quiero ayuda para mis piezas</a>
+    <a href="https://outlook.office.com/bookwithme/user/c53758f6cac443108f6f112c6eedf95b@solidservicios.com?anonymous&ismsaljsauthenabled&ep=plink" target="_blank" rel="noopener" class="inline-flex items-center justify-center capsule px-4 py-3 text-sm font-medium is-accent">Agendar reunión técnica</a>
+    <a href="https://wa.me/524425992802" target="_blank" rel="noopener" class="inline-flex items-center justify-center capsule border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50">Escribir por WhatsApp</a>
   </div>
 </main>
 
@@ -135,21 +194,225 @@
 <script>
 (function(){
   document.getElementById('y').textContent=new Date().getFullYear();
-  const $=(id)=>document.getElementById(id);
-  let metric=true;
-  const fmt=(n)=>Number.isFinite(n)?n.toLocaleString('en-US',{maximumFractionDigits:0}):'—';
-  function clear(){ $('rpmOut').textContent='—';$('feedOut').textContent='—'; }
-  $('uMetric').addEventListener('click',()=>{metric=true;clear();$('uMetric').classList.add('is-accent');$('uImperial').classList.remove('is-accent');});
-  $('uImperial').addEventListener('click',()=>{metric=false;clear();$('uImperial').classList.add('is-accent');$('uMetric').classList.remove('is-accent');});
-  $('calc').addEventListener('click',()=>{
-    const D=parseFloat($('diam').value),z=parseInt($('flutes').value,10),Vc=parseFloat($('vc').value),fz=parseFloat($('fz').value);
-    if(!(D>0&&z>0&&Vc>0&&fz>0)){clear();return;}
-    const rpm=metric?(Vc*1000)/(Math.PI*D):(Vc*3.82)/D;
-    const feed=rpm*z*fz;
-    $('rpmOut').textContent=fmt(rpm);
-    $('feedOut').textContent=fmt(feed);
-  });
-  $('reset').addEventListener('click',()=>{['diam','flutes','vc','fz'].forEach(i=>$(`${i}`).value='');clear();});
+  const $ = (id) => document.getElementById(id);
+  let DATA = null;
+  let units = 'metric'; // 'imperial'
+  const fmt0 = (n)=> Number.isFinite(n)? n.toLocaleString(undefined,{maximumFractionDigits:0}) : '—';
+  const fmt1 = (n)=> Number.isFinite(n)? n.toLocaleString(undefined,{maximumFractionDigits:1}) : '—';
+  const fmt2 = (n)=> Number.isFinite(n)? n.toLocaleString(undefined,{maximumFractionDigits:2}) : '—';
+
+  // --- Fetch data file ---
+  async function loadData(){
+    try{
+      const r = await fetch('/data/cutting-data.json', {cache:'no-store'});
+      if(!r.ok) throw new Error('No se pudo leer cutting-data.json');
+      DATA = await r.json();
+    }catch(e){
+      console.warn('Fallo fetch data. Usando fallback mínimo.', e);
+      DATA = {
+        defaults:{rpm_limit:12000, prudence:0.9, holder:"ER Collet", stickout_mm:25, ae_percent:25, ap_mm:5},
+        holders:[
+          {"id":"ER Collet","label":"Portapinzas ER","stiffness_factor":1.00},
+          {"id":"Shrinkfit","label":"Termoencogible (shrinkfit)","stiffness_factor":1.35}
+        ],
+        materials:[
+          {id:"alu_6061",name:"Aluminio 6061-T6", vc_m_min:{rough:[300,600],finish:[400,900]},
+            fz_mm:[{dia_max_mm:12, rough:[0.04,0.10], finish:[0.02,0.06]}], notes:"Fallback"}
+        ],
+        vibration:{avoid_band_hz:[600,900], rpm_shift_pct:0.12, risk_threshold:0.85,
+          weights:{ld:0.55,ae:0.20,ap:0.15,fz:0.10}}
+      };
+    }
+  }
+
+  function fillSelectors(){
+    const matSel = $('material'); matSel.innerHTML='';
+    DATA.materials.forEach(m=>{
+      const opt=document.createElement('option');
+      opt.value=m.id; opt.textContent=m.name; matSel.appendChild(opt);
+    });
+    const holderSel = $('holder'); holderSel.innerHTML='';
+    DATA.holders.forEach(h=>{
+      const opt=document.createElement('option');
+      opt.value=h.id; opt.textContent=h.label; holderSel.appendChild(opt);
+    });
+    $('rpmLimit').value = DATA.defaults.rpm_limit || 12000;
+    $('prudence').value = DATA.defaults.prudence || 0.9;
+    $('stickout').value = DATA.defaults.stickout_mm || 25;
+    $('ae').value = DATA.defaults.ae_percent || 25;
+    $('ap').value = DATA.defaults.ap_mm || 5;
+  }
+
+  function getMaterial(){
+    const id=$('material').value;
+    return DATA.materials.find(m=>m.id===id);
+  }
+  function diaBucketFz(mat, Dmm, op){
+    const b = (mat.fz_mm||[]).find(x=> Dmm <= x.dia_max_mm) || mat.fz_mm?.[mat.fz_mm.length-1];
+    return b ? b[op] : null;
+  }
+
+  function setUnits(u){
+    units=u;
+    $('uMetric').classList.toggle('is-accent', u==='metric');
+    $('uImperial').classList.toggle('is-accent', u==='imperial');
+    $('feedUnit').textContent = (u==='metric') ? 'mm/min' : 'IPM';
+  }
+
+  function applyPreset(){
+    const mat=getMaterial(); const op=$('operation').value;
+    const D=parseFloat($('diam').value)||10;
+    $('diam').value = D;
+    // Vc:
+    const vcRange = mat?.vc_m_min?.[op] || [100,200];
+    if(units==='metric'){
+      $('vc').value = Math.round((vcRange[0]+vcRange[1])/2);
+    }else{
+      const sfm0 = Math.round(vcRange[0]*3.281);
+      const sfm1 = Math.round(vcRange[1]*3.281);
+      $('vc').value = Math.round((sfm0+sfm1)/2);
+    }
+    // fz segun diámetro
+    const fzRange = diaBucketFz(mat, (units==='metric'?D:(D*25.4)), op) || [0.03,0.08];
+    const fzAvg = (fzRange[0]+fzRange[1])/2;
+    if(units==='metric'){ $('fz').value = fzAvg.toFixed(3); }
+    else { $('fz').value = (fzAvg/25.4).toFixed(3); }
+    $('matNotes').textContent = mat?.notes || '';
+  }
+
+  function calc(){
+    const D = parseFloat($('diam').value);
+    const z = parseInt($('flutes').value,10);
+    const rpmLimit = parseFloat($('rpmLimit').value||'0');
+    const prud = parseFloat($('prudence').value||'1');
+    const V = parseFloat($('vc').value);
+    const FZ = parseFloat($('fz').value);
+    if(!(D>0 && z>0 && V>0 && FZ>0)){ $('rpmOut').textContent='—';$('feedOut').textContent='—';$('vibeMsg').textContent='Datos incompletos.'; return; }
+
+    // Convertir a métricas internas
+    const Dmm = (units==='metric') ? D : D*25.4;
+    const Vc_m_min = (units==='metric') ? V : (V/3.281);
+    const fz_mm = (units==='metric') ? FZ : FZ*25.4;
+
+    // RPM teórico
+    let rpm = (Vc_m_min*1000)/(Math.PI*Dmm);
+    let capped=false;
+    if(rpmLimit>0 && rpm>rpmLimit){ rpm=rpmLimit; capped=true; }
+    // Feed
+    let feed = rpm * z * fz_mm;  // mm/min
+    feed *= (Number.isFinite(prud) ? prud : 1);
+
+    $('rpmOut').textContent = fmt0(rpm);
+    $('feedOut').textContent = (units==='metric') ? fmt0(feed) : fmt1(feed/25.4);
+    $('feedUnit').textContent = (units==='metric') ? 'mm/min' : 'IPM';
+    $('rpmCap').classList.toggle('hidden', !capped);
+
+    // --- Anti-vibración ---
+    const stick = parseFloat($('stickout').value||DATA.defaults.stickout_mm||25);  // mm
+    const holderId = $('holder').value;
+    const holder = DATA.holders.find(h=>h.id===holderId) || DATA.holders[0];
+    const ae_pct = Math.max(1, Math.min(100, parseFloat($('ae').value||DATA.defaults.ae_percent||25)));
+    const ap_in = parseFloat($('ap').value||DATA.defaults.ap_mm||5);
+    const ap_mm = (units==='metric') ? ap_in : ap_in*25.4;
+
+    const L_over_D = (stick>0 && Dmm>0) ? (stick/Dmm) : 2.0;
+    const ae_ratio = ae_pct/100;
+    const ap_ratio = Math.min(1.2, ap_mm/Math.max(1, Dmm)); // normaliza a D
+
+    const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
+    const stiff = holder?.stiffness_factor || 1.0;
+    // riesgo bruto: L/D penaliza, ae/ap penalizan, holder reduce (dividiendo)
+    let risk = (
+      W.ld * (L_over_D/2.0) +
+      W.ae * ae_ratio +
+      W.ap * ap_ratio +
+      W.fz * Math.min(1, fz_mm/(0.1*Dmm+0.02))
+    ) / stiff;
+    risk = Math.max(0, Math.min(2, risk)); // clamp
+
+    // Banda a evitar
+    const band = DATA.vibration?.avoid_band_hz || [600,900];
+    const shift = DATA.vibration?.rpm_shift_pct || 0.12;
+    const riskTh = DATA.vibration?.risk_threshold || 0.85;
+
+    const toothHz = (rpm * z)/60; // frecuencia de paso de dientes
+    let msg = `L/D=${fmt2(L_over_D)}, holder=${holder?.label||'N/A'}, f<sub>tp</sub>=${fmt1(toothHz)} Hz. Riesgo=${fmt2(risk)}.`;
+
+    if(risk >= riskTh && toothHz >= band[0] && toothHz <= band[1]){
+      // Mover RPM fuera de la banda (al borde más cercano) con margen
+      const targetHz = (Math.abs(toothHz - band[0]) < Math.abs(toothHz - band[1])) ? band[0] : band[1];
+      let rpmAlt = (targetHz * 60) / z;
+      // aplicar un pequeño shift adicional
+      rpmAlt *= (toothHz < targetHz ? (1+shift) : (1-shift));
+      if(rpmLimit>0 && rpmAlt>rpmLimit) rpmAlt = rpmLimit;
+      const feedAlt = rpmAlt * z * fz_mm * (Number.isFinite(prud)?prud:1);
+
+      msg += ` <br><span class="text-amber-700">Sugerencia:</span> prueba ${fmt0(rpmAlt)} RPM `;
+      msg += `y F=${ (units==='metric') ? fmt0(feedAlt) + ' mm/min' : fmt1(feedAlt/25.4) + ' IPM' } `;
+      msg += `para salir de ${band[0]}–${band[1]} Hz.`;
+    }else{
+      msg += ` Sin alerta de banda crítica ${band[0]}–${band[1]} Hz.`;
+    }
+    $('vibeMsg').innerHTML = msg;
+  }
+
+  function resetForm(){
+    ['diam','flutes','vc','fz','stickout','ae','ap'].forEach(id=>$(id).value='');
+    $('rpmLimit').value = DATA.defaults.rpm_limit||12000;
+    $('prudence').value = DATA.defaults.prudence||0.9;
+    $('vibeMsg').textContent='—';
+    $('rpmOut').textContent='—';
+    $('feedOut').textContent='—';
+    $('rpmCap').classList.add('hidden');
+    $('matNotes').textContent='';
+  }
+
+  // --- Entradas relacionadas ---
+  async function related(){
+    const list=$('relList'), empty=$('relEmpty'); if(!list) return;
+    list.innerHTML=''; empty.classList.add('hidden');
+    const urls=['/api/list-posts','/blog/posts.json','/data/posts.json','/posts.json'];
+    let posts=[];
+    for(const u of urls){
+      try{ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) continue;
+        const j=await r.json(); posts=Array.isArray(j)?j:(Array.isArray(j.items)?j.items:(Array.isArray(j.posts)?j.posts:[]));
+        if(posts.length) break;
+      }catch(e){}
+    }
+    const keys=['rpm','avance','feeds','speeds','fresado','fz','vc','imachining','solidcam','cnc'];
+    const score = p => {
+      const s=((p.title||'')+' '+(p.description||'')+' '+(p.tags||[]).join(' ')).toLowerCase();
+      return keys.reduce((a,k)=>a+(s.includes(k)?1:0),0);
+    };
+    const normUrl=(u,slug)=> u?(u.startsWith('http')||u.startsWith('/'))?u:`/blog/${u}`:`/blog/${String(slug||'post').toLowerCase().replace(/[^a-z0-9\-]/gi,'-')}.html`;
+    const rel=posts.filter(p=>!p.draft).map(p=>({...p,score:score(p)})).filter(p=>p.score>0).sort((a,b)=>b.score-a.score || new Date(b.date||0)-new Date(a.date||0)).slice(0,3);
+    if(!rel.length){ empty.classList.remove('hidden'); return; }
+    rel.forEach(p=>{
+      const li=document.createElement('li');
+      li.innerHTML=`<a href="${normUrl(p.url,p.slug||p.title)}" class="group block">
+        <span class="font-medium text-gray-900 group-hover:text-sky-700">${p.title||'Post'}</span>
+        <span class="block text-gray-600">${(p.description||'').slice(0,110)}${(p.description||'').length>110?'…':''}</span>
+      </a>`;
+      list.appendChild(li);
+    });
+  }
+
+  // events
+  $('uMetric').addEventListener('click',()=>setUnits('metric'));
+  $('uImperial').addEventListener('click',()=>setUnits('imperial'));
+  $('applyPreset').addEventListener('click', applyPreset);
+  $('calc').addEventListener('click', calc);
+  $('reset').addEventListener('click', resetForm);
+
+  // init
+  (async function init(){
+    await loadData();
+    fillSelectors();
+    setUnits('metric');
+    applyPreset();
+    related();
+  })();
+
 })();
 </script>
 </body>
