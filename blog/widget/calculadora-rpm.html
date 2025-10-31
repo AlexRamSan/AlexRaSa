@@ -280,581 +280,578 @@
   </main>
 
   <script>
-    const $ = (id)=>document.getElementById(id);
-    const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
-    const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
-    const fmt2 = (n)=>Number.isFinite(n)?(Math.round(n*100)/100).toLocaleString('es-MX'):'—';
+const $ = (id)=>document.getElementById(id);
+const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
+const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
+const fmt2 = (n)=>Number.isFinite(n)?(Math.round(n*100)/100).toLocaleString('es-MX'):'—';
 
-    let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
+let DATA = {
+  materials: [],
+  holders: [],
+  vibration: {},
+  defaults: {},
+  machine_profiles: [],
+  tool_types: [],
+  tool_materials: [],
+  operations: []
+};
+let units = 'metric';
 
-    async function loadData(){
-  const tries = [
-    './data/cutting-data.json',
-    '/data/cutting-data.json',
-    'data/cutting-data.json'
-  ];
-  let loaded = false;
-  for(const p of tries){
-    try{
-      console.debug('[DATA] probando', p);
-      const r = await fetch(p, { cache: 'no-store' });
-      console.debug('[DATA] status', p, r.status);
-      if(!r.ok){ console.warn('[DATA] no ok', p, r.status); continue; }
-      const text = await r.text();
-      let parsed;
-      try{
-        parsed = JSON.parse(text);
-      }catch(e){
-        console.error('[DATA] parse error en', p, e);
-        console.debug(text.slice(0,800));
-        continue;
-      }
-
-      // --- Normalizaciones útiles ---
-      // máquinas
-      if(parsed.machines_profiles && !parsed.machine_profiles) parsed.machine_profiles = parsed.machines_profiles;
-      if(parsed.machines_by_brand && !parsed.machine_profiles){
-        // extrae list plano si es necesario (simple flatten)
-        parsed.machine_profiles = [];
-        Object.values(parsed.machines_by_brand).forEach(byType=>{
-          Object.values(byType).forEach(arr=> parsed.machine_profiles.push(...arr.map(x=>{
-            // map campos comunes usados por la app
-            return {
-              id: x.ref_id || x.id || (x.brand?`${x.brand}_${x.name}`: (x.name||'machine')),
-              brand: x.brand || x.type || '',
-              model: x.model || x.name || '',
-              rpm_max: x.rpm_max || x.rpm_max,
-              power_kw: x.power_kw || x.power_kw,
-              feed_max_mm_min: x.feed_max_mm_min || x.feed_max_mm_min,
-              notes: x.notes || ''
-            };
-          })));
-        });
-      }
-
-      // variantes de nombre
-      if(parsed.tool_materials && !parsed.tool_materials) parsed.tool_materials = parsed.tool_materials; // passthru (kept for pattern)
-      if(parsed.tool_types && !parsed.tool_types) parsed.tool_types = parsed.tool_types;
-      if(parsed.holders && !parsed.holders) parsed.holders = parsed.holders;
-
-      // asegura estructura mínima
-      const base = {
-        materials: [], holders: [], vibration: {}, defaults: {}, machine_profiles: [], tool_types: [], tool_materials: [], operations: []
-      };
-      DATA = Object.assign(base, parsed);
-      window.DATA = DATA;
-
-      console.info('[DATA] cargado desde', p);
-      console.debug('[DATA] claves disponibles:', Object.keys(parsed));
-      console.debug('[DATA] machine_profiles length:', (DATA.machine_profiles||[]).length);
-      loaded = true;
-      break;
-    }catch(fetchErr){
-      console.warn('[DATA] fetch error en', p, fetchErr);
+// Carga robusta de cutting-data.json
+async function loadData(){
+  try{
+    const url = '/data/cutting-data.json';
+    const r = await fetch(url, { cache: 'no-store' });
+    if(!r.ok){
+      console.warn('fetch fallo', r.status, r.statusText);
+      return;
     }
+    const j = await r.json();
+    // Normalizar estructura mínima para evitar undefined
+    DATA = Object.assign(DATA, j || {});
+    DATA.materials = Array.isArray(DATA.materials) ? DATA.materials : [];
+    DATA.holders = Array.isArray(DATA.holders) ? DATA.holders : [];
+    DATA.machine_profiles = Array.isArray(DATA.machine_profiles) ? DATA.machine_profiles : (DATA.machines_profiles||[]);
+    DATA.tool_types = Array.isArray(DATA.tool_types) ? DATA.tool_types : [];
+    DATA.tool_materials = Array.isArray(DATA.tool_materials) ? DATA.tool_materials : [];
+    DATA.operations = Array.isArray(DATA.operations) ? DATA.operations : [];
+    DATA.vibration = DATA.vibration || {};
+    DATA.defaults = DATA.defaults || {};
+    // Backwards compat: accept machines_profiles misspelling
+    if(!DATA.machine_profiles.length && Array.isArray(j.machines_profiles)) DATA.machine_profiles = j.machines_profiles;
+    window.DATA = DATA;
+    console.log('cutting-data.json cargado', DATA.materials.length, 'materials,', DATA.machine_profiles.length, 'machines');
+  }catch(e){
+    console.warn('No se cargó cutting-data.json', e);
   }
-
-  if(!loaded){
-    console.error('[DATA] No se pudo cargar cutting-data.json. Revisa ruta, CORS o servidor (si abres con file:// usa un servidor local).');
-  }
-  return loaded;
 }
 
-    function fillSelectors(){
-  const sel = $('material'); sel.innerHTML = '';
-  (DATA.materials || []).forEach(m => sel.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`));
+function fillSelectors(){
+  const sel = $('material'); if(sel) sel.innerHTML = '';
+  (DATA.materials || []).forEach(m => sel?.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`));
 
   const ops = (DATA.operations && DATA.operations.length) ? DATA.operations : [
     {id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},
     {id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}
   ];
-  const opSel = $('operation'); opSel.innerHTML = '';
-  ops.forEach(o => opSel.insertAdjacentHTML('beforeend', `<option value="${o.id}">${o.label}</option>`));
+  const opSel = $('operation'); if(opSel) { opSel.innerHTML=''; ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label}</option>`)); }
 
-  const tSel = $('toolType'); tSel.innerHTML = '';
-  const ttypes = (DATA.tool_types && DATA.tool_types.length) ? DATA.tool_types : [
-    {id:'endmill',label:'Fresa (Endmill)'},{id:'drill',label:'Broca'},{id:'face_mill',label:'Careador/Planeado'},{id:'slot_saw',label:'Sierra ranuradora'}
-  ];
-  ttypes.forEach(t => tSel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.label}</option>`));
+  const tSel = $('toolType'); if(tSel){ tSel.innerHTML=''; const ttypes = (DATA.tool_types && DATA.tool_types.length)?DATA.tool_types:[ {id:'endmill',label:'Fresa (Endmill)'},{id:'drill',label:'Broca'},{id:'face_mill',label:'Careador/Planeado'},{id:'slot_saw',label:'Sierra ranuradora'} ]; ttypes.forEach(t => tSel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.label}</option>`)); }
 
-  const tmSel = $('toolMat'); tmSel.innerHTML = '';
-  // CORRECCIÓN: ternario bien formado. Si no hay DATA.tool_materials usamos lista por defecto.
-  const tmats = (DATA.tool_materials && DATA.tool_materials.length) ? DATA.tool_materials : [
-    {id:'carbide',label:'Carburo',vc_factor:1,fz_factor:1},
-    {id:'hss',label:'Acero rápido (HSS)',vc_factor:0.5,fz_factor:0.85}
-  ];
-  tmats.forEach(t => tmSel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.label}</option>`));
+  const tmSel = $('toolMat'); if(tmSel){
+    tmSel.innerHTML = '';
+    const tmats = (DATA.tool_materials && DATA.tool_materials.length) ? DATA.tool_materials : [
+      {id:'carbide',label:'Carburo',vc_factor:1,fz_factor:1},
+      {id:'hss',label:'Acero rápido (HSS)',vc_factor:0.5,fz_factor:0.85}
+    ];
+    tmats.forEach(t=>tmSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
+  }
 
-  const holderSel = $('holder'); holderSel.innerHTML = '';
-  (DATA.holders || []).forEach(h => holderSel.insertAdjacentHTML('beforeend', `<option value="${h.id}">${h.label}</option>`));
+  const holderSel = $('holder'); if(holderSel){ holderSel.innerHTML=''; (DATA.holders||[]).forEach(h=>holderSel.insertAdjacentHTML('beforeend',`<option value="${h.id}">${h.label}</option>`)); }
 
-  const mach = $('machine'); mach.innerHTML = '';
-  (DATA.machine_profiles || []).forEach(m => mach.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.brand?m.brand+' '+m.model:m.id}</option>`));
+  const mach = $('machine'); if(mach){ mach.innerHTML=''; (DATA.machine_profiles||[]).forEach(m=>mach.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.brand?m.brand+' '+m.model:m.id}</option>`)); }
 
-  $('rpmLimit').value = DATA.defaults?.rpm_limit || 12000;
-  $('prudence').value = DATA.defaults?.prudence || 0.9;
-  $('stickout').value = DATA.defaults?.stickout_mm || 25;
-  $('ap').value = DATA.defaults?.ap_mm || 5;
+  if($('rpmLimit')) $('rpmLimit').value = DATA.defaults?.rpm_limit || 12000;
+  if($('prudence')) $('prudence').value = DATA.defaults?.prudence || 0.9;
+  if($('stickout')) $('stickout').value = DATA.defaults?.stickout_mm || 25;
+  if($('ap')) $('ap').value = DATA.defaults?.ap_mm || 5;
 
   const mat = getMaterial();
-  if ($('matNotes')) $('matNotes').textContent = mat?.notes || '';
+  if($('matNotes')) $('matNotes').textContent = mat?.notes || '';
   buildQuickRef(mat);
 }
 
+function getMaterial(){ const el = $('material'); const id = el?.value; return (DATA.materials||[]).find(m=>m.id===id); }
+function getMachine(){ const id = $('machine')?.value; return (DATA.machine_profiles||[]).find(m=>m.id===id) || {}; }
+function getToolType(){ const id = $('toolType')?.value; return (DATA.tool_types||[]).find(t=>t.id===id) || {}; }
+function getToolMat(){ const id = $('toolMat')?.value; return (DATA.tool_materials||[]).find(t=>t.id===id) || {vc_factor:1,fz_factor:1}; }
+function getHolder(){ const id = $('holder')?.value; return (DATA.holders||[]).find(h=>h.id===id); }
 
-    function getMaterial(){const id=$('material')?.value;return (DATA.materials||[]).find(m=>m.id===id);}
-    function getMachine(){const id=$('machine')?.value;return (DATA.machine_profiles||[]).find(m=>m.id===id)||{};}
-    function getToolType(){const id=$('toolType')?.value;return (DATA.tool_types||[]).find(t=>t.id===id)||{};}
-    function getToolMat(){const id=$('toolMat')?.value;return (DATA.tool_materials||[]).find(t=>t.id===id)||{vc_factor:1,fz_factor:1};}
-    function getHolder(){const id=$('holder')?.value;return (DATA.holders||[]).find(h=>h.id===id);}
+function setUnits(u){
+  units = u;
+  $('uMetric')?.classList.toggle('is-on', u==='metric');
+  $('uImperial')?.classList.toggle('is-on', u==='imperial');
+  if($('feedUnit')) $('feedUnit').textContent = (u==='metric') ? 'mm/min' : 'IPM';
+  if($('sumOut')) $('sumOut').textContent = 'Unidad: ' + (u==='metric' ? 'métrico' : 'imperial');
+  window.units = units;
+}
 
-    function setUnits(u){
-      units=u;
-      $('uMetric').classList.toggle('is-on',u==='metric');
-      $('uImperial').classList.toggle('is-on',u==='imperial');
-      $('feedUnit').textContent=(u==='metric')?'mm/min':'IPM';
-      $('sumOut').textContent='Unidad: '+(u==='metric'?'métrico':'imperial');
-      window.units=units;
-    }
+function estimateVibeParams(Dmm,op){
+  const L = Number(parseFloat($('stickout')?.value)) || Math.max(DATA.defaults?.stickout_mm||25, (op==='finish'?2.0:3.0)*Dmm);
+  const opDef = (DATA.operations||[]).find(o=>o.id===op);
+  const ae_pct = Number.isFinite(opDef?.default_ae_pct) ? opDef.default_ae_pct : (op==='finish'?12:(op==='adaptive'?25:30));
+  const ap_mm = Number(parseFloat($('ap')?.value)) || Math.min((op==='finish'?0.2:0.5)*Dmm, Math.max(Dmm, DATA.defaults?.ap_mm||5));
+  return { L, ae_pct, ap_mm };
+}
 
-    function estimateVibeParams(Dmm,op){
-      const L=Number(parseFloat($('stickout').value))||Math.max(DATA.defaults?.stickout_mm||25,(op==='finish'?2.0:3.0)*Dmm);
-      const opDef=(DATA.operations||[]).find(o=>o.id===op);
-      const ae_pct=Number.isFinite(opDef?.default_ae_pct)?opDef.default_ae_pct:(op==='finish'?12:(op==='adaptive'?25:30));
-      const ap_mm=Number(parseFloat($('ap').value))||Math.min((op==='finish'?0.2:0.5)*Dmm,Math.max(Dmm,DATA.defaults?.ap_mm||5));
-      return{L,ae_pct,ap_mm};
-    }
+function diaBucketFz(mat,Dmm,op){
+  if(!mat?.fz_mm) return null;
+  const arr = [...mat.fz_mm].sort((a,b)=>a.dia_max_mm - b.dia_max_mm);
+  const picked = arr.find(b=>Dmm <= b.dia_max_mm) || arr[arr.length-1];
+  const range = picked?.[op] || picked?.[op==='finish'?'finish':'rough'];
+  return Array.isArray(range) ? range : null;
+}
 
-    function diaBucketFz(mat,Dmm,op){
-      if(!mat?.fz_mm)return null;
-      const arr=[...mat.fz_mm].sort((a,b)=>a.dia_max_mm-b.dia_max_mm);
-      const picked=arr.find(b=>Dmm<=b.dia_max_mm)||arr[arr.length-1];
-      const range=picked?.[op]||picked?.[op==='finish'?'finish':'rough'];
-      return Array.isArray(range)?range:null;
-    }
+function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct, helix_deg=30, corner_mm=0){
+  const r = Math.max(0.001, Math.min(1.0, ae_pct/100.0));
+  const s = Math.sqrt(r * (2.0 - r));
+  let k = s > 0 ? 1.0 / s : 1.0;
+  k = Math.min(k, 6.0);
 
-    // Nueva: chip-thinning con factores de hélice y radio
-    function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct, helix_deg=30, corner_mm=0){
-      const r = Math.max(0.001, Math.min(1.0, ae_pct/100.0));
-      const s = Math.sqrt(r * (2.0 - r));
-      let k = s > 0 ? 1.0 / s : 1.0;
-      const K_CAP = 6.0;
-      k = Math.min(k, K_CAP);
+  const helix_rad = Math.max(0, Math.min(75, helix_deg)) * Math.PI/180.0;
+  let helixFactor = 1.0 / Math.max(1e-6, Math.cos(helix_rad));
+  helixFactor = Math.min(helixFactor, 1.6);
 
-      const helix_rad = Math.max(0, Math.min(75, helix_deg)) * Math.PI/180.0;
-      let helixFactor = 1.0 / Math.max(1e-6, Math.cos(helix_rad));
-      const HELIX_CAP = 1.6;
-      helixFactor = Math.min(helixFactor, HELIX_CAP);
+  let cornerFactor = 1.0;
+  if (corner_mm > 0){
+    cornerFactor = 1.0 - Math.min(0.4, corner_mm / Math.max(0.001, 0.5 * Dmm));
+    cornerFactor = Math.max(0.6, cornerFactor);
+  }
 
-      let cornerFactor = 1.0;
-      if (corner_mm > 0){
-        cornerFactor = 1.0 - Math.min(0.4, corner_mm / Math.max(0.001, 0.5 * Dmm));
-        cornerFactor = Math.max(0.6, cornerFactor);
-      }
+  const fzEff = fz_mm * k * helixFactor * cornerFactor;
+  return { fzEff, k, helixFactor, cornerFactor };
+}
 
-      const fzEff = fz_mm * k * helixFactor * cornerFactor;
-      return { fzEff: fzEff, k: k, helixFactor: helixFactor, cornerFactor: cornerFactor };
-    }
-
-    const chart={
-      el:null,ctx:null,
-      init(){this.el=$('vibeChart');this.ctx=this.el.getContext('2d');const resize=()=>{this.el.width=Math.max(640,this.el.clientWidth*2);this.el.height=Math.max(220,this.el.clientHeight*2);this.draw(0.5);};new ResizeObserver(resize).observe(this.el.parentElement);},
-      xMin:0,xMax:2,pdf(x,mu=0.75,sigma=0.2){const a=1/(sigma*Math.sqrt(2*Math.PI));const e=Math.exp(-0.5*((x-mu)/sigma)**2);return a*e;},
-      xToPx(x){return (x-this.xMin)/(this.xMax-this.xMin)*(this.el.width-60)+30;},
-      yToPx(y){const top=20,bottom=this.el.height-30;return bottom-y*(bottom-top);},
-      drawBase(){
-        const ctx=this.ctx;ctx.clearRect(0,0,this.el.width,this.el.height);
-        const segs=[{from:0,to:0.65,c:'rgba(34,197,94,0.25)'},{from:0.65,to:1.0,c:'rgba(245,158,11,0.25)'},{from:1.0,to:2.0,c:'rgba(239,68,68,0.25)'}];
-        segs.forEach(s=>{ctx.beginPath();let first=true;const step=(this.xMax-this.xMin)/240;
-          for(let x=s.from;x<=s.to+1e-6;x+=step){const X=this.xToPx(x),Y=this.yToPx(this.pdf(x));if(first){ctx.moveTo(X,this.yToPx(0));ctx.lineTo(X,Y);first=false;}else ctx.lineTo(X,Y);}
-          ctx.lineTo(this.xToPx(s.to),this.yToPx(0));ctx.closePath();ctx.fillStyle=s.c;ctx.fill();});
-        ctx.beginPath();ctx.lineWidth=4;ctx.strokeStyle='rgba(226,232,240,0.9)';const step=(this.xMax-this.xMin)/280;
-        for(let x=this.xMin;x<=this.xMax;x+=step){const X=this.xToPx(x),Y=this.yToPx(this.pdf(x));if(x===this.xMin)ctx.moveTo(X,Y);else ctx.lineTo(X,Y);}ctx.stroke();
-        ctx.lineWidth=1.5;ctx.strokeStyle='rgba(148,163,184,0.5)';ctx.beginPath();ctx.moveTo(30,this.yToPx(0));ctx.lineTo(this.el.width-30,this.yToPx(0));ctx.stroke();
-        [0.65,1.0].forEach((x,i)=>{ctx.setLineDash([6,6]);ctx.strokeStyle=i?'rgba(239,68,68,0.6)':'rgba(245,158,11,0.6)';ctx.beginPath();ctx.moveTo(this.xToPx(x),20);ctx.lineTo(this.xToPx(x),this.el.height-30);ctx.stroke();});ctx.setLineDash([]);
-        ctx.fillStyle='rgba(148,163,184,0.95)';ctx.font='20px system-ui';ctx.fillText('Riesgo de vibración',30,34);
-      },
-      drawMarker(risk){
-        const ctx=this.ctx;const X=this.xToPx(Math.max(this.xMin,Math.min(this.xMax,risk)));
-        let col='rgba(34,197,94,1)';if(risk>=1.0)col='rgba(239,68,68,1)';else if(risk>=0.65)col='rgba(245,158,11,1)';
-        ctx.lineWidth=3;ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(X,20);ctx.lineTo(X,this.el.height-30);ctx.stroke();
-        ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,this.yToPx(this.pdf(risk)),9,0,Math.PI*2);ctx.fill();
-      },
-      draw(risk=0.5){this.drawBase();this.drawMarker(risk);}
+/* --- chart (canvas) --- */
+const chart = {
+  el: null, ctx: null, xMin: 0, xMax: 2,
+  init(){
+    this.el = $('vibeChart');
+    if(!this.el) return;
+    this.ctx = this.el.getContext('2d');
+    const resize = () => {
+      this.el.width = Math.max(640, this.el.clientWidth * 2);
+      this.el.height = Math.max(220, this.el.clientHeight * 2);
+      this.draw(0.5);
     };
-    window.chart=chart;
-
-    function buildQuickRef(mat){
-      const el=$('refQuick');
-      if(!mat){el.textContent='';return;}
-      const ops=mat.vc_m_min||{};
-      let html='<div class="flex flex-wrap gap-2 items-center">';
-      html+=`<div class="text-xs text-slate-400">Ref. rápida para ${mat.name}:</div>`;
-      Object.entries(ops).forEach(([k,v])=>{
-        if(!Array.isArray(v))return;
-        html+=`<span class="badge">${k}: ${v[0]}–${v[1]} m/min</span>`;
-      });
-      html+='</div>';
-      el.innerHTML=html;
-    }
-
-    function applyPreset(){
-      const mat=getMaterial();const op=$('operation').value;const D=parseFloat($('diam').value)||10;$('diam').value=D;
-
-      const vcBase=mat?.vc_m_min?.[op]||mat?.vc_m_min?.rough||[100,200];
-      const fzBase=diaBucketFz(mat,(units==='metric'?D:(D*25.4)),op)||[0.03,0.08];
-
-      const ttype=getToolType();
-      const tmat=getToolMat();
-      const vcF=(ttype?.vc_factor??1)*(tmat?.vc_factor??1);
-      const fzF=(ttype?.fz_factor??1)*(tmat?.fz_factor??1);
-
-      const vcRange=[Math.round(vcBase[0]*vcF),Math.round(vcBase[1]*vcF)];
-      const fzRange=[+(fzBase[0]*fzF).toFixed(3),+(fzBase[1]*fzF).toFixed(3)];
-
-      if(units==='metric'){
-        $('vc').value=Math.round((vcRange[0]+vcRange[1])/2);
-        $('fz').value=((fzRange[0]+fzRange[1])/2).toFixed(3);
-      }else{
-        const sfmMid=((vcRange[0]+vcRange[1])/2)*3.281;$('vc').value=Math.round(sfmMid);
-        $('fz').value=(((fzRange[0]+fzRange[1])/2)/25.4).toFixed(3);
+    new ResizeObserver(resize).observe(this.el.parentElement);
+    resize();
+  },
+  pdf(x,mu=0.75,sigma=0.2){
+    const a = 1/(sigma*Math.sqrt(2*Math.PI));
+    const e = Math.exp(-0.5*((x-mu)/sigma)**2);
+    return a*e;
+  },
+  xToPx(x){ return (x-this.xMin)/(this.xMax-this.xMin)*(this.el.width-60)+30; },
+  yToPx(y){ const top = 20, bottom = this.el.height-30; return bottom - y*(bottom-top); },
+  drawBase(){
+    const ctx = this.ctx;
+    if(!ctx) return;
+    ctx.clearRect(0,0,this.el.width,this.el.height);
+    const segs=[{from:0,to:0.65,c:'rgba(34,197,94,0.25)'},{from:0.65,to:1.0,c:'rgba(245,158,11,0.25)'},{from:1.0,to:2.0,c:'rgba(239,68,68,0.25)'}];
+    segs.forEach(s=>{
+      ctx.beginPath(); let first=true;
+      const step = (this.xMax - this.xMin)/240;
+      for(let x=s.from; x<=s.to+1e-6; x+=step){
+        const X = this.xToPx(x), Y = this.yToPx(this.pdf(x));
+        if(first){ ctx.moveTo(X,this.yToPx(0)); ctx.lineTo(X,Y); first=false; } else ctx.lineTo(X,Y);
       }
-
-      $('matNotes')?.textContent=mat?.notes||'';$('matBadge')?.textContent=mat?`ID: ${mat.id}`:'';
-      buildQuickRef(mat);
-      const est=estimateVibeParams(((units==='metric')?D:D*25.4),op);
-      $('aePct').value=Math.round(est.ae_pct);
-      if(!$('ap').value)$('ap').value=fmt2(est.ap_mm);
+      ctx.lineTo(this.xToPx(s.to), this.yToPx(0));
+      ctx.closePath(); ctx.fillStyle = s.c; ctx.fill();
+    });
+    // curve
+    ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle='rgba(226,232,240,0.9)';
+    const step = (this.xMax - this.xMin)/280;
+    for(let x=this.xMin; x<=this.xMax; x+=step){
+      const X = this.xToPx(x), Y = this.yToPx(this.pdf(x));
+      if(x===this.xMin) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
     }
+    ctx.stroke();
+    // baseline & vertical markers
+    ctx.lineWidth = 1.5; ctx.strokeStyle='rgba(148,163,184,0.5)'; ctx.beginPath(); ctx.moveTo(30,this.yToPx(0)); ctx.lineTo(this.el.width-30,this.yToPx(0)); ctx.stroke();
+    [0.65,1.0].forEach((x,i)=>{ ctx.setLineDash([6,6]); ctx.strokeStyle = i ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)'; ctx.beginPath(); ctx.moveTo(this.xToPx(x),20); ctx.lineTo(this.xToPx(x),this.el.height-30); ctx.stroke(); });
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(148,163,184,0.95)'; ctx.font='20px system-ui'; ctx.fillText('Riesgo de vibración',30,34);
+  },
+  drawMarker(risk){
+    if(!this.ctx) return;
+    const ctx = this.ctx;
+    const X = this.xToPx(Math.max(this.xMin, Math.min(this.xMax, risk)));
+    let col = 'rgba(34,197,94,1)'; if(risk>=1.0) col='rgba(239,68,68,1)'; else if(risk>=0.65) col='rgba(245,158,11,1)';
+    ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(X,20); ctx.lineTo(X,this.el.height-30); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI*2); ctx.fill();
+  },
+  draw(risk=0.5){ this.drawBase(); this.drawMarker(risk); }
+};
+window.chart = chart;
 
-    function calc(){
-      const D=parseFloat($('diam').value);
-      const z=parseInt($('flutes').value,10);
-      let rpmLimit=parseFloat($('rpmLimit').value||'0');
-      const prud=parseFloat($('prudence').value||'1');
-      const V=parseFloat($('vc').value);
-      let FZ=parseFloat($('fz').value);
-      const op=$('operation').value;
-      const mat=getMaterial();
-      const mach=getMachine();
-      if(mach?.rpm_max && !rpmLimit)rpmLimit=mach.rpm_max;
+function buildQuickRef(mat){
+  const el = $('refQuick'); if(!el){ return; }
+  if(!mat){ el.textContent=''; return; }
+  const ops = mat.vc_m_min || {};
+  let html = '<div class="flex flex-wrap gap-2 items-center">';
+  html += `<div class="text-xs text-slate-400">Ref. rápida para ${mat.name}:</div>`;
+  Object.entries(ops).forEach(([k,v])=>{
+    if(!Array.isArray(v)) return;
+    html += `<span class="badge">${k}: ${v[0]}–${v[1]} m/min</span>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
 
-      if(!(D>0 && z>0 && V>0 && FZ>0)){
-        $('rpmOut').textContent='—';$('feedOut').textContent='—';$('vibeMsg').textContent='Faltan datos.';chart.draw(0.5);return;
-      }
+function applyPreset(){
+  const mat = getMaterial() || {};
+  const op = $('operation')?.value || 'rough';
+  const D = parseFloat($('diam')?.value) || 10; if($('diam')) $('diam').value = D;
 
-      const Dmm=(units==='metric')?D:D*25.4;
-      const Vc_m_min=(units==='metric')?V:(V/3.281);
-      let fz_mm=(units==='metric')?FZ:FZ*25.4;
+  const vcBase = (mat.vc_m_min && (mat.vc_m_min[op] || mat.vc_m_min.rough)) || [100,200];
+  const fzBase = diaBucketFz(mat, (units==='metric'?D:(D*25.4)), op) || [0.03,0.08];
 
-      let aePct=Number(parseFloat($('aePct')?.value));
-      if(!Number.isFinite(aePct) || aePct<=0){const est=estimateVibeParams(Dmm,op);aePct=est.ae_pct;}
-      // obtener factores según opción de geometría
-      const useGeom = $('useGeom')?.checked;
-      const helix = parseFloat($('helix')?.value) || 30;
-      const corner = parseFloat($('cornerRad')?.value) || 0;
+  const ttype = getToolType();
+  const tmat = getToolMat();
+  const vcF = (ttype?.vc_factor ?? 1) * (tmat?.vc_factor ?? 1);
+  const fzF = (ttype?.fz_factor ?? 1) * (tmat?.fz_factor ?? 1);
 
-      let fzEff = fz_mm;
-      let ctK = 1;
-      let helixFactor = 1, cornerFactor = 1;
-      if(useGeom){
-        const res = chipThinningAdjustedFz(fz_mm, Dmm, aePct, helix, corner);
-        fzEff = res.fzEff; ctK = res.k; helixFactor = res.helixFactor; cornerFactor = res.cornerFactor;
-      } else {
-        // mantén chip-thinning básico sin hélice/corner
-        const res = chipThinningAdjustedFz(fz_mm, Dmm, aePct, 0, 0);
-        fzEff = res.fzEff; ctK = res.k;
-      }
+  const vcRange = [ Math.round(vcBase[0]*vcF), Math.round(vcBase[1]*vcF) ];
+  const fzRange = [ +(fzBase[0]*fzF).toFixed(3), +(fzBase[1]*fzF).toFixed(3) ];
 
-      $('feedAdjNote').textContent = (ctK>1?`Chip-thinning ×${fmt2(ctK)} (ae=${Math.round(aePct)}%D)`:'') 
-        + (useGeom?` · Helix×${fmt2(helixFactor)} Corner×${fmt2(cornerFactor)}`:'');
+  if(units==='metric'){
+    if($('vc')) $('vc').value = Math.round((vcRange[0]+vcRange[1])/2);
+    if($('fz')) $('fz').value = ((fzRange[0]+fzRange[1])/2).toFixed(3);
+  } else {
+    if($('vc')) $('vc').value = Math.round(((vcRange[0]+vcRange[1])/2)*3.281);
+    if($('fz')) $('fz').value = (((fzRange[0]+fzRange[1])/2)/25.4).toFixed(3);
+  }
 
-      let rpm=(Vc_m_min*1000)/(Math.PI*Dmm);
-      let capped=false;if(rpmLimit>0 && rpm>rpmLimit){rpm=rpmLimit;capped=true;}
+  if($('matNotes')) $('matNotes').textContent = mat?.notes || '';
+  buildQuickRef(mat);
+  const est = estimateVibeParams(((units==='metric')?D:D*25.4), op);
+  if($('aePct')) $('aePct').value = Math.round(est.ae_pct);
+  if(!$('ap')?.value) if($('ap')) $('ap').value = fmt2(est.ap_mm);
+}
 
-      let feed_mm_min=rpm*z*fzEff*(Number.isFinite(prud)?prud:1);
-      let effFeed=feed_mm_min;
-      if(mach?.feed_max_mm_min && feed_mm_min>mach.feed_max_mm_min){
-        effFeed=mach.feed_max_mm_min;
-        $('feedAdjNote').textContent+=` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
-      }
+function calc(){
+  const D = parseFloat($('diam')?.value);
+  const z = parseInt($('flutes')?.value,10);
+  let rpmLimit = parseFloat($('rpmLimit')?.value||'0');
+  const prud = parseFloat($('prudence')?.value||'1');
+  const V = parseFloat($('vc')?.value);
+  let FZ = parseFloat($('fz')?.value);
+  const op = $('operation')?.value;
+  const mat = getMaterial();
+  const mach = getMachine();
+  if(mach?.rpm_max && !rpmLimit) rpmLimit = mach.rpm_max;
 
-      $('rpmOut').textContent=fmt0(rpm);
-      $('feedOut').textContent=(units==='metric')?fmt0(effFeed):fmt1(effFeed/25.4);
-      $('feedUnit').textContent=(units==='metric')?'mm/min':'IPM';
-      $('rpmCap').classList.toggle('hidden',!capped);
-      $('sumOut').textContent=`D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
+  if(!(D>0 && z>0 && V>0 && FZ>0)){
+    if($('rpmOut')) $('rpmOut').textContent='—';
+    if($('feedOut')) $('feedOut').textContent='—';
+    if($('vibeMsg')) $('vibeMsg').textContent='Faltan datos.';
+    chart.draw(0.5);
+    return;
+  }
 
-      const ap_input=Number(parseFloat($('ap')?.value));
-      const L_input=Number(parseFloat($('stickout')?.value));
-      const est=estimateVibeParams(Dmm,op);
-      const ae_ratio=Math.max(0.01,Math.min(1,(aePct/100)));
-      const ae_mm=ae_ratio*Dmm;
-      const ap_mm=Number.isFinite(ap_input)&&ap_input>0?ap_input:est.ap_mm;
-      const L_mm=Number.isFinite(L_input)&&L_input>0?L_input:est.L;
-      $('vibeInfo').innerHTML=`Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
+  const Dmm = (units==='metric') ? D : D*25.4;
+  const Vc_m_min = (units==='metric') ? V : (V/3.281);
+  let fz_mm = (units==='metric') ? FZ : FZ*25.4;
 
-      const MRR_mm3_min=ap_mm*ae_mm*effFeed;
-      const MRR_cm3_min=MRR_mm3_min/1000;
-      $('mrrOut').textContent=fmt1(MRR_cm3_min);
+  let aePct = Number(parseFloat($('aePct')?.value));
+  if(!Number.isFinite(aePct) || aePct<=0){ const est = estimateVibeParams(Dmm,op); aePct = est.ae_pct; }
 
-      const Kc=mat?.Kc_N_per_mm2||1500;
-      const eta=DATA.defaults?.efficiency||0.8;
-      const P_kW=(Kc*(MRR_mm3_min/60))/(1000*eta);
-      const T_Nm=(60*P_kW*1000)/(2*Math.PI*rpm);
-      $('pwrOut').textContent=fmt2(P_kW);
-      $('tqOut').textContent=fmt2(T_Nm);
+  const useGeom = $('useGeom')?.checked;
+  const helix = parseFloat($('helix')?.value) || 30;
+  const corner = parseFloat($('cornerRad')?.value) || 0;
 
-      let loadPct=NaN;
-      if(mach?.power_kw){loadPct=Math.min(200,100*P_kW/mach.power_kw);}
-      $('loadOut').textContent=Number.isFinite(loadPct)?fmt1(loadPct):'—';
-      $('pwrNote').textContent=Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:''; 
+  let fzEff = fz_mm, ctK = 1, helixFactor = 1, cornerFactor = 1;
+  if(useGeom){
+    const res = chipThinningAdjustedFz(fz_mm, Dmm, aePct, helix, corner);
+    fzEff = res.fzEff; ctK = res.k; helixFactor = res.helixFactor; cornerFactor = res.cornerFactor;
+  } else {
+    const res = chipThinningAdjustedFz(fz_mm, Dmm, aePct, 0, 0);
+    fzEff = res.fzEff; ctK = res.k;
+  }
 
-      const toothHz=(rpm*z)/60;$('toothHzOut').textContent=fmt1(toothHz);
-      const band=DATA.vibration?.avoid_band_hz||[600,900];
-      $('avoidBandNote').textContent=`Evitar banda ${band[0]}–${band[1]} Hz`;
+  if($('feedAdjNote')) $('feedAdjNote').textContent = (ctK>1?`Chip-thinning ×${fmt2(ctK)} (ae=${Math.round(aePct)}%D)`:'') + (useGeom?` · Helix×${fmt2(helixFactor)} Corner×${fmt2(cornerFactor)}`:'');
 
-      const Re=0.02*Dmm;const Ra_um=(fzEff*fzEff)/(8*Re)*1000;
-      $('raOut').textContent=fmt2(Ra_um);
+  let rpm = (Vc_m_min*1000)/(Math.PI*Dmm);
+  let capped = false;
+  if(rpmLimit>0 && rpm>rpmLimit){ rpm = rpmLimit; capped = true; }
 
-      let lifeMin=NaN;
-      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}
-      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+  let feed_mm_min = rpm*z*fzEff*(Number.isFinite(prud)?prud:1);
+  let effFeed = feed_mm_min;
+  if(mach?.feed_max_mm_min && feed_mm_min > mach.feed_max_mm_min){
+    effFeed = mach.feed_max_mm_min;
+    if($('feedAdjNote')) $('feedAdjNote').textContent += ` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
+  }
 
-      const holder=getHolder();
-      const W=DATA.vibration?.weights||{ld:0.55,ae:0.20,ap:0.15,fz:0.10};
-      const stiff=holder?.stiffness_factor||1.0;
-      const L_over_D=L_mm/Dmm;
-      const ap_ratio=Math.min(1.2,ap_mm/Math.max(1,Dmm));
-      let risk=(W.ld*(L_over_D/2.0)+W.ae*ae_ratio+W.ap*ap_ratio+W.fz*Math.min(1,(fzEff/(0.1*Dmm+0.02))))/stiff;
-      risk=Math.max(0,Math.min(2,risk));
-      const inBand=(toothHz>=band[0] && toothHz<=band[1]);
-      const SWEET=0.65, WARN=1.00; let state='ok'; if(risk>=WARN || inBand)state='bad'; else if(risk>=SWEET)state='warn';
-      const vb=document.querySelector('.vibe-box');vb.classList.remove('ok','warn','bad');vb.classList.add(state);
-      const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
-      let msg=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
-      if(state==='bad' && inBand){
-        const shift=DATA.vibration?.rpm_shift_pct||0.12;
-        const targetHz=(Math.abs(toothHz-band[0])<Math.abs(toothHz-band[1]))?band[0]:band[1];
-        let rpmAlt=(targetHz*60)/z;rpmAlt*=(toothHz<targetHz?(1+shift):(1-shift));
-        if(rpmLimit>0 && rpmAlt>rpmLimit)rpmAlt=rpmLimit;
-        const feedAlt=rpmAlt*z*fzEff*(Number.isFinite(prud)?prud:1);
-        msg+=` Sugerido: ${fmt0(rpmAlt)} RPM y ${(units==='metric')?`${fmt0(feedAlt)} mm/min`:`${fmt1(feedAlt/25.4)} IPM`}.`;
-      }
-      $('vibeMsg').innerHTML=msg;
+  if($('rpmOut')) $('rpmOut').textContent = fmt0(rpm);
+  if($('feedOut')) $('feedOut').textContent = (units==='metric') ? fmt0(effFeed) : fmt1(effFeed/25.4);
+  if($('feedUnit')) $('feedUnit').textContent = (units==='metric') ? 'mm/min' : 'IPM';
+  if($('rpmCap')) $('rpmCap').classList.toggle('hidden', !capped);
+  if($('sumOut')) $('sumOut').textContent = `D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
 
-      window.feed=effFeed;
-      window.rpm=rpm;
-      window.rpmLimit=rpmLimit;
+  const ap_input = Number(parseFloat($('ap')?.value));
+  const L_input = Number(parseFloat($('stickout')?.value));
+  const est = estimateVibeParams(Dmm,op);
+  const ae_ratio = Math.max(0.01, Math.min(1, (aePct/100)));
+  const ae_mm = ae_ratio * Dmm;
+  const ap_mm = Number.isFinite(ap_input) && ap_input>0 ? ap_input : est.ap_mm;
+  const L_mm = Number.isFinite(L_input) && L_input>0 ? L_input : est.L;
+  if($('vibeInfo')) $('vibeInfo').innerHTML = `Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
 
-      chart.draw(risk);
-    }
+  const MRR_mm3_min = ap_mm * ae_mm * effFeed;
+  const MRR_cm3_min = MRR_mm3_min / 1000;
+  if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_cm3_min);
 
-    function recalc(){
-      if(!(window.rpm>0 && window.feed>0))return;
-      const rpmScale=parseFloat(($('rpmSlider')||{value:1}).value||'1');
-      const feedScale=parseFloat(($('feedSlider')||{value:1}).value||'1');
+  const Kc = mat?.Kc_N_per_mm2 || 1500;
+  const eta = DATA.defaults?.efficiency || 0.8;
+  const P_kW = (Kc * (MRR_mm3_min/60)) / (1000 * eta);
+  const T_Nm = (60 * P_kW * 1000) / (2 * Math.PI * rpm);
+  if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
+  if($('tqOut')) $('tqOut').textContent = fmt2(T_Nm);
 
-      const D=parseFloat($('diam').value);
-      const z=parseInt($('flutes').value,10);
-      const mat=getMaterial();
-      const mach=getMachine();
-      const unitsLocal=window.units||'metric';
+  let loadPct = NaN;
+  if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
+  if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct) ? fmt1(loadPct) : '—';
+  if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?' } kW` : '';
 
-      const rpmLimit=window.rpmLimit||parseFloat($('rpmLimit')?.value)||mach?.rpm_max||12000;
-      const rpmAdj=Math.min(window.rpm*rpmScale,rpmLimit);
+  const toothHz = (rpm*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
+  const band = DATA.vibration?.avoid_band_hz || [600,900];
+  if($('avoidBandNote')) $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
 
-      const feedAdj=window.feed*feedScale;
-      let effFeed;
-      if(feedScale<1){
-        effFeed=feedAdj;
-      }else{
-        effFeed=(mach?.feed_max_mm_min && feedAdj>mach.feed_max_mm_min)?mach.feed_max_mm_min:feedAdj;
-      }
+  const Re = 0.02 * Dmm;
+  const Ra_um = (fzEff * fzEff) / (8 * Re) * 1000;
+  if($('raOut')) $('raOut').textContent = fmt2(Ra_um);
 
-      $('rpmOut').textContent=fmt0(rpmAdj);
-      $('feedOut').textContent=(unitsLocal==='metric')?fmt0(effFeed):fmt1(effFeed/25.4);
-      $('rpmCap').classList.toggle('hidden',!(rpmAdj>=rpmLimit-1));
+  let lifeMin = NaN;
+  if(mat?.taylor?.n && mat?.taylor?.C){ lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n))); }
+  if($('lifeOut')) $('lifeOut').textContent = Number.isFinite(lifeMin) ? fmt1(lifeMin) : '—';
 
-      const aePct=parseFloat($('aePct')?.value)||30;
-      const ap=parseFloat($('ap')?.value)||5;
-      const L=parseFloat($('stickout')?.value)||25;
-      const Dmm=(unitsLocal==='metric')?D:D*25.4;
-      const ae=(aePct/100)*Dmm;
+  const holder = getHolder();
+  const W = DATA.vibration?.weights || { ld:0.55, ae:0.20, ap:0.15, fz:0.10 };
+  const stiff = holder?.stiffness_factor || 1.0;
+  const L_over_D = L_mm / Dmm;
+  const ap_ratio = Math.min(1.2, ap_mm / Math.max(1, Dmm));
+  let risk = (W.ld*(L_over_D/2.0) + W.ae*ae_ratio + W.ap*ap_ratio + W.fz*Math.min(1, (fzEff/(0.1*Dmm+0.02)))) / stiff;
+  risk = Math.max(0, Math.min(2, risk));
+  const inBand = (toothHz >= band[0] && toothHz <= band[1]);
+  const SWEET = 0.65, WARN = 1.00;
+  let state = 'ok'; if(risk >= WARN || inBand) state='bad'; else if(risk >= SWEET) state='warn';
+  const vb = document.querySelector('.vibe-box'); if(vb){ vb.classList.remove('ok','warn','bad'); vb.classList.add(state); }
+  const badge = `<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
+  let msg = `${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+  if(state==='bad' && inBand){
+    const shift = DATA.vibration?.rpm_shift_pct || 0.12;
+    const targetHz = (Math.abs(toothHz - band[0]) < Math.abs(toothHz - band[1])) ? band[0] : band[1];
+    let rpmAlt = (targetHz * 60) / z; rpmAlt *= (toothHz < targetHz ? (1+shift) : (1-shift));
+    if(rpmLimit>0 && rpmAlt > rpmLimit) rpmAlt = rpmLimit;
+    const feedAlt = rpmAlt * z * fzEff * (Number.isFinite(prud)?prud:1);
+    msg += ` Sugerido: ${fmt0(rpmAlt)} RPM y ${(units==='metric')?`${fmt0(feedAlt)} mm/min`:`${fmt1(feedAlt/25.4)} IPM`}.`;
+  }
+  if($('vibeMsg')) $('vibeMsg').innerHTML = msg;
 
-      const Kc=mat?.Kc_N_per_mm2||1500;
-      const eta=DATA.defaults?.efficiency||0.8;
+  window.feed = effFeed; window.rpm = rpm; window.rpmLimit = rpmLimit;
+  chart.draw(risk);
+}
 
-      const MRR_mm3_min=ae*ap*effFeed;
-      $('mrrOut').textContent=fmt1(MRR_mm3_min/1000);
+function recalc(){
+  if(!(window.rpm>0 && window.feed>0)) return;
+  const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value||'1');
+  const feedScale = parseFloat(($('feedSlider')||{value:1}).value||'1');
 
-      const P_kW=(Kc*(MRR_mm3_min/60))/(1000*eta);
-      const T_Nm=(60*P_kW*1000)/(2*Math.PI*rpmAdj);
-      $('pwrOut').textContent=fmt2(P_kW);
-      $('tqOut').textContent=fmt2(T_Nm);
+  const D = parseFloat($('diam')?.value);
+  const z = parseInt($('flutes')?.value,10);
+  const mat = getMaterial();
+  const mach = getMachine();
+  const unitsLocal = window.units||'metric';
 
-      let loadPct=NaN;
-      if(mach?.power_kw){loadPct=Math.min(200,100*P_kW/mach.power_kw);}
-      $('loadOut').textContent=Number.isFinite(loadPct)?fmt1(loadPct):'—';
-      $('pwrNote').textContent=Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:''; 
+  const rpmLimit = window.rpmLimit||parseFloat($('rpmLimit')?.value)||mach?.rpm_max||12000;
+  const rpmAdj = Math.min(window.rpm * rpmScale, rpmLimit);
 
-      const toothHz=(rpmAdj*z)/60;$('toothHzOut').textContent=fmt1(toothHz);
-      const band=DATA.vibration?.avoid_band_hz||[600,900];
-      $('avoidBandNote').textContent=`Evitar banda ${band[0]}–${band[1]} Hz`;
+  const feedAdj = window.feed * feedScale;
+  let effFeed;
+  if(feedScale < 1) effFeed = feedAdj;
+  else effFeed = (mach?.feed_max_mm_min && feedAdj > mach.feed_max_mm_min) ? mach.feed_max_mm_min : feedAdj;
 
-      const fz_mm=effFeed/(rpmAdj*z);
-      const Re=0.02*Dmm;const Ra_um=(fz_mm*fz_mm)/(8*Re)*1000;
-      $('raOut').textContent=fmt2(Ra_um);
+  if($('rpmOut')) $('rpmOut').textContent = fmt0(rpmAdj);
+  if($('feedOut')) $('feedOut').textContent = (unitsLocal==='metric') ? fmt0(effFeed) : fmt1(effFeed/25.4);
+  if($('rpmCap')) $('rpmCap').classList.toggle('hidden', !(rpmAdj >= rpmLimit-1));
 
-      const Vc_m_min=(Math.PI*Dmm*rpmAdj)/1000;
-      let lifeMin=NaN;
-      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}
+  const aePct = parseFloat($('aePct')?.value) || 30;
+  const ap = parseFloat($('ap')?.value) || 5;
+  const L = parseFloat($('stickout')?.value) || 25;
+  const Dmm = (unitsLocal==='metric')?D:D*25.4;
+  const ae = (aePct/100) * Dmm;
 
-      const holder=getHolder();
-      const W=DATA.vibration?.weights||{ld:0.55,ae:0.20,ap:0.15,fz:0.10};
-      const stiff=holder?.stiffness_factor||1.0;
-      const L_over_D=L/Dmm;
-      const ap_ratio=Math.min(1.2,ap/Math.max(1,Dmm));
-      let risk=(W.ld*(L_over_D/2.0)+W.ae*(aePct/100)+W.ap*ap_ratio+W.fz*Math.min(1,(fz_mm/(0.1*Dmm+0.02))))/stiff;
-      const inBand=(toothHz>=band[0] && toothHz<=band[1]);
-      if(inBand)risk=Math.min(2,risk+0.3);
-      risk=Math.max(0,Math.min(2,risk));
+  const Kc = mat?.Kc_N_per_mm2 || 1500;
+  const eta = DATA.defaults?.efficiency || 0.8;
 
-      if(Number.isFinite(lifeMin)){lifeMin*=(1-(risk*0.4));}
-      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+  const MRR_mm3_min = ae * ap * effFeed;
+  if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
 
-      const SWEET=0.65,WARN=1.00;let state='ok';if(risk>=WARN || inBand)state='bad';else if(risk>=SWEET)state='warn';
-      const vb=document.querySelector('.vibe-box');vb.classList.remove('ok','warn','bad');vb.classList.add(state);
-      const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
-      $('vibeMsg').innerHTML=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+  const P_kW = (Kc * (MRR_mm3_min/60)) / (1000 * eta);
+  const T_Nm = (60 * P_kW * 1000) / (2 * Math.PI * rpmAdj);
+  if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
+  if($('tqOut')) $('tqOut').textContent = fmt2(T_Nm);
 
-      const bar=$('sweetBarDual');
-      let color="from-rose-600 to-rose-700";
-      if(risk<0.65)color="from-emerald-500 to-emerald-600";
-      else if(risk<1.0)color="from-yellow-400 to-yellow-500";
-      bar.className=`h-3 mt-4 rounded-full bg-gradient-to-r ${color}`;
+  let loadPct = NaN;
+  if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
+  if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
+  if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : '';
 
-      $('rpmLabel').textContent=`${Math.round(rpmScale*100)} % — RPM`;
-      $('feedLabel').textContent=`${Math.round(feedScale*100)} % — Avance`;
+  const toothHz = (rpmAdj*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
+  const band = DATA.vibration?.avoid_band_hz || [600,900];
+  if($('avoidBandNote')) $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
 
-      chart.draw(risk);
-    }
+  const fz_mm = effFeed / (rpmAdj*z);
+  const Re = 0.02 * Dmm;
+  const Ra_um = (fz_mm * fz_mm) / (8 * Re) * 1000;
+  if($('raOut')) $('raOut').textContent = fmt2(Ra_um);
 
-    function resetAll(){
-      $('diam').value='';$('flutes').value='3';$('rpmLimit').value=DATA.defaults?.rpm_limit||12000;
-      $('vc').value='';$('fz').value='';$('prudence').value=DATA.defaults?.prudence||0.9;
-      $('aePct').value='';$('ap').value=DATA.defaults?.ap_mm||5;$('stickout').value=DATA.defaults?.stickout_mm||25;
-      $('helix').value='30';$('cornerRad').value='0';$('useGeom').checked=false;
-      applyPreset();chart.draw(0.5);$('sumOut').textContent='Ingresa datos y calcula.';$('mrrOut').textContent='—';
-      $('pwrOut').textContent='—';$('tqOut').textContent='—';$('loadOut').textContent='—';$('raOut').textContent='—';$('toothHzOut').textContent='—';$('lifeOut').textContent='—';
-      $('vibeMsg').textContent='';$('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
-    }
+  const Vc_m_min = (Math.PI * Dmm * rpmAdj) / 1000;
+  let lifeMin = NaN;
+  if(mat?.taylor?.n && mat?.taylor?.C) lifeMin = Math.pow((mat.taylor.C / Vc_m_min),(1/(mat.taylor.n)));
+  const holder = getHolder();
+  const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
+  const stiff = holder?.stiffness_factor || 1.0;
+  const L_over_D = L / Dmm;
+  const ap_ratio = Math.min(1.2, ap / Math.max(1, Dmm));
+  let risk = (W.ld*(L_over_D/2.0) + W.ae*(aePct/100) + W.ap*ap_ratio + W.fz*Math.min(1,(fz_mm/(0.1*Dmm+0.02))))/stiff;
+  const inBand = (toothHz >= band[0] && toothHz <= band[1]);
+  if(inBand) risk = Math.min(2, risk + 0.3);
+  risk = Math.max(0, Math.min(2, risk));
 
-    function populatePdfClone(root){
-      const q = (sel)=>root.querySelector(sel);
+  if(Number.isFinite(lifeMin)) lifeMin *= (1 - (risk*0.4));
+  if($('lifeOut')) $('lifeOut').textContent = Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
 
-      const matSel = $('material'), opSel = $('operation'), toolSel = $('toolType'),
-            toolMatSel = $('toolMat'), machSel = $('machine'), holderSel = $('holder');
+  const SWEET = 0.65, WARN = 1.00;
+  let state = 'ok';
+  if(risk >= WARN || inBand) state='bad';
+  else if(risk >= SWEET) state='warn';
+  const vb = document.querySelector('.vibe-box'); if(vb){ vb.classList.remove('ok','warn','bad'); vb.classList.add(state); }
+  const badge = `<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
+  if($('vibeMsg')) $('vibeMsg').innerHTML = `${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
 
-      q('#rptMaterial').textContent = matSel.options[matSel.selectedIndex]?.text || '—';
-      q('#rptOp').textContent       = opSel.options[opSel.selectedIndex]?.text || '—';
-      q('#rptToolType').textContent = toolSel.options[toolSel.selectedIndex]?.text || '—';
-      q('#rptToolMat').textContent  = toolMatSel.options[toolMatSel.selectedIndex]?.text || '—';
-      q('#rptMachine').textContent  = machSel.options[machSel.selectedIndex]?.text || '—';
-      q('#rptHolder').textContent   = holderSel.options[holderSel.selectedIndex]?.text || '—';
+  const bar = $('sweetBarDual');
+  let color = "from-rose-600 to-rose-700";
+  if(risk < 0.65) color = "from-emerald-500 to-emerald-600";
+  else if(risk < 1.0) color = "from-yellow-400 to-yellow-500";
+  if(bar) bar.className = `h-3 mt-4 rounded-full bg-gradient-to-r ${color}`;
 
-      q('#rptDiam').textContent = ($('diam').value||'—') + (units==='metric'?' mm':' in');
-      q('#rptRPM').textContent  = ($('rpmOut').textContent||'—') + ' rpm';
-      q('#rptFeed').textContent = ($('feedOut').textContent||'—') + ' ' + ($('feedUnit').textContent||'');
-      q('#rptMRR').textContent  = ($('mrrOut').textContent||'—') + ' cm³/min';
-      q('#rptPwr').textContent  = ($('pwrOut').textContent||'—') + ' kW';
-      q('#rptTq').textContent   = ($('tqOut').textContent||'—') + ' N·m';
-      q('#rptLoad').textContent = ($('loadOut').textContent||'—') + ' %';
-      q('#rptRa').textContent   = ($('raOut').textContent||'—') + ' µm';
+  if($('rpmLabel')) $('rpmLabel').textContent = `${Math.round(rpmScale*100)} % — RPM`;
+  if($('feedLabel')) $('feedLabel').textContent = `${Math.round(feedScale*100)} % — Avance`;
 
-      const vibeBox = document.querySelector('.vibe-box');
-      let state = '—';
-      if(vibeBox.classList.contains('ok')) state='Sweet spot';
-      else if(vibeBox.classList.contains('warn')) state='Atento';
-      else if(vibeBox.classList.contains('bad')) state='Vibra';
-      q('#rptVibeState').textContent = state;
+  chart.draw(risk);
+}
 
-      const raw = $('vibeMsg').innerHTML.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-      q('#rptVibe').textContent = raw || '—';
+function resetAll(){
+  if($('diam')) $('diam').value='';
+  if($('flutes')) $('flutes').value=3;
+  if($('rpmLimit')) $('rpmLimit').value = DATA.defaults?.rpm_limit || 12000;
+  if($('vc')) $('vc').value=''; if($('fz')) $('fz').value=''; if($('prudence')) $('prudence').value = DATA.defaults?.prudence || 0.9;
+  if($('aePct')) $('aePct').value=''; if($('ap')) $('ap').value=DATA.defaults?.ap_mm || 5; if($('stickout')) $('stickout').value = DATA.defaults?.stickout_mm || 25;
+  if($('helix')) $('helix').value='30'; if($('cornerRad')) $('cornerRad').value='0'; if($('useGeom')) $('useGeom').checked=false;
+  applyPreset(); chart.draw(0.5);
+  if($('sumOut')) $('sumOut').textContent='Ingresa datos y calcula.';
+  ['mrrOut','pwrOut','tqOut','loadOut','raOut','toothHzOut','lifeOut'].forEach(id=>{ if($(id)) $(id).textContent='—'; });
+  if($('vibeMsg')) $('vibeMsg').textContent=''; if($('vibeInfo')) $('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
+}
 
-      try{
-        const imgEl = q('#rptVibeImg');
-        if(imgEl && window.chart && window.chart.el){
-          imgEl.src = window.chart.el.toDataURL('image/png');
-        }
-      }catch(e){ console.warn('No se pudo volcar gráfica al PDF', e); }
+function populatePdfClone(root){
+  const q = (sel)=>root.querySelector(sel);
+  const matSel = $('material'), opSel = $('operation'), toolSel = $('toolType'),
+        toolMatSel = $('toolMat'), machSel = $('machine'), holderSel = $('holder');
 
-      q('#rptDate').textContent = new Date().toLocaleString('es-MX');
-    }
+  if(q('#rptMaterial')) q('#rptMaterial').textContent = matSel?.options[matSel.selectedIndex]?.text || '—';
+  if(q('#rptOp')) q('#rptOp').textContent = opSel?.options[opSel.selectedIndex]?.text || '—';
+  if(q('#rptToolType')) q('#rptToolType').textContent = toolSel?.options[toolSel.selectedIndex]?.text || '—';
+  if(q('#rptToolMat')) q('#rptToolMat').textContent = toolMatSel?.options[toolMatSel.selectedIndex]?.text || '—';
+  if(q('#rptMachine')) q('#rptMachine').textContent = machSel?.options[machSel.selectedIndex]?.text || '—';
+  if(q('#rptHolder')) q('#rptHolder').textContent = holderSel?.options[holderSel.selectedIndex]?.text || '—';
 
-    async function downloadPdf(){
-      const tpl = document.getElementById('pdf-template');
-      if(!tpl){ alert('No se encontró #pdf-template'); return; }
-      const cloneEl = tpl.content.firstElementChild.cloneNode(true);
-      cloneEl.style.position = 'fixed'; cloneEl.style.left = '-9999px'; cloneEl.style.top = '0'; cloneEl.style.display = 'block';
-      document.body.appendChild(cloneEl);
+  if(q('#rptDiam')) q('#rptDiam').textContent = ($('diam')?.value||'—') + (units==='metric'?' mm':' in');
+  if(q('#rptRPM')) q('#rptRPM').textContent = ($('rpmOut')?.textContent||'—') + ' rpm';
+  if(q('#rptFeed')) q('#rptFeed').textContent = ($('feedOut')?.textContent||'—') + ' ' + ($('feedUnit')?.textContent||'');
+  if(q('#rptMRR')) q('#rptMRR').textContent = ($('mrrOut')?.textContent||'—') + ' cm³/min';
+  if(q('#rptPwr')) q('#rptPwr').textContent = ($('pwrOut')?.textContent||'—') + ' kW';
+  if(q('#rptTq')) q('#rptTq').textContent = ($('tqOut')?.textContent||'—') + ' N·m';
+  if(q('#rptLoad')) q('#rptLoad').textContent = ($('loadOut')?.textContent||'—') + ' %';
+  if(q('#rptRa')) q('#rptRa').textContent = ($('raOut')?.textContent||'—') + ' µm';
 
-      try{
-        populatePdfClone(cloneEl);
-        if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        const imgs = Array.from(cloneEl.querySelectorAll('img'));
-        await Promise.all(imgs.map(img => new Promise(res => {
-          if (!img) return res(); if (img.complete) return res(); img.onload = img.onerror = res; setTimeout(res, 3000);
-        })));
-        await new Promise(r=>setTimeout(r,120));
-        const canvas = await html2canvas(cloneEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: cloneEl.scrollWidth, height: cloneEl.scrollHeight, windowWidth: cloneEl.scrollWidth, windowHeight: cloneEl.scrollHeight });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
-        const pageWidth = doc.internal.pageSize.getWidth(), pageHeight = doc.internal.pageSize.getHeight(), margin = 20;
-        let imgWidth = pageWidth - margin * 2;
-        let imgHeight = (canvas.height * imgWidth) / canvas.width;
-        if (imgHeight > pageHeight - margin * 2) { imgHeight = pageHeight - margin * 2; imgWidth = (canvas.width * imgHeight) / canvas.height; }
-        const x = (pageWidth - imgWidth) / 2, y = (pageHeight - imgHeight) / 2;
-        doc.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
-        doc.save('reporte-condiciones-maquinado.pdf');
-      }catch(e){ console.error('Error generando PDF', e); alert('Ocurrió un error generando el PDF. Revisa la consola.'); }
-      finally{ cloneEl.remove(); }
-    }
+  const vibeBox = document.querySelector('.vibe-box');
+  let state = '—';
+  if(vibeBox?.classList.contains('ok')) state='Sweet spot';
+  else if(vibeBox?.classList.contains('warn')) state='Atento';
+  else if(vibeBox?.classList.contains('bad')) state='Vibra';
+  if(q('#rptVibeState')) q('#rptVibeState').textContent = state;
 
-    (async function(){
-      await loadData();
-      fillSelectors();
-      buildQuickRef(getMaterial());
+  const raw = $('vibeMsg')?.innerHTML.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  if(q('#rptVibe')) q('#rptVibe').textContent = raw || '—';
 
-      $('uMetric').addEventListener('click',()=>{setUnits('metric');applyPreset();});
-      $('uImperial').addEventListener('click',()=>{setUnits('imperial');applyPreset();});
-      $('apply').addEventListener('click',applyPreset);
-      $('calcBtn').addEventListener('click',()=>{calc();recalc();});
-      $('resetBtn').addEventListener('click',()=>{resetAll();recalc();});
-      $('pdfBtn').addEventListener('click',downloadPdf);
+  try{
+    const imgEl = q('#rptVibeImg');
+    if(imgEl && window.chart && window.chart.el) imgEl.src = window.chart.el.toDataURL('image/png');
+  }catch(e){ console.warn('No se pudo volcar gráfica al PDF', e); }
 
-      ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>$(id)?.addEventListener('change',()=>{applyPreset();calc();recalc();}));
+  if(q('#rptDate')) q('#rptDate').textContent = new Date().toLocaleString('es-MX');
+}
 
-      $('useGeom').addEventListener('change', (e)=>{
-        const on = e.target.checked;
-        $('helix').disabled = !on;
-        $('cornerRad').disabled = !on;
-      });
+async function downloadPdf(){
+  const tpl = document.getElementById('pdf-template');
+  if(!tpl){ alert('No se encontró #pdf-template'); return; }
+  const cloneEl = tpl.content.firstElementChild.cloneNode(true);
+  cloneEl.style.position = 'fixed'; cloneEl.style.left = '-9999px'; cloneEl.style.top = '0'; cloneEl.style.display = 'block';
+  document.body.appendChild(cloneEl);
 
-      setUnits('metric');
-      applyPreset();
-      chart.init();chart.draw(0.5);
-      calc();recalc();
-      try{ loadRelated(); }catch(e){}
-      $('rpmSlider').addEventListener('input',recalc);
-      $('feedSlider').addEventListener('input',recalc);
-    })();
+  try{
+    populatePdfClone(cloneEl);
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const imgs = Array.from(cloneEl.querySelectorAll('img'));
+    await Promise.all(imgs.map(img => new Promise(res => {
+      if (!img) return res(); if (img.complete) return res(); img.onload = img.onerror = res; setTimeout(res, 3000);
+    })));
+    await new Promise(r=>setTimeout(r,120));
+    const canvas = await html2canvas(cloneEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: cloneEl.scrollWidth, height: cloneEl.scrollHeight, windowWidth: cloneEl.scrollWidth, windowHeight: cloneEl.scrollHeight });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+    const pageWidth = doc.internal.pageSize.getWidth(), pageHeight = doc.internal.pageSize.getHeight(), margin = 20;
+    let imgWidth = pageWidth - margin * 2;
+    let imgHeight = (canvas.height * imgWidth) / canvas.width;
+    if (imgHeight > pageHeight - margin * 2) { imgHeight = pageHeight - margin * 2; imgWidth = (canvas.width * imgHeight) / canvas.height; }
+    const x = (pageWidth - imgWidth) / 2, y = (pageHeight - imgHeight) / 2;
+    doc.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+    doc.save('reporte-condiciones-maquinado.pdf');
+  }catch(e){ console.error('Error generando PDF', e); alert('Ocurrió un error generando el PDF. Revisa la consola.'); }
+  finally{ cloneEl.remove(); }
+}
 
-    // loadRelated minimal (no server required)
-    async function loadRelated(){ try{ const r=await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) return; const j=await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){} }
-    function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url=p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img=p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
+/* Inicialización */
+(async function(){
+  await loadData();
+  fillSelectors();
+  buildQuickRef(getMaterial());
 
-  </script>
+  $('uMetric')?.addEventListener('click',()=>{ setUnits('metric'); applyPreset(); });
+  $('uImperial')?.addEventListener('click',()=>{ setUnits('imperial'); applyPreset(); });
+  $('apply')?.addEventListener('click',applyPreset);
+  $('calcBtn')?.addEventListener('click',()=>{ calc(); recalc(); });
+  $('resetBtn')?.addEventListener('click',()=>{ resetAll(); recalc(); });
+  $('pdfBtn')?.addEventListener('click',downloadPdf);
+
+  ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>{
+    const el = $(id);
+    if(el) el.addEventListener('change', ()=>{ applyPreset(); calc(); recalc(); });
+  });
+
+  $('useGeom')?.addEventListener('change', (e)=>{
+    const on = e.target.checked;
+    if($('helix')) $('helix').disabled = !on;
+    if($('cornerRad')) $('cornerRad').disabled = !on;
+  });
+
+  setUnits('metric');
+  applyPreset();
+  chart.init(); chart.draw(0.5);
+  calc(); recalc();
+  try{ loadRelated(); }catch(e){/* silent */ }
+  $('rpmSlider')?.addEventListener('input',recalc);
+  $('feedSlider')?.addEventListener('input',recalc);
+})();
+
+/* carga mínima related posts */
+async function loadRelated(){ try{ const r = await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) return; const j = await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){} }
+function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url = p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img = p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
+</script>
+
 </body>
 </html>
