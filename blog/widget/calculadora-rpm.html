@@ -193,15 +193,37 @@
       </div>
 
       <div id="sweetspot-dual" class="mt-6 bg-slate-800 p-4 rounded-lg border border-slate-700">
-        <h3 class="text-sm text-cyan-400">Ajuste fino — RPM / Avance</h3>
-        <label class="block text-slate-300 text-sm mb-1">RPM</label>
-        <input type="range" id="rpmSlider" min="0.6" max="1.4" step="0.01" value="1" class="w-full" title="Ajuste fino de RPM relativo al valor calculado (60–140%)">
-        <div id="rpmLabel" class="text-center mt-1 text-sm text-slate-400" title="Etiqueta del ajuste de RPM">100 % — RPM base</div>
-        <label class="block text-slate-300 text-sm mt-3 mb-1">Avance</label>
-        <input type="range" id="feedSlider" min="0.6" max="1.4" step="0.01" value="1" class="w-full" title="Ajuste fino del avance relativo al valor calculado (60–140%)">
-        <div id="feedLabel" class="text-center mt-1 text-sm text-slate-400" title="Etiqueta del ajuste de avance">100 % — Avance base</div>
-        <div id="sweetBarDual" class="h-3 mt-4 rounded-full bg-gradient-to-r from-rose-600 to-emerald-500" title="Barra visual del riesgo relativo"></div>
-      </div>
+  <h3 class="text-sm text-cyan-400">Ajuste fino — RPM / Avance</h3>
+
+  <div class="flex items-center gap-3 mt-2">
+    <label class="inline-flex items-center gap-2">
+      <input id="enableManual" type="checkbox" /> <span class="text-sm text-slate-300">Modo manual (escribir RPM / Avance)</span>
+    </label>
+    <div class="ml-auto text-xs text-slate-400">Unidad: <span id="unitsLabel">métrico</span></div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-3 mt-3 items-end">
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">RPM (manual)</label>
+      <input id="manualRPM" type="number" step="1" placeholder="p. ej. 6000" class="field" title="RPM manual">
+    </div>
+    <div>
+      <label class="block text-slate-300 text-sm mb-1">Avance (manual)</label>
+      <input id="manualFeed" type="number" step="1" placeholder="mm/min o IPM" class="field" title="Avance manual">
+      <div class="text-xs text-slate-400 mt-1" id="manualFeedUnitLabel">mm/min</div>
+    </div>
+  </div>
+
+  <label class="block text-slate-300 text-sm mt-4 mb-1">RPM (ajuste relativo)</label>
+  <input type="range" id="rpmSlider" min="0.6" max="1.4" step="0.01" value="1" class="w-full" title="Ajuste fino de RPM relativo al valor calculado (60–140%)">
+  <div id="rpmLabel" class="text-center mt-1 text-sm text-slate-400">100 % — RPM base</div>
+
+  <label class="block text-slate-300 text-sm mt-3 mb-1">Avance (ajuste relativo)</label>
+  <input type="range" id="feedSlider" min="0.6" max="1.4" step="0.01" value="1" class="w-full" title="Ajuste fino del avance relativo al valor calculado (60–140%)">
+  <div id="feedLabel" class="text-center mt-1 text-sm text-slate-400">100 % — Avance base</div>
+
+  <div id="sweetBarDual" class="h-3 mt-4 rounded-full bg-gradient-to-r from-rose-600 to-emerald-500" title="Barra visual del riesgo relativo"></div>
+</div>
 
       <div class="vibe-box mt-6">
         <h3 class="font-semibold mb-2">Vibración estimada</h3>
@@ -665,6 +687,7 @@ function calc(){
   if($('vibeMsg')) $('vibeMsg').innerHTML = msg;
 
   window.feed = effFeed; window.rpm = rpm; window.rpmLimit = rpmLimit;
+    setBaselines();
   chart.draw(risk);
 }
 
@@ -886,7 +909,135 @@ async function downloadPdf(){
 /* carga mínima related posts */
 async function loadRelated(){ try{ const r = await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) return; const j = await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){} }
 function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url = p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img = p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
-</script>
+/* --- Controls manuales para RPM / Feed --- */
+const $q = (s)=>document.querySelector(s);
+
+function unitsText(){
+  return units === 'metric' ? 'métrico' : 'imperial';
+}
+
+function updateUnitsLabels(){
+  const u = units === 'metric' ? 'mm/min' : 'IPM';
+  if($('manualFeedUnitLabel')) $('manualFeedUnitLabel').textContent = u;
+  if($('unitsLabel')) $('unitsLabel').textContent = unitsText();
+}
+
+function manualValuesToInternal(){
+  // lee valores manuales y devuelve {rpm, feed_mm_min}
+  const rpmManual = Number(parseFloat($('manualRPM')?.value)) || NaN;
+  let feedManual = Number(parseFloat($('manualFeed')?.value)) || NaN;
+  if(Number.isFinite(feedManual)){
+    if(units === 'imperial'){
+      // input en IPM -> convertir a mm/min
+      feedManual = feedManual * 25.4;
+    }
+  }
+  return { rpmManual, feedManual };
+}
+
+function applyManualValues(){
+  const enabled = !!$('enableManual')?.checked;
+  if(!enabled) return;
+  const { rpmManual, feedManual } = manualValuesToInternal();
+  let rpmUse = Number.isFinite(rpmManual) ? rpmManual : window.rpm || 0;
+  let feedUse = Number.isFinite(feedManual) ? feedManual : window.feed || 0;
+  const mach = getMachine();
+  const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit')?.value) || mach?.rpm_max || 12000;
+  if(rpmUse > rpmLimit) rpmUse = rpmLimit;
+  if(mach?.feed_max_mm_min && feedUse > mach.feed_max_mm_min) feedUse = mach.feed_max_mm_min;
+
+  window.rpm = rpmUse;
+  window.feed = feedUse;
+
+  // sincronizar sliders con escala relativa respecto a baseline (si existe baseline)
+  // si no hay baseline, dejamos sliders en 1
+  const baselineRPM = Number.isFinite(window.baseRPM) ? window.baseRPM : window.rpm;
+  const baselineFeed = Number.isFinite(window.baseFeed) ? window.baseFeed : window.feed;
+  if(baselineRPM > 0) $('rpmSlider').value = String(Math.max(0.01, Math.min(3, window.rpm / baselineRPM)));
+  if(baselineFeed > 0) $('feedSlider').value = String(Math.max(0.01, Math.min(3, window.feed / baselineFeed)));
+
+  // actualiza mostramos
+  recalc();
+}
+
+/* sincronización slider -> manual inputs (cuando modo manual activo) */
+function syncInputsFromSliders(){
+  const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value||'1');
+  const feedScale = parseFloat(($('feedSlider')||{value:1}).value||'1');
+  // baseline values
+  const baseRPM = Number.isFinite(window.baseRPM) ? window.baseRPM : (window.rpm || 0);
+  const baseFeed = Number.isFinite(window.baseFeed) ? window.baseFeed : (window.feed || 0);
+
+  const rpmNow = Math.round(Math.min((window.rpmLimit||baseRPM*10||12000), baseRPM * rpmScale));
+  let feedNow = baseFeed * feedScale;
+  const mach = getMachine();
+  if(mach?.feed_max_mm_min) feedNow = Math.min(feedNow, mach.feed_max_mm_min);
+
+  if($('enableManual')?.checked){
+    if($('manualRPM')) $('manualRPM').value = Number.isFinite(rpmNow) ? rpmNow : '';
+    if($('manualFeed')) {
+      if(units==='metric') $('manualFeed').value = Number.isFinite(feedNow) ? Math.round(feedNow) : '';
+      else $('manualFeed').value = Number.isFinite(feedNow) ? (Math.round(feedNow/25.4*100)/100) : '';
+    }
+    applyManualValues();
+  } else {
+    // si no está en manual, actualizar displays basados en rpm/feed ajustados
+    window.rpm = rpmNow;
+    window.feed = feedNow;
+    recalc();
+  }
+}
+
+/* sincroniza baseline de referencia después de un calc() automático */
+function setBaselines(){
+  window.baseRPM = Number.isFinite(window.rpm) ? window.rpm : NaN;
+  window.baseFeed = Number.isFinite(window.feed) ? window.feed : NaN;
+  // inicializa campos manuales con baseline (no activas)
+  if($('manualRPM') && !$('enableManual')?.checked) $('manualRPM').value = Math.round(window.baseRPM || 0);
+  if($('manualFeed') && !$('enableManual')?.checked){
+    if(units==='metric') $('manualFeed').value = Math.round(window.baseFeed || 0);
+    else $('manualFeed').value = Number.isFinite(window.baseFeed) ? (Math.round((window.baseFeed/25.4)*100)/100) : '';
+  }
+}
+
+/* Eventos y hooks */
+(function attachManualHooks(){
+  // update labels según unidad
+  updateUnitsLabels();
+
+  // when user toggles manual mode
+  $('enableManual')?.addEventListener('change', (e)=>{
+    const on = e.target.checked;
+    if(on){
+      // si activamos manual, dejar valores actuales en inputs
+      if($('manualRPM') && Number.isFinite(window.rpm)) $('manualRPM').value = Math.round(window.rpm);
+      if($('manualFeed')){
+        if(units==='metric') $('manualFeed').value = Math.round(window.feed || 0);
+        else $('manualFeed').value = Number.isFinite(window.feed) ? (Math.round((window.feed/25.4)*100)/100) : '';
+      }
+      applyManualValues();
+    } else {
+      // desactivar manual -> restaurar baseline y recalc con sliders
+      if(Number.isFinite(window.baseRPM)) window.rpm = window.baseRPM;
+      if(Number.isFinite(window.baseFeed)) window.feed = window.baseFeed;
+      $('rpmSlider').value = 1; $('feedSlider').value = 1;
+      recalc();
+    }
+  });
+
+  // manual inputs -> aplicar
+  $('manualRPM')?.addEventListener('input', ()=>{ if($('enableManual')?.checked) applyManualValues(); });
+  $('manualFeed')?.addEventListener('input', ()=>{ if($('enableManual')?.checked) applyManualValues(); });
+
+  // sliders -> sincronizar
+  $('rpmSlider')?.addEventListener('input', ()=>{ syncInputsFromSliders(); });
+  $('feedSlider')?.addEventListener('input', ()=>{ syncInputsFromSliders(); });
+
+  // cuando cambian unidades, actualizar labels
+  const unitButtons = ['uMetric','uImperial'];
+  unitButtons.forEach(id => { const el = $(id); if(el) el.addEventListener('click', ()=>{ updateUnitsLabels(); /* mantener coherencia */ }); });
+})();
+  </script>
 
 </body>
 </html>
