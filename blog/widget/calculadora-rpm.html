@@ -421,69 +421,127 @@ function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct, helix_deg=30, corner_mm=0){
 }
 
 /* --- chart (canvas) --- (sin tocar mucho) */
+/* ---------- CHART (reemplazo seguro) ---------- */
 const chart = {
   el: null, ctx: null, xMin: 0, xMax: 2,
   init(){
-    this.el = $('vibeChart');
+    this.el = document.getElementById('vibeChart');
     if(!this.el) return;
     this.ctx = this.el.getContext('2d');
     const resize = () => {
-      this.el.width = Math.max(640, this.el.clientWidth * 2);
-      this.el.height = Math.max(220, this.el.clientHeight * 2);
-      this.draw(0.5);
+      this.el.width = Math.max(640, Math.round(this.el.clientWidth * 2));
+      this.el.height = Math.max(220, Math.round(this.el.clientHeight * 2));
+      this.draw(0.5, false);
     };
-    new ResizeObserver(resize).observe(this.el.parentElement);
+    if(this.el.parentElement) new ResizeObserver(resize).observe(this.el.parentElement);
     resize();
   },
-  pdf(x,mu=0.75,sigma=0.2){
-    const a = 1/(sigma*Math.sqrt(2*Math.PI));
-    const e = Math.exp(-0.5*((x-mu)/sigma)**2);
-    return a*e;
+
+  pdf(x, mu = 0.75, sigma = 0.2){
+    const a = 1 / (sigma * Math.sqrt(2 * Math.PI));
+    const e = Math.exp(-0.5 * ((x - mu) / sigma) ** 2);
+    return a * e;
   },
-  xToPx(x){ return (x-this.xMin)/(this.xMax-this.xMin)*(this.el.width-60)+30; },
-  yToPx(y){ const top = 20, bottom = this.el.height-30; return bottom - y*(bottom-top); },
+
+  xToPx(x){
+    return (x - this.xMin) / (this.xMax - this.xMin) * (this.el.width - 60) + 30;
+  },
+
+  yToPx(y){
+    const top = 20, bottom = this.el.height - 30;
+    return bottom - y * (bottom - top);
+  },
+
   drawBase(){
     const ctx = this.ctx; if(!ctx) return;
-    ctx.clearRect(0,0,this.el.width,this.el.height);
-    const segs=[{from:0,to:0.65,c:'rgba(34,197,94,0.25)'},{from:0.65,to:1.0,c:'rgba(245,158,11,0.25)'},{from:1.0,to:2.0,c:'rgba(239,68,68,0.25)'}];
-    segs.forEach(s=>{
-      ctx.beginPath(); let first=true;
-      const step = (this.xMax - this.xMin)/240;
-      for(let x=s.from; x<=s.to+1e-6; x+=step){
+    ctx.clearRect(0, 0, this.el.width, this.el.height);
+
+    const segments = [
+      { from: 0, to: 0.65, c: 'rgba(34,197,94,0.25)' },
+      { from: 0.65, to: 1.0, c: 'rgba(245,158,11,0.25)' },
+      { from: 1.0, to: 2.0, c: 'rgba(239,68,68,0.25)' }
+    ];
+
+    segments.forEach(s => {
+      ctx.beginPath();
+      let first = true;
+      const step = (this.xMax - this.xMin) / 240;
+      for(let x = s.from; x <= s.to + 1e-6; x += step){
         const X = this.xToPx(x), Y = this.yToPx(this.pdf(x));
-        if(first){ ctx.moveTo(X,this.yToPx(0)); ctx.lineTo(X,Y); first=false; } else ctx.lineTo(X,Y);
+        if(first){ ctx.moveTo(X, this.yToPx(0)); ctx.lineTo(X, Y); first = false; }
+        else ctx.lineTo(X, Y);
       }
       ctx.lineTo(this.xToPx(s.to), this.yToPx(0));
-      ctx.closePath(); ctx.fillStyle = s.c; ctx.fill();
+      ctx.closePath();
+      ctx.fillStyle = s.c;
+      ctx.fill();
     });
-    ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle='rgba(226,232,240,0.9)';
-    const step = (this.xMax - this.xMin)/280;
-    for(let x=this.xMin; x<=this.xMax; x+=step){ const X = this.xToPx(x), Y = this.yToPx(this.pdf(x)); if(x===this.xMin) ctx.moveTo(X,Y); else ctx.lineTo(X,Y); }
+
+    // curva blanca
+    ctx.beginPath();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(226,232,240,0.9)';
+    const step2 = (this.xMax - this.xMin) / 280;
+    for(let x = this.xMin; x <= this.xMax; x += step2){
+      const X = this.xToPx(x), Y = this.yToPx(this.pdf(x));
+      if(x === this.xMin) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
     ctx.stroke();
-    ctx.lineWidth = 1.5; ctx.strokeStyle='rgba(148,163,184,0.5)'; ctx.beginPath(); ctx.moveTo(30,this.yToPx(0)); ctx.lineTo(this.el.width-30,this.yToPx(0)); ctx.stroke();
-    [0.65,1.0].forEach((x,i)=>{ ctx.setLineDash([6,6]); ctx.strokeStyle = i ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)'; ctx.beginPath(); ctx.moveTo(this.xToPx(x),20); ctx.lineTo(this.xToPx(x),this.el.height-30); ctx.stroke(); });
-    ctx.setLineDash([]); ctx.fillStyle='rgba(148,163,184,0.95)'; ctx.font='20px system-ui'; ctx.fillText('Riesgo de vibración',30,34);
+
+    // eje y=0
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(148,163,184,0.5)';
+    ctx.beginPath();
+    ctx.moveTo(30, this.yToPx(0));
+    ctx.lineTo(this.el.width - 30, this.yToPx(0));
+    ctx.stroke();
+
+    // líneas divisoras
+    [0.65, 1.0].forEach((x, i) => {
+      ctx.setLineDash([6,6]);
+      ctx.strokeStyle = i ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)';
+      ctx.beginPath();
+      ctx.moveTo(this.xToPx(x), 20);
+      ctx.lineTo(this.xToPx(x), this.el.height - 30);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(148,163,184,0.95)';
+    ctx.font = '16px system-ui';
+    ctx.fillText('Riesgo de vibración', 30, 34);
   },
-  drawMarker(risk, inBand=false){
+
+  drawMarker(risk, inBand = false){
     if(!this.ctx) return;
     const ctx = this.ctx;
     const X = this.xToPx(Math.max(this.xMin, Math.min(this.xMax, risk)));
-    // Prioriza inBand sobre el valor numérico
-    let col;
-    if(inBand) col = 'rgba(239,68,68,1)';            // rojo si estamos en la banda evitada
-    else if(risk >= 1.0) col = 'rgba(239,68,68,1)';  // rojo por riesgo alto
-    else if(risk >= 0.65) col = 'rgba(245,158,11,1)';// amarillo
-    else col = 'rgba(34,197,94,1)';                  // verde
+    let col = 'rgba(34,197,94,1)';
+    if(inBand) col = 'rgba(239,68,68,1)';
+    else if(risk >= 1.0) col = 'rgba(239,68,68,1)';
+    else if(risk >= 0.65) col = 'rgba(245,158,11,1)';
 
-    ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(X,20); ctx.lineTo(X,this.el.height-30); ctx.stroke();
-    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI*2); ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(X, 20);
+    ctx.lineTo(X, this.el.height - 30);
+    ctx.stroke();
+
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI * 2);
+    ctx.fill();
   },
 
-  draw(risk=0.5, inBand=false){ 
-    this.drawBase(); 
-    this.drawMarker(risk, inBand); 
+  draw(risk = 0.5, inBand = false){
+    this.drawBase();
+    this.drawMarker(risk, inBand);
   }
+};
+
 window.chart = chart;
+/* ---------- END CHART ---------- */
+
 
 /* UI helpers */
 function buildQuickRef(mat){
