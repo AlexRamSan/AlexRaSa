@@ -425,17 +425,25 @@ function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct, helix_deg=30, corner_mm=0){
 const chart = {
   el: null, ctx: null, xMin: 0, xMax: 2,
   init(){
-    this.el = document.getElementById('vibeChart');
-    if(!this.el) return;
-    this.ctx = this.el.getContext('2d');
-    const resize = () => {
-      this.el.width = Math.max(640, Math.round(this.el.clientWidth * 2));
-      this.el.height = Math.max(220, Math.round(this.el.clientHeight * 2));
-      this.draw(0.5, false);
-    };
-    if(this.el.parentElement) new ResizeObserver(resize).observe(this.el.parentElement);
-    resize();
-  },
+  this.el = document.getElementById('vibeChart');
+  if(!this.el) return;
+  this.ctx = this.el.getContext('2d');
+  const doResize = () => {
+    const dpr = window.devicePixelRatio || 1;
+    const wCss = Math.max(320, Math.round(this.el.clientWidth));
+    const hCss = Math.max(110, Math.round(this.el.clientHeight));
+    this.el.width = Math.max(640, Math.round(wCss * dpr));
+    this.el.height = Math.max(220, Math.round(hCss * dpr));
+    // ajustar canvas CSS tamaño por si cambia
+    this.el.style.width = wCss + 'px';
+    this.el.style.height = hCss + 'px';
+    // escalar contexto para trabajar en device pixels
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.draw(0.5, false);
+  };
+  if(this.el.parentElement) new ResizeObserver(doResize).observe(this.el.parentElement);
+  doResize();
+}
 
   pdf(x, mu = 0.75, sigma = 0.2){
     const a = 1 / (sigma * Math.sqrt(2 * Math.PI));
@@ -893,9 +901,16 @@ chart._dragging = false;
 chart._dragX = null;
 
 function pxToChartX(px){
-  const left = 30, right = chart.el.width - 30;
-  const clamped = Math.max(left, Math.min(right, px));
-  return chart.xMin + (clamped - left) / (right - left) * (chart.xMax - chart.xMin);
+  if(!chart || !chart.el) return 0.5;
+  const rect = chart.el.getBoundingClientRect(); // css pixels
+  const dpr = window.devicePixelRatio || 1; // device / css
+  // padding en device pixels es 30 original. Convertimos a css px:
+  const padCss = 30 / dpr;
+  const leftCss = padCss;
+  const rightCss = rect.width - padCss;
+  const clamped = Math.max(leftCss, Math.min(rightCss, px));
+  const rel = (clamped - leftCss) / Math.max(1e-6, (rightCss - leftCss));
+  return chart.xMin + rel * (chart.xMax - chart.xMin);
 }
 
 function chartXToTargetHz(xVal){
@@ -937,50 +952,64 @@ function applyDragToConditions(xVal){
 
   // redibuja marcador donde el usuario lo dejó (fuerza inBand para color)
   chart.draw(xVal, inBand);
+  // commit selección para que recalc() la use
+window.rpm = rpmAlt;
+window.feed = feedAlt;
+recalc();
 }
 
 /* eventos pointer para arrastrar */
 function onPointerDown(e){
   if(!chart.el) return;
   chart._dragging = true;
+  chart.el.setPointerCapture && chart.el.setPointerCapture(e.pointerId);
   const rect = chart.el.getBoundingClientRect();
-  const px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const px = e.clientX - rect.left;
   chart._dragX = px;
   const xVal = pxToChartX(px);
   applyDragToConditions(xVal);
   e.preventDefault();
 }
 
+let _rafPending = false;
 function onPointerMove(e){
   if(!chart._dragging || !chart.el) return;
   const rect = chart.el.getBoundingClientRect();
-  const px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const px = e.clientX - rect.left;
   chart._dragX = px;
-  const xVal = pxToChartX(px);
-  applyDragToConditions(xVal);
+  if(_rafPending) return;
+  _rafPending = true;
+  requestAnimationFrame(()=>{ 
+    const xVal = pxToChartX(chart._dragX);
+    applyDragToConditions(xVal);
+    _rafPending = false;
+  });
   e.preventDefault();
 }
 
 function onPointerUp(e){
   if(!chart._dragging) return;
   chart._dragging = false;
+  try{ chart.el.releasePointerCapture && chart.el.releasePointerCapture(e.pointerId); }catch(e){}
   chart._dragX = null;
-  // opcional: recalcula condiciones definitivas con la selección
-  // o deja como guía visual. Aquí no tocamos valores originales.
 }
 
-/* attach */
-if(chart && chart.el){
-  chart.el.style.cursor = 'ew-resize';
-  chart.el.addEventListener('mousedown', onPointerDown);
-  window.addEventListener('mousemove', onPointerMove);
-  window.addEventListener('mouseup', onPointerUp);
-  chart.el.addEventListener('touchstart', onPointerDown, {passive:false});
-  window.addEventListener('touchmove', onPointerMove, {passive:false});
-  window.addEventListener('touchend', onPointerUp);
-}
+
 
   chart.init(); chart.draw(0.5);
+  // attach listeners después de init
+if(chart && chart.el){
+  chart.el.style.cursor = 'ew-resize';
+  // evita gestos de scroll al arrastrar
+  chart.el.style.touchAction = 'none';
+
+  chart.el.addEventListener('pointerdown', onPointerDown, {passive:false});
+  window.addEventListener('pointermove', onPointerMove, {passive:false});
+  window.addEventListener('pointerup', onPointerUp, {passive:false});
+  // soporte para cancel pointer (por ejemplo al perder foco)
+  chart.el.addEventListener('pointercancel', onPointerUp, {passive:false});
+}
+
   calc(); recalc();
   try{ loadRelated(); }catch(e){}
   $('rpmSlider')?.addEventListener('input',recalc);
