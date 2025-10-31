@@ -464,16 +464,25 @@ const chart = {
     [0.65,1.0].forEach((x,i)=>{ ctx.setLineDash([6,6]); ctx.strokeStyle = i ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)'; ctx.beginPath(); ctx.moveTo(this.xToPx(x),20); ctx.lineTo(this.xToPx(x),this.el.height-30); ctx.stroke(); });
     ctx.setLineDash([]); ctx.fillStyle='rgba(148,163,184,0.95)'; ctx.font='20px system-ui'; ctx.fillText('Riesgo de vibración',30,34);
   },
-  drawMarker(risk){
+  drawMarker(risk, inBand=false){
     if(!this.ctx) return;
     const ctx = this.ctx;
     const X = this.xToPx(Math.max(this.xMin, Math.min(this.xMax, risk)));
-    let col = 'rgba(34,197,94,1)'; if(risk>=1.0) col='rgba(239,68,68,1)'; else if(risk>=0.65) col='rgba(245,158,11,1)';
+    // Prioriza inBand sobre el valor numérico
+    let col;
+    if(inBand) col = 'rgba(239,68,68,1)';            // rojo si estamos en la banda evitada
+    else if(risk >= 1.0) col = 'rgba(239,68,68,1)';  // rojo por riesgo alto
+    else if(risk >= 0.65) col = 'rgba(245,158,11,1)';// amarillo
+    else col = 'rgba(34,197,94,1)';                  // verde
+
     ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(X,20); ctx.lineTo(X,this.el.height-30); ctx.stroke();
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI*2); ctx.fill();
   },
-  draw(risk=0.5){ this.drawBase(); this.drawMarker(risk); }
-};
+
+  draw(risk=0.5, inBand=false){ 
+    this.drawBase(); 
+    this.drawMarker(risk, inBand); 
+  }
 window.chart = chart;
 
 /* UI helpers */
@@ -641,7 +650,7 @@ function calc(){
   if($('vibeMsg')) $('vibeMsg').innerHTML = msg;
 
   window.feed = effFeed; window.rpm = rpm; window.rpmLimit = rpmLimit;
-  chart.draw(risk);
+  chart.draw(risk, inBand);
 }
 
 /* recalc cuando mueves sliders */
@@ -717,7 +726,7 @@ function recalc(){
   if(bar) bar.className = `h-3 mt-4 rounded-full bg-gradient-to-r ${color}`;
   if($('rpmLabel')) $('rpmLabel').textContent = `${Math.round(rpmScale*100)} % — RPM`;
   if($('feedLabel')) $('feedLabel').textContent = `${Math.round(feedScale*100)} % — Avance`;
-  chart.draw(risk);
+  chart.draw(risk, inBand);
 }
 
 /* reset */
