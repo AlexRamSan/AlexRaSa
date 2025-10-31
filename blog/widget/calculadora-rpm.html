@@ -420,30 +420,36 @@ function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct, helix_deg=30, corner_mm=0){
   return { fzEff, k, helixFactor, cornerFactor };
 }
 
-/* --- chart (canvas) --- (sin tocar mucho) */
-/* ---------- CHART (reemplazo seguro) ---------- */
+/* ---------- CHART (corregido) ---------- */
 const chart = {
-  el: null, ctx: null, xMin: 0, xMax: 2,
+  el: null, ctx: null, xMin: 0, xMax: 2, cssW: 400, cssH: 150,
+
   init(){
-  this.el = document.getElementById('vibeChart');
-  if(!this.el) return;
-  this.ctx = this.el.getContext('2d');
-  const doResize = () => {
-    const dpr = window.devicePixelRatio || 1;
-    const wCss = Math.max(320, Math.round(this.el.clientWidth));
-    const hCss = Math.max(110, Math.round(this.el.clientHeight));
-    this.el.width = Math.max(640, Math.round(wCss * dpr));
-    this.el.height = Math.max(220, Math.round(hCss * dpr));
-    // ajustar canvas CSS tamaño por si cambia
-    this.el.style.width = wCss + 'px';
-    this.el.style.height = hCss + 'px';
-    // escalar contexto para trabajar en device pixels
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.draw(0.5, false);
-  };
-  if(this.el.parentElement) new ResizeObserver(doResize).observe(this.el.parentElement);
-  doResize();
-},
+    this.el = document.getElementById('vibeChart');
+    if(!this.el) return;
+    this.ctx = this.el.getContext('2d');
+
+    const doResize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const wCss = Math.max(320, Math.round(this.el.clientWidth));
+      const hCss = Math.max(110, Math.round(this.el.clientHeight));
+      this.cssW = wCss;
+      this.cssH = hCss;
+      // tamaño interno en device pixels
+      this.el.width = Math.round(wCss * dpr);
+      this.el.height = Math.round(hCss * dpr);
+      // mostrar en CSS px
+      this.el.style.width = wCss + 'px';
+      this.el.style.height = hCss + 'px';
+      // escalar contexto a CSS pixels (dibujar usando CSS px)
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // asegúrate que xMax está correcto si cambias dominio dinámicamente
+      this.draw(0.5, false);
+    };
+
+    if(this.el.parentElement) new ResizeObserver(doResize).observe(this.el.parentElement);
+    doResize();
+  },
 
   pdf(x, mu = 0.75, sigma = 0.2){
     const a = 1 / (sigma * Math.sqrt(2 * Math.PI));
@@ -452,17 +458,21 @@ const chart = {
   },
 
   xToPx(x){
-    return (x - this.xMin) / (this.xMax - this.xMin) * (this.el.width - 60) + 30;
+    const w = this.cssW || Math.max(320, this.el.clientWidth);
+    const pad = 30;
+    return (x - this.xMin) / (this.xMax - this.xMin) * (w - pad*2) + pad;
   },
 
   yToPx(y){
-    const top = 20, bottom = this.el.height - 30;
+    const h = this.cssH || Math.max(110, this.el.clientHeight);
+    const top = 20, bottom = h - 30;
     return bottom - y * (bottom - top);
   },
 
   drawBase(){
     const ctx = this.ctx; if(!ctx) return;
-    ctx.clearRect(0, 0, this.el.width, this.el.height);
+    // limpiar usando CSS px (contexto ya escalado)
+    ctx.clearRect(0, 0, this.cssW || this.el.clientWidth, this.cssH || this.el.clientHeight);
 
     const segments = [
       { from: 0, to: 0.65, c: 'rgba(34,197,94,0.25)' },
@@ -500,17 +510,17 @@ const chart = {
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = 'rgba(148,163,184,0.5)';
     ctx.beginPath();
-    ctx.moveTo(30, this.yToPx(0));
-    ctx.lineTo(this.el.width - 30, this.yToPx(0));
+    ctx.moveTo(this.xToPx(this.xMin), this.yToPx(0));
+    ctx.lineTo(this.xToPx(this.xMax), this.yToPx(0));
     ctx.stroke();
 
-    // líneas divisoras
+    // líneas divisoras (usar cssH)
     [0.65, 1.0].forEach((x, i) => {
       ctx.setLineDash([6,6]);
       ctx.strokeStyle = i ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)';
       ctx.beginPath();
       ctx.moveTo(this.xToPx(x), 20);
-      ctx.lineTo(this.xToPx(x), this.el.height - 30);
+      ctx.lineTo(this.xToPx(x), this.cssH - 30);
       ctx.stroke();
     });
     ctx.setLineDash([]);
@@ -532,7 +542,7 @@ const chart = {
     ctx.strokeStyle = col;
     ctx.beginPath();
     ctx.moveTo(X, 20);
-    ctx.lineTo(X, this.el.height - 30);
+    ctx.lineTo(X, this.cssH - 30);
     ctx.stroke();
 
     ctx.fillStyle = col;
@@ -546,7 +556,6 @@ const chart = {
     this.drawMarker(risk, inBand);
   }
 };
-
 window.chart = chart;
 /* ---------- END CHART ---------- */
 
@@ -902,10 +911,8 @@ chart._dragX = null;
 
 function pxToChartX(px){
   if(!chart || !chart.el) return 0.5;
-  const rect = chart.el.getBoundingClientRect(); // css pixels
-  const dpr = window.devicePixelRatio || 1; // device / css
-  // padding en device pixels es 30 original. Convertimos a css px:
-  const padCss = 30 / dpr;
+  const rect = chart.el.getBoundingClientRect(); // CSS px
+  const padCss = 30; // usar mismo padding que en xToPx
   const leftCss = padCss;
   const rightCss = rect.width - padCss;
   const clamped = Math.max(leftCss, Math.min(rightCss, px));
