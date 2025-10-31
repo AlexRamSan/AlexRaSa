@@ -12,6 +12,10 @@
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- Dependencias para generación PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     /* ==== TEMA SIEMPRE OSCURO ==== */
     :root{
@@ -383,28 +387,6 @@
     const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
     const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
     const fmt2 = (n)=>Number.isFinite(n)?(Math.round(n*100)/100).toLocaleString('es-MX'):'—';
-
-    async function ensureHtml2Pdf(){
-      if (typeof window.html2pdf !== 'undefined') return true;
-      const cdns = [
-        "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js",
-        "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js",
-        "https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
-      ];
-      for (const url of cdns){
-        try{
-          await new Promise((resolve, reject)=>{
-            const s=document.createElement('script');
-            s.src=url;
-            s.onload=()=>resolve();
-            s.onerror=()=>reject();
-            document.body.appendChild(s);
-          });
-          if (typeof window.html2pdf !== 'undefined') return true;
-        }catch(e){}
-      }
-      return false;
-    }
 
     let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
 
@@ -857,93 +839,65 @@
       $('rptDate').textContent=new Date().toLocaleString('es-MX');
     }
 
+    // NUEVA función: usa html2canvas + jsPDF para capturar #pdf-report manteniendo layout exactamente
     async function downloadPdf(){
-      const ok=await ensureHtml2Pdf();
-      if(!ok){alert('No se pudo cargar la librería PDF.');return;}
-
       buildPdfData();
-
-      const element=$('pdf-report');
+      const element = $('pdf-report');
       const wasHidden = element.classList.contains('hidden');
-
-      // guardar estilos previos
-      const prev = {
-        display: element.style.display,
-        position: element.style.position,
-        left: element.style.left,
-        top: element.style.top,
-        transform: element.style.transform,
-        zIndex: element.style.zIndex,
-        visibility: element.style.visibility,
-        opacity: element.style.opacity,
-        width: element.style.width,
-        boxSizing: element.style.boxSizing
-      };
-
-      // Hacer visible y colocar fuera del flujo para renderizar sin cortes
-      element.classList.remove('hidden');
-      element.style.display = 'block';
-      element.style.position = 'absolute';
-      element.style.left = '50%';
-      element.style.top = '20px';
-      element.style.transform = 'translateX(-50%)';
-      element.style.zIndex = '9999';
-      element.style.visibility = 'visible';
-      element.style.opacity = '0'; // invisible visualmente, pero renderizable
-      element.style.width = '794px';
-      element.style.boxSizing = 'border-box';
+      if (wasHidden) element.classList.remove('hidden');
 
       try{
-        // esperar fuentes y cargar imágenes (evita recortes por recursos pendientes)
+        // Espera fuentes e imágenes internas del bloque
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        // espera imágenes internas del bloque PDF
         const imgs = Array.from(element.querySelectorAll('img'));
-        await Promise.all(imgs.map(img => new Promise(resolve => {
-          if(!img) return resolve();
-          if(img.complete) return resolve();
-          img.onload = img.onerror = ()=>resolve();
-          setTimeout(()=>resolve(), 3000);
+        await Promise.all(imgs.map(img => new Promise(res => {
+          if (!img) return res();
+          if (img.complete) return res();
+          img.onload = img.onerror = res;
+          setTimeout(res, 3000);
         })));
 
-        // Pequeña espera adicional para permitir reflows finales
+        // Pequeña pausa para asegurar reflow final
         await new Promise(r => setTimeout(r, 120));
 
-        const opt={
-          margin: 8,
-          filename:'reporte-condiciones-maquinado.pdf',
-          image:{type:'jpeg',quality:0.95},
-          html2canvas:{
-            scale:2,
-            useCORS:true,
-            allowTaint:false,
-            logging:false,
-            width: 794,
-            height: 1123,
-            windowWidth: 794,
-            windowHeight: 1123,
-            backgroundColor: '#ffffff'
-          },
-          jsPDF:{unit:'pt',format:'a4',orientation:'portrait'},
-          pagebreak:{mode:['css','legacy']}
-        };
+        // Renderizar el elemento a canvas
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: element.scrollWidth,
+          height: element.scrollHeight,
+          windowWidth: element.scrollWidth,
+          windowHeight: element.scrollHeight
+        });
 
-        await window.html2pdf().set(opt).from(element).save();
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        // Crear PDF con jsPDF y ajustar escala para A4 manteniendo márgenes
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20; // pts
+
+        // Escalar la imagen para que quepa en la página manteniendo proporción
+        let imgWidth = pageWidth - margin * 2;
+        let imgHeight = (canvas.height * imgWidth) / canvas.width;
+        if (imgHeight > pageHeight - margin * 2) {
+          imgHeight = pageHeight - margin * 2;
+          imgWidth = (canvas.width * imgHeight) / canvas.height;
+        }
+        const x = (pageWidth - imgWidth) / 2;
+        const y = (pageHeight - imgHeight) / 2;
+
+        doc.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+        doc.save('reporte-condiciones-maquinado.pdf');
+
       }catch(e){
-        console.error('PDF error',e);
-        alert('Error generando PDF. Revisa la consola.');
+        console.error('Error generando PDF con jsPDF/html2canvas', e);
+        alert('Ocurrió un error generando el PDF. Revisa la consola.');
       }finally{
-        // restaurar estilos previos
-        element.style.display = prev.display || '';
-        element.style.position = prev.position || '';
-        element.style.left = prev.left || '';
-        element.style.top = prev.top || '';
-        element.style.transform = prev.transform || '';
-        element.style.zIndex = prev.zIndex || '';
-        element.style.visibility = prev.visibility || '';
-        element.style.opacity = prev.opacity || '';
-        element.style.width = prev.width || '';
-        element.style.boxSizing = prev.boxSizing || '';
-        if(wasHidden) element.classList.add('hidden');
+        if (wasHidden) element.classList.add('hidden');
       }
     }
 
