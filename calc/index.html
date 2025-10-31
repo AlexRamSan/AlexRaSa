@@ -3,456 +3,935 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de Costo-Beneficio — AlexRaSa</title>
-  <meta name="description" content="Calcula ahorros por ciclo, vida de herramienta y tiempos muertos. ROI, payback y comparativas A vs P para procesos de maquinado." />
-  <meta name="theme-color" content="#0F172A" />
-  <meta name="robots" content="index,follow" />
+  <title>Calculadora de RPM y avance — extendida</title>
+  <meta name="description" content="Calcula RPM, avance, MRR, potencia, torque, deflexión, Ra y riesgo de vibración. Presets por material, máquina, operación y herramienta. Métrico/imperial." />
+  <link rel="canonical" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
+  <!-- Forzar modo oscuro SIEMPRE -->
+  <meta name="color-scheme" content="dark" />
 
-  <!-- Canonical / Hreflang -->
-  <link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="es" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-
-  <!-- Favicon / App Icons -->
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
-  <link rel="manifest" href="/site.webmanifest" />
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
-  <meta property="og:description" content="Estima ahorros en tiempo de ciclo, vida de herramienta y tiempos muertos. Calcula ROI, payback y compara Actual vs Propuesta." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <meta property="og:image" content="https://alexrasa.store/og/og-image.png" />
-  <meta property="og:site_name" content="AlexRaSa" />
-  <meta property="og:locale" content="es_MX" />
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
-  <meta name="twitter:description" content="ROI, payback y distribución de ahorros para procesos CNC." />
-  <meta name="twitter:image" content="https://alexrasa.store/og/og-image.png" />
-
-  <!-- Tailwind -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Estilos locales -->
+  <!-- Dependencias para generación PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
-    html { scroll-behavior: smooth; }
-    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
-    .reveal.show { opacity: 1; transform: none; }
-    @keyframes bounceSoft { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-    .animate-bounce-soft { animation: bounceSoft 2.8s ease-in-out infinite; }
+    /* ==== TEMA SIEMPRE OSCURO ==== */
+    :root{
+      --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
+      --accent:#0ea5e9; --rose:#e11d48; --emerald:#10b981; --indigo:#6366f1;
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--ink)}
+    .container{max-width:1180px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px}
+    .lead{color:var(--muted)}
+    .btn{border:1px solid var(--border);background:rgba(255,255,255,.04);padding:.6rem .9rem;border-radius:10px}
+    .btn-primary{background:var(--accent);border-color:var(--accent);color:#061018}
+    .btn:hover{filter:brightness(.98)}
+    .tab{padding:.6rem 1rem;border-radius:10px;border:1px solid var(--border);background:rgba(148,163,184,.08)}
+    .tab.is-on{background:var(--accent);border-color:var(--accent);color:#061018}
+    .field>label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.25rem}
+    .field>input,.field>select{width:100%;border-radius:10px;padding:.6rem .7rem;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--ink)}
+    .field>input::placeholder{color:var(--muted)}
+    .kpi{font-weight:700}
+    .kpi-value{font-size:1.35rem;color:#eaf2ff;text-shadow:0 0 0.5px #a5c3ff,0 0 12px rgba(56,189,248,.35)}
+    .pill{font-size:.7rem;border:1px solid var(--border);border-radius:999px;padding:.12rem .5rem;color:var(--muted)}
+    .vibe-box{background:rgba(148,163,184,.08);border:1px dashed var(--border);border-radius:12px;padding:16px;transition:background .18s,border-color .18s}
+    .vibe-box code{color:#cde6ff}
+    #matNotes{white-space:normal;overflow:visible;text-overflow:unset;display:block;color:var(--muted)}
+    select, option{ color: var(--ink); background-color: var(--card); }
+    select:focus{ outline:2px solid var(--accent); outline-offset:1px }
+    @supports (color-scheme: dark){ select, option{ color-scheme: dark; } }
+    .vibe-box.ok   { border-color:#16a34a; background:rgba(22,163,74,.08) }
+    .vibe-box.warn { border-color:#f59e0b; background:rgba(245,158,11,.10) }
+    .vibe-box.bad  { border-color:#ef4444; background:rgba(239,68,68,.10) }
+    .badge{font-size:.72rem;border-radius:999px;padding:.15rem .5rem;border:1px solid var(--border)}
+    .badge.ok{background:#052e1b;color:#86efac;border-color:#166534}
+    .badge.warn{background:#3a2801;color:#fde68a;border-color:#b45309}
+    .badge.bad{background:#3b0a0a;color:#fecaca;border-color:#b91c1c}
+    .hint{color:var(--muted);font-size:.75rem}
+    .canvas-wrap{width:100%;height:220px}
+    .canvas-wrap canvas{width:100%;height:100%}
 
-    /* Fix iOS: evita zoom al escribir y solapes */
-    input, select, textarea { font-size:16px; }
-    /* Safe area / espacio inferior para barra fija */
-    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
+    /* Regla añadida para asegurar caja consistente y evitar transformaciones heredadas que corten el render */
+    #pdf-report{
+      box-sizing: border-box;
+      width: 794px;
+      min-height: 1123px;
+      margin: 0;
+      padding: 0;
+      transform: none !important;
+      -webkit-transform: none !important;
+    }
   </style>
-
-  <!-- Google tag -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);} gtag('js', new Date());
-    gtag('config', 'G-GDQ8NN6T6Q');
-  </script>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased">
-
-  <!-- ===== HEADER ===== -->
-  <header id="siteHeader" class="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between gap-3">
-        <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Ir al inicio">
-          <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-10 w-auto" width="160" height="40" />
-          <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span class="text-blue-600">.store</span></span>
-        </a>
-        <nav class="hidden lg:flex items-center gap-6 text-sm">
-          <a href="/" class="hover:text-blue-600">Inicio</a>
-          <a href="/SolidCAM/" class="hover:text-blue-600">Soluciones</a>
-          <a href="/#servicios" class="hover:text-blue-600">Servicios</a>
-          <a href="/#recursos" class="hover:text-blue-600">Recursos</a>
-          <a href="/#contacto" class="hover:text-blue-600">Contacto</a>
-        </nav>
-        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- ===== HERO ===== -->
-  <section class="relative reveal">
+<body>
+  <!-- HERO -->
+  <section class="relative">
     <div class="absolute inset-0 -z-10">
       <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-70"></div>
       <div class="absolute inset-0 bg-slate-900/60"></div>
     </div>
-    <div class="max-w-6xl mx-auto px-4 py-10 md:py-20 text-white">
-      <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">Calculadora de <span class="text-sky-400">Costo-Beneficio</span></h1>
-      <p class="mt-3 text-white/90 max-w-3xl">Estima ahorros por <strong>tiempo de ciclo</strong>, <strong>vida de herramienta</strong> y <strong>tiempos muertos</strong>. Obtén <strong>ROI</strong>, <strong>payback</strong> y una comparativa <em>Actual vs Propuesta</em>.</p>
+    <div class="container mx-auto px-4 py-8">
+      <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">Calculadora de <span class="text-sky-300">RPM</span> y <span class="text-sky-300">avance</span> · Pro</h1>
+      <p class="lead mt-2">MRR, potencia, torque, deflexión, Ra y vibración. Presets por material, máquina, operación y herramienta.</p>
+      <div class="mt-3 flex gap-2"><span class="pill">SolidCAM</span><span class="pill">iMachining</span><span class="pill">QA</span></div>
     </div>
   </section>
 
-  <!-- ===== CALCULADORA ===== -->
-  <main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-14 grid gap-4 sm:gap-6 lg:grid-cols-8 reveal">
-    <!-- FORM -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
-      <h2 class="text-lg font-semibold text-gray-900">Parámetros del proceso</h2>
-      <div class="grid gap-3 mt-3">
-        <label class="text-sm">Tiempo de ciclo actual (s)
-          <input id="cicloA" type="number" value="60" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Tiempo de ciclo propuesto (s)
-          <input id="cicloP" type="number" value="45" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Vida útil actual (pzas)
-          <input id="vidaA" type="number" value="1300" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Vida útil propuesta (pzas)
-          <input id="vidaP" type="number" value="2500" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Costo de herramienta (USD)
-          <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Costo por hora máquina (USD)
-          <input id="costoHora" type="number" value="50" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Piezas por mes
-          <input id="pmes" type="number" value="10000" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Inversión inicial (USD)
-          <input id="inversion" type="number" value="2000" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">T. muerto actual (min/mes)
-          <input id="tmuertoA" type="number" value="120" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">T. muerto propuesto (min/mes)
-          <input id="tmuertoP" type="number" value="30" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-
-        <h3 class="text-sm font-semibold mt-2">Tipos de ahorro a incluir</h3>
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
+  <main class="container mx-auto px-4 pb-24">
+    <!-- Fórmulas -->
+    <section class="card p-5 mt-6">
+      <h2 class="text-xl font-semibold mb-2">Fórmulas</h2>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-black/20 rounded-lg p-3">
+          <div class="font-semibold mb-1">Métrico</div>
+          <div class="text-sky-200">RPM = (Vc · 1000) / (π · D<sub>mm</sub>)</div>
+          <div class="text-sky-200">F = RPM · z · f<sub>z,mm</sub></div>
         </div>
-        <!-- Oculto en móvil: usamos el botón fijo -->
-        <button id="btnCalcular" class="hidden md:block mt-3 w-full px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">Calcular</button>
-      </div>
-    </section>
-
-    <!-- TABLA -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-4">
-      <h2 class="text-lg font-semibold text-gray-900">Comparativa A vs P</h2>
-      <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
-        <table class="w-full border-separate [border-spacing:0_8px] text-sm">
-          <thead>
-            <tr class="text-gray-600">
-              <th class="text-left font-medium px-2">Métrica</th>
-              <th class="text-right font-medium px-2">Actual</th>
-              <th class="text-right font-medium px-2">Propuesta</th>
-              <th class="text-right font-medium px-2">Δ Mejora</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyComp"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- RESULTADOS (más delgada) -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
-      <h2 class="text-lg font-semibold text-gray-900">Resultados</h2>
-      <div class="mt-3 grid gap-3">
-        <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <div class="text-sm">Ahorro mensual</div>
-          <div id="ahorro" class="text-right font-bold text-xl text-emerald-700">$0</div>
-        </div>
-        <div id="kpiTMBox" class="rounded-lg border border-teal-200 bg-teal-50 p-3">
-          <div class="text-sm">Ahorro por tiempo muerto (USD/mes)</div>
-          <div id="ahorroTM" class="text-right font-bold text-lg text-teal-700">$0</div>
-        </div>
-        <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <div class="text-sm">ROI anual</div>
-          <div id="roi" class="text-right font-bold text-lg text-blue-700">0%</div>
-        </div>
-        <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-          <div class="text-sm">ROI mensual</div>
-          <div id="roiMensual" class="text-right font-bold text-lg text-indigo-700">0%</div>
-        </div>
-        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <div class="text-sm">Payback (meses)</div>
-          <div id="payback" class="text-right font-bold text-lg text-amber-700">0</div>
+        <div class="bg-black/20 rounded-lg p-3">
+          <div class="font-semibold mb-1">Imperial</div>
+          <div class="text-sky-200">RPM = (SFM · 3.82) / D<sub>in</sub></div>
+          <div class="text-sky-200">F = RPM · z · f<sub>z,in</sub></div>
         </div>
       </div>
     </section>
 
-    <!-- VISUALES -->
-    <section id="visuales" class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-8 lg:col-start-1">
-      <h2 class="text-lg font-semibold text-gray-900">Visuales</h2>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="rounded-lg border border-gray-200 p-3">
-          <p class="text-sm font-semibold text-gray-700">Distribución de ahorros</p>
-          <div id="vizAhorros" class="mt-4"></div>
+    <!-- Calculadora -->
+    <section class="card p-5 mt-6">
+      <!-- Unidades -->
+      <div class="flex flex-wrap gap-3 items-center">
+        <div class="flex gap-2">
+          <button id="uMetric" class="tab is-on" type="button">Métrico</button>
+          <button id="uImperial" class="tab" type="button">Imperial</button>
         </div>
-        <div class="rounded-lg border border-gray-200 p-3">
-          <p class="text-sm font-semibold text-gray-700">Comparativa rápida</p>
-          <div id="vizPerf" class="mt-4"></div>
+        <div class="ml-auto text-sm text-slate-400 select-none">Modo avanzado activo</div>
+      </div>
+
+      <!-- Presets -->
+      <div class="grid md:grid-cols-6 gap-3 mt-4">
+        <div class="field md:col-span-2">
+          <label>Material</label>
+          <select id="material"></select>
+        </div>
+        <div class="field">
+          <label>Operación</label>
+          <select id="operation"></select>
+        </div>
+        <div class="field">
+          <label>Tipo de herramienta</label>
+          <select id="toolType"></select>
+        </div>
+        <div class="field">
+          <label>Material de herramienta</label>
+          <select id="toolMat"></select>
+        </div>
+        <div class="field">
+          <label>Máquina</label>
+          <select id="machine"></select>
         </div>
       </div>
+
+      <div class="grid md:grid-cols-[1fr_auto] gap-3 mt-3 items-end">
+        <button id="apply" class="btn">Aplicar preset</button>
+        <div id="matBadge" class="justify-self-end text-xs text-slate-400"></div>
+      </div>
+      <div class="mt-2 text-sm"><span id="matNotes"></span></div>
+
+      <!-- Entradas principales -->
+      <div class="grid md:grid-cols-3 gap-3 mt-5">
+        <div class="field">
+          <label>Diámetro herramienta</label>
+          <input id="diam" type="number" step="0.001" placeholder="mm o in según unidad">
+        </div>
+        <div class="field">
+          <label>Filos (z)</label>
+          <input id="flutes" type="number" min="1" step="1" value="3">
+        </div>
+        <div class="field">
+          <label>Límite de RPM de máquina</label>
+          <input id="rpmLimit" type="number" step="1" placeholder="p. ej. 12000">
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-3 mt-3">
+        <div class="field">
+          <label>Velocidad de corte (Vc / SFM)</label>
+          <input id="vc" type="number" step="0.1" placeholder="m/min o SFM">
+        </div>
+        <div class="field">
+          <label>Chip por diente f<sub>z</sub></label>
+          <input id="fz" type="number" step="0.001" placeholder="mm o in">
+        </div>
+        <div class="field">
+          <label>Factor prudencia F</label>
+          <input id="prudence" type="number" step="0.01" placeholder="0.7–1.0" value="0.9">
+        </div>
+      </div>
+
+      <!-- Avanzado -->
+      <div id="advZone" class="grid md:grid-cols-4 gap-3 mt-4">
+        <div class="field">
+          <label>Step over a<sub>e</sub> (%D)</label>
+          <input id="aePct" type="number" step="1" placeholder="p. ej. 30">
+          <div class="hint">Chip thinning si a<sub>e</sub> &lt; 50%</div>
+        </div>
+        <div class="field">
+          <label>Profundidad a<sub>p</sub> (mm/in)</label>
+          <input id="ap" type="number" step="0.01" placeholder="p. ej. 6">
+        </div>
+        <div class="field">
+          <label>Longitud expuesta L (mm)</label>
+          <input id="stickout" type="number" step="0.1" placeholder="voladizo">
+        </div>
+        <div class="field">
+          <label>Holder</label>
+          <select id="holder"></select>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="flex flex-wrap gap-3 mt-4">
+        <button id="calcBtn" class="btn btn-primary">Calcular</button>
+        <button id="resetBtn" class="btn">Reiniciar</button>
+        <button id="pdfBtn" class="btn">PDF</button>
+      </div>
+
+      <!-- Resultados -->
+      <div class="grid md:grid-cols-3 gap-4 mt-6">
+        <div class="bg-black/20 rounded-lg p-4">
+          <div class="kpi">RPM teórico</div>
+          <div class="kpi-value" id="rpmOut">—</div>
+          <div id="rpmCap" class="text-xs text-amber-300 mt-1 hidden">Limitado por máquina</div>
+        </div>
+        <div class="bg-black/20 rounded-lg p-4">
+          <div class="kpi">Avance programado</div>
+          <div class="kpi-value"><span id="feedOut">—</span> <span id="feedUnit" class="text-slate-400 text-base align-middle">mm/min</span></div>
+          <div class="text-xs" id="feedAdjNote"></div>
+        </div>
+        <div class="bg-black/20 rounded-lg p-4">
+          <div class="kpi">Resumen</div>
+          <div class="text-sm text-slate-300 mt-1" id="sumOut">Ingresa datos y calcula.</div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-4 gap-4 mt-4">
+        <div class="bg-black/20 rounded-lg p-4"><div class="kpi">MRR</div><div class="kpi-value"><span id="mrrOut">—</span> <span class="text-slate-400 text-base">cm³/min</span></div></div>
+        <div class="bg-black/20 rounded-lg p-4"><div class="kpi">Potencia</div><div class="kpi-value"><span id="pwrOut">—</span> <span class="text-slate-400 text-base">kW</span></div><div class="text-xs" id="pwrNote"></div></div>
+        <div class="bg-black/20 rounded-lg p-4"><div class="kpi">Torque</div><div class="kpi-value"><span id="tqOut">—</span> <span class="text-slate-400 text-base">N·m</span></div></div>
+        <div class="bg-black/20 rounded-lg p-4"><div class="kpi">Carga husillo</div><div class="kpi-value"><span id="loadOut">—</span> <span class="text-slate-400 text-base">%</span></div></div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4 mt-4">
+        <div class="bg-black/20 rounded-lg p-4"><div class="kpi">Ra estimado</div><div class="kpi-value"><span id="raOut">—</span> <span class="text-slate-400 text-base">µm</span></div></div>
+        <div class="bg-black/20 rounded-lg p-4"><div class="kpi">f<sub>tp</sub></div><div class="kpi-value"><span id="toothHzOut">—</span> <span class="text-slate-400 text-base">Hz</span></div></div>
+        <div class="bg-black/20 rounded-lg p-4"><div class="kpi">Vida (Taylor)</div><div class="kpi-value"><span id="lifeOut">—</span> <span class="text-slate-400 text-base">min</span></div></div>
+      </div>
+
+      <!-- ==== AJUSTE FINO DUAL ==== -->
+      <div id="sweetspot-dual" class="mt-6 bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-lg">
+        <h3 class="text-cyan-400 font-semibold mb-3 text-sm uppercase tracking-wider">Ajuste fino — RPM / Avance</h3>
+
+        <label class="block text-slate-300 text-sm mb-1">RPM</label>
+        <input type="range" id="rpmSlider" min="0.6" max="1.4" step="0.01" value="1" class="w-full accent-cyan-500 cursor-pointer">
+        <div id="rpmLabel" class="text-center mt-1 text-sm text-slate-400">100 % — RPM base</div>
+
+        <label class="block text-slate-300 text-sm mt-4 mb-1">Avance</label>
+        <input type="range" id="feedSlider" min="0.6" max="1.4" step="0.01" value="1" class="w-full accent-cyan-500 cursor-pointer">
+        <div id="feedLabel" class="text-center mt-1 text-sm text-slate-400">100 % — Avance base</div>
+
+        <div id="sweetBarDual" class="h-3 mt-4 rounded-full transition-all duration-300 bg-gradient-to-r from-rose-600 via-yellow-400 to-emerald-500"></div>
+      </div>
+
+      <!-- Vibración con campana Gauss -->
+      <div class="vibe-box mt-6">
+        <h3 class="font-semibold mb-2">Vibración estimada</h3>
+        <div class="text-sm" id="vibeInfo">L/D, a<sub>e</sub> y a<sub>p</sub> se estiman del diámetro, operación y L.</div>
+        <div class="canvas-wrap mt-3"><canvas id="vibeChart"></canvas></div>
+        <p class="text-sm mt-2" id="vibeMsg"></p>
+        <div class="text-xs hint" id="avoidBandNote"></div>
+      </div>
+
+      <div class="mt-6 text-sm text-slate-300" id="refQuick"></div>
     </section>
+
+    <section class="mt-8">
+      <h2 class="text-xl font-semibold mb-3">Entradas relacionadas</h2>
+      <div id="relGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div id="relEmpty" class="text-slate-400 text-sm">Se mostrarán artículos recientes del blog.</div>
+    </section>
+
+    <!-- TEMPLATE: REPORTE PDF A4 COMPLETO (no está en DOM hasta generar) -->
+    <template id="pdf-template">
+      <div id="pdf-report" style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu;
+                width:794px; min-height:1123px;
+                background:#f3f4f6; color:#0f172a;
+                margin:0; padding:0;">
+        <!-- Header -->
+        <div style="background:#0f172a; color:white; padding:16px 20px; border-radius:14px 14px 0 0;
+                    display:flex; justify-content:space-between; gap:12px; align-items:center;">
+          <div>
+            <div style="font-size:13px; opacity:.8;">Reporte de condiciones de maquinado</div>
+            <div style="font-size:19px; font-weight:700;">Calculadora RPM y Avance — Pro</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="background:rgba(15,23,42,.35); border:1px solid rgba(148,163,184,.35); border-radius:999px;
+                        padding:4px 12px; font-size:12px;">AlexRaSa — Manufactura CNC</div>
+            <div id="rptDate" style="font-size:11px; opacity:.6; margin-top:4px;"></div>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:18px 20px 10px 20px;">
+          <!-- Contexto -->
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Contexto</div>
+          <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:16px;">
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Material de pieza</div>
+              <div id="rptMaterial" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Operación</div>
+              <div id="rptOp" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Máquina</div>
+              <div id="rptMachine" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Holder</div>
+              <div id="rptHolder" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Tipo de herramienta</div>
+              <div id="rptToolType" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Material de herramienta</div>
+              <div id="rptToolMat" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+          </div>
+
+          <!-- Parámetros -->
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Parámetros calculados</div>
+          <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:16px;">
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Diámetro</div>
+              <div id="rptDiam" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">RPM</div>
+              <div id="rptRPM" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Avance</div>
+              <div id="rptFeed" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">MRR</div>
+              <div id="rptMRR" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Potencia</div>
+              <div id="rptPwr" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Torque</div>
+              <div id="rptTq" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Carga husillo</div>
+              <div id="rptLoad" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Ra estimado</div>
+              <div id="rptRa" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+          </div>
+
+          <!-- Vibración -->
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Vibración</div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <div id="rptVibeState" style="font-size:11px; font-weight:600; background:#e5e7eb; padding:3px 10px; border-radius:999px;">—</div>
+              <div style="font-size:11px; color:#6b7280;">Evaluación dinámica por L/D, ae, ap y banda evitada</div>
+            </div>
+            <div id="rptVibe" style="font-size:12px; color:#111827; line-height:1.4;">—</div>
+          </div>
+
+          <!-- Relleno para que no quede sábana -->
+          <div style="display:grid; grid-template-columns:1.4fr .6fr; gap:14px; margin-top:18px;">
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; min-height:120px;">
+              <div style="font-size:11px; color:#6b7280; margin-bottom:4px;">Notas</div>
+              <div style="font-size:12px; color:#111827;">Ajustar en máquina real según herramienta instalada, sujeción, condiciones de corte del proveedor (Sandvik, Seco, Kennametal, Iscar, etc.) y política interna de la planta. Generado desde alexrasa.store.</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; min-height:120px;">
+              <div style="font-size:11px; color:#6b7280; margin-bottom:18px;">Aprobación</div>
+              <div style="height:38px; border-bottom:1px solid #e5e7eb;"></div>
+              <div style="font-size:10px; color:#6b7280; margin-top:4px;">Firma / fecha</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer fijo para llenar hasta abajo -->
+        <div style="margin-top:10px; padding:8px 20px 14px 20px; text-align:right; font-size:10px; color:#9ca3af;">
+          Reporte generado automáticamente · alexrasa.store · Página 1/1
+        </div>
+      </div>
+    </template>
+    <!-- FIN TEMPLATE -->
   </main>
 
-  <!-- BOTÓN FIJO EN MÓVIL -->
-  <div class="md:hidden fixed inset-x-0 bottom-0 z-40 safe-bottom bg-white/95 backdrop-blur border-t border-gray-200 px-4 py-2">
-    <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
-      Calcular
-    </button>
-  </div>
-
-  <!-- FOOTER -->
-  <footer class="bg-gray-100 py-6 border-t border-gray-300 mt-16 text-center">
-    <div class="max-w-6xl mx-auto px-4 text-sm text-gray-600">
-      © 2025 AlexRaSa — Ingeniería, innovación y eficiencia.
-    </div>
-  </footer>
-
-  <!-- BOTÓN WHATSAPP (oculto en pantallas chicas para no tapar inputs) -->
-  <a href="https://wa.me/524425992802?text=Hola%20Miguel,%20quiero%20usar%20la%20calculadora%20de%20costo-beneficio."
-     class="hidden sm:inline-flex fixed bottom-6 right-6 items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-500 text-white hover:bg-green-600 transition animate-bounce-soft"
-     aria-label="Chatear por WhatsApp" rel="noopener noreferrer">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-      <path d="M19.11 17.44c-.27-.14-1.58-.78-1.83-.86-.25-.09-.43-.14-.61.14-.18.27-.7.86-.86 1.04-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.18-1.34-.81-.72-1.36-1.61-1.52-1.88-.16-.27-.02-.42.12-.55.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.28s.98 2.64 1.11 2.82c.14.18 1.93 2.95 4.68 4.14.65.28 1.16.45 1.55.58.65.21 1.24.18 1.71.11.52-.08 1.58-.65 1.81-1.27.23-.62.23-1.15.16-1.27-.07-.11-.25-.18-.52-.32z"/>
-      <path d="M26.02 5.97A12.9 12.9 0 0 0 16 2C8.83 2 3 7.83 3 15c0 2.29.6 4.44 1.66 6.31L3 30l8.88-1.63A12.96 12.96 0 0 0 16 28c7.17 0 13-5.83 13-13 0-3.47-1.35-6.72-3.98-9.03z"/>
-    </svg>
-    <span class="font-medium">WhatsApp</span>
-  </a>
-
-  <!-- ===== SCRIPTS ===== -->
   <script>
-    // Sombra en header
-    const siteHeader = document.getElementById('siteHeader');
-    window.addEventListener('scroll', () => { siteHeader.classList.toggle('shadow', window.scrollY > 2); }, { passive: true });
+    const $ = (id)=>document.getElementById(id);
+    const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
+    const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
+    const fmt2 = (n)=>Number.isFinite(n)?(Math.round(n*100)/100).toLocaleString('es-MX'):'—';
 
-    // Scroll-reveal
-    (function() {
-      const els = document.querySelectorAll('.reveal');
-      if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('show')); return; }
-      const io = new IntersectionObserver((entries, obs) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); } });
-      }, { threshold: 0.12 });
-      els.forEach(el => io.observe(el));
-    })();
+    let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
 
-    // ====== LÓGICA DE LA CALCULADORA ======
-    function fmt(n){return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-
-    function calcular(){
-      const cicloA = +document.getElementById('cicloA').value || 0;
-      const cicloP = +document.getElementById('cicloP').value || 0;
-      const vidaA = +document.getElementById('vidaA').value || 0;
-      const vidaP = +document.getElementById('vidaP').value || 0;
-      const costoHerr = +document.getElementById('costoHerr').value || 0;
-      const costoHora = +document.getElementById('costoHora').value || 0;
-      const pmes = +document.getElementById('pmes').value || 0;
-      const inversion = +document.getElementById('inversion').value || 0;
-      const tmuertoA = +document.getElementById('tmuertoA').value || 0; // min/mes
-      const tmuertoP = +document.getElementById('tmuertoP').value || 0; // min/mes
-
-      // Ahorro por ciclo
-      const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
-
-      // Herramienta
-      const consA = (vidaA>0) ? (pmes / vidaA) : 0;
-      const consP = (vidaP>0) ? (pmes / vidaP) : 0;
-      const costoHerrA = consA * costoHerr;
-      const costoHerrP = consP * costoHerr;
-      const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
-
-      // Tiempo muerto mensual (min/mes -> horas/mes)
-      const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
-
-      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-      const incTM    = document.getElementById('incTM')?.checked ?? true;
-
-      const ahorroTotal = Math.max(0,
-        (incCiclo ? ahorroCiclo : 0) +
-        (incHerr  ? ahorroHerr  : 0) +
-        (incTM    ? ahorroTM    : 0)
-      );
-
-      const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
-      const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
-      const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
-
-      document.getElementById('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
-      document.getElementById('roi').textContent        = `${fmt(roiAnual)}%`;
-      document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
-      document.getElementById('payback').textContent    = fmt(payback);
-      document.getElementById('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
-
-      const tmWrap = document.getElementById('kpiTMBox');
-      if (tmWrap) tmWrap.classList.toggle('opacity-50', !incTM);
-
-      // Comparativa
-      const pphA = cicloA>0 ? 3600/cicloA : 0;
-      const pphP = cicloP>0 ? 3600/cicloP : 0;
-      const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
-      const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
-
-      function delta(a,p,{higherIsBetter=true}={}){
-        if(a===0 && p===0) return {val:0, up:false};
-        const d = (p-a) / (a===0 ? 1 : a) * 100;
-        const up = higherIsBetter ? d>0 : d<0;
-        return {val:d, up};
-      }
-      function row(name,a,p,opt){
-        const d = delta(a,p,opt||{});
-        const badge = `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${d.up? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'}">${(d.val>=0?'+':'')+fmt(d.val)}%</span>`;
-        return `<tr class="bg-gray-50 ring-1 ring-gray-200">
-          <td class="px-2 py-2">${name}</td>
-          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
-          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
-          <td class="px-2 py-2 text-right">${badge}</td>
-        </tr>`;
-      }
-      const rows = [
-        row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
-        row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
-        row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
-        row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
-        row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
-        row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
-        row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
-        row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
-      ].join('');
-      document.getElementById('tbodyComp').innerHTML = rows;
-
-      // VISUALES
-      const parts = [], labels = [];
-      const ahorroCicloPOS = Math.max(0, ahorroCiclo);
-      const ahorroHerrPOS  = Math.max(0, ahorroHerr);
-      const ahorroTMPOS    = Math.max(0, ahorroTM);
-      if(incCiclo) { parts.push(ahorroCicloPOS); labels.push('Ciclo'); }
-      if(incHerr)  { parts.push(ahorroHerrPOS);  labels.push('Herramienta'); }
-      if(incTM)    { parts.push(ahorroTMPOS);    labels.push('Tiempo muerto'); }
-      renderDonut('vizAhorros', parts, labels);
-      renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
+    async function loadData(){
+      try{
+        const r=await fetch('/data/cutting-data.json',{cache:'no-store'});
+        if(r.ok) DATA=await r.json();
+      }catch(e){}
+      window.DATA=DATA;
     }
 
-    function setEnabled(ids, on){
-      ids.forEach(id=>{
-        const el=document.getElementById(id);
-        if(!el) return;
-        el.disabled = !on;
-        el.classList.toggle('bg-gray-100', !on);
-        el.classList.toggle('cursor-not-allowed', !on);
+    function fillSelectors(){
+      const sel=$('material'); sel.innerHTML='';
+      (DATA.materials||[]).forEach(m=>sel.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`));
+
+      const ops=(DATA.operations&&DATA.operations.length)?DATA.operations:[
+        {id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},
+        {id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}
+      ];
+      const opSel=$('operation'); opSel.innerHTML='';
+      ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label}</option>`));
+
+      const tSel=$('toolType'); tSel.innerHTML='';
+      const ttypes=(DATA.tool_types&&DATA.tool_types.length)?DATA.tool_types:[
+        {id:'endmill',label:'Fresa (Endmill)'},{id:'drill',label:'Broca'},{id:'face_mill',label:'Careador/Planeado'},
+        {id:'slot_saw',label:'Sierra ranuradora'},{id:'part_groove',label:'Tronzador'},{id:'reamer',label:'Escariador'},
+        {id:'boring',label:'Barra de barrenado'},{id:'thread_mill',label:'Fresa de roscas'},{id:'tap',label:'Machuelo'}
+      ];
+      ttypes.forEach(t=>tSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
+
+      const tmSel=$('toolMat'); tmSel.innerHTML='';
+      const tmats=(DATA.tool_materials&&DATA.tool_materials.length)?DATA.tool_materials:[
+        {id:'carbide',label:'Carburo',vc_factor:1,fz_factor:1},
+        {id:'hss',label:'Acero rápido (HSS)',vc_factor:0.5,fz_factor:0.85},
+        {id:'ceramic',label:'Cerámico',vc_factor:2.0,fz_factor:0.9},
+        {id:'cbn',label:'CBN',vc_factor:3.0,fz_factor:0.8},
+        {id:'pcd',label:'PCD',vc_factor:4.0,fz_factor:1.1},
+        {id:'diamond',label:'Diamante',vc_factor:4.5,fz_factor:1.1},
+        {id:'cermet',label:'Cermet',vc_factor:1.3,fz_factor:1.0}
+      ];
+      tmats.forEach(t=>tmSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
+
+      const holderSel=$('holder'); holderSel.innerHTML='';
+      (DATA.holders||[]).forEach(h=>holderSel.insertAdjacentHTML('beforeend',`<option value="${h.id}">${h.label}</option>`));
+
+      const mach=$('machine'); mach.innerHTML='';
+      (DATA.machine_profiles||[]).forEach(m=>mach.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`));
+
+      $('rpmLimit').value=DATA.defaults?.rpm_limit||12000;
+      $('prudence').value=DATA.defaults?.prudence||0.9;
+      $('stickout').value=DATA.defaults?.stickout_mm||25;
+      $('ap').value=DATA.defaults?.ap_mm||5;
+
+      const mat=getMaterial(); $('matNotes').textContent=mat?.notes||''; $('matBadge').textContent=mat?`ID: ${mat.id}`:'';
+    }
+
+    function getMaterial(){const id=$('material').value;return (DATA.materials||[]).find(m=>m.id===id);}
+    function getMachine(){const id=$('machine').value;return (DATA.machine_profiles||[]).find(m=>m.id===id)||{};}
+    function getToolType(){const id=$('toolType').value;return (DATA.tool_types||[]).find(t=>t.id===id)||{};}
+    function getToolMat(){const id=$('toolMat').value;return (DATA.tool_materials||[]).find(t=>t.id===id)||{vc_factor:1,fz_factor:1};}
+    function getHolder(){const id=$('holder').value;return (DATA.holders||[]).find(h=>h.id===id);}
+
+    function setUnits(u){
+      units=u;
+      $('uMetric').classList.toggle('is-on',u==='metric');
+      $('uImperial').classList.toggle('is-on',u==='imperial');
+      $('feedUnit').textContent=(u==='metric')?'mm/min':'IPM';
+      $('sumOut').textContent='Unidad: '+(u==='metric'?'métrico':'imperial');
+      window.units=units;
+    }
+
+    function estimateVibeParams(Dmm,op){
+      const L=Number(parseFloat($('stickout').value))||Math.max(DATA.defaults?.stickout_mm||25,(op==='finish'?2.0:3.0)*Dmm);
+      const opDef=(DATA.operations||[]).find(o=>o.id===op);
+      const ae_pct=Number.isFinite(opDef?.default_ae_pct)?opDef.default_ae_pct:(op==='finish'?12:(op==='adaptive'?25:30));
+      const ap_mm=Number(parseFloat($('ap').value))||Math.min((op==='finish'?0.2:0.5)*Dmm,Math.max(Dmm,DATA.defaults?.ap_mm||5));
+      return{L,ae_pct,ap_mm};
+    }
+
+    function diaBucketFz(mat,Dmm,op){
+      if(!mat?.fz_mm)return null;
+      const arr=[...mat.fz_mm].sort((a,b)=>a.dia_max_mm-b.dia_max_mm);
+      const picked=arr.find(b=>Dmm<=b.dia_max_mm)||arr[arr.length-1];
+      const range=picked?.[op]||picked?.[op==='finish'?'finish':'rough'];
+      return Array.isArray(range)?range:null;
+    }
+
+    function chipThinningAdjustedFz(fz_mm,Dmm,ae_pct){
+      const ae=Math.max(0.01,Math.min(0.95,ae_pct/100));
+      if(ae>=0.5)return{fzEff:fz_mm,k:1};
+      const phi_m=Math.acos(Math.max(-1,Math.min(1,1-2*ae)));
+      const k=1/Math.max(0.3,Math.sin(phi_m));
+      return{fzEff:fz_mm*k,k};
+    }
+
+    function applyPreset(){
+      const mat=getMaterial();const op=$('operation').value;const D=parseFloat($('diam').value)||10;$('diam').value=D;
+
+      const vcBase=mat?.vc_m_min?.[op]||mat?.vc_m_min?.rough||[100,200];
+      const fzBase=diaBucketFz(mat,(units==='metric'?D:(D*25.4)),op)||[0.03,0.08];
+
+      const ttype=getToolType();
+      const tmat=getToolMat();
+      const vcF=(ttype?.vc_factor??1)*(tmat?.vc_factor??1);
+      const fzF=(ttype?.fz_factor??1)*(tmat?.fz_factor??1);
+
+      const vcRange=[Math.round(vcBase[0]*vcF),Math.round(vcBase[1]*vcF)];
+      const fzRange=[+(fzBase[0]*fzF).toFixed(3),+(fzBase[1]*fzF).toFixed(3)];
+
+      if(units==='metric'){
+        $('vc').value=Math.round((vcRange[0]+vcRange[1])/2);
+        $('fz').value=((fzRange[0]+fzRange[1])/2).toFixed(3);
+      }else{
+        const sfmMid=((vcRange[0]+vcRange[1])/2)*3.281;$('vc').value=Math.round(sfmMid);
+        $('fz').value=(((fzRange[0]+fzRange[1])/2)/25.4).toFixed(3);
+      }
+
+      $('matNotes').textContent=mat?.notes||'';$('matBadge').textContent=mat?`ID: ${mat.id}`:'';
+      buildQuickRef(mat);
+
+      const est=estimateVibeParams(((units==='metric')?D:D*25.4),op);
+      $('aePct').value=Math.round(est.ae_pct);
+      if(!$('ap').value)$('ap').value=fmt2(est.ap_mm);
+    }
+
+    const chart={
+      el:null,ctx:null,
+      init(){this.el=$('vibeChart');this.ctx=this.el.getContext('2d');const resize=()=>{this.el.width=Math.max(640,this.el.clientWidth*2);this.el.height=Math.max(220,this.el.clientHeight*2);this.draw(0.5);};new ResizeObserver(resize).observe(this.el.parentElement);},
+      xMin:0,xMax:2,pdf(x,mu=0.75,sigma=0.2){const a=1/(sigma*Math.sqrt(2*Math.PI));const e=Math.exp(-0.5*((x-mu)/sigma)**2);return a*e;},
+      xToPx(x){return (x-this.xMin)/(this.xMax-this.xMin)*(this.el.width-60)+30;},
+      yToPx(y){const top=20,bottom=this.el.height-30;return bottom-y*(bottom-top);},
+      drawBase(){
+        const ctx=this.ctx;ctx.clearRect(0,0,this.el.width,this.el.height);
+        const segs=[{from:0,to:0.65,c:'rgba(34,197,94,0.25)'},{from:0.65,to:1.0,c:'rgba(245,158,11,0.25)'},{from:1.0,to:2.0,c:'rgba(239,68,68,0.25)'}];
+        segs.forEach(s=>{ctx.beginPath();let first=true;const step=(this.xMax-this.xMin)/240;
+          for(let x=s.from;x<=s.to+1e-6;x+=step){const X=this.xToPx(x),Y=this.yToPx(this.pdf(x));if(first){ctx.moveTo(X,this.yToPx(0));ctx.lineTo(X,Y);first=false;}else ctx.lineTo(X,Y);}
+          ctx.lineTo(this.xToPx(s.to),this.yToPx(0));ctx.closePath();ctx.fillStyle=s.c;ctx.fill();});
+        ctx.beginPath();ctx.lineWidth=4;ctx.strokeStyle='rgba(226,232,240,0.9)';const step=(this.xMax-this.xMin)/280;
+        for(let x=this.xMin;x<=this.xMax;x+=step){const X=this.xToPx(x),Y=this.yToPx(this.pdf(x));if(x===this.xMin)ctx.moveTo(X,Y);else ctx.lineTo(X,Y);}ctx.stroke();
+        ctx.lineWidth=1.5;ctx.strokeStyle='rgba(148,163,184,0.5)';ctx.beginPath();ctx.moveTo(30,this.yToPx(0));ctx.lineTo(this.el.width-30,this.yToPx(0));ctx.stroke();
+        [0.65,1.0].forEach((x,i)=>{ctx.setLineDash([6,6]);ctx.strokeStyle=i?'rgba(239,68,68,0.6)':'rgba(245,158,11,0.6)';ctx.beginPath();ctx.moveTo(this.xToPx(x),20);ctx.lineTo(this.xToPx(x),this.el.height-30);ctx.stroke();});ctx.setLineDash([]);
+        ctx.fillStyle='rgba(148,163,184,0.95)';ctx.font='28px system-ui';ctx.fillText('Riesgo de vibración',30,34);
+      },
+      drawMarker(risk){
+        const ctx=this.ctx;const X=this.xToPx(Math.max(this.xMin,Math.min(this.xMax,risk)));
+        let col='rgba(34,197,94,1)';if(risk>=1.0)col='rgba(239,68,68,1)';else if(risk>=0.65)col='rgba(245,158,11,1)';
+        ctx.lineWidth=3;ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(X,20);ctx.lineTo(X,this.el.height-30);ctx.stroke();
+        ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,this.yToPx(this.pdf(risk)),9,0,Math.PI*2);ctx.fill();
+      },
+      draw(risk=0.5){this.drawBase();this.drawMarker(risk);}
+    };
+    window.chart=chart;
+
+    function calc(){
+      const D=parseFloat($('diam').value);
+      const z=parseInt($('flutes').value,10);
+      let rpmLimit=parseFloat($('rpmLimit').value||'0');
+      const prud=parseFloat($('prudence').value||'1');
+      const V=parseFloat($('vc').value);
+      let FZ=parseFloat($('fz').value);
+      const op=$('operation').value;
+      const mat=getMaterial();
+      const mach=getMachine();
+      if(mach?.rpm_max && !rpmLimit)rpmLimit=mach.rpm_max;
+
+      if(!(D>0 && z>0 && V>0 && FZ>0)){
+        $('rpmOut').textContent='—';$('feedOut').textContent='—';$('vibeMsg').textContent='Faltan datos.';chart.draw(0.5);return;
+      }
+
+      const Dmm=(units==='metric')?D:D*25.4;
+      const Vc_m_min=(units==='metric')?V:(V/3.281);
+      let fz_mm=(units==='metric')?FZ:FZ*25.4;
+
+      let aePct=Number(parseFloat($('aePct').value));
+      if(!Number.isFinite(aePct) || aePct<=0){const est=estimateVibeParams(Dmm,op);aePct=est.ae_pct;}
+      const {fzEff,k:ctK}=chipThinningAdjustedFz(fz_mm,Dmm,aePct);
+      const usedFz=fzEff;
+      $('feedAdjNote').textContent=ctK>1?`Chip-thinning ×${fmt2(ctK)} (ae=${Math.round(aePct)}%D)`:'';
+
+      let rpm=(Vc_m_min*1000)/(Math.PI*Dmm);
+      let capped=false;if(rpmLimit>0 && rpm>rpmLimit){rpm=rpmLimit;capped=true;}
+
+      let feed_mm_min=rpm*z*usedFz*(Number.isFinite(prud)?prud:1);
+      let effFeed=feed_mm_min;
+      if(mach?.feed_max_mm_min && feed_mm_min>mach.feed_max_mm_min){
+        effFeed=mach.feed_max_mm_min;
+        $('feedAdjNote').textContent+=` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
+      }
+
+      $('rpmOut').textContent=fmt0(rpm);
+      $('feedOut').textContent=(units==='metric')?fmt0(effFeed):fmt1(effFeed/25.4);
+      $('feedUnit').textContent=(units==='metric')?'mm/min':'IPM';
+      $('rpmCap').classList.toggle('hidden',!capped);
+      $('sumOut').textContent=`D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
+
+      const ap_input=Number(parseFloat($('ap').value));
+      const L_input=Number(parseFloat($('stickout').value));
+      const est=estimateVibeParams(Dmm,op);
+      const ae_ratio=Math.max(0.01,Math.min(1,(aePct/100)));
+      const ae_mm=ae_ratio*Dmm;
+      const ap_mm=Number.isFinite(ap_input)&&ap_input>0?ap_input:est.ap_mm;
+      const L_mm=Number.isFinite(L_input)&&L_input>0?L_input:est.L;
+      $('vibeInfo').innerHTML=`Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
+
+      const MRR_mm3_min=ap_mm*ae_mm*effFeed;
+      const MRR_cm3_min=MRR_mm3_min/1000;
+      $('mrrOut').textContent=fmt1(MRR_cm3_min);
+
+      const Kc=mat?.Kc_N_per_mm2||1500;
+      const eta=DATA.defaults?.efficiency||0.8;
+      const P_kW=(Kc*(MRR_mm3_min/60))/(1000*eta);
+      const T_Nm=(60*P_kW*1000)/(2*Math.PI*rpm);
+      $('pwrOut').textContent=fmt2(P_kW);
+      $('tqOut').textContent=fmt2(T_Nm);
+
+      let loadPct=NaN;
+      if(mach?.power_kw){loadPct=Math.min(200,100*P_kW/mach.power_kw);}
+      $('loadOut').textContent=Number.isFinite(loadPct)?fmt1(loadPct):'—';
+      $('pwrNote').textContent=Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:'';
+
+      const toothHz=(rpm*z)/60;$('toothHzOut').textContent=fmt1(toothHz);
+      const band=DATA.vibration?.avoid_band_hz||[600,900];
+      $('avoidBandNote').textContent=`Evitar banda ${band[0]}–${band[1]} Hz`;
+
+      const Re=0.02*Dmm;const Ra_um=(usedFz*usedFz)/(8*Re)*1000;
+      $('raOut').textContent=fmt2(Ra_um);
+
+      let lifeMin=NaN;
+      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+
+      const holder=getHolder();
+      const W=DATA.vibration?.weights||{ld:0.55,ae:0.20,ap:0.15,fz:0.10};
+      const stiff=holder?.stiffness_factor||1.0;
+      const L_over_D=L_mm/Dmm;
+      const ap_ratio=Math.min(1.2,ap_mm/Math.max(1,Dmm));
+      let risk=(W.ld*(L_over_D/2.0)+W.ae*ae_ratio+W.ap*ap_ratio+W.fz*Math.min(1,(usedFz/(0.1*Dmm+0.02))))/stiff;
+      risk=Math.max(0,Math.min(2,risk));
+      const inBand=(toothHz>=band[0] && toothHz<=band[1]);
+      const SWEET=0.65, WARN=1.00; let state='ok'; if(risk>=WARN || inBand)state='bad'; else if(risk>=SWEET)state='warn';
+      const vb=document.querySelector('.vibe-box');vb.classList.remove('ok','warn','bad');vb.classList.add(state);
+      const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
+      let msg=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+      if(state==='bad' && inBand){
+        const shift=DATA.vibration?.rpm_shift_pct||0.12;
+        const targetHz=(Math.abs(toothHz-band[0])<Math.abs(toothHz-band[1]))?band[0]:band[1];
+        let rpmAlt=(targetHz*60)/z;rpmAlt*=(toothHz<targetHz?(1+shift):(1-shift));
+        if(rpmLimit>0 && rpmAlt>rpmLimit)rpmAlt=rpmLimit;
+        const feedAlt=rpmAlt*z*usedFz*(Number.isFinite(prud)?prud:1);
+        msg+=` Sugerido: ${fmt0(rpmAlt)} RPM y ${(units==='metric')?`${fmt0(feedAlt)} mm/min`:`${fmt1(feedAlt/25.4)} IPM`}.`;
+      }
+      $('vibeMsg').innerHTML=msg;
+
+      window.feed=effFeed;
+      window.rpm=rpm;
+      window.rpmLimit=rpmLimit;
+
+      chart.draw(risk);
+    }
+
+    function recalc(){
+      if(!(window.rpm>0 && window.feed>0))return;
+      const rpmScale=parseFloat(($('rpmSlider')||{value:1}).value||'1');
+      const feedScale=parseFloat(($('feedSlider')||{value:1}).value||'1');
+
+      const D=parseFloat($('diam').value);
+      const z=parseInt($('flutes').value,10);
+      const mat=getMaterial();
+      const mach=getMachine();
+      const unitsLocal=window.units||'metric';
+
+      const rpmLimit=window.rpmLimit||parseFloat($('rpmLimit').value)||mach?.rpm_max||12000;
+      const rpmAdj=Math.min(window.rpm*rpmScale,rpmLimit);
+
+      const feedAdj=window.feed*feedScale;
+      let effFeed;
+      if(feedScale<1){
+        effFeed=feedAdj;
+      }else{
+        effFeed=(mach?.feed_max_mm_min && feedAdj>mach.feed_max_mm_min)?mach.feed_max_mm_min:feedAdj;
+      }
+
+      $('rpmOut').textContent=fmt0(rpmAdj);
+      $('feedOut').textContent=(unitsLocal==='metric')?fmt0(effFeed):fmt1(effFeed/25.4);
+      $('rpmCap').classList.toggle('hidden',!(rpmAdj>=rpmLimit-1));
+
+      const aePct=parseFloat($('aePct').value)||30;
+      const ap=parseFloat($('ap').value)||5;
+      const L=parseFloat($('stickout').value)||25;
+      const Dmm=(unitsLocal==='metric')?D:D*25.4;
+      const ae=(aePct/100)*Dmm;
+
+      const Kc=mat?.Kc_N_per_mm2||1500;
+      const eta=DATA.defaults?.efficiency||0.8;
+
+      const MRR_mm3_min=ae*ap*effFeed;
+      $('mrrOut').textContent=fmt1(MRR_mm3_min/1000);
+
+      const P_kW=(Kc*(MRR_mm3_min/60))/(1000*eta);
+      const T_Nm=(60*P_kW*1000)/(2*Math.PI*rpmAdj);
+      $('pwrOut').textContent=fmt2(P_kW);
+      $('tqOut').textContent=fmt2(T_Nm);
+
+      let loadPct=NaN;
+      if(mach?.power_kw){loadPct=Math.min(200,100*P_kW/mach.power_kw);}
+      $('loadOut').textContent=Number.isFinite(loadPct)?fmt1(loadPct):'—';
+      $('pwrNote').textContent=Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:'';
+
+      const toothHz=(rpmAdj*z)/60;$('toothHzOut').textContent=fmt1(toothHz);
+      const band=DATA.vibration?.avoid_band_hz||[600,900];
+      $('avoidBandNote').textContent=`Evitar banda ${band[0]}–${band[1]} Hz`;
+
+      const fz_mm=effFeed/(rpmAdj*z);
+      const Re=0.02*Dmm;const Ra_um=(fz_mm*fz_mm)/(8*Re)*1000;
+      $('raOut').textContent=fmt2(Ra_um);
+
+      const Vc_m_min=(Math.PI*Dmm*rpmAdj)/1000;
+      let lifeMin=NaN;
+      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}
+
+      const holder=getHolder();
+      const W=DATA.vibration?.weights||{ld:0.55,ae:0.20,ap:0.15,fz:0.10};
+      const stiff=holder?.stiffness_factor||1.0;
+      const L_over_D=L/Dmm;
+      const ap_ratio=Math.min(1.2,ap/Math.max(1,Dmm));
+      let risk=(W.ld*(L_over_D/2.0)+W.ae*(aePct/100)+W.ap*ap_ratio+W.fz*Math.min(1,(fz_mm/(0.1*Dmm+0.02))))/stiff;
+      const inBand=(toothHz>=band[0] && toothHz<=band[1]);
+      if(inBand)risk=Math.min(2,risk+0.3);
+      risk=Math.max(0,Math.min(2,risk));
+
+      if(Number.isFinite(lifeMin)){lifeMin*=(1-(risk*0.4));}
+      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+
+      const SWEET=0.65,WARN=1.00;let state='ok';if(risk>=WARN || inBand)state='bad';else if(risk>=SWEET)state='warn';
+      const vb=document.querySelector('.vibe-box');vb.classList.remove('ok','warn','bad');vb.classList.add(state);
+      const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
+      $('vibeMsg').innerHTML=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+
+      const bar=$('sweetBarDual');
+      let color="from-rose-600 to-rose-700";
+      if(risk<0.65)color="from-emerald-500 to-emerald-600";
+      else if(risk<1.0)color="from-yellow-400 to-yellow-500";
+      bar.className=`h-3 mt-4 rounded-full transition-all duration-300 bg-gradient-to-r ${color}`;
+
+      $('rpmLabel').textContent=`${Math.round(rpmScale*100)} % — RPM`;
+      $('feedLabel').textContent=`${Math.round(feedScale*100)} % — Avance`;
+
+      chart.draw(risk);
+    }
+
+    async function loadRelated(){
+      try{
+        const r=await fetch('/api/list-posts',{cache:'no-store'});
+        if(!r.ok)throw 0;
+        const j=await r.json();
+        renderRel((j.items||[]).slice(0,3));
+      }catch(e){}
+    }
+    function renderRel(items){
+      const GRID=$('relGrid'),EMPTY=$('relEmpty');
+      if(!items||!items.length){EMPTY.classList.remove('hidden');return;}
+      EMPTY.classList.add('hidden');GRID.innerHTML='';
+      items.forEach(p=>{
+        const url=p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`;
+        const img=p.image||'/assets/blog/placeholder.jpg';
+        const el=document.createElement('article');el.className='card overflow-hidden';
+        el.innerHTML=`
+          <a href="${url}" class="block">
+            <img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt="">
+          </a>
+          <div class="p-3">
+            <a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a>
+            <p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p>
+          </div>`;
+        GRID.appendChild(el);
       });
     }
-    function applyInclusions(){
-      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-      const incTM    = document.getElementById('incTM')?.checked ?? true;
-      setEnabled(['cicloA','cicloP'], incCiclo);
-      setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
-      setEnabled(['tmuertoA','tmuertoP'], incTM);
+
+    function buildQuickRef(mat){
+      const el=$('refQuick');
+      if(!mat){el.textContent='';return;}
+      const ops=mat.vc_m_min||{};
+      let html='<div class="flex flex-wrap gap-2 items-center">';
+      html+=`<div class="text-xs text-slate-400">Ref. rápida para ${mat.name}:</div>`;
+      Object.entries(ops).forEach(([k,v])=>{
+        if(!Array.isArray(v))return;
+        html+=`<span class="badge">${k}: ${v[0]}–${v[1]} m/min</span>`;
+      });
+      html+='</div>';
+      el.innerHTML=html;
     }
 
-    // SVGs sin librerías
-    function renderDonut(targetId, parts, labels){
-      const total = parts.reduce((a,b)=>a+b,0);
-      const W=320,H=210,cx=110,cy=105,r=80,th=28;
-      let start=0; const colors=['#6366F1','#22C55E','#F59E0B','#06B6D4','#EF4444'];
-      const segs = parts.map((v,i)=>{
-        const frac = total>0 ? v/total : 0;
-        const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
-        const large = (a1-a0)>Math.PI ? 1:0;
-        const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
-        const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
-        const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
-        const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
-        const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
-        const pct = total>0 ? Math.round(frac*100) : 0;
-        return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>`+
-               (pct>0?`<text x="220" y="${26+18*i}" font-size="12" fill="#334155">${labels[i]}: ${pct}%</text>`:'');
-      }).join('');
-      const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="#fff"></circle>`+
-                     `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
-      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
-      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+    function resetAll(){
+      $('diam').value='';
+      $('flutes').value='3';
+      $('rpmLimit').value=DATA.defaults?.rpm_limit||12000;
+      $('vc').value='';
+      $('fz').value='';
+      $('prudence').value=DATA.defaults?.prudence||0.9;
+      $('aePct').value='';
+      $('ap').value=DATA.defaults?.ap_mm||5;
+      $('stickout').value=DATA.defaults?.stickout_mm||25;
+      applyPreset();
+      chart.draw(0.5);
+      $('sumOut').textContent='Ingresa datos y calcula.';
+      $('mrrOut').textContent='—';
+      $('pwrOut').textContent='—';
+      $('tqOut').textContent='—';
+      $('loadOut').textContent='—';
+      $('raOut').textContent='—';
+      $('toothHzOut').textContent='—';
+      $('lifeOut').textContent='—';
+      $('vibeMsg').textContent='';
+      $('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
     }
 
-    function renderBars(targetId, pairs){
-      const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
-        lines: String(lbl).replace(' (', '\n(').split('\n'),
-        a, b, lowerIsBetter
-      }));
-      const approxChar = 7;
-      const labelCol = Math.max(100, Math.min(200, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
-      const barStartX = labelCol + 12;
-      const barMax = 240;
-      const rowH = 32;
-      const rowGap = 12;
-      const padY = 16;
+    // Nueva: rellena los elementos del clone del reporte (scoped dentro del root)
+    function populatePdfClone(root){
+      const q = (sel)=>root.querySelector(sel);
 
-      const W = barStartX + barMax + 120;
-      const H = padY + rowsData.length * (rowH + rowGap) + 28;
+      const matSel = $('material'), opSel = $('operation'), toolSel = $('toolType'),
+            toolMatSel = $('toolMat'), machSel = $('machine'), holderSel = $('holder');
 
-      const maxVal = Math.max(...rowsData.flatMap(r => [r.a, r.b].map(v => Math.abs(v) || 0)), 1);
+      q('#rptMaterial').textContent = matSel.options[matSel.selectedIndex]?.text || '—';
+      q('#rptOp').textContent       = opSel.options[opSel.selectedIndex]?.text || '—';
+      q('#rptToolType').textContent = toolSel.options[toolSel.selectedIndex]?.text || '—';
+      q('#rptToolMat').textContent  = toolMatSel.options[toolMatSel.selectedIndex]?.text || '—';
+      q('#rptMachine').textContent  = machSel.options[machSel.selectedIndex]?.text || '—';
+      q('#rptHolder').textContent   = holderSel.options[holderSel.selectedIndex]?.text || '—';
 
-      let y = padY;
-      const rows = rowsData.map(r => {
-        const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
-        const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
-        const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
-        const label = `<text x="0" y="${y+12}" font-size="12" fill="#334155">`
-          + r.lines.map((ln, i) => i === 0 ? ln : `<tspan x="0" dy="1.2em">${ln}</tspan>`).join('')
-          + `</text>`;
-        const bars = `
-          <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
-          <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
-          <text x="${barStartX + aw + 4}" y="${y+9}"  font-size="10" fill="#475569">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
-          <text x="${barStartX + bw + 4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
-        `;
-        const out = label + bars;
-        y += rowH + rowGap;
-        return out;
-      }).join('');
+      q('#rptDiam').textContent = ($('diam').value||'—') + (units==='metric'?' mm':' in');
+      q('#rptRPM').textContent  = ($('rpmOut').textContent||'—') + ' rpm';
+      q('#rptFeed').textContent = ($('feedOut').textContent||'—') + ' ' + ($('feedUnit').textContent||'');
+      q('#rptMRR').textContent  = ($('mrrOut').textContent||'—') + ' cm³/min';
+      q('#rptPwr').textContent  = ($('pwrOut').textContent||'—') + ' kW';
+      q('#rptTq').textContent   = ($('tqOut').textContent||'—') + ' N·m';
+      q('#rptLoad').textContent = ($('loadOut').textContent||'—') + ' %';
+      q('#rptRa').textContent   = ($('raOut').textContent||'—') + ' µm';
 
-      const legendY = H - 18;
-      const legend = `
-        <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
-        <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10" fill="#334155">Actual</text>
-        <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
-        <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10" fill="#334155">Propuesta</text>
-      `;
+      const vibeBox = document.querySelector('.vibe-box');
+      let state = '—';
+      if(vibeBox.classList.contains('ok')) state='Sweet spot';
+      else if(vibeBox.classList.contains('warn')) state='Atento';
+      else if(vibeBox.classList.contains('bad')) state='Vibra';
+      q('#rptVibeState').textContent = state;
 
-      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
-      const el = document.getElementById(targetId);
-      if (el) el.innerHTML = svg;
+      const raw = $('vibeMsg').innerHTML.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      q('#rptVibe').textContent = raw || '—';
+
+      q('#rptDate').textContent = new Date().toLocaleString('es-MX');
     }
 
-    // Listeners
-    document.getElementById('btnCalcular')?.addEventListener('click', calcular);
-    document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
-    ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP']
-      .forEach(id => document.getElementById(id)?.addEventListener('input', () => {
-        // Recalcula "en vivo" en desktop; en móvil puedes tocar el botón fijo
-        if (window.innerWidth >= 768) calcular();
-      }));
-    ['incCiclo','incHerr','incTM'].forEach(id=>{
-      document.getElementById(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); });
-    });
+    // Nueva: renderiza el template en DOM fuera de vista, lo captura y lo elimina
+    async function downloadPdf(){
+      // Clonar template
+      const tpl = document.getElementById('pdf-template');
+      if(!tpl){ alert('No se encontró #pdf-template'); return; }
 
-    // Estado inicial
-    applyInclusions();
-    calcular();
+      const cloneEl = tpl.content.firstElementChild.cloneNode(true); // este es el div #pdf-report
+      // Mantener fuera de la pantalla para que no afecte layout pero sea renderizable
+      cloneEl.style.position = 'fixed';
+      cloneEl.style.left = '-9999px';
+      cloneEl.style.top = '0';
+      cloneEl.style.display = 'block'; // asegurar que no esté display:none
+      document.body.appendChild(cloneEl);
+
+      try{
+        // poblar con datos actuales (scoped al clone)
+        populatePdfClone(cloneEl);
+
+        // esperar fuentes e imágenes dentro del clone
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        const imgs = Array.from(cloneEl.querySelectorAll('img'));
+        await Promise.all(imgs.map(img => new Promise(res => {
+          if (!img) return res();
+          if (img.complete) return res();
+          img.onload = img.onerror = res;
+          setTimeout(res, 3000);
+        })));
+
+        await new Promise(r=>setTimeout(r,120)); // pequeño buffer
+
+        // Renderizar con html2canvas (usa la versión que ya incluiste)
+        const canvas = await html2canvas(cloneEl, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: cloneEl.scrollWidth,
+          height: cloneEl.scrollHeight,
+          windowWidth: cloneEl.scrollWidth,
+          windowHeight: cloneEl.scrollHeight
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
+
+        let imgWidth = pageWidth - margin * 2;
+        let imgHeight = (canvas.height * imgWidth) / canvas.width;
+        if (imgHeight > pageHeight - margin * 2) {
+          imgHeight = pageHeight - margin * 2;
+          imgWidth = (canvas.width * imgHeight) / canvas.height;
+        }
+        const x = (pageWidth - imgWidth) / 2;
+        const y = (pageHeight - imgHeight) / 2;
+
+        doc.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+        doc.save('reporte-condiciones-maquinado.pdf');
+
+      }catch(e){
+        console.error('Error generando PDF', e);
+        alert('Ocurrió un error generando el PDF. Revisa la consola.');
+      }finally{
+        // limpiar el clone
+        cloneEl.remove();
+      }
+    }
+
+    (async function(){
+      await loadData();
+      fillSelectors();
+      buildQuickRef(getMaterial());
+
+      $('uMetric').addEventListener('click',()=>{setUnits('metric');applyPreset();});
+      $('uImperial').addEventListener('click',()=>{setUnits('imperial');applyPreset();});
+      $('apply').addEventListener('click',applyPreset);
+      $('calcBtn').addEventListener('click',()=>{calc();recalc();});
+      $('resetBtn').addEventListener('click',()=>{resetAll();recalc();});
+      $('pdfBtn').addEventListener('click',downloadPdf);
+
+      ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>$(id).addEventListener('change',()=>{applyPreset();calc();recalc();}));
+
+      setUnits('metric');
+      applyPreset();
+      chart.init();chart.draw(0.5);
+      calc();recalc();
+      loadRelated();
+
+      $('rpmSlider').addEventListener('input',recalc);
+      $('feedSlider').addEventListener('input',recalc);
+    })();
   </script>
 </body>
 </html>
