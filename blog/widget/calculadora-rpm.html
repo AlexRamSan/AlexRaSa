@@ -327,14 +327,48 @@
     </div>
   </main>
 
-  <!-- LIBRERÍA PDF (abajo para que sí cargue) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-YcsIPv1V1+0oJz/KQb+8EoeY4ufyqtj4d7XbcJ8I8rEAyDPU2cZ1sQHP9R5cWvDHHxQbyChS9QFQ6AqgQZ4G2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- NO cargamos la librería aquí directo porque algunos hosts la bloquean -->
+  <!-- la vamos a cargar por JS con fallback -->
 
   <script>
+    // ===== helpers base
     const $ = (id)=>document.getElementById(id);
     const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
     const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
     const fmt2 = (n)=>Number.isFinite(n)?(Math.round(n*100)/100).toLocaleString('es-MX'):'—';
+
+    // ====== loader de html2pdf con fallback ======
+    async function ensureHtml2Pdf(){
+      if (typeof window.html2pdf !== 'undefined') return true;
+
+      const cdns = [
+        "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js",
+        "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js",
+        "https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
+      ];
+
+      for (const url of cdns){
+        try{
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((resolve, reject)=>{
+            const s = document.createElement('script');
+            s.src = url;
+            s.crossOrigin = "anonymous";
+            s.referrerPolicy = "no-referrer";
+            s.onload = ()=>resolve();
+            s.onerror = ()=>reject();
+            document.body.appendChild(s);
+          });
+          if (typeof window.html2pdf !== 'undefined') {
+            console.log("html2pdf cargado desde:", url);
+            return true;
+          }
+        }catch(e){
+          console.warn("No se pudo cargar desde", url);
+        }
+      }
+      return false;
+    }
 
     let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tools:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
 
@@ -796,9 +830,10 @@
       $('rptDate').textContent = new Date().toLocaleString('es-MX');
     }
 
-    function downloadPdf(){
-      if (typeof html2pdf === 'undefined') {
-        alert('No se cargó la librería PDF. Revisa la URL o muévela al final del <body>.');
+    async function downloadPdf(){
+      const ok = await ensureHtml2Pdf();
+      if (!ok){
+        alert('No se pudo cargar la librería PDF desde ninguno de los orígenes. Esto suele ser por política de tu navegador/hosting.');
         return;
       }
 
@@ -818,7 +853,7 @@
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      html2pdf()
+      window.html2pdf()
         .set(opt)
         .from(element)
         .save()
