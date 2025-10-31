@@ -390,6 +390,20 @@
     const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
     const fmt2 = (n)=>Number.isFinite(n)?(Math.round(n*100)/100).toLocaleString('es-MX'):'—';
 
+    // --- FIX: eliminar restos de #pdf-report que queden en el DOM (versiones antiguas)
+(function removeOldPdfReport(){
+  // busca cualquier div con id pdf-report que no esté dentro del <template>
+  const nodes = Array.from(document.querySelectorAll('div#pdf-report'));
+  nodes.forEach(el=>{
+    const insideTemplate = !!el.closest('template');
+    if(!insideTemplate){
+      el.remove();
+      console.debug('Removed stray #pdf-report from DOM');
+    }
+  });
+})();
+
+
     let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
 
     async function loadData(){
