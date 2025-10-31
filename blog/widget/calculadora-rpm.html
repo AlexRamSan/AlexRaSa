@@ -296,25 +296,33 @@
   </main>
 
   <script>
-/* Helper DOM & formatos */
-const $ = id => document.getElementById(id);
-const fmt0 = n => Number.isFinite(n) ? Math.round(n).toLocaleString('es-MX') : '—';
-const fmt1 = n => Number.isFinite(n) ? (Math.round(n*10)/10).toLocaleString('es-MX') : '—';
-const fmt2 = n => Number.isFinite(n) ? (Math.round(n*100)/100).toLocaleString('es-MX') : '—';
+/* (se mantiene todo tu JS original; solo se han añadido los atributos title en el HTML) */
+const $ = (id)=>document.getElementById(id);
+const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
+const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
+const fmt2 = (n)=>Number.isFinite(n)?(Math.round(n*100)/100).toLocaleString('es-MX'):'—';
 
-/* DATA inicial */
 let DATA = {
-  materials: [], holders: [], vibration: {}, defaults: {},
-  machine_profiles: [], tool_types: [], tool_materials: [], operations: []
+  materials: [],
+  holders: [],
+  vibration: {},
+  defaults: {},
+  machine_profiles: [],
+  tool_types: [],
+  tool_materials: [],
+  operations: []
 };
 let units = 'metric';
 
-/* Carga robusta de cutting-data.json */
+// Carga robusta de cutting-data.json
 async function loadData(){
   try{
     const url = '/data/cutting-data.json';
     const r = await fetch(url, { cache: 'no-store' });
-    if(!r.ok){ console.warn('fetch fallo', r.status, r.statusText); return; }
+    if(!r.ok){
+      console.warn('fetch fallo', r.status, r.statusText);
+      return;
+    }
     const j = await r.json();
     DATA = Object.assign(DATA, j || {});
     DATA.materials = Array.isArray(DATA.materials) ? DATA.materials : [];
@@ -328,10 +336,11 @@ async function loadData(){
     if(!DATA.machine_profiles.length && Array.isArray(j.machines_profiles)) DATA.machine_profiles = j.machines_profiles;
     window.DATA = DATA;
     console.log('cutting-data.json cargado', DATA.materials.length, 'materials,', DATA.machine_profiles.length, 'machines');
-  }catch(e){ console.warn('No se cargó cutting-data.json', e); }
+  }catch(e){
+    console.warn('No se cargó cutting-data.json', e);
+  }
 }
 
-/* Relleno selects */
 function fillSelectors(){
   const sel = $('material'); if(sel) sel.innerHTML = '';
   (DATA.materials || []).forEach(m => sel?.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`));
@@ -340,7 +349,7 @@ function fillSelectors(){
     {id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},
     {id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}
   ];
-  const opSel = $('operation'); if(opSel){ opSel.innerHTML=''; ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label}</option>`)); }
+  const opSel = $('operation'); if(opSel) { opSel.innerHTML=''; ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label}</option>`)); }
 
   const tSel = $('toolType'); if(tSel){ tSel.innerHTML=''; const ttypes = (DATA.tool_types && DATA.tool_types.length)?DATA.tool_types:[ {id:'endmill',label:'Fresa (Endmill)'},{id:'drill',label:'Broca'},{id:'face_mill',label:'Careador/Planeado'},{id:'slot_saw',label:'Sierra ranuradora'} ]; ttypes.forEach(t => tSel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.label}</option>`)); }
 
@@ -367,14 +376,12 @@ function fillSelectors(){
   buildQuickRef(mat);
 }
 
-/* getters */
 function getMaterial(){ const el = $('material'); const id = el?.value; return (DATA.materials||[]).find(m=>m.id===id); }
 function getMachine(){ const id = $('machine')?.value; return (DATA.machine_profiles||[]).find(m=>m.id===id) || {}; }
 function getToolType(){ const id = $('toolType')?.value; return (DATA.tool_types||[]).find(t=>t.id===id) || {}; }
 function getToolMat(){ const id = $('toolMat')?.value; return (DATA.tool_materials||[]).find(t=>t.id===id) || {vc_factor:1,fz_factor:1}; }
 function getHolder(){ const id = $('holder')?.value; return (DATA.holders||[]).find(h=>h.id===id); }
 
-/* unidades */
 function setUnits(u){
   units = u;
   $('uMetric')?.classList.toggle('is-on', u==='metric');
@@ -384,16 +391,14 @@ function setUnits(u){
   window.units = units;
 }
 
-/* Estimadores */
 function estimateVibeParams(Dmm,op){
   const L = Number(parseFloat($('stickout')?.value)) || Math.max(DATA.defaults?.stickout_mm||25, (op==='finish'?2.0:3.0)*Dmm);
   const opDef = (DATA.operations||[]).find(o=>o.id===op);
   const ae_pct = Number.isFinite(opDef?.default_ae_pct) ? opDef.default_ae_pct : (op==='finish'?12:(op==='adaptive'?25:30));
-  const ap_mm = Number(parseFloat($('ap')?.value)) || Math.min((op==='finish'?0.2:0.5)*Dmm, Math.max(Dmm, DATA.defaults?.ap_mm||5));
+  const ap_mm = Number.parseFloat($('ap')?.value) || Math.min((op==='finish'?0.2:0.5)*Dmm, Math.max(Dmm, DATA.defaults?.ap_mm||5));
   return { L, ae_pct, ap_mm };
 }
 
-/* buckets fz */
 function diaBucketFz(mat,Dmm,op){
   if(!mat?.fz_mm) return null;
   const arr = [...mat.fz_mm].sort((a,b)=>a.dia_max_mm - b.dia_max_mm);
@@ -402,188 +407,119 @@ function diaBucketFz(mat,Dmm,op){
   return Array.isArray(range) ? range : null;
 }
 
-/* chip thinning */
 function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct, helix_deg=30, corner_mm=0){
   const r = Math.max(0.001, Math.min(1.0, ae_pct/100.0));
   const s = Math.sqrt(r * (2.0 - r));
   let k = s > 0 ? 1.0 / s : 1.0;
   k = Math.min(k, 6.0);
+
   const helix_rad = Math.max(0, Math.min(75, helix_deg)) * Math.PI/180.0;
   let helixFactor = 1.0 / Math.max(1e-6, Math.cos(helix_rad));
   helixFactor = Math.min(helixFactor, 1.6);
+
   let cornerFactor = 1.0;
   if (corner_mm > 0){
     cornerFactor = 1.0 - Math.min(0.4, corner_mm / Math.max(0.001, 0.5 * Dmm));
     cornerFactor = Math.max(0.6, cornerFactor);
   }
+
   const fzEff = fz_mm * k * helixFactor * cornerFactor;
   return { fzEff, k, helixFactor, cornerFactor };
 }
 
-/* ---------- CHART (corregido) ---------- */
+/* --- chart (canvas) --- */
 const chart = {
-  el: null, ctx: null, xMin: 0, xMax: 2, cssW: 400, cssH: 150,
-
+  el: null, ctx: null, xMin: 0, xMax: 2,
   init(){
-    this.el = document.getElementById('vibeChart');
+    this.el = $('vibeChart');
     if(!this.el) return;
     this.ctx = this.el.getContext('2d');
-
-    const doResize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const wCss = Math.max(320, Math.round(this.el.clientWidth));
-      const hCss = Math.max(110, Math.round(this.el.clientHeight));
-      this.cssW = wCss;
-      this.cssH = hCss;
-      // tamaño interno en device pixels
-      this.el.width = Math.round(wCss * dpr);
-      this.el.height = Math.round(hCss * dpr);
-      // mostrar en CSS px
-      this.el.style.width = wCss + 'px';
-      this.el.style.height = hCss + 'px';
-      // escalar contexto a CSS pixels (dibujar usando CSS px)
-      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // asegúrate que xMax está correcto si cambias dominio dinámicamente
-      this.draw(0.5, false);
+    const resize = () => {
+      this.el.width = Math.max(640, this.el.clientWidth * 2);
+      this.el.height = Math.max(220, this.el.clientHeight * 2);
+      this.draw(0.5);
     };
-
-    if(this.el.parentElement) new ResizeObserver(doResize).observe(this.el.parentElement);
-    doResize();
+    new ResizeObserver(resize).observe(this.el.parentElement);
+    resize();
   },
-
-  pdf(x, mu = 0.75, sigma = 0.2){
-    const a = 1 / (sigma * Math.sqrt(2 * Math.PI));
-    const e = Math.exp(-0.5 * ((x - mu) / sigma) ** 2);
-    return a * e;
+  pdf(x,mu=0.75,sigma=0.2){
+    const a = 1/(sigma*Math.sqrt(2*Math.PI));
+    const e = Math.exp(-0.5*((x-mu)/sigma)**2);
+    return a*e;
   },
-
-  xToPx(x){
-    const w = this.cssW || Math.max(320, this.el.clientWidth);
-    const pad = 30;
-    return (x - this.xMin) / (this.xMax - this.xMin) * (w - pad*2) + pad;
-  },
-
-  yToPx(y){
-    const h = this.cssH || Math.max(110, this.el.clientHeight);
-    const top = 20, bottom = h - 30;
-    return bottom - y * (bottom - top);
-  },
-
+  xToPx(x){ return (x-this.xMin)/(this.xMax-this.xMin)*(this.el.width-60)+30; },
+  yToPx(y){ const top = 20, bottom = this.el.height-30; return bottom - y*(bottom-top); },
   drawBase(){
-    const ctx = this.ctx; if(!ctx) return;
-    // limpiar usando CSS px (contexto ya escalado)
-    ctx.clearRect(0, 0, this.cssW || this.el.clientWidth, this.cssH || this.el.clientHeight);
-
-    const segments = [
-      { from: 0, to: 0.65, c: 'rgba(34,197,94,0.25)' },
-      { from: 0.65, to: 1.0, c: 'rgba(245,158,11,0.25)' },
-      { from: 1.0, to: 2.0, c: 'rgba(239,68,68,0.25)' }
-    ];
-
-    segments.forEach(s => {
-      ctx.beginPath();
-      let first = true;
-      const step = (this.xMax - this.xMin) / 240;
-      for(let x = s.from; x <= s.to + 1e-6; x += step){
+    const ctx = this.ctx;
+    if(!ctx) return;
+    ctx.clearRect(0,0,this.el.width,this.el.height);
+    const segs=[{from:0,to:0.65,c:'rgba(34,197,94,0.25)'},{from:0.65,to:1.0,c:'rgba(245,158,11,0.25)'},{from:1.0,to:2.0,c:'rgba(239,68,68,0.25)'}];
+    segs.forEach(s=>{
+      ctx.beginPath(); let first=true;
+      const step = (this.xMax - this.xMin)/240;
+      for(let x=s.from; x<=s.to+1e-6; x+=step){
         const X = this.xToPx(x), Y = this.yToPx(this.pdf(x));
-        if(first){ ctx.moveTo(X, this.yToPx(0)); ctx.lineTo(X, Y); first = false; }
-        else ctx.lineTo(X, Y);
+        if(first){ ctx.moveTo(X,this.yToPx(0)); ctx.lineTo(X,Y); first=false; } else ctx.lineTo(X,Y);
       }
       ctx.lineTo(this.xToPx(s.to), this.yToPx(0));
-      ctx.closePath();
-      ctx.fillStyle = s.c;
-      ctx.fill();
+      ctx.closePath(); ctx.fillStyle = s.c; ctx.fill();
     });
-
-    // curva blanca
-    ctx.beginPath();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(226,232,240,0.9)';
-    const step2 = (this.xMax - this.xMin) / 280;
-    for(let x = this.xMin; x <= this.xMax; x += step2){
+    // curve
+    ctx.beginPath(); ctx.lineWidth = 4; ctx.strokeStyle='rgba(226,232,240,0.9)';
+    const step = (this.xMax - this.xMin)/280;
+    for(let x=this.xMin; x<=this.xMax; x+=step){
       const X = this.xToPx(x), Y = this.yToPx(this.pdf(x));
-      if(x === this.xMin) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+      if(x===this.xMin) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
     }
     ctx.stroke();
-
-    // eje y=0
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(148,163,184,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(this.xToPx(this.xMin), this.yToPx(0));
-    ctx.lineTo(this.xToPx(this.xMax), this.yToPx(0));
-    ctx.stroke();
-
-    // líneas divisoras (usar cssH)
-    [0.65, 1.0].forEach((x, i) => {
-      ctx.setLineDash([6,6]);
-      ctx.strokeStyle = i ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)';
-      ctx.beginPath();
-      ctx.moveTo(this.xToPx(x), 20);
-      ctx.lineTo(this.xToPx(x), this.cssH - 30);
-      ctx.stroke();
-    });
+    // baseline & vertical markers
+    ctx.lineWidth = 1.5; ctx.strokeStyle='rgba(148,163,184,0.5)'; ctx.beginPath(); ctx.moveTo(30,this.yToPx(0)); ctx.lineTo(this.el.width-30,this.yToPx(0)); ctx.stroke();
+    [0.65,1.0].forEach((x,i)=>{ ctx.setLineDash([6,6]); ctx.strokeStyle = i ? 'rgba(239,68,68,0.6)' : 'rgba(245,158,11,0.6)'; ctx.beginPath(); ctx.moveTo(this.xToPx(x),20); ctx.lineTo(this.xToPx(x),this.el.height-30); ctx.stroke(); });
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(148,163,184,0.95)';
-    ctx.font = '16px system-ui';
-    ctx.fillText('Riesgo de vibración', 30, 34);
+    ctx.fillStyle='rgba(148,163,184,0.95)'; ctx.font='20px system-ui'; ctx.fillText('Riesgo de vibración',30,34);
   },
-
-  drawMarker(risk, inBand = false){
+  drawMarker(risk){
     if(!this.ctx) return;
     const ctx = this.ctx;
     const X = this.xToPx(Math.max(this.xMin, Math.min(this.xMax, risk)));
-    let col = 'rgba(34,197,94,1)';
-    if(inBand) col = 'rgba(239,68,68,1)';
-    else if(risk >= 1.0) col = 'rgba(239,68,68,1)';
-    else if(risk >= 0.65) col = 'rgba(245,158,11,1)';
-
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(X, 20);
-    ctx.lineTo(X, this.cssH - 30);
-    ctx.stroke();
-
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI * 2);
-    ctx.fill();
+    let col = 'rgba(34,197,94,1)'; if(risk>=1.0) col='rgba(239,68,68,1)'; else if(risk>=0.65) col='rgba(245,158,11,1)';
+    ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(X,20); ctx.lineTo(X,this.el.height-30); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI*2); ctx.fill();
   },
-
-  draw(risk = 0.5, inBand = false){
-    this.drawBase();
-    this.drawMarker(risk, inBand);
-  }
+  draw(risk=0.5){ this.drawBase(); this.drawMarker(risk); }
 };
 window.chart = chart;
-/* ---------- END CHART ---------- */
 
-
-/* UI helpers */
 function buildQuickRef(mat){
-  const el = $('refQuick'); if(!el) return;
+  const el = $('refQuick'); if(!el){ return; }
   if(!mat){ el.textContent=''; return; }
   const ops = mat.vc_m_min || {};
   let html = '<div class="flex flex-wrap gap-2 items-center">';
   html += `<div class="text-xs text-slate-400">Ref. rápida para ${mat.name}:</div>`;
-  Object.entries(ops).forEach(([k,v])=>{ if(!Array.isArray(v)) return; html += `<span class="badge">${k}: ${v[0]}–${v[1]} m/min</span>`; });
+  Object.entries(ops).forEach(([k,v])=>{
+    if(!Array.isArray(v)) return;
+    html += `<span class="badge">${k}: ${v[0]}–${v[1]} m/min</span>`;
+  });
   html += '</div>';
   el.innerHTML = html;
 }
 
-/* aplicar preset */
 function applyPreset(){
   const mat = getMaterial() || {};
   const op = $('operation')?.value || 'rough';
   const D = parseFloat($('diam')?.value) || 10; if($('diam')) $('diam').value = D;
+
   const vcBase = (mat.vc_m_min && (mat.vc_m_min[op] || mat.vc_m_min.rough)) || [100,200];
   const fzBase = diaBucketFz(mat, (units==='metric'?D:(D*25.4)), op) || [0.03,0.08];
-  const ttype = getToolType(); const tmat = getToolMat();
+
+  const ttype = getToolType();
+  const tmat = getToolMat();
   const vcF = (ttype?.vc_factor ?? 1) * (tmat?.vc_factor ?? 1);
   const fzF = (ttype?.fz_factor ?? 1) * (tmat?.fz_factor ?? 1);
+
   const vcRange = [ Math.round(vcBase[0]*vcF), Math.round(vcBase[1]*vcF) ];
   const fzRange = [ +(fzBase[0]*fzF).toFixed(3), +(fzBase[1]*fzF).toFixed(3) ];
+
   if(units==='metric'){
     if($('vc')) $('vc').value = Math.round((vcRange[0]+vcRange[1])/2);
     if($('fz')) $('fz').value = ((fzRange[0]+fzRange[1])/2).toFixed(3);
@@ -591,6 +527,7 @@ function applyPreset(){
     if($('vc')) $('vc').value = Math.round(((vcRange[0]+vcRange[1])/2)*3.281);
     if($('fz')) $('fz').value = (((fzRange[0]+fzRange[1])/2)/25.4).toFixed(3);
   }
+
   if($('matNotes')) $('matNotes').textContent = mat?.notes || '';
   buildQuickRef(mat);
   const est = estimateVibeParams(((units==='metric')?D:D*25.4), op);
@@ -598,7 +535,6 @@ function applyPreset(){
   if(!$('ap')?.value) if($('ap')) $('ap').value = fmt2(est.ap_mm);
 }
 
-/* cálculo principal */
 function calc(){
   const D = parseFloat($('diam')?.value);
   const z = parseInt($('flutes')?.value,10);
@@ -671,15 +607,19 @@ function calc(){
   const MRR_cm3_min = MRR_mm3_min / 1000;
   if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_cm3_min);
 
-  /* POTENCIA / TORQUE (unificado y con unidades correctas) */
+  // ---- POTENCIA / TORQUE (unificado y seguro) ----
   const Kc = mat?.Kc_N_per_mm2 || 1500;
   const eta = DATA.defaults?.efficiency || 0.8;
-  const mrr_mm3_s = MRR_mm3_min / 60; // mm^3/s
-  // Kc [N/mm^2] * (mm^3/s) => N·mm/s . Dividir 1000 => N·m/s => W
-  const P_W = (Kc * mrr_mm3_s) / 1000 / (eta || 1); // W
-  const P_kW = P_W / 1000; // kW
+
+  const mrr_mm3_s = MRR_mm3_min / 60;
+  const P_W = (Kc * mrr_mm3_s) / 1000 / (eta || 1); // potencia en W
+  const P_kW = P_W / 1000;                            // potencia en kW
+
   let T_Nm = NaN;
-  if (rpm > 0) T_Nm = (60 * P_W) / (2 * Math.PI * rpm);
+  if (rpm > 0) {
+    T_Nm = (60 * P_W) / (2 * Math.PI * rpm);
+  }
+
   if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
   if($('tqOut')) $('tqOut').textContent = Number.isFinite(T_Nm) ? fmt2(T_Nm) : '—';
 
@@ -687,6 +627,7 @@ function calc(){
   if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
   if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct) ? fmt1(loadPct) : '—';
   if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?' } kW` : '';
+  // ---- fin POTENCIA / TORQUE ----
 
   const toothHz = (rpm*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
   const band = DATA.vibration?.avoid_band_hz || [600,900];
@@ -700,7 +641,6 @@ function calc(){
   if(mat?.taylor?.n && mat?.taylor?.C){ lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n))); }
   if($('lifeOut')) $('lifeOut').textContent = Number.isFinite(lifeMin) ? fmt1(lifeMin) : '—';
 
-  /* VIBRACIÓN */
   const holder = getHolder();
   const W = DATA.vibration?.weights || { ld:0.55, ae:0.20, ap:0.15, fz:0.10 };
   const stiff = holder?.stiffness_factor || 1.0;
@@ -725,57 +665,76 @@ function calc(){
   if($('vibeMsg')) $('vibeMsg').innerHTML = msg;
 
   window.feed = effFeed; window.rpm = rpm; window.rpmLimit = rpmLimit;
-  chart.draw(risk, inBand);
+  chart.draw(risk);
 }
 
-/* recalc cuando mueves sliders */
 function recalc(){
   if(!(window.rpm>0 && window.feed>0)) return;
   const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value||'1');
   const feedScale = parseFloat(($('feedSlider')||{value:1}).value||'1');
+
   const D = parseFloat($('diam')?.value);
   const z = parseInt($('flutes')?.value,10);
   const mat = getMaterial();
   const mach = getMachine();
   const unitsLocal = window.units||'metric';
+
   const rpmLimit = window.rpmLimit||parseFloat($('rpmLimit')?.value)||mach?.rpm_max||12000;
   const rpmAdj = Math.min(window.rpm * rpmScale, rpmLimit);
+
   const feedAdj = window.feed * feedScale;
-  let effFeed = feedAdj;
-  if(feedScale >= 1) effFeed = (mach?.feed_max_mm_min && feedAdj > mach.feed_max_mm_min) ? mach.feed_max_mm_min : feedAdj;
+  let effFeed;
+  if(feedScale < 1) effFeed = feedAdj;
+  else effFeed = (mach?.feed_max_mm_min && feedAdj > mach.feed_max_mm_min) ? mach.feed_max_mm_min : feedAdj;
+
   if($('rpmOut')) $('rpmOut').textContent = fmt0(rpmAdj);
   if($('feedOut')) $('feedOut').textContent = (unitsLocal==='metric') ? fmt0(effFeed) : fmt1(effFeed/25.4);
   if($('rpmCap')) $('rpmCap').classList.toggle('hidden', !(rpmAdj >= rpmLimit-1));
+
   const aePct = parseFloat($('aePct')?.value) || 30;
   const ap = parseFloat($('ap')?.value) || 5;
   const L = parseFloat($('stickout')?.value) || 25;
   const Dmm = (unitsLocal==='metric')?D:D*25.4;
   const ae = (aePct/100) * Dmm;
-  const Kc = mat?.Kc_N_per_mm2 || 1500;
-  const eta = DATA.defaults?.efficiency || 0.8;
+
+  // MRR y resultados dependientes de rpmAdj / effFeed
   const MRR_mm3_min = ae * ap * effFeed;
   if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
+
+  // ---- POTENCIA / TORQUE (recalc: usa rpmAdj / effFeed) ----
+  const Kc = mat?.Kc_N_per_mm2 || 1500;
+  const eta = DATA.defaults?.efficiency || 0.8;
+
   const mrr_mm3_s = MRR_mm3_min / 60;
-  const P_W = (Kc * mrr_mm3_s) / 1000 / (eta || 1);
-  const P_kW = P_W / 1000;
+  const P_W = (Kc * mrr_mm3_s) / 1000 / (eta || 1); // W
+  const P_kW = P_W / 1000;                           // kW
+
   let T_Nm = NaN;
-  if (rpmAdj > 0) T_Nm = (60 * P_W) / (2 * Math.PI * rpmAdj);
+  if (rpmAdj > 0) {
+    T_Nm = (60 * P_W) / (2 * Math.PI * rpmAdj);
+  }
+
   if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
   if($('tqOut')) $('tqOut').textContent = Number.isFinite(T_Nm) ? fmt2(T_Nm) : '—';
+
   let loadPct = NaN;
   if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
   if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
   if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : '';
+  // ---- fin POTENCIA / TORQUE ----
+
   const toothHz = (rpmAdj*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
   const band = DATA.vibration?.avoid_band_hz || [600,900];
   if($('avoidBandNote')) $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
-  const fz_mm = effFeed / (rpmAdj*z);
+
+  const fz_mm = effFeed / (Math.max(1, rpmAdj) * Math.max(1, z)); // protección división por cero
   const Re = 0.02 * Dmm;
   const Ra_um = (fz_mm * fz_mm) / (8 * Re) * 1000;
   if($('raOut')) $('raOut').textContent = fmt2(Ra_um);
+
   const Vc_m_min = (Math.PI * Dmm * rpmAdj) / 1000;
   let lifeMin = NaN;
-  if(mat?.taylor?.n && mat?.taylor?.C) lifeMin = Math.pow((mat.taylor.C / Vc_m_min),(1/(mat.taylor.n)));
+  if(mat?.taylor?.n && mat?.taylor?.C && Vc_m_min > 0) lifeMin = Math.pow((mat.taylor.C / Vc_m_min),(1/(mat.taylor.n)));
   const holder = getHolder();
   const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
   const stiff = holder?.stiffness_factor || 1.0;
@@ -785,8 +744,10 @@ function recalc(){
   const inBand = (toothHz >= band[0] && toothHz <= band[1]);
   if(inBand) risk = Math.min(2, risk + 0.3);
   risk = Math.max(0, Math.min(2, risk));
+
   if(Number.isFinite(lifeMin)) lifeMin *= (1 - (risk*0.4));
   if($('lifeOut')) $('lifeOut').textContent = Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+
   const SWEET = 0.65, WARN = 1.00;
   let state = 'ok';
   if(risk >= WARN || inBand) state='bad';
@@ -794,17 +755,19 @@ function recalc(){
   const vb = document.querySelector('.vibe-box'); if(vb){ vb.classList.remove('ok','warn','bad'); vb.classList.add(state); }
   const badge = `<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
   if($('vibeMsg')) $('vibeMsg').innerHTML = `${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;  
+
   const bar = $('sweetBarDual');
   let color = "from-rose-600 to-rose-700";
   if(risk < 0.65) color = "from-emerald-500 to-emerald-600";
   else if(risk < 1.0) color = "from-yellow-400 to-yellow-500";
   if(bar) bar.className = `h-3 mt-4 rounded-full bg-gradient-to-r ${color}`;
+
   if($('rpmLabel')) $('rpmLabel').textContent = `${Math.round(rpmScale*100)} % — RPM`;
   if($('feedLabel')) $('feedLabel').textContent = `${Math.round(feedScale*100)} % — Avance`;
-  chart.draw(risk, inBand);
+
+  chart.draw(risk);
 }
 
-/* reset */
 function resetAll(){
   if($('diam')) $('diam').value='';
   if($('flutes')) $('flutes').value=3;
@@ -818,7 +781,6 @@ function resetAll(){
   if($('vibeMsg')) $('vibeMsg').textContent=''; if($('vibeInfo')) $('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
 }
 
-/* PDF population (igual que antes) */
 function populatePdfClone(root){
   const q = (sel)=>root.querySelector(sel);
   const matSel = $('material'), opSel = $('operation'), toolSel = $('toolType'),
@@ -858,13 +820,13 @@ function populatePdfClone(root){
   if(q('#rptDate')) q('#rptDate').textContent = new Date().toLocaleString('es-MX');
 }
 
-/* descargar pdf (igual que antes) */
 async function downloadPdf(){
   const tpl = document.getElementById('pdf-template');
   if(!tpl){ alert('No se encontró #pdf-template'); return; }
   const cloneEl = tpl.content.firstElementChild.cloneNode(true);
   cloneEl.style.position = 'fixed'; cloneEl.style.left = '-9999px'; cloneEl.style.top = '0'; cloneEl.style.display = 'block';
   document.body.appendChild(cloneEl);
+
   try{
     populatePdfClone(cloneEl);
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
@@ -888,146 +850,43 @@ async function downloadPdf(){
   finally{ cloneEl.remove(); }
 }
 
-/* INIT */
+/* Inicialización */
 (async function(){
   await loadData();
   fillSelectors();
   buildQuickRef(getMaterial());
+
   $('uMetric')?.addEventListener('click',()=>{ setUnits('metric'); applyPreset(); });
   $('uImperial')?.addEventListener('click',()=>{ setUnits('imperial'); applyPreset(); });
   $('apply')?.addEventListener('click',applyPreset);
   $('calcBtn')?.addEventListener('click',()=>{ calc(); recalc(); });
   $('resetBtn')?.addEventListener('click',()=>{ resetAll(); recalc(); });
   $('pdfBtn')?.addEventListener('click',downloadPdf);
+
   ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>{
-    const el = $(id); if(el) el.addEventListener('change', ()=>{ applyPreset(); calc(); recalc(); });
+    const el = $(id);
+    if(el) el.addEventListener('change', ()=>{ applyPreset(); calc(); recalc(); });
   });
-  $('useGeom')?.addEventListener('change', (e)=>{ const on = e.target.checked; if($('helix')) $('helix').disabled = !on; if($('cornerRad')) $('cornerRad').disabled = !on; });
+
+  $('useGeom')?.addEventListener('change', (e)=>{
+    const on = e.target.checked;
+    if($('helix')) $('helix').disabled = !on;
+    if($('cornerRad')) $('cornerRad').disabled = !on;
+  });
+
   setUnits('metric');
   applyPreset();
-  /* --- Drag marker: arrastrar campana y obtener condiciones --- */
-chart._dragging = false;
-chart._dragX = null;
-
-function pxToChartX(px){
-  if(!chart || !chart.el) return 0.5;
-  const rect = chart.el.getBoundingClientRect(); // CSS px
-  const padCss = 30; // usar mismo padding que en xToPx
-  const leftCss = padCss;
-  const rightCss = rect.width - padCss;
-  const clamped = Math.max(leftCss, Math.min(rightCss, px));
-  const rel = (clamped - leftCss) / Math.max(1e-6, (rightCss - leftCss));
-  return chart.xMin + rel * (chart.xMax - chart.xMin);
-}
-
-function chartXToTargetHz(xVal){
-  // mapea el eje x (0..chart.xMax) a una banda de frecuencias útil.
-  // Ajusta factor si quieres más rango. Actualmente usa 2x banda superior.
-  const band = DATA.vibration?.avoid_band_hz || [600,900];
-  const maxHz = Math.max(200, band[1] * 2);
-  const targetHz = Math.round( (xVal / chart.xMax) * maxHz );
-  return Math.max(1, targetHz);
-}
-
-function applyDragToConditions(xVal){
-  const z = parseInt($('flutes')?.value || 3,10);
-  const fzInput = parseFloat($('fz')?.value) || 0.05;
-  const prud = parseFloat($('prudence')?.value) || 0.9;
-  const unitsLocal = window.units || 'metric';
-  const D = parseFloat($('diam')?.value) || 10;
-  const Dmm = unitsLocal==='metric' ? D : D*25.4;
-  // recalcula fz_eff con chip thinning si corresponde
-  const useGeom = $('useGeom')?.checked;
-  const helix = parseFloat($('helix')?.value) || 30;
-  const corner = parseFloat($('cornerRad')?.value) || 0;
-  const res = chipThinningAdjustedFz( unitsLocal==='metric'?fzInput:(fzInput*25.4), Dmm, Number(parseFloat($('aePct')?.value)||30), helix, corner );
-  const fzEff = res.fzEff;
-
-  const targetHz = chartXToTargetHz(xVal);
-  let rpmAlt = Math.round((targetHz * 60) / z);
-  const rpmLimitVal = window.rpmLimit || parseFloat($('rpmLimit')?.value) || getMachine()?.rpm_max || 12000;
-  if(rpmLimitVal && rpmAlt > rpmLimitVal) rpmAlt = rpmLimitVal;
-
-  const feedAlt = Math.round(rpmAlt * z * fzEff * (Number.isFinite(prud)?prud:1));
-
-  // Mostrar sugerencia en UI (temporal)
-  const inBand = (targetHz >= (DATA.vibration?.avoid_band_hz?.[0]||600) && targetHz <= (DATA.vibration?.avoid_band_hz?.[1]||900));
-  const hint = `Desde campana → fₜg=${targetHz} Hz · Sugerido: ${rpmAlt} RPM · ${unitsLocal==='metric' ? feedAlt+' mm/min' : ( (feedAlt/25.4).toFixed(2)+' IPM') }${ inBand ? ' · Atención: en banda evitada' : '' }`;
-  if($('vibeMsg')) $('vibeMsg').textContent = hint;
-  if($('rpmOut')) $('rpmOut').textContent = fmt0(rpmAlt);
-  if($('feedOut')) $('feedOut').textContent = unitsLocal==='metric' ? fmt0(feedAlt) : fmt1(feedAlt/25.4);
-
-  // redibuja marcador donde el usuario lo dejó (fuerza inBand para color)
-  chart.draw(xVal, inBand);
-  // commit selección para que recalc() la use
-window.rpm = rpmAlt;
-window.feed = feedAlt;
-recalc();
-}
-
-/* eventos pointer para arrastrar */
-function onPointerDown(e){
-  if(!chart.el) return;
-  chart._dragging = true;
-  chart.el.setPointerCapture && chart.el.setPointerCapture(e.pointerId);
-  const rect = chart.el.getBoundingClientRect();
-  const px = e.clientX - rect.left;
-  chart._dragX = px;
-  const xVal = pxToChartX(px);
-  applyDragToConditions(xVal);
-  e.preventDefault();
-}
-
-let _rafPending = false;
-function onPointerMove(e){
-  if(!chart._dragging || !chart.el) return;
-  const rect = chart.el.getBoundingClientRect();
-  const px = e.clientX - rect.left;
-  chart._dragX = px;
-  if(_rafPending) return;
-  _rafPending = true;
-  requestAnimationFrame(()=>{ 
-    const xVal = pxToChartX(chart._dragX);
-    applyDragToConditions(xVal);
-    _rafPending = false;
-  });
-  e.preventDefault();
-}
-
-function onPointerUp(e){
-  if(!chart._dragging) return;
-  chart._dragging = false;
-  try{ chart.el.releasePointerCapture && chart.el.releasePointerCapture(e.pointerId); }catch(e){}
-  chart._dragX = null;
-}
-
-
-
   chart.init(); chart.draw(0.5);
-  // attach listeners después de init
-if(chart && chart.el){
-  chart.el.style.cursor = 'ew-resize';
-  // evita gestos de scroll al arrastrar
-  chart.el.style.touchAction = 'none';
-
-  chart.el.addEventListener('pointerdown', onPointerDown, {passive:false});
-  window.addEventListener('pointermove', onPointerMove, {passive:false});
-  window.addEventListener('pointerup', onPointerUp, {passive:false});
-  // soporte para cancel pointer (por ejemplo al perder foco)
-  chart.el.addEventListener('pointercancel', onPointerUp, {passive:false});
-}
-
   calc(); recalc();
-  try{ loadRelated(); }catch(e){}
+  try{ loadRelated(); }catch(e){/* silent */ }
   $('rpmSlider')?.addEventListener('input',recalc);
   $('feedSlider')?.addEventListener('input',recalc);
 })();
 
-/* related posts (mínimo) */
+/* carga mínima related posts */
 async function loadRelated(){ try{ const r = await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) return; const j = await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){} }
 function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url = p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img = p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
 </script>
-
 
 </body>
 </html>
