@@ -608,9 +608,9 @@ function calc(){
   const MRR_cm3_min = MRR_mm3_min / 1000;
   if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_cm3_min);
 
+  // ---- POTENCIA / TORQUE (unificado y seguro) ----
   const Kc = mat?.Kc_N_per_mm2 || 1500;
   const eta = DATA.defaults?.efficiency || 0.8;
-    // ---- POTENCIA / TORQUE (unificado y seguro) ----
 
   // MRR_mm3_min está en mm^3/min -> pasa a mm^3/s dividiendo entre 60
   // Kc [N/mm^2] * (MRR mm^3/s) -> N·mm/s ; /1000 => N·m/s => W
@@ -632,6 +632,7 @@ function calc(){
   if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct) ? fmt1(loadPct) : '—';
   if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?' } kW` : '';
   // ---- fin POTENCIA / TORQUE ----
+
   const toothHz = (rpm*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
   const band = DATA.vibration?.avoid_band_hz || [600,900];
   if($('avoidBandNote')) $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
@@ -700,17 +701,14 @@ function recalc(){
   const Dmm = (unitsLocal==='metric')?D:D*25.4;
   const ae = (aePct/100) * Dmm;
 
-  const Kc = mat?.Kc_N_per_mm2 || 1500;
-  const eta = DATA.defaults?.efficiency || 0.8;
-
+  // MRR y resultados dependientes de rpmAdj / effFeed
   const MRR_mm3_min = ae * ap * effFeed;
   if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
 
- // ---- POTENCIA / TORQUE (recalc: usa rpmAdj / effFeed) ----
+  // ---- POTENCIA / TORQUE (recalc: usa rpmAdj / effFeed) ----
   const Kc = mat?.Kc_N_per_mm2 || 1500;
   const eta = DATA.defaults?.efficiency || 0.8;
 
-  // MRR_mm3_min ya calculado arriba (ae*ap*effFeed) -> pasar a mm^3/s
   const mrr_mm3_s = MRR_mm3_min / 60;
   const P_W = (Kc * mrr_mm3_s) / 1000 / (eta || 1); // W
   const P_kW = P_W / 1000;                           // kW
@@ -728,26 +726,19 @@ function recalc(){
   if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
   if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : '';
   // ---- fin POTENCIA / TORQUE ----
-  if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
-  if($('tqOut')) $('tqOut').textContent = fmt2(T_Nm);
-
-  let loadPct = NaN;
-  if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
-  if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
-  if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : '';
 
   const toothHz = (rpmAdj*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
   const band = DATA.vibration?.avoid_band_hz || [600,900];
   if($('avoidBandNote')) $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
 
-  const fz_mm = effFeed / (rpmAdj*z);
+  const fz_mm = effFeed / (Math.max(1, rpmAdj) * Math.max(1, z)); // protección división por cero
   const Re = 0.02 * Dmm;
   const Ra_um = (fz_mm * fz_mm) / (8 * Re) * 1000;
   if($('raOut')) $('raOut').textContent = fmt2(Ra_um);
 
   const Vc_m_min = (Math.PI * Dmm * rpmAdj) / 1000;
   let lifeMin = NaN;
-  if(mat?.taylor?.n && mat?.taylor?.C) lifeMin = Math.pow((mat.taylor.C / Vc_m_min),(1/(mat.taylor.n)));
+  if(mat?.taylor?.n && mat?.taylor?.C && Vc_m_min > 0) lifeMin = Math.pow((mat.taylor.C / Vc_m_min),(1/(mat.taylor.n)));
   const holder = getHolder();
   const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
   const stiff = holder?.stiffness_factor || 1.0;
