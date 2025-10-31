@@ -272,7 +272,7 @@
       const sel=$('material'); sel.innerHTML='';
       (DATA.materials||[]).forEach(m=>{ sel.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`); });
 
-      // Operaciones desde JSON, con respaldo si no existe
+      // Operaciones
       const ops = (DATA.operations&&DATA.operations.length)? DATA.operations : [
         {id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},
         {id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}
@@ -422,7 +422,7 @@
       },
       draw(risk=0.5){ this.drawBase(); this.drawMarker(risk); }
     };
-    window.chart = chart; // 🔓 global para sliders
+    window.chart = chart;
 
     function calc(){
       const D = parseFloat($('diam').value);
@@ -452,10 +452,20 @@
 
       let rpm = (Vc_m_min*1000)/(Math.PI*Dmm);
       let capped=false; if(rpmLimit>0 && rpm>rpmLimit){ rpm=rpmLimit; capped=true; }
+
+      // avance teórico
       let feed_mm_min = rpm * z * usedFz * (Number.isFinite(prud) ? prud : 1);
 
+      // aplica límite de máquina solo hacia arriba
+      let effFeed = feed_mm_min;
+      if (mach?.feed_max_mm_min && feed_mm_min > mach.feed_max_mm_min) {
+        effFeed = mach.feed_max_mm_min;
+        $('feedAdjNote').textContent += ` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
+      }
+
+      // muestra lo efectivo
       $('rpmOut').textContent = fmt0(rpm);
-      $('feedOut').textContent = (units==='metric') ? fmt0(feed_mm_min) : fmt1(feed_mm_min/25.4);
+      $('feedOut').textContent = (units==='metric') ? fmt0(effFeed) : fmt1(effFeed/25.4);
       $('feedUnit').textContent = (units==='metric') ? 'mm/min' : 'IPM';
       $('rpmCap').classList.toggle('hidden', !capped);
       $('sumOut').textContent = `D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
@@ -469,12 +479,8 @@
       const L_mm  = Number.isFinite(L_input) && L_input>0 ? L_input : est.L;
       $('vibeInfo').innerHTML = `Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
 
-      // usar avance efectivo (lo que sí da la máquina)
-const effFeed = (mach?.feed_max_mm_min && feed_mm_min > mach.feed_max_mm_min)
-  ? mach.feed_max_mm_min
-  : feed_mm_min;
-
-const MRR_mm3_min = ap_mm * ae_mm * effFeed;
+      // MRR con avance efectivo
+      const MRR_mm3_min = ap_mm * ae_mm * effFeed;
       const MRR_cm3_min = MRR_mm3_min / 1000;
       $('mrrOut').textContent = fmt1(MRR_cm3_min);
 
@@ -525,12 +531,8 @@ const MRR_mm3_min = ap_mm * ae_mm * effFeed;
       }
       $('vibeMsg').innerHTML = msg;
 
-      if(mach?.feed_max_mm_min && feed_mm_min>mach.feed_max_mm_min){
-        $('feedAdjNote').textContent += ` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
-      }
-
-      // === Exponer base para sliders ===
-      window.feed = feed_mm_min;
+      // expone base ya capada
+      window.feed = effFeed;
       window.rpm = rpm;
       window.rpmLimit = rpmLimit;
 
@@ -539,13 +541,9 @@ const MRR_mm3_min = ap_mm * ae_mm * effFeed;
 
     // 🔁 Recalc en vivo por sliders
     function recalc(){
-      if(!(window.rpm>0 && window.feed>0)) return; // aún no hay cálculo base
+      if(!(window.rpm>0 && window.feed>0)) return;
       const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value || '1');
       const feedScale = parseFloat(($('feedSlider')||{value:1}).value || '1');
-      // si el usuario bajó mucho el avance, premia bajando riesgo
-if (feedScale && feedScale < 1) {
-  risk *= (0.7 + 0.3*feedScale); // 0.7–1.0
-}
 
       const D = parseFloat($('diam').value);
       const z = parseInt($('flutes').value,10);
@@ -555,10 +553,20 @@ if (feedScale && feedScale < 1) {
 
       const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit').value) || mach?.rpm_max || 12000;
       const rpmAdj = Math.min(window.rpm * rpmScale, rpmLimit);
+
+      // feed base ya viene capado; si usuario baja, respetamos
       const feedAdj = window.feed * feedScale;
+      let effFeed;
+      if (feedScale < 1) {
+        effFeed = feedAdj;
+      } else {
+        effFeed = (mach?.feed_max_mm_min && feedAdj > mach.feed_max_mm_min)
+          ? mach.feed_max_mm_min
+          : feedAdj;
+      }
 
       $('rpmOut').textContent = fmt0(rpmAdj);
-      $('feedOut').textContent = (unitsLocal==='metric') ? fmt0(feedAdj) : fmt1(feedAdj/25.4);
+      $('feedOut').textContent = (unitsLocal==='metric') ? fmt0(effFeed) : fmt1(effFeed/25.4);
       $('rpmCap').classList.toggle('hidden', !(rpmAdj >= rpmLimit - 1));
 
       const aePct = parseFloat($('aePct').value) || 30;
@@ -570,11 +578,8 @@ if (feedScale && feedScale < 1) {
       const Kc = mat?.Kc_N_per_mm2 || 1500;
       const eta = DATA.defaults?.efficiency || 0.8;
 
-      const effFeed = (mach?.feed_max_mm_min && feedAdj > mach.feed_max_mm_min)
-  ? mach.feed_max_mm_min
-  : feedAdj;
-
-const MRR_mm3_min = ae * ap * effFeed;
+      // MRR con avance efectivo
+      const MRR_mm3_min = ae * ap * effFeed;
       $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
 
       const P_kW = (Kc * (MRR_mm3_min/60)) / (1000*eta);
@@ -591,7 +596,7 @@ const MRR_mm3_min = ae * ap * effFeed;
       const band = DATA.vibration?.avoid_band_hz || [600,900];
       $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
 
-      const fz_mm = feedAdj / (rpmAdj * z);
+      const fz_mm = effFeed / (rpmAdj * z);
       const Re = 0.02 * Dmm; const Ra_um = (fz_mm*fz_mm)/(8*Re) * 1000;
       $('raOut').textContent = fmt2(Ra_um);
 
@@ -602,7 +607,6 @@ const MRR_mm3_min = ae * ap * effFeed;
         lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n)));
       }
 
-      // Riesgo de vibración
       const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
       const holderId = $('holder').value;
       const holder = (DATA.holders||[]).find(h=>h.id===holderId) || (DATA.holders||[])[0];
@@ -615,7 +619,7 @@ const MRR_mm3_min = ae * ap * effFeed;
       risk = Math.max(0, Math.min(2, risk));
 
       if(Number.isFinite(lifeMin)){
-        lifeMin *= (1 - (risk * 0.4)); // penaliza vida por vibración
+        lifeMin *= (1 - (risk * 0.4));
       }
       $('lifeOut').textContent = Number.isFinite(lifeMin) ? fmt1(lifeMin) : '—';
 
@@ -624,18 +628,15 @@ const MRR_mm3_min = ae * ap * effFeed;
       const badge = `<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
       $('vibeMsg').innerHTML = `${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
 
-      // Barra color
       const bar = $('sweetBarDual');
       let color = "from-rose-600 to-rose-700";
       if (risk < 0.65) color = "from-emerald-500 to-emerald-600";
       else if (risk < 1.0) color = "from-yellow-400 to-yellow-500";
       bar.className = `h-3 mt-4 rounded-full transition-all duration-300 bg-gradient-to-r ${color}`;
 
-      // Etiquetas sliders
       $('rpmLabel').textContent  = `${Math.round(rpmScale*100)} % — RPM`;
       $('feedLabel').textContent = `${Math.round(feedScale*100)} % — Avance`;
 
-      // Redibuja Gauss
       chart.draw(risk);
     }
 
@@ -717,11 +718,10 @@ const MRR_mm3_min = ae * ap * effFeed;
       setUnits('metric');
       applyPreset();
       chart.init(); chart.draw(0.5);
-      calc(); // inicializa base
-      recalc(); // alinear sliders con resultados
+      calc();
+      recalc();
       loadRelated();
 
-      // Listeners sliders (después de existir valores base)
       const rpmSlider = $('rpmSlider'), feedSlider = $('feedSlider');
       rpmSlider.addEventListener('input', recalc);
       feedSlider.addEventListener('input', recalc);
