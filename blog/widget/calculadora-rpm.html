@@ -6,17 +6,17 @@
   <title>Calculadora de RPM y avance — extendida</title>
   <meta name="description" content="Calcula RPM, avance, MRR, potencia, torque, deflexión, Ra y riesgo de vibración. Presets por material, máquina, operación y herramienta. Métrico/imperial." />
   <link rel="canonical" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
+  <!-- Forzar modo oscuro -->
+  <meta name="color-scheme" content="dark" />
 
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
+    /* ==== TEMA SIEMPRE OSCURO ==== */
     :root{
       --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
       --accent:#0ea5e9; --rose:#e11d48; --emerald:#10b981; --indigo:#6366f1;
-    }
-    @media (prefers-color-scheme: light){
-      :root{ --bg:#f7fafc; --card:#ffffff; --ink:#0b1220; --muted:#475569; --border:#d4dbe5; --accent:#2563eb; }
     }
     html{scroll-behavior:smooth}
     body{background:var(--bg);color:var(--ink)}
@@ -40,7 +40,6 @@
     select, option{ color: var(--ink); background-color: var(--card); }
     select:focus{ outline:2px solid var(--accent); outline-offset:1px }
     @supports (color-scheme: dark){ select, option{ color-scheme: dark; } }
-    @media (prefers-color-scheme: light){ select, option{ color:#0b1220; background:#ffffff; } }
     .vibe-box.ok   { border-color:#16a34a; background:rgba(22,163,74,.08) }
     .vibe-box.warn { border-color:#f59e0b; background:rgba(245,158,11,.10) }
     .vibe-box.bad  { border-color:#ef4444; background:rgba(239,68,68,.10) }
@@ -51,25 +50,6 @@
     .hint{color:var(--muted);font-size:.75rem}
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
-
-    /* PDF styles */
-    #pdf-report{
-      background:#0f172a;
-      color:#e5eefb;
-      max-width:780px;
-      padding:24px;
-      border-radius:16px;
-      border:1px solid #1f2a3a;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
-    }
-    #pdf-report h2{font-size:1.1rem;margin-bottom:.8rem}
-    #pdf-report .sec-title{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.4rem}
-    #pdf-report .grid{display:grid;gap:.5rem}
-    #pdf-report .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-    #pdf-report .item{background:rgba(15,23,42,.35);border:1px solid rgba(148,163,184,.12);border-radius:.75rem;padding:.55rem .65rem}
-    #pdf-report .item label{display:block;font-size:.65rem;color:#94a3b8}
-    #pdf-report .item span{font-weight:600;font-size:.8rem}
-    #pdf-report .footer{margin-top:1rem;font-size:.55rem;color:#94a3b8}
   </style>
 </head>
 <body>
@@ -268,67 +248,102 @@
       <div id="relEmpty" class="text-slate-400 text-sm">Se mostrarán artículos recientes del blog.</div>
     </section>
 
-    <!-- REPORTE PDF (oculto) -->
-    <div id="pdf-report" class="hidden">
-      <h2 class="text-sky-100 font-semibold">Reporte de condiciones aplicadas</h2>
-      <p class="text-xs text-slate-400 mb-3">Generado desde alexrasa.store · Calculadora RPM/avance — Pro</p>
-
-      <div class="sec-title">Contexto</div>
-      <div class="grid grid-2 mb-3">
-        <div class="item">
-          <label>Material de pieza</label>
-          <span id="rptMaterial"></span>
+    <!-- REPORTE PDF (oculto, versión bonita clara) -->
+    <div id="pdf-report" class="hidden" style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu; background:#f3f4f6; color:#0f172a; max-width:820px; margin:0 auto; padding:0;">
+      <div style="background:#0f172a; color:white; padding:16px 20px; border-radius:14px 14px 0 0; display:flex; justify-content:space-between; gap:12px; align-items:center;">
+        <div>
+          <div style="font-size:13px; opacity:.8;">Reporte de condiciones de maquinado</div>
+          <div style="font-size:19px; font-weight:700;">Calculadora RPM y Avance — Pro</div>
         </div>
-        <div class="item">
-          <label>Operación</label>
-          <span id="rptOp"></span>
-        </div>
-        <div class="item">
-          <label>Máquina</label>
-          <span id="rptMachine"></span>
-        </div>
-        <div class="item">
-          <label>Holder</label>
-          <span id="rptHolder"></span>
-        </div>
-        <div class="item">
-          <label>Tipo de herramienta</label>
-          <span id="rptToolType"></span>
-        </div>
-        <div class="item">
-          <label>Material de herramienta</label>
-          <span id="rptToolMat"></span>
+        <div style="text-align:right;">
+          <div style="background:rgba(15,23,42,.35); border:1px solid rgba(148,163,184,.35); border-radius:999px; padding:4px 12px; font-size:12px;">AlexRaSa — Manufactura CNC</div>
+          <div id="rptDate" style="font-size:11px; opacity:.6; margin-top:4px;"></div>
         </div>
       </div>
 
-      <div class="sec-title">Parámetros calculados</div>
-      <div class="grid grid-2 mb-3">
-        <div class="item"><label>Diámetro</label><span id="rptDiam"></span></div>
-        <div class="item"><label>RPM</label><span id="rptRPM"></span></div>
-        <div class="item"><label>Avance</label><span id="rptFeed"></span></div>
-        <div class="item"><label>MRR</label><span id="rptMRR"></span></div>
-        <div class="item"><label>Potencia</label><span id="rptPwr"></span></div>
-        <div class="item"><label>Torque</label><span id="rptTq"></span></div>
-        <div class="item"><label>Carga husillo</label><span id="rptLoad"></span></div>
-        <div class="item"><label>Ra estimado</label><span id="rptRa"></span></div>
-      </div>
+      <div style="padding:18px 20px 20px 20px;">
+        <!-- Contexto -->
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Contexto</div>
+        <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:16px;">
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+            <div style="font-size:11px; color:#6b7280;">Material de pieza</div>
+            <div id="rptMaterial" style="font-size:13px; font-weight:600;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+            <div style="font-size:11px; color:#6b7280;">Operación</div>
+            <div id="rptOp" style="font-size:13px; font-weight:600;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+            <div style="font-size:11px; color:#6b7280;">Máquina</div>
+            <div id="rptMachine" style="font-size:13px; font-weight:600;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+            <div style="font-size:11px; color:#6b7280;">Holder</div>
+            <div id="rptHolder" style="font-size:13px; font-weight:600;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+            <div style="font-size:11px; color:#6b7280;">Tipo de herramienta</div>
+            <div id="rptToolType" style="font-size:13px; font-weight:600;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+            <div style="font-size:11px; color:#6b7280;">Material de herramienta</div>
+            <div id="rptToolMat" style="font-size:13px; font-weight:600;">—</div>
+          </div>
+        </div>
 
-      <div class="sec-title">Vibración</div>
-      <div class="item mb-3">
-        <label>Evaluación</label>
-        <span id="rptVibeState"></span>
-        <div id="rptVibe" style="font-size:.7rem;margin-top:.25rem;color:#e2e8f0;"></div>
-      </div>
+        <!-- Parámetros -->
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Parámetros calculados</div>
+        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:16px;">
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">Diámetro</div>
+            <div id="rptDiam" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">RPM</div>
+            <div id="rptRPM" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">Avance</div>
+            <div id="rptFeed" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">MRR</div>
+            <div id="rptMRR" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">Potencia</div>
+            <div id="rptPwr" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">Torque</div>
+            <div id="rptTq" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">Carga husillo</div>
+            <div id="rptLoad" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+            <div style="font-size:11px; color:#6b7280;">Ra estimado</div>
+            <div id="rptRa" style="font-size:16px; font-weight:700;">—</div>
+          </div>
+        </div>
 
-      <div class="footer">
-        Fecha/hora: <span id="rptDate"></span><br>
-        Nota: Estos datos son orientativos. Ajustar en máquina considerando herramienta real, sujeción y condiciones de planta.
+        <!-- Vibración -->
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Vibración</div>
+        <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <div id="rptVibeState" style="font-size:11px; font-weight:600; background:#e5e7eb; padding:3px 10px; border-radius:999px;">—</div>
+            <div style="font-size:11px; color:#6b7280;">Evaluación dinámica por L/D, ae, ap y banda evitada</div>
+          </div>
+          <div id="rptVibe" style="font-size:12px; color:#111827; line-height:1.4;">—</div>
+        </div>
+
+        <div style="font-size:10px; color:#6b7280; margin-top:16px;">
+          Nota: Estas condiciones son de referencia calculadas en la página de Miguel (alexrasa.store). Ajusta en máquina real según herramienta, sujeción, rigidez y política de corte de tu planta.
+        </div>
       </div>
     </div>
   </main>
-
-  <!-- NO cargamos la librería aquí directo porque algunos hosts la bloquean -->
-  <!-- la vamos a cargar por JS con fallback -->
 
   <script>
     // ===== helpers base
@@ -340,16 +355,13 @@
     // ====== loader de html2pdf con fallback ======
     async function ensureHtml2Pdf(){
       if (typeof window.html2pdf !== 'undefined') return true;
-
       const cdns = [
         "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js",
         "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js",
         "https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
       ];
-
       for (const url of cdns){
         try{
-          // eslint-disable-next-line no-await-in-loop
           await new Promise((resolve, reject)=>{
             const s = document.createElement('script');
             s.src = url;
@@ -792,7 +804,6 @@
       $('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
     }
 
-    // === PDF ===
     function buildPdfData(){
       const matSel = $('material');
       const opSel  = $('operation');
@@ -801,21 +812,21 @@
       const machSel= $('machine');
       const holderSel = $('holder');
 
-      $('rptMaterial').textContent = matSel.options[matSel.selectedIndex]?.text || '';
-      $('rptOp').textContent       = opSel.options[opSel.selectedIndex]?.text || '';
-      $('rptToolType').textContent = toolSel.options[toolSel.selectedIndex]?.text || '';
-      $('rptToolMat').textContent  = toolMatSel.options[toolMatSel.selectedIndex]?.text || '';
-      $('rptMachine').textContent  = machSel.options[machSel.selectedIndex]?.text || '';
-      $('rptHolder').textContent   = holderSel.options[holderSel.selectedIndex]?.text || '';
+      $('rptMaterial').textContent = matSel.options[matSel.selectedIndex]?.text || '—';
+      $('rptOp').textContent       = opSel.options[opSel.selectedIndex]?.text || '—';
+      $('rptToolType').textContent = toolSel.options[toolSel.selectedIndex]?.text || '—';
+      $('rptToolMat').textContent  = toolMatSel.options[toolMatSel.selectedIndex]?.text || '—';
+      $('rptMachine').textContent  = machSel.options[machSel.selectedIndex]?.text || '—';
+      $('rptHolder').textContent   = holderSel.options[holderSel.selectedIndex]?.text || '—';
 
       $('rptDiam').textContent = ($('diam').value || '—') + (units==='metric' ? ' mm' : ' in');
-      $('rptRPM').textContent  = $('rpmOut').textContent + ' rpm';
-      $('rptFeed').textContent = $('feedOut').textContent + ' ' + $('feedUnit').textContent;
-      $('rptMRR').textContent  = $('mrrOut').textContent + ' cm³/min';
-      $('rptPwr').textContent  = $('pwrOut').textContent + ' kW';
-      $('rptTq').textContent   = $('tqOut').textContent + ' N·m';
-      $('rptLoad').textContent = $('loadOut').textContent + ' %';
-      $('rptRa').textContent   = $('raOut').textContent + ' µm';
+      $('rptRPM').textContent  = ($('rpmOut').textContent || '—') + ' rpm';
+      $('rptFeed').textContent = ($('feedOut').textContent || '—') + ' ' + ($('feedUnit').textContent || '');
+      $('rptMRR').textContent  = ($('mrrOut').textContent || '—') + ' cm³/min';
+      $('rptPwr').textContent  = ($('pwrOut').textContent || '—') + ' kW';
+      $('rptTq').textContent   = ($('tqOut').textContent || '—') + ' N·m';
+      $('rptLoad').textContent = ($('loadOut').textContent || '—') + ' %';
+      $('rptRa').textContent   = ($('raOut').textContent || '—') + ' µm';
 
       const vibeBox = document.querySelector('.vibe-box');
       let state = '—';
@@ -825,7 +836,7 @@
       $('rptVibeState').textContent = state;
 
       const raw = $('vibeMsg').innerHTML.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-      $('rptVibe').textContent = raw;
+      $('rptVibe').textContent = raw || '—';
 
       $('rptDate').textContent = new Date().toLocaleString('es-MX');
     }
@@ -833,7 +844,7 @@
     async function downloadPdf(){
       const ok = await ensureHtml2Pdf();
       if (!ok){
-        alert('No se pudo cargar la librería PDF desde ninguno de los orígenes. Esto suele ser por política de tu navegador/hosting.');
+        alert('No se pudo cargar la librería PDF desde ningún CDN.');
         return;
       }
 
@@ -841,15 +852,13 @@
 
       const element = document.getElementById('pdf-report');
       const wasHidden = element.classList.contains('hidden');
-      if (wasHidden) {
-        element.classList.remove('hidden');
-      }
+      if (wasHidden) element.classList.remove('hidden');
 
       const opt = {
-        margin:       10,
+        margin:       [8,8,8,8],
         filename:     'reporte-condiciones-maquinado.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
