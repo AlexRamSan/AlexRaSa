@@ -610,16 +610,30 @@ function calc(){
 
   const Kc = mat?.Kc_N_per_mm2 || 1500;
   const eta = DATA.defaults?.efficiency || 0.8;
-  // CORRECCIÓN: dividir por 1e6 para pasar de N·mm/s a kW correctamente
-  // Calcula potencia correctamente: primero en W, luego convierto a kW
-const P_W = (Kc * (MRR_mm3_min / 60)) / 1000 / (eta || 1); // W
-const P_kW = P_W / 1000;                                   // kW
+    // ---- POTENCIA / TORQUE (unificado y seguro) ----
+  const Kc = mat?.Kc_N_per_mm2 || 1500;
+  const eta = DATA.defaults?.efficiency || 0.8;
 
-// Torque: usar P en W y fórmula T = P / omega  (omega = 2π·rpm/60)
-const T_Nm = (60 * P_W) / (2 * Math.PI * rpm);            // N·m
+  // MRR_mm3_min está en mm^3/min -> pasa a mm^3/s dividiendo entre 60
+  // Kc [N/mm^2] * (MRR mm^3/s) -> N·mm/s ; /1000 => N·m/s => W
+  const mrr_mm3_s = MRR_mm3_min / 60;
+  const P_W = (Kc * mrr_mm3_s) / 1000 / (eta || 1); // potencia en W
+  const P_kW = P_W / 1000;                            // potencia en kW
 
-if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
-if($('tqOut')) $('tqOut').textContent = fmt2(T_Nm);
+  // Torque: T = P / omega ; omega = 2π * rpm / 60  => T = (60 * P_W) / (2π * rpm)
+  let T_Nm = NaN;
+  if (rpm > 0) {
+    T_Nm = (60 * P_W) / (2 * Math.PI * rpm);
+  }
+
+  if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
+  if($('tqOut')) $('tqOut').textContent = Number.isFinite(T_Nm) ? fmt2(T_Nm) : '—';
+
+  let loadPct = NaN;
+  if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
+  if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct) ? fmt1(loadPct) : '—';
+  if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?' } kW` : '';
+  // ---- fin POTENCIA / TORQUE ----
 
   let loadPct = NaN;
   if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
@@ -700,9 +714,28 @@ function recalc(){
   const MRR_mm3_min = ae * ap * effFeed;
   if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
 
-  // CORRECCIÓN: dividir por 1e6 para pasar de N·mm/s a kW correctamente
-  const P_kW = (Kc * (MRR_mm3_min/60)) / (1e6 * eta);
-  const T_Nm = (60 * P_kW * 1000) / (2 * Math.PI * rpmAdj);
+ // ---- POTENCIA / TORQUE (recalc: usa rpmAdj / effFeed) ----
+  const Kc = mat?.Kc_N_per_mm2 || 1500;
+  const eta = DATA.defaults?.efficiency || 0.8;
+
+  // MRR_mm3_min ya calculado arriba (ae*ap*effFeed) -> pasar a mm^3/s
+  const mrr_mm3_s = MRR_mm3_min / 60;
+  const P_W = (Kc * mrr_mm3_s) / 1000 / (eta || 1); // W
+  const P_kW = P_W / 1000;                           // kW
+
+  let T_Nm = NaN;
+  if (rpmAdj > 0) {
+    T_Nm = (60 * P_W) / (2 * Math.PI * rpmAdj);
+  }
+
+  if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
+  if($('tqOut')) $('tqOut').textContent = Number.isFinite(T_Nm) ? fmt2(T_Nm) : '—';
+
+  let loadPct = NaN;
+  if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
+  if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
+  if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : '';
+  // ---- fin POTENCIA / TORQUE ----
   if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
   if($('tqOut')) $('tqOut').textContent = fmt2(T_Nm);
 
