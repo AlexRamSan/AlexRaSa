@@ -609,201 +609,229 @@ function fillSelectors(){
     };
     window.chart=chart;
 
-    function calc(){
-      const D=parseFloat($('diam').value);
-      const z=parseInt($('flutes').value,10);
-      let rpmLimit=parseFloat($('rpmLimit').value||'0');
-      const prud=parseFloat($('prudence').value||'1');
-      const V=parseFloat($('vc').value);
-      let FZ=parseFloat($('fz').value);
-      const op=$('operation').value;
-      const mat=getMaterial();
-      const mach=getMachine();
-      if(mach?.rpm_max && !rpmLimit)rpmLimit=mach.rpm_max;
+    // ---------- REEMPLAZAR calc() ----------
+function calc(){
+  const D=parseFloat($('diam').value);
+  const z=parseInt($('flutes').value,10);
+  let rpmLimit=parseFloat($('rpmLimit').value||'0');
+  const prud=parseFloat($('prudence').value||'1');
+  const V=parseFloat($('vc').value);
+  let FZ=parseFloat($('fz').value);
+  const op=$('operation').value;
+  const mat=getMaterial();
+  const mach=getMachine();
+  if(mach?.rpm_max && !rpmLimit) rpmLimit = mach.rpm_max;
 
-      if(!(D>0 && z>0 && V>0 && FZ>0)){
-        $('rpmOut').textContent='—';$('feedOut').textContent='—';$('vibeMsg').textContent='Faltan datos.';chart.draw(0.5);return;
-      }
+  if(!(D>0 && z>0 && V>0 && FZ>0)){
+    $('rpmOut').textContent='—';$('feedOut').textContent='—';$('vibeMsg').textContent='Faltan datos.';chart.draw(0.5);return;
+  }
 
-      const Dmm=(units==='metric')?D:D*25.4;
-      const Vc_m_min=(units==='metric')?V:(V/3.281);
-      let fz_mm=(units==='metric')?FZ:FZ*25.4;
+  const Dmm=(units==='metric')?D:D*25.4;
+  const Vc_m_min=(units==='metric')?V:(V/3.281);
+  let fz_mm=(units==='metric')?FZ:FZ*25.4;
 
-      let aePct=Number(parseFloat($('aePct').value));
-      if(!Number.isFinite(aePct) || aePct<=0){const est=estimateVibeParams(Dmm,op);aePct=est.ae_pct;}
-      const {fzEff,k:ctK}=chipThinningAdjustedFz(fz_mm,Dmm,aePct);
-      const usedFz=fzEff;
-      $('feedAdjNote').textContent=ctK>1?`Chip-thinning ×${fmt2(ctK)} (ae=${Math.round(aePct)}%D)`:''
+  let aePct=Number(parseFloat($('aePct').value));
+  if(!Number.isFinite(aePct) || aePct<=0){const est=estimateVibeParams(Dmm,op);aePct=est.ae_pct;}
+  const {fzEff,k:ctK}=chipThinningAdjustedFz(fz_mm,Dmm,aePct);
+  const usedFz=fzEff;
+  $('feedAdjNote').textContent=ctK>1?`Chip-thinning ×${fmt2(ctK)} (ae=${Math.round(aePct)}%D)`:''
 
-      let rpm=(Vc_m_min*1000)/(Math.PI*Dmm);
-      let capped=false;if(rpmLimit>0 && rpm>rpmLimit){rpm=rpmLimit;capped=true;}
+  // RPM teórico
+  let rpm=(Vc_m_min*1000)/(Math.PI*Dmm);
+  let capped=false;
+  if(rpmLimit>0 && rpm>rpmLimit){ rpm = rpmLimit; capped=true; }
 
-      let feed_mm_min=rpm*z*usedFz*(Number.isFinite(prud)?prud:1);
-      let effFeed=feed_mm_min;
-      if(mach?.feed_max_mm_min && feed_mm_min>mach.feed_max_mm_min){
-        effFeed=mach.feed_max_mm_min;
-        $('feedAdjNote').textContent+=` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
-      }
+  // Avance programado (mm/min)
+  let feed_mm_min = rpm*z*usedFz*(Number.isFinite(prud)?prud:1);
+  let effFeed = feed_mm_min;
+  if(mach?.feed_max_mm_min && feed_mm_min>mach.feed_max_mm_min){
+    effFeed = mach.feed_max_mm_min;
+    $('feedAdjNote').textContent += ` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
+  }
 
-      $('rpmOut').textContent=fmt0(rpm);
-      $('feedOut').textContent=(units==='metric')?fmt0(effFeed):fmt1(effFeed/25.4);
-      $('feedUnit').textContent=(units==='metric')?'mm/min':'IPM';
-      $('rpmCap').classList.toggle('hidden',!capped);
-      $('sumOut').textContent=`D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
+  $('rpmOut').textContent=fmt0(rpm);
+  $('feedOut').textContent=(units==='metric')?fmt0(effFeed):fmt1(effFeed/25.4);
+  $('feedUnit').textContent=(units==='metric')?'mm/min':'IPM';
+  $('rpmCap').classList.toggle('hidden',!capped);
+  $('sumOut').textContent=`D=${fmt1(D)} ${(units==='metric')?'mm':'in'}, z=${z}, Vc=${fmt1(V)} ${(units==='metric')?'m/min':'SFM'}, fz=${fmt2(FZ)} ${(units==='metric')?'mm':'in'}.`;
 
-      const ap_input=Number(parseFloat($('ap').value));
-      const L_input=Number(parseFloat($('stickout').value));
-      const est=estimateVibeParams(Dmm,op);
-      const ae_ratio=Math.max(0.01,Math.min(1,(aePct/100)));
-      const ae_mm=ae_ratio*Dmm;
-      const ap_mm=Number.isFinite(ap_input)&&ap_input>0?ap_input:est.ap_mm;
-      const L_mm=Number.isFinite(L_input)&&L_input>0?L_input:est.L;
-      $('vibeInfo').innerHTML=`Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
+  // Parámetros para MRR y vibración
+  const ap_input=Number(parseFloat($('ap').value));
+  const L_input=Number(parseFloat($('stickout').value));
+  const est=estimateVibeParams(Dmm,op);
+  const ae_ratio=Math.max(0.01,Math.min(1,(aePct/100)));
+  const ae_mm=ae_ratio*Dmm;
+  const ap_mm=Number.isFinite(ap_input)&&ap_input>0?ap_input:est.ap_mm;
+  const L_mm=Number.isFinite(L_input)&&L_input>0?L_input:est.L;
+  $('vibeInfo').innerHTML=`Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
 
-      const MRR_mm3_min=ap_mm*ae_mm*effFeed;
-      const MRR_cm3_min=MRR_mm3_min/1000;
-      $('mrrOut').textContent=fmt1(MRR_cm3_min);
+  // MRR (mm^3/min -> cm^3/min)
+  const MRR_mm3_min = ap_mm * ae_mm * effFeed;
+  const MRR_cm3_min = MRR_mm3_min / 1000;
+  $('mrrOut').textContent = fmt1(MRR_cm3_min);
 
-      const Kc=mat?.Kc_N_per_mm2||1500;
-      const eta=DATA.defaults?.efficiency||0.8;
-      const P_kW=(Kc*(MRR_mm3_min/60))/(1000*eta);
-      const T_Nm=(60*P_kW*1000)/(2*Math.PI*rpm);
-      $('pwrOut').textContent=fmt2(P_kW);
-      $('tqOut').textContent=fmt2(T_Nm);
+  // POTENCIA (kW) -- corrección de unidades:
+  // P_W = (Kc * (MRR_mm3_min / 60)) / 1000   -> [W]
+  // P_kW = P_W / 1000
+  // => P_kW = (Kc * MRR_mm3_min) / (60 * 1e6)
+  const Kc = mat?.Kc_N_per_mm2 || 1500;
+  const eta = DATA.defaults?.efficiency || 0.8;
+  const P_kW = (Kc * MRR_mm3_min) / (60 * 1e6 * (eta || 1)); // kW
+  $('pwrOut').textContent = fmt2(P_kW);
 
-      let loadPct=NaN;
-      if(mach?.power_kw){loadPct=Math.min(200,100*P_kW/mach.power_kw);}
-      $('loadOut').textContent=Number.isFinite(loadPct)?fmt1(loadPct):'—';
-      $('pwrNote').textContent=Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:''
+  // Torque (N·m) usando P_kW
+  const T_Nm = (60 * P_kW * 1000) / (2 * Math.PI * Math.max(1, rpm));
+  $('tqOut').textContent = fmt2(T_Nm);
 
-      const toothHz=(rpm*z)/60;$('toothHzOut').textContent=fmt1(toothHz);
-      const band=DATA.vibration?.avoid_band_hz||[600,900];
-      $('avoidBandNote').textContent=`Evitar banda ${band[0]}–${band[1]} Hz`;
+  // Carga husillo %
+  let loadPct = NaN;
+  if(mach?.power_kw){ loadPct = Math.min(200, 100 * P_kW / mach.power_kw); }
+  $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
+  $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:'';
 
-      const Re=0.02*Dmm;const Ra_um=(usedFz*usedFz)/(8*Re)*1000;
-      $('raOut').textContent=fmt2(Ra_um);
+  // f_tp y banda
+  const toothHz = (rpm * z) / 60; $('toothHzOut').textContent = fmt1(toothHz);
+  const band = DATA.vibration?.avoid_band_hz || [600,900];
+  $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
 
-      let lifeMin=NaN;
-      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+  // Ra estimado (simple)
+  const Re = 0.02 * Dmm;
+  const Ra_um = (usedFz * usedFz) / (8 * Re) * 1000;
+  $('raOut').textContent = fmt2(Ra_um);
 
-      const holder=getHolder();
-      const W=DATA.vibration?.weights||{ld:0.55,ae:0.20,ap:0.15,fz:0.10};
-      const stiff=holder?.stiffness_factor||1.0;
-      const L_over_D=L_mm/Dmm;
-      const ap_ratio=Math.min(1.2,ap_mm/Math.max(1,Dmm));
-      let risk=(W.ld*(L_over_D/2.0)+W.ae*ae_ratio+W.ap*ap_ratio+W.fz*Math.min(1,(usedFz/(0.1*Dmm+0.02))))/stiff;
-      risk=Math.max(0,Math.min(2,risk));
-      const inBand=(toothHz>=band[0] && toothHz<=band[1]);
-      const SWEET=0.65, WARN=1.00; let state='ok'; if(risk>=WARN || inBand)state='bad'; else if(risk>=SWEET)state='warn';
-      const vb=document.querySelector('.vibe-box');vb.classList.remove('ok','warn','bad');vb.classList.add(state);
-      const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
-      let msg=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
-      if(state==='bad' && inBand){
-        const shift=DATA.vibration?.rpm_shift_pct||0.12;
-        const targetHz=(Math.abs(toothHz-band[0])<Math.abs(toothHz-band[1]))?band[0]:band[1];
-        let rpmAlt=(targetHz*60)/z;rpmAlt*=(toothHz<targetHz?(1+shift):(1-shift));
-        if(rpmLimit>0 && rpmAlt>rpmLimit)rpmAlt=rpmLimit;
-        const feedAlt=rpmAlt*z*usedFz*(Number.isFinite(prud)?prud:1);
-        msg+=` Sugerido: ${fmt0(rpmAlt)} RPM y ${(units==='metric')?`${fmt0(feedAlt)} mm/min`:`${fmt1(feedAlt/25.4)} IPM`}.`;
-      }
-      $('vibeMsg').innerHTML=msg;
+  // Vida Taylor: T = C / V^n  (en minutos o la unidad que uses)
+  let lifeMin = NaN;
+  if(mat?.taylor?.n != null && mat?.taylor?.C != null){
+    try{
+      lifeMin = (mat.taylor.C) / Math.pow(Math.max(0.0001, Vc_m_min), mat.taylor.n);
+    }catch(e){}
+  }
+  $('lifeOut').textContent = Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
 
-      window.feed=effFeed;
-      window.rpm=rpm;
-      window.rpmLimit=rpmLimit;
+  // Riesgo vibración (misma lógica)
+  const holder = getHolder();
+  const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
+  const stiff = holder?.stiffness_factor || 1.0;
+  const L_over_D = L_mm / Dmm;
+  const ap_ratio = Math.min(1.2, ap_mm / Math.max(1, Dmm));
+  let risk = (W.ld*(L_over_D/2.0) + W.ae*ae_ratio + W.ap*ap_ratio + W.fz*Math.min(1,(usedFz/(0.1*Dmm+0.02))))/stiff;
+  risk = Math.max(0, Math.min(2, risk));
+  const inBand = (toothHz >= band[0] && toothHz <= band[1]);
+  const SWEET = 0.65, WARN = 1.00;
+  let state='ok'; if(risk>=WARN || inBand) state='bad'; else if(risk>=SWEET) state='warn';
+  const vb=document.querySelector('.vibe-box'); vb.classList.remove('ok','warn','bad'); vb.classList.add(state);
+  const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
+  let msg=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+  if(state==='bad' && inBand){
+    const shift = DATA.vibration?.rpm_shift_pct || 0.12;
+    const targetHz = (Math.abs(toothHz-band[0])<Math.abs(toothHz-band[1]))?band[0]:band[1];
+    let rpmAlt = (targetHz * 60)/z; rpmAlt *= (toothHz<targetHz ? (1+shift) : (1-shift));
+    if(rpmLimit>0 && rpmAlt>rpmLimit) rpmAlt = rpmLimit;
+    const feedAlt = rpmAlt*z*usedFz*(Number.isFinite(prud)?prud:1);
+    msg += ` Sugerido: ${fmt0(rpmAlt)} RPM y ${(units==='metric')?`${fmt0(feedAlt)} mm/min`:`${fmt1(feedAlt/25.4)} IPM`}.`;
+  }
+  $('vibeMsg').innerHTML = msg;
 
-      chart.draw(risk);
-    }
+  window.feed = effFeed;
+  window.rpm = rpm;
+  window.rpmLimit = rpmLimit;
 
-    function recalc(){
-      if(!(window.rpm>0 && window.feed>0))return;
-      const rpmScale=parseFloat(($('rpmSlider')||{value:1}).value||'1');
-      const feedScale=parseFloat(($('feedSlider')||{value:1}).value||'1');
+  chart.draw(risk);
+}
 
-      const D=parseFloat($('diam').value);
-      const z=parseInt($('flutes').value,10);
-      const mat=getMaterial();
-      const mach=getMachine();
-      const unitsLocal=window.units||'metric';
+// ---------- REEMPLAZAR recalc() ----------
+function recalc(){
+  if(!(window.rpm>0 && window.feed>0)) return;
+  const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value||'1');
+  const feedScale = parseFloat(($('feedSlider')||{value:1}).value||'1');
 
-      const rpmLimit=window.rpmLimit||parseFloat($('rpmLimit').value)||mach?.rpm_max||12000;
-      const rpmAdj=Math.min(window.rpm*rpmScale,rpmLimit);
+  const D=parseFloat($('diam').value);
+  const z=parseInt($('flutes').value,10);
+  const mat=getMaterial();
+  const mach=getMachine();
+  const unitsLocal=window.units||'metric';
 
-      const feedAdj=window.feed*feedScale;
-      let effFeed;
-      if(feedScale<1){
-        effFeed=feedAdj;
-      }else{
-        effFeed=(mach?.feed_max_mm_min && feedAdj>mach.feed_max_mm_min)?mach.feed_max_mm_min:feedAdj;
-      }
+  const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit').value) || mach?.rpm_max || 12000;
+  const rpmAdj = Math.min(window.rpm * rpmScale, rpmLimit);
 
-      $('rpmOut').textContent=fmt0(rpmAdj);
-      $('feedOut').textContent=(unitsLocal==='metric')?fmt0(effFeed):fmt1(effFeed/25.4);
-      $('rpmCap').classList.toggle('hidden',!(rpmAdj>=rpmLimit-1));
+  const feedAdj = window.feed * feedScale;
+  let effFeed;
+  if(feedScale<1){ effFeed = feedAdj; }
+  else { effFeed = (mach?.feed_max_mm_min && feedAdj>mach.feed_max_mm_min) ? mach.feed_max_mm_min : feedAdj; }
 
-      const aePct=parseFloat($('aePct').value)||30;
-      const ap=parseFloat($('ap').value)||5;
-      const L=parseFloat($('stickout').value)||25;
-      const Dmm=(unitsLocal==='metric')?D:D*25.4;
-      const ae=(aePct/100)*Dmm;
+  $('rpmOut').textContent = fmt0(rpmAdj);
+  $('feedOut').textContent = (unitsLocal==='metric') ? fmt0(effFeed) : fmt1(effFeed/25.4);
+  $('rpmCap').classList.toggle('hidden', !(rpmAdj >= rpmLimit - 1));
 
-      const Kc=mat?.Kc_N_per_mm2||1500;
-      const eta=DATA.defaults?.efficiency||0.8;
+  const aePct = parseFloat($('aePct').value) || 30;
+  const ap = parseFloat($('ap').value) || 5;
+  const L = parseFloat($('stickout').value) || 25;
+  const Dmm = (unitsLocal==='metric') ? D : D*25.4;
+  const ae = (aePct/100)*Dmm;
 
-      const MRR_mm3_min=ae*ap*effFeed;
-      $('mrrOut').textContent=fmt1(MRR_mm3_min/1000);
+  const Kc = mat?.Kc_N_per_mm2 || 1500;
+  const eta = DATA.defaults?.efficiency || 0.8;
 
-      const P_kW=(Kc*(MRR_mm3_min/60))/(1000*eta);
-      const T_Nm=(60*P_kW*1000)/(2*Math.PI*rpmAdj);
-      $('pwrOut').textContent=fmt2(P_kW);
-      $('tqOut').textContent=fmt2(T_Nm);
+  const MRR_mm3_min = ae * ap * effFeed;
+  $('mrrOut').textContent = fmt1(MRR_mm3_min / 1000);
 
-      let loadPct=NaN;
-      if(mach?.power_kw){loadPct=Math.min(200,100*P_kW/mach.power_kw);}
-      $('loadOut').textContent=Number.isFinite(loadPct)?fmt1(loadPct):'—';
-      $('pwrNote').textContent=Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:''
+  // POTENCIA corregida (kW)
+  const P_kW = (Kc * MRR_mm3_min) / (60 * 1e6 * (eta || 1));
+  $('pwrOut').textContent = fmt2(P_kW);
 
-      const toothHz=(rpmAdj*z)/60;$('toothHzOut').textContent=fmt1(toothHz);
-      const band=DATA.vibration?.avoid_band_hz||[600,900];
-      $('avoidBandNote').textContent=`Evitar banda ${band[0]}–${band[1]} Hz`;
+  const T_Nm = (60 * P_kW * 1000) / (2 * Math.PI * Math.max(1, rpmAdj));
+  $('tqOut').textContent = fmt2(T_Nm);
 
-      const fz_mm=effFeed/(rpmAdj*z);
-      const Re=0.02*Dmm;const Ra_um=(fz_mm*fz_mm)/(8*Re)*1000;
-      $('raOut').textContent=fmt2(Ra_um);
+  let loadPct = NaN;
+  if(mach?.power_kw){ loadPct = Math.min(200, 100 * P_kW / mach.power_kw); }
+  $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
+  $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW`:'';
 
-      const Vc_m_min=(Math.PI*Dmm*rpmAdj)/1000;
-      let lifeMin=NaN;
-      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}
+  const toothHz = (rpmAdj * z) / 60; $('toothHzOut').textContent = fmt1(toothHz);
+  const band = DATA.vibration?.avoid_band_hz || [600,900];
+  $('avoidBandNote').textContent = `Evitar banda ${band[0]}–${band[1]} Hz`;
 
-      const holder=getHolder();
-      const W=DATA.vibration?.weights||{ld:0.55,ae:0.20,ap:0.15,fz:0.10};
-      const stiff=holder?.stiffness_factor||1.0;
-      const L_over_D=L/Dmm;
-      const ap_ratio=Math.min(1.2,ap/Math.max(1,Dmm));
-      let risk=(W.ld*(L_over_D/2.0)+W.ae*(aePct/100)+W.ap*ap_ratio+W.fz*Math.min(1,(fz_mm/(0.1*Dmm+0.02))))/stiff;
-      const inBand=(toothHz>=band[0] && toothHz<=band[1]);
-      if(inBand)risk=Math.min(2,risk+0.3);
-      risk=Math.max(0,Math.min(2,risk));
+  const fz_mm = effFeed / (rpmAdj * z);
+  const Re = 0.02 * Dmm;
+  const Ra_um = (fz_mm * fz_mm) / (8 * Re) * 1000;
+  $('raOut').textContent = fmt2(Ra_um);
 
-      if(Number.isFinite(lifeMin)){lifeMin*=(1-(risk*0.4));}
-      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+  const Vc_m_min = (Math.PI * Dmm * rpmAdj) / 1000;
+  let lifeMin = NaN;
+  if(mat?.taylor?.n != null && mat?.taylor?.C != null){
+    lifeMin = mat.taylor.C / Math.pow(Math.max(0.0001, Vc_m_min), mat.taylor.n);
+  }
 
-      const SWEET=0.65,WARN=1.00;let state='ok';if(risk>=WARN || inBand)state='bad';else if(risk>=SWEET)state='warn';
-      const vb=document.querySelector('.vibe-box');vb.classList.remove('ok','warn','bad');vb.classList.add(state);
-      const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
-      $('vibeMsg').innerHTML=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+  const holder = getHolder();
+  const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
+  const stiff = holder?.stiffness_factor || 1.0;
+  const L_over_D = L / Dmm;
+  const ap_ratio = Math.min(1.2, ap / Math.max(1, Dmm));
+  let risk = (W.ld*(L_over_D/2.0) + W.ae*(aePct/100) + W.ap*ap_ratio + W.fz*Math.min(1,(fz_mm/(0.1*Dmm+0.02))))/stiff;
+  const inBand = (toothHz >= band[0] && toothHz <= band[1]);
+  if(inBand) risk = Math.min(2, risk + 0.3);
+  risk = Math.max(0, Math.min(2, risk));
 
-      const bar=$('sweetBarDual');
-      let color="from-rose-600 to-rose-700";
-      if(risk<0.65)color="from-emerald-500 to-emerald-600";
-      else if(risk<1.0)color="from-yellow-400 to-yellow-500";
-      bar.className=`h-3 mt-4 rounded-full transition-all duration-300 bg-gradient-to-r ${color}`;
+  if(Number.isFinite(lifeMin)){ lifeMin *= (1 - (risk * 0.4)); }
+  $('lifeOut').textContent = Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
 
-      $('rpmLabel').textContent=`${Math.round(rpmScale*100)} % — RPM`;
-      $('feedLabel').textContent=`${Math.round(feedScale*100)} % — Avance`;
+  const SWEET = 0.65, WARN = 1.00; let state='ok'; if(risk>=WARN || inBand) state='bad'; else if(risk>=SWEET) state='warn';
+  const vb=document.querySelector('.vibe-box'); vb.classList.remove('ok','warn','bad'); vb.classList.add(state);
+  const badge=`<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
+  $('vibeMsg').innerHTML=`${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
 
-      chart.draw(risk);
-    }
+  const bar=$('sweetBarDual');
+  let color="from-rose-600 to-rose-700";
+  if(risk<0.65) color="from-emerald-500 to-emerald-600";
+  else if(risk<1.0) color="from-yellow-400 to-yellow-500";
+  bar.className=`h-3 mt-4 rounded-full transition-all duration-300 bg-gradient-to-r ${color}`;
+
+  $('rpmLabel').textContent=`${Math.round(rpmScale*100)} % — RPM`;
+  $('feedLabel').textContent=`${Math.round(feedScale*100)} % — Avance`;
+
+  chart.draw(risk);
+}
+
 
     async function loadRelated(){
       try{
