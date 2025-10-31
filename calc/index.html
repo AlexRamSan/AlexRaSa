@@ -25,7 +25,7 @@
 
   <!-- Open Graph -->
   <meta property="og:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
-  <meta property="og:description" content="Estima ahorros en tiempo de ciclo, vida de herramienta y tiempos muertos. Calcula ROI, payback y compara Actual vs Propuesta." />
+  <meta property="og:description" content="Estima ahorros por tiempo de ciclo, vida de herramienta y tiempos muertos. Obtén ROI, payback y una comparativa Actual vs Propuesta." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://alexrasa.store/calculadora-costo-beneficio/" />
   <meta property="og:image" content="https://alexrasa.store/og/og-image.png" />
@@ -104,6 +104,23 @@
     <!-- FORM -->
     <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
       <h2 class="text-lg font-semibold text-gray-900">Parámetros del proceso</h2>
+
+      <!-- Selector de caso / presets -->
+      <label class="text-sm mt-3 block">Caso
+        <select id="caseSelect" class="mt-1 w-full px-3 py-2 border rounded-md">
+          <option value="personalizado">Personalizado (combina ahorros)</option>
+          <option value="ciclo">Ahorro: tiempo de ciclo</option>
+          <option value="herramienta">Ahorro: vida de herramienta</option>
+          <option value="programacion">Ahorro: tiempo de programación</option>
+          <option value="tmuerto">Mejora: tiempos muertos</option>
+        </select>
+      </label>
+
+      <div class="flex gap-2 mt-2">
+        <button id="btnSaveScenario" class="flex-1 px-3 py-2 rounded-md bg-gray-800 text-white text-sm">Guardar escenario</button>
+        <button id="btnLoadScenario" class="flex-1 px-3 py-2 rounded-md bg-gray-600 text-white text-sm">Mis escenarios</button>
+      </div>
+
       <div class="grid gap-3 mt-3">
         <label class="text-sm">Tiempo de ciclo actual (s)
           <input id="cicloA" type="number" value="60" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
@@ -194,7 +211,13 @@
 
     <!-- VISUALES -->
     <section id="visuales" class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-8 lg:col-start-1">
-      <h2 class="text-lg font-semibold text-gray-900">Visuales</h2>
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">Visuales</h2>
+        <div class="flex gap-2">
+          <button onclick="makeShareLink()" class="px-3 py-2 rounded-md bg-gray-800 text-white text-sm">Compartir link</button>
+          <button onclick="exportPDF()" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm">Exportar PDF</button>
+        </div>
+      </div>
       <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="rounded-lg border border-gray-200 p-3">
           <p class="text-sm font-semibold text-gray-700">Distribución de ahorros</p>
@@ -233,339 +256,340 @@
     <span class="font-medium">WhatsApp</span>
   </a>
 
+  <!-- Dependencias para exportar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <!-- ===== SCRIPTS ===== -->
   <script>
-/* ===== Helpers ===== */
-function fmt(n){ return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function q(id){ return document.getElementById(id); }
+    /* ===== Helpers ===== */
+    function fmt(n){ return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    function q(id){ return document.getElementById(id); }
 
-/* ===== Presets & Storage ===== */
-const PRESETS = {
-  "Mazak/heavy": { cicloA:60, cicloP:30, vidaA:800, vidaP:2000, costoHerr:128.87, costoHora:50, pmes:10000, inversion:2000, tmuertoA:120, tmuertoP:30 },
-  "Pequeña/turn": { cicloA:120, cicloP:90, vidaA:600, vidaP:1200, costoHerr:80, costoHora:35, pmes:3000, inversion:1500, tmuertoA:60, tmuertoP:15 }
-};
-const STORAGE_KEY = 'ars_scenarios_v1';
+    /* ===== Presets & Storage ===== */
+    const PRESETS = {
+      "Mazak/heavy": { cicloA:60, cicloP:30, vidaA:800, vidaP:2000, costoHerr:128.87, costoHora:50, pmes:10000, inversion:2000, tmuertoA:120, tmuertoP:30 },
+      "Pequeña/turn": { cicloA:120, cicloP:90, vidaA:600, vidaP:1200, costoHerr:80, costoHora:35, pmes:3000, inversion:1500, tmuertoA:60, tmuertoP:15 }
+    };
+    const STORAGE_KEY = 'ars_scenarios_v1';
 
-/* ===== Read / Apply form ===== */
-function readForm(){
-  return {
-    cicloA:+q('cicloA').value||0,
-    cicloP:+q('cicloP').value||0,
-    vidaA:+q('vidaA').value||0,
-    vidaP:+q('vidaP').value||0,
-    costoHerr:+q('costoHerr').value||0,
-    costoHora:+q('costoHora').value||0,
-    pmes:+q('pmes').value||0,
-    inversion:+q('inversion').value||0,
-    tmuertoA:+q('tmuertoA').value||0,
-    tmuertoP:+q('tmuertoP').value||0,
-    incCiclo:q('incCiclo')?.checked ?? true,
-    incHerr:q('incHerr')?.checked ?? true,
-    incTM:q('incTM')?.checked ?? true,
-    case: q('caseSelect')?.value || 'personalizado'
-  };
-}
-function writeForm(obj){
-  const keys = ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP'];
-  keys.forEach(k=>{ if(obj[k]!==undefined) q(k).value = obj[k]; });
-  if(obj.incCiclo !== undefined) q('incCiclo').checked = !!obj.incCiclo;
-  if(obj.incHerr !== undefined)  q('incHerr').checked  = !!obj.incHerr;
-  if(obj.incTM !== undefined)    q('incTM').checked    = !!obj.incTM;
-  if(obj.case !== undefined)     q('caseSelect').value = obj.case;
-  applyInclusions();
-}
+    /* ===== Read / Apply form ===== */
+    function readForm(){
+      return {
+        cicloA:+q('cicloA').value||0,
+        cicloP:+q('cicloP').value||0,
+        vidaA:+q('vidaA').value||0,
+        vidaP:+q('vidaP').value||0,
+        costoHerr:+q('costoHerr').value||0,
+        costoHora:+q('costoHora').value||0,
+        pmes:+q('pmes').value||0,
+        inversion:+q('inversion').value||0,
+        tmuertoA:+q('tmuertoA').value||0,
+        tmuertoP:+q('tmuertoP').value||0,
+        incCiclo:q('incCiclo')?.checked ?? true,
+        incHerr:q('incHerr')?.checked ?? true,
+        incTM:q('incTM')?.checked ?? true,
+        case: q('caseSelect')?.value || 'personalizado'
+      };
+    }
+    function writeForm(obj){
+      const keys = ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP'];
+      keys.forEach(k=>{ if(obj[k]!==undefined) q(k).value = obj[k]; });
+      if(obj.incCiclo !== undefined) q('incCiclo').checked = !!obj.incCiclo;
+      if(obj.incHerr !== undefined)  q('incHerr').checked  = !!obj.incHerr;
+      if(obj.incTM !== undefined)    q('incTM').checked    = !!obj.incTM;
+      if(obj.case !== undefined)     q('caseSelect').value = obj.case;
+      applyInclusions();
+    }
 
-/* ===== Escenarios (localStorage) ===== */
-function saveScenario(){
-  const name = prompt('Nombre del escenario (ej: cliente X - mejora ciclo):');
-  if(!name) return;
-  const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const sc = { name, date: new Date().toISOString(), data: readForm() };
-  list.unshift(sc);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0,20)));
-  alert('Escenario guardado.');
-}
-function showScenarioPicker(){
-  const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  if(list.length===0){ alert('No tienes escenarios guardados.'); return; }
-  const names = list.map((s,i)=>`${i+1}. ${s.name} — ${new Date(s.date).toLocaleString()}`);
-  const idx = prompt('Escenarios:\n' + names.join('\n') + '\nEscribe el número para cargarlo:');
-  const i = parseInt(idx,10)-1;
-  if(isNaN(i) || !list[i]) return;
-  writeForm(list[i].data);
-  calcular();
-}
+    /* ===== Escenarios (localStorage) ===== */
+    function saveScenario(){
+      const name = prompt('Nombre del escenario (ej: cliente X - mejora ciclo):');
+      if(!name) return;
+      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const sc = { name, date: new Date().toISOString(), data: readForm() };
+      list.unshift(sc);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0,20)));
+      alert('Escenario guardado.');
+    }
+    function showScenarioPicker(){
+      const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if(list.length===0){ alert('No tienes escenarios guardados.'); return; }
+      const names = list.map((s,i)=>`${i+1}. ${s.name} — ${new Date(s.date).toLocaleString()}`);
+      const idx = prompt('Escenarios:\n' + names.join('\n') + '\nEscribe el número para cargarlo:');
+      const i = parseInt(idx,10)-1;
+      if(isNaN(i) || !list[i]) return;
+      writeForm(list[i].data);
+      calcular();
+    }
 
-/* ===== Compartir via link (encode base64 JSON) ===== */
-function makeShareLink(){
-  const data = readForm();
-  const b = btoa(encodeURIComponent(JSON.stringify(data)));
-  const url = location.origin + location.pathname + '?s=' + b;
-  prompt('Link para compartir. Copiar:', url);
-}
+    /* ===== Compartir via link (encode base64 JSON) ===== */
+    function makeShareLink(){
+      const data = readForm();
+      const b = btoa(encodeURIComponent(JSON.stringify(data)));
+      const url = location.origin + location.pathname + '?s=' + b;
+      prompt('Link para compartir. Copiar:', url);
+    }
 
-/* ===== Cargar desde link si hay param ?s=... ===== */
-(function loadFromUrl(){
-  const params = new URLSearchParams(location.search);
-  const s = params.get('s');
-  if(!s) return;
-  try{
-    const raw = decodeURIComponent(atob(s));
-    const obj = JSON.parse(raw);
-    writeForm(obj);
-    // Indicar que venimos de link
-    setTimeout(()=>{ alert('Escenario cargado desde link. Revisa valores y presiona Calcular.'); }, 200);
-  }catch(e){ console.warn('No se pudo cargar escenario desde URL', e); }
-})();
+    /* ===== Cargar desde link si hay param ?s=... ===== */
+    (function loadFromUrl(){
+      const params = new URLSearchParams(location.search);
+      const s = params.get('s');
+      if(!s) return;
+      try{
+        const raw = decodeURIComponent(atob(s));
+        const obj = JSON.parse(raw);
+        writeForm(obj);
+        // Indicar que venimos de link
+        setTimeout(()=>{ alert('Escenario cargado desde link. Revisa valores y presiona Calcular.'); }, 200);
+      }catch(e){ console.warn('No se pudo cargar escenario desde URL', e); }
+    })();
 
-/* ===== PDF export ===== */
-async function exportPDF(){
-  const main = document.getElementById('calc');
-  if(!main){ alert('No se encontró la sección a exportar.'); return; }
-  const origScroll = window.scrollY;
-  window.scrollTo(0,0);
-  try{
-    const canvas = await html2canvas(main, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-    const img = canvas.toDataURL('image/jpeg', 0.95);
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation:'portrait', unit:'px', format:[canvas.width, canvas.height] });
-    pdf.addImage(img, 'JPEG', 0, 0, canvas.width, canvas.height);
-    pdf.save('calculadora-escenario.pdf');
-  }catch(e){
-    console.error(e); alert('Error al generar PDF. Revisa consola.');
-  } finally { window.scrollTo(0, origScroll); }
-}
+    /* ===== PDF export ===== */
+    async function exportPDF(){
+      const main = document.getElementById('calc');
+      if(!main){ alert('No se encontró la sección a exportar.'); return; }
+      const origScroll = window.scrollY;
+      window.scrollTo(0,0);
+      try{
+        const canvas = await html2canvas(main, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        const img = canvas.toDataURL('image/jpeg', 0.95);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation:'portrait', unit:'px', format:[canvas.width, canvas.height] });
+        pdf.addImage(img, 'JPEG', 0, 0, canvas.width, canvas.height);
+        pdf.save('calculadora-escenario.pdf');
+      }catch(e){
+        console.error(e); alert('Error al generar PDF. Revisa consola.');
+      } finally { window.scrollTo(0, origScroll); }
+    }
 
-/* ===== UI helpers existentes (no tocar) ===== */
-function setEnabled(ids, on){
-  ids.forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.disabled = !on;
-    el.classList.toggle('bg-gray-100', !on);
-    el.classList.toggle('cursor-not-allowed', !on);
-  });
-}
-function applyInclusions(){
-  const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-  const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-  const incTM    = document.getElementById('incTM')?.checked ?? true;
-  setEnabled(['cicloA','cicloP'], incCiclo);
-  setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
-  setEnabled(['tmuertoA','tmuertoP'], incTM);
-}
+    /* ===== UI helpers existentes (no tocar) ===== */
+    function setEnabled(ids, on){
+      ids.forEach(id=>{
+        const el=document.getElementById(id);
+        if(!el) return;
+        el.disabled = !on;
+        el.classList.toggle('bg-gray-100', !on);
+        el.classList.toggle('cursor-not-allowed', !on);
+      });
+    }
+    function applyInclusions(){
+      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
+      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
+      const incTM    = document.getElementById('incTM')?.checked ?? true;
+      setEnabled(['cicloA','cicloP'], incCiclo);
+      setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
+      setEnabled(['tmuertoA','tmuertoP'], incTM);
+    }
 
-/* ===== Render SVGs (reuse tus funciones) ===== */
-function renderDonut(targetId, parts, labels){
-  // same code que ya tenías (abrigo corto para no reescribir)
-  const total = parts.reduce((a,b)=>a+b,0);
-  const W=320,H=210,cx=110,cy=105,r=80,th=28;
-  let start=0; const colors=['#6366F1','#22C55E','#F59E0B','#06B6D4','#EF4444'];
-  const segs = parts.map((v,i)=>{
-    const frac = total>0 ? v/total : 0;
-    const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
-    const large = (a1-a0)>Math.PI ? 1:0;
-    const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
-    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
-    const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
-    const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
-    const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
-    const pct = total>0 ? Math.round(frac*100) : 0;
-    return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>`+
-           (pct>0?`<text x="220" y="${26+18*i}" font-size="12" fill="#334155">${labels[i]}: ${pct}%</text>`:'');
-  }).join('');
-  const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="#fff"></circle>`+
-                 `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
-  const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
-  const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
-}
-function renderBars(targetId, pairs){
-  // reuse la función que ya tenías
-  const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
-    lines: String(lbl).replace(' (', '\n(').split('\n'),
-    a, b, lowerIsBetter
-  }));
-  const approxChar = 7;
-  const labelCol = Math.max(100, Math.min(200, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
-  const barStartX = labelCol + 12;
-  const barMax = 240;
-  const rowH = 32;
-  const rowGap = 12;
-  const padY = 16;
-  const W = barStartX + barMax + 120;
-  const H = padY + rowsData.length * (rowH + rowGap) + 28;
-  const maxVal = Math.max(...rowsData.flatMap(r => [r.a, r.b].map(v => Math.abs(v) || 0)), 1);
-  let y = padY;
-  const rows = rowsData.map(r => {
-    const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
-    const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
-    const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
-    const label = `<text x="0" y="${y+12}" font-size="12" fill="#334155">`
-      + r.lines.map((ln, i) => i === 0 ? ln : `<tspan x="0" dy="1.2em">${ln}</tspan>`).join('')
-      + `</text>`;
-    const bars = `
-      <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
-      <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
-      <text x="${barStartX + aw + 4}" y="${y+9}"  font-size="10" fill="#475569">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
-      <text x="${barStartX + bw + 4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
-    `;
-    const out = label + bars;
-    y += rowH + rowGap;
-    return out;
-  }).join('');
-  const legendY = H - 18;
-  const legend = `
-    <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
-    <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10" fill="#334155">Actual</text>
-    <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
-    <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10" fill="#334155">Propuesta</text>
-  `;
-  const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
-  const el = document.getElementById(targetId);
-  if (el) el.innerHTML = svg;
-}
+    /* ===== Render SVGs (reuse tus funciones) ===== */
+    function renderDonut(targetId, parts, labels){
+      const total = parts.reduce((a,b)=>a+b,0);
+      const W=320,H=210,cx=110,cy=105,r=80,th=28;
+      let start=0; const colors=['#6366F1','#22C55E','#F59E0B','#06B6D4','#EF4444'];
+      const segs = parts.map((v,i)=>{
+        const frac = total>0 ? v/total : 0;
+        const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
+        const large = (a1-a0)>Math.PI ? 1:0;
+        const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+        const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+        const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
+        const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
+        const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
+        const pct = total>0 ? Math.round(frac*100) : 0;
+        return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>`+
+               (pct>0?`<text x="220" y="${26+18*i}" font-size="12" fill="#334155">${labels[i]}: ${pct}%</text>`:'');
+      }).join('');
+      const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="#fff"></circle>`+
+                     `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
+      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
+      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+    }
+    function renderBars(targetId, pairs){
+      const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
+        lines: String(lbl).replace(' (', '\n(').split('\n'),
+        a, b, lowerIsBetter
+      }));
+      const approxChar = 7;
+      const labelCol = Math.max(100, Math.min(200, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
+      const barStartX = labelCol + 12;
+      const barMax = 240;
+      const rowH = 32;
+      const rowGap = 12;
+      const padY = 16;
+      const W = barStartX + barMax + 120;
+      const H = padY + rowsData.length * (rowH + rowGap) + 28;
+      const maxVal = Math.max(...rowsData.flatMap(r => [r.a, r.b].map(v => Math.abs(v) || 0)), 1);
+      let y = padY;
+      const rows = rowsData.map(r => {
+        const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
+        const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
+        const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
+        const label = `<text x="0" y="${y+12}" font-size="12" fill="#334155">`
+          + r.lines.map((ln, i) => i === 0 ? ln : `<tspan x="0" dy="1.2em">${ln}</tspan>`).join('')
+          + `</text>`;
+        const bars = `
+          <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
+          <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
+          <text x="${barStartX + aw + 4}" y="${y+9}"  font-size="10" fill="#475569">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
+          <text x="${barStartX + bw + 4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
+        `;
+        const out = label + bars;
+        y += rowH + rowGap;
+        return out;
+      }).join('');
+      const legendY = H - 18;
+      const legend = `
+        <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
+        <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10" fill="#334155">Actual</text>
+        <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
+        <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10" fill="#334155">Propuesta</text>
+      `;
+      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
+      const el = document.getElementById(targetId);
+      if (el) el.innerHTML = svg;
+    }
 
-/* ===== Cálculo central (adaptado a casos) ===== */
-function calcular(){
-  const f = readForm();
+    /* ===== Cálculo central (adaptado a casos) ===== */
+    function calcular(){
+      const f = readForm();
 
-  // Si el usuario eligió un caso, ajustamos las inclusiones para guiar la UX
-  switch(f.case){
-    case 'ciclo':
-      q('incCiclo').checked = true;
-      q('incHerr').checked = false;
-      q('incTM').checked = false;
-      break;
-    case 'herramienta':
-      q('incCiclo').checked = false;
-      q('incHerr').checked = true;
-      q('incTM').checked = false;
-      break;
-    case 'programacion':
-      // Programación se modela como reducción de tiempo muerto y/o ciclo según preferencia
-      q('incCiclo').checked = true;
-      q('incHerr').checked = false;
-      q('incTM').checked = true;
-      break;
-    case 'tmuerto':
-      q('incCiclo').checked = false;
-      q('incHerr').checked = false;
-      q('incTM').checked = true;
-      break;
-    default:
-      // personalizado: no tocar
-      break;
-  }
-  applyInclusions();
+      // Si el usuario eligió un caso, ajustamos las inclusiones para guiar la UX
+      switch(f.case){
+        case 'ciclo':
+          q('incCiclo').checked = true;
+          q('incHerr').checked = false;
+          q('incTM').checked = false;
+          break;
+        case 'herramienta':
+          q('incCiclo').checked = false;
+          q('incHerr').checked = true;
+          q('incTM').checked = false;
+          break;
+        case 'programacion':
+          // Programación se modela como reducción de tiempo muerto y/o ciclo según preferencia
+          q('incCiclo').checked = true;
+          q('incHerr').checked = false;
+          q('incTM').checked = true;
+          break;
+        case 'tmuerto':
+          q('incCiclo').checked = false;
+          q('incHerr').checked = false;
+          q('incTM').checked = true;
+          break;
+        default:
+          // personalizado: no tocar
+          break;
+      }
+      applyInclusions();
 
-  const cicloA = +q('cicloA').value || 0;
-  const cicloP = +q('cicloP').value || 0;
-  const vidaA = +q('vidaA').value || 0;
-  const vidaP = +q('vidaP').value || 0;
-  const costoHerr = +q('costoHerr').value || 0;
-  const costoHora = +q('costoHora').value || 0;
-  const pmes = +q('pmes').value || 0;
-  const inversion = +q('inversion').value || 0;
-  const tmuertoA = +q('tmuertoA').value || 0;
-  const tmuertoP = +q('tmuertoP').value || 0;
+      const cicloA = +q('cicloA').value || 0;
+      const cicloP = +q('cicloP').value || 0;
+      const vidaA = +q('vidaA').value || 0;
+      const vidaP = +q('vidaP').value || 0;
+      const costoHerr = +q('costoHerr').value || 0;
+      const costoHora = +q('costoHora').value || 0;
+      const pmes = +q('pmes').value || 0;
+      const inversion = +q('inversion').value || 0;
+      const tmuertoA = +q('tmuertoA').value || 0;
+      const tmuertoP = +q('tmuertoP').value || 0;
 
-  // Ahorro por ciclo (USD/mes)
-  const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
+      // Ahorro por ciclo (USD/mes)
+      const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
 
-  // Herramienta
-  const consA = (vidaA>0) ? (pmes / vidaA) : 0;
-  const consP = (vidaP>0) ? (pmes / vidaP) : 0;
-  const costoHerrA = consA * costoHerr;
-  const costoHerrP = consP * costoHerr;
-  const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
+      // Herramienta
+      const consA = (vidaA>0) ? (pmes / vidaA) : 0;
+      const consP = (vidaP>0) ? (pmes / vidaP) : 0;
+      const costoHerrA = consA * costoHerr;
+      const costoHerrP = consP * costoHerr;
+      const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
 
-  // Tiempo muerto mensual (min -> horas)
-  const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
+      // Tiempo muerto mensual (min -> horas)
+      const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
 
-  const incCiclo = q('incCiclo')?.checked ?? true;
-  const incHerr  = q('incHerr')?.checked ?? true;
-  const incTM    = q('incTM')?.checked ?? true;
+      const incCiclo = q('incCiclo')?.checked ?? true;
+      const incHerr  = q('incHerr')?.checked ?? true;
+      const incTM    = q('incTM')?.checked ?? true;
 
-  const ahorroTotal = Math.max(0,
-    (incCiclo ? ahorroCiclo : 0) +
-    (incHerr  ? ahorroHerr  : 0) +
-    (incTM    ? ahorroTM    : 0)
-  );
+      const ahorroTotal = Math.max(0,
+        (incCiclo ? ahorroCiclo : 0) +
+        (incHerr  ? ahorroHerr  : 0) +
+        (incTM    ? ahorroTM    : 0)
+      );
 
-  const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
-  const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
-  const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
+      const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
+      const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
+      const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
 
-  q('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
-  q('roi').textContent        = `${fmt(roiAnual)}%`;
-  q('roiMensual').textContent = `${fmt(roiMensual)}%`;
-  q('payback').textContent    = fmt(payback);
-  q('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
+      q('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
+      q('roi').textContent        = `${fmt(roiAnual)}%`;
+      q('roiMensual').textContent = `${fmt(roiMensual)}%`;
+      q('payback').textContent    = fmt(payback);
+      q('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
 
-  const tmWrap = q('kpiTMBox');
-  if (tmWrap) tmWrap.classList.toggle('opacity-50', !incTM);
+      const tmWrap = q('kpiTMBox');
+      if (tmWrap) tmWrap.classList.toggle('opacity-50', !incTM);
 
-  // Tabla comparativa
-  const pphA = cicloA>0 ? 3600/cicloA : 0;
-  const pphP = cicloP>0 ? 3600/cicloP : 0;
-  const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
-  const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
+      // Tabla comparativa
+      const pphA = cicloA>0 ? 3600/cicloA : 0;
+      const pphP = cicloP>0 ? 3600/cicloP : 0;
+      const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
+      const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
 
-  function delta(a,p,{higherIsBetter=true}={}){ if(a===0 && p===0) return {val:0, up:false}; const d = (p-a) / (a===0 ? 1 : a) * 100; const up = higherIsBetter ? d>0 : d<0; return {val:d, up}; }
-  function row(name,a,p,opt){
-    const d = delta(a,p,opt||{});
-    const badge = `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${d.up? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'}">${(d.val>=0?'+':'')+fmt(d.val)}%</span>`;
-    return `<tr class="bg-gray-50 ring-1 ring-gray-200">
-      <td class="px-2 py-2">${name}</td>
-      <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
-      <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
-      <td class="px-2 py-2 text-right">${badge}</td>
-    </tr>`;
-  }
-  const rows = [
-    row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
-    row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
-    row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
-    row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
-    row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
-    row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
-    row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
-    row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
-  ].join('');
-  q('tbodyComp').innerHTML = rows;
+      function delta(a,p,{higherIsBetter=true}={}){ if(a===0 && p===0) return {val:0, up:false}; const d = (p-a) / (a===0 ? 1 : a) * 100; const up = higherIsBetter ? d>0 : d<0; return {val:d, up}; }
+      function row(name,a,p,opt){
+        const d = delta(a,p,opt||{});
+        const badge = `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${d.up? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'}">${(d.val>=0?'+':'')+fmt(d.val)}%</span>`;
+        return `<tr class="bg-gray-50 ring-1 ring-gray-200">
+          <td class="px-2 py-2">${name}</td>
+          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
+          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
+          <td class="px-2 py-2 text-right">${badge}</td>
+        </tr>`;
+      }
+      const rows = [
+        row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
+        row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
+        row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
+        row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
+        row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
+        row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
+        row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
+        row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
+      ].join('');
+      q('tbodyComp').innerHTML = rows;
 
-  // Visuales
-  const parts = [], labels = [];
-  const ahorroCicloPOS = Math.max(0, ahorroCiclo);
-  const ahorroHerrPOS  = Math.max(0, ahorroHerr);
-  const ahorroTMPOS    = Math.max(0, ahorroTM);
-  if(incCiclo && ahorroCicloPOS>0) { parts.push(ahorroCicloPOS); labels.push('Ciclo'); }
-  if(incHerr  && ahorroHerrPOS>0)  { parts.push(ahorroHerrPOS);  labels.push('Herramienta'); }
-  if(incTM    && ahorroTMPOS>0)    { parts.push(ahorroTMPOS);    labels.push('Tiempo muerto'); }
-  renderDonut('vizAhorros', parts, labels);
-  renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
-}
+      // Visuales
+      const parts = [], labels = [];
+      const ahorroCicloPOS = Math.max(0, ahorroCiclo);
+      const ahorroHerrPOS  = Math.max(0, ahorroHerr);
+      const ahorroTMPOS    = Math.max(0, ahorroTM);
+      if(incCiclo && ahorroCicloPOS>0) { parts.push(ahorroCicloPOS); labels.push('Ciclo'); }
+      if(incHerr  && ahorroHerrPOS>0)  { parts.push(ahorroHerrPOS);  labels.push('Herramienta'); }
+      if(incTM    && ahorroTMPOS>0)    { parts.push(ahorroTMPOS);    labels.push('Tiempo muerto'); }
+      renderDonut('vizAhorros', parts, labels);
+      renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
+    }
 
-/* ===== Listeners iniciales ===== */
-document.getElementById('btnCalcular')?.addEventListener('click', calcular);
-document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
-['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP']
-  .forEach(id => document.getElementById(id)?.addEventListener('input', () => { if (window.innerWidth >= 768) calcular(); }));
-['incCiclo','incHerr','incTM'].forEach(id=>{ document.getElementById(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); }); });
+    /* ===== Listeners iniciales ===== */
+    document.getElementById('btnCalcular')?.addEventListener('click', calcular);
+    document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
+    ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP']
+      .forEach(id => document.getElementById(id)?.addEventListener('input', () => { if (window.innerWidth >= 768) calcular(); }));
+    ['incCiclo','incHerr','incTM'].forEach(id=>{ document.getElementById(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); }); });
 
-q('caseSelect')?.addEventListener('change', ()=>{ calcular(); });
-q('btnSaveScenario')?.addEventListener('click', saveScenario);
-q('btnLoadScenario')?.addEventListener('click', showScenarioPicker);
+    q('caseSelect')?.addEventListener('change', ()=>{ calcular(); });
+    q('btnSaveScenario')?.addEventListener('click', saveScenario);
+    q('btnLoadScenario')?.addEventListener('click', showScenarioPicker);
 
-/* Quick actions: share and pdf - colocarlos en la UI donde prefieras.
-   Si no tienes botones, los puedes invocar desde consola: makeShareLink(); exportPDF(); */
-window.makeShareLink = makeShareLink;
-window.exportPDF = exportPDF;
+    /* Quick actions: share and pdf - colocarlos en la UI donde prefieras.
+       Si no tienes botones, los puedes invocar desde consola: makeShareLink(); exportPDF(); */
+    window.makeShareLink = makeShareLink;
+    window.exportPDF = exportPDF;
 
-/* Estado inicial */
-applyInclusions();
-calcular();
-</script>
-
+    /* Estado inicial */
+    applyInclusions();
+    calcular();
+  </script>
 </body>
 </html>
