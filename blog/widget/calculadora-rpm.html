@@ -469,7 +469,12 @@
       const L_mm  = Number.isFinite(L_input) && L_input>0 ? L_input : est.L;
       $('vibeInfo').innerHTML = `Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
 
-      const MRR_mm3_min = ap_mm * ae_mm * feed_mm_min;
+      // usar avance efectivo (lo que sí da la máquina)
+const effFeed = (mach?.feed_max_mm_min && feed_mm_min > mach.feed_max_mm_min)
+  ? mach.feed_max_mm_min
+  : feed_mm_min;
+
+const MRR_mm3_min = ap_mm * ae_mm * effFeed;
       const MRR_cm3_min = MRR_mm3_min / 1000;
       $('mrrOut').textContent = fmt1(MRR_cm3_min);
 
@@ -565,7 +570,11 @@ if (feedScale && feedScale < 1) {
       const Kc = mat?.Kc_N_per_mm2 || 1500;
       const eta = DATA.defaults?.efficiency || 0.8;
 
-      const MRR_mm3_min = ae * ap * feedAdj;
+      const effFeed = (mach?.feed_max_mm_min && feedAdj > mach.feed_max_mm_min)
+  ? mach.feed_max_mm_min
+  : feedAdj;
+
+const MRR_mm3_min = ae * ap * effFeed;
       $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
 
       const P_kW = (Kc * (MRR_mm3_min/60)) / (1000*eta);
