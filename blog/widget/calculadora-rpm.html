@@ -288,14 +288,77 @@
     let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
 
     async function loadData(){
+  const tries = [
+    './data/cutting-data.json',
+    '/data/cutting-data.json',
+    'data/cutting-data.json'
+  ];
+  let loaded = false;
+  for(const p of tries){
+    try{
+      console.debug('[DATA] probando', p);
+      const r = await fetch(p, { cache: 'no-store' });
+      console.debug('[DATA] status', p, r.status);
+      if(!r.ok){ console.warn('[DATA] no ok', p, r.status); continue; }
+      const text = await r.text();
+      let parsed;
       try{
-        const r=await fetch('/data/cutting-data.json',{cache:'no-store'});
-        if(r.ok) DATA=await r.json();
+        parsed = JSON.parse(text);
       }catch(e){
-        console.warn('No se cargó cutting-data.json', e);
+        console.error('[DATA] parse error en', p, e);
+        console.debug(text.slice(0,800));
+        continue;
       }
-      window.DATA=DATA;
+
+      // --- Normalizaciones útiles ---
+      // máquinas
+      if(parsed.machines_profiles && !parsed.machine_profiles) parsed.machine_profiles = parsed.machines_profiles;
+      if(parsed.machines_by_brand && !parsed.machine_profiles){
+        // extrae list plano si es necesario (simple flatten)
+        parsed.machine_profiles = [];
+        Object.values(parsed.machines_by_brand).forEach(byType=>{
+          Object.values(byType).forEach(arr=> parsed.machine_profiles.push(...arr.map(x=>{
+            // map campos comunes usados por la app
+            return {
+              id: x.ref_id || x.id || (x.brand?`${x.brand}_${x.name}`: (x.name||'machine')),
+              brand: x.brand || x.type || '',
+              model: x.model || x.name || '',
+              rpm_max: x.rpm_max || x.rpm_max,
+              power_kw: x.power_kw || x.power_kw,
+              feed_max_mm_min: x.feed_max_mm_min || x.feed_max_mm_min,
+              notes: x.notes || ''
+            };
+          })));
+        });
+      }
+
+      // variantes de nombre
+      if(parsed.tool_materials && !parsed.tool_materials) parsed.tool_materials = parsed.tool_materials; // passthru (kept for pattern)
+      if(parsed.tool_types && !parsed.tool_types) parsed.tool_types = parsed.tool_types;
+      if(parsed.holders && !parsed.holders) parsed.holders = parsed.holders;
+
+      // asegura estructura mínima
+      const base = {
+        materials: [], holders: [], vibration: {}, defaults: {}, machine_profiles: [], tool_types: [], tool_materials: [], operations: []
+      };
+      DATA = Object.assign(base, parsed);
+      window.DATA = DATA;
+
+      console.info('[DATA] cargado desde', p);
+      console.debug('[DATA] claves disponibles:', Object.keys(parsed));
+      console.debug('[DATA] machine_profiles length:', (DATA.machine_profiles||[]).length);
+      loaded = true;
+      break;
+    }catch(fetchErr){
+      console.warn('[DATA] fetch error en', p, fetchErr);
     }
+  }
+
+  if(!loaded){
+    console.error('[DATA] No se pudo cargar cutting-data.json. Revisa ruta, CORS o servidor (si abres con file:// usa un servidor local).');
+  }
+  return loaded;
+}
 
     function fillSelectors(){
   const sel = $('material'); sel.innerHTML = '';
