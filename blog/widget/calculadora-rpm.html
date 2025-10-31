@@ -9,8 +9,6 @@
 
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-YcsIPv1V1+0oJz/KQb+8EoeY4ufyqtj4d7XbcJ8I8rEAyDPU2cZ1sQHP9R5cWvDHHxQbyChS9QFQ6AqgQZ4G2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <style>
     :root{
@@ -53,8 +51,17 @@
     .hint{color:var(--muted);font-size:.75rem}
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
-    /* PDF styles: for html2pdf */
-    #pdf-report{background:#0f172a;color:#e5eefb;max-width:780px;padding:24px;border-radius:16px;border:1px solid #1f2a3a;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;}
+
+    /* PDF styles */
+    #pdf-report{
+      background:#0f172a;
+      color:#e5eefb;
+      max-width:780px;
+      padding:24px;
+      border-radius:16px;
+      border:1px solid #1f2a3a;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+    }
     #pdf-report h2{font-size:1.1rem;margin-bottom:.8rem}
     #pdf-report .sec-title{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.4rem}
     #pdf-report .grid{display:grid;gap:.5rem}
@@ -261,7 +268,7 @@
       <div id="relEmpty" class="text-slate-400 text-sm">Se mostrarán artículos recientes del blog.</div>
     </section>
 
-    <!-- REPORTE PDF -->
+    <!-- REPORTE PDF (oculto) -->
     <div id="pdf-report" class="hidden">
       <h2 class="text-sky-100 font-semibold">Reporte de condiciones aplicadas</h2>
       <p class="text-xs text-slate-400 mb-3">Generado desde alexrasa.store · Calculadora RPM/avance — Pro</p>
@@ -320,8 +327,10 @@
     </div>
   </main>
 
+  <!-- LIBRERÍA PDF (abajo para que sí cargue) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-YcsIPv1V1+0oJz/KQb+8EoeY4ufyqtj4d7XbcJ8I8rEAyDPU2cZ1sQHP9R5cWvDHHxQbyChS9QFQ6AqgQZ4G2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
   <script>
-    // ===== Helpers
     const $ = (id)=>document.getElementById(id);
     const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
     const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
@@ -337,7 +346,6 @@
       window.DATA = DATA;
     }
 
-    // ===== Selects
     function fillSelectors(){
       const sel=$('material'); sel.innerHTML='';
       (DATA.materials||[]).forEach(m=>{ sel.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`); });
@@ -516,17 +524,14 @@
       let rpm = (Vc_m_min*1000)/(Math.PI*Dmm);
       let capped=false; if(rpmLimit>0 && rpm>rpmLimit){ rpm=rpmLimit; capped=true; }
 
-      // avance teórico
       let feed_mm_min = rpm * z * usedFz * (Number.isFinite(prud) ? prud : 1);
 
-      // aplica límite de máquina solo hacia arriba
       let effFeed = feed_mm_min;
       if (mach?.feed_max_mm_min && feed_mm_min > mach.feed_max_mm_min) {
         effFeed = mach.feed_max_mm_min;
         $('feedAdjNote').textContent += ` Cap: ${fmt0(mach.feed_max_mm_min)} ${(units==='metric')?'mm/min':'IPM'}`;
       }
 
-      // muestra lo efectivo
       $('rpmOut').textContent = fmt0(rpm);
       $('feedOut').textContent = (units==='metric') ? fmt0(effFeed) : fmt1(effFeed/25.4);
       $('feedUnit').textContent = (units==='metric') ? 'mm/min' : 'IPM';
@@ -599,7 +604,6 @@
       chart.draw(risk);
     }
 
-    // 🔁 Recalc en vivo por sliders
     function recalc(){
       if(!(window.rpm>0 && window.feed>0)) return;
       const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value || '1');
@@ -754,7 +758,7 @@
       $('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
     }
 
-    // === PDF helpers ===
+    // === PDF ===
     function buildPdfData(){
       const matSel = $('material');
       const opSel  = $('operation');
@@ -779,7 +783,6 @@
       $('rptLoad').textContent = $('loadOut').textContent + ' %';
       $('rptRa').textContent   = $('raOut').textContent + ' µm';
 
-      // estado de vibración
       const vibeBox = document.querySelector('.vibe-box');
       let state = '—';
       if (vibeBox.classList.contains('ok')) state = 'Sweet spot';
@@ -787,7 +790,6 @@
       else if (vibeBox.classList.contains('bad')) state = 'Vibra';
       $('rptVibeState').textContent = state;
 
-      // mensaje sin etiquetas
       const raw = $('vibeMsg').innerHTML.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
       $('rptVibe').textContent = raw;
 
@@ -795,8 +797,19 @@
     }
 
     function downloadPdf(){
+      if (typeof html2pdf === 'undefined') {
+        alert('No se cargó la librería PDF. Revisa la URL o muévela al final del <body>.');
+        return;
+      }
+
       buildPdfData();
+
       const element = document.getElementById('pdf-report');
+      const wasHidden = element.classList.contains('hidden');
+      if (wasHidden) {
+        element.classList.remove('hidden');
+      }
+
       const opt = {
         margin:       10,
         filename:     'reporte-condiciones-maquinado.pdf',
@@ -804,7 +817,19 @@
         html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      html2pdf().set(opt).from(element).save();
+
+      html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .then(() => {
+          if (wasHidden) element.classList.add('hidden');
+        })
+        .catch(err => {
+          console.error('Error generando PDF:', err);
+          alert('No se pudo generar el PDF en este navegador.');
+          if (wasHidden) element.classList.add('hidden');
+        });
     }
 
     (async function(){
@@ -815,14 +840,12 @@
       $('uMetric').addEventListener('click',()=>{ setUnits('metric'); applyPreset(); });
       $('uImperial').addEventListener('click',()=>{ setUnits('imperial'); applyPreset(); });
 
-      ['apply','calcBtn','resetBtn'].forEach(id=>{
-        if(id==='apply') $(id).addEventListener('click',applyPreset);
-        if(id==='calcBtn') $(id).addEventListener('click',()=>{ calc(); recalc(); });
-        if(id==='resetBtn') $(id).addEventListener('click',()=>{ resetAll(); recalc(); });
-      });
-      ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>$(id).addEventListener('change',()=>{ applyPreset(); calc(); recalc(); }));
-
+      $('apply').addEventListener('click',applyPreset);
+      $('calcBtn').addEventListener('click',()=>{ calc(); recalc(); });
+      $('resetBtn').addEventListener('click',()=>{ resetAll(); recalc(); });
       $('pdfBtn').addEventListener('click', downloadPdf);
+
+      ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>$(id).addEventListener('change',()=>{ applyPreset(); calc(); recalc(); }));
 
       setUnits('metric');
       applyPreset();
