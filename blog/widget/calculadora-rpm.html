@@ -888,6 +888,98 @@ async function downloadPdf(){
   $('useGeom')?.addEventListener('change', (e)=>{ const on = e.target.checked; if($('helix')) $('helix').disabled = !on; if($('cornerRad')) $('cornerRad').disabled = !on; });
   setUnits('metric');
   applyPreset();
+  /* --- Drag marker: arrastrar campana y obtener condiciones --- */
+chart._dragging = false;
+chart._dragX = null;
+
+function pxToChartX(px){
+  const left = 30, right = chart.el.width - 30;
+  const clamped = Math.max(left, Math.min(right, px));
+  return chart.xMin + (clamped - left) / (right - left) * (chart.xMax - chart.xMin);
+}
+
+function chartXToTargetHz(xVal){
+  // mapea el eje x (0..chart.xMax) a una banda de frecuencias útil.
+  // Ajusta factor si quieres más rango. Actualmente usa 2x banda superior.
+  const band = DATA.vibration?.avoid_band_hz || [600,900];
+  const maxHz = Math.max(200, band[1] * 2);
+  const targetHz = Math.round( (xVal / chart.xMax) * maxHz );
+  return Math.max(1, targetHz);
+}
+
+function applyDragToConditions(xVal){
+  const z = parseInt($('flutes')?.value || 3,10);
+  const fzInput = parseFloat($('fz')?.value) || 0.05;
+  const prud = parseFloat($('prudence')?.value) || 0.9;
+  const unitsLocal = window.units || 'metric';
+  const D = parseFloat($('diam')?.value) || 10;
+  const Dmm = unitsLocal==='metric' ? D : D*25.4;
+  // recalcula fz_eff con chip thinning si corresponde
+  const useGeom = $('useGeom')?.checked;
+  const helix = parseFloat($('helix')?.value) || 30;
+  const corner = parseFloat($('cornerRad')?.value) || 0;
+  const res = chipThinningAdjustedFz( unitsLocal==='metric'?fzInput:(fzInput*25.4), Dmm, Number(parseFloat($('aePct')?.value)||30), helix, corner );
+  const fzEff = res.fzEff;
+
+  const targetHz = chartXToTargetHz(xVal);
+  let rpmAlt = Math.round((targetHz * 60) / z);
+  const rpmLimitVal = window.rpmLimit || parseFloat($('rpmLimit')?.value) || getMachine()?.rpm_max || 12000;
+  if(rpmLimitVal && rpmAlt > rpmLimitVal) rpmAlt = rpmLimitVal;
+
+  const feedAlt = Math.round(rpmAlt * z * fzEff * (Number.isFinite(prud)?prud:1));
+
+  // Mostrar sugerencia en UI (temporal)
+  const inBand = (targetHz >= (DATA.vibration?.avoid_band_hz?.[0]||600) && targetHz <= (DATA.vibration?.avoid_band_hz?.[1]||900));
+  const hint = `Desde campana → fₜg=${targetHz} Hz · Sugerido: ${rpmAlt} RPM · ${unitsLocal==='metric' ? feedAlt+' mm/min' : ( (feedAlt/25.4).toFixed(2)+' IPM') }${ inBand ? ' · Atención: en banda evitada' : '' }`;
+  if($('vibeMsg')) $('vibeMsg').textContent = hint;
+  if($('rpmOut')) $('rpmOut').textContent = fmt0(rpmAlt);
+  if($('feedOut')) $('feedOut').textContent = unitsLocal==='metric' ? fmt0(feedAlt) : fmt1(feedAlt/25.4);
+
+  // redibuja marcador donde el usuario lo dejó (fuerza inBand para color)
+  chart.draw(xVal, inBand);
+}
+
+/* eventos pointer para arrastrar */
+function onPointerDown(e){
+  if(!chart.el) return;
+  chart._dragging = true;
+  const rect = chart.el.getBoundingClientRect();
+  const px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  chart._dragX = px;
+  const xVal = pxToChartX(px);
+  applyDragToConditions(xVal);
+  e.preventDefault();
+}
+
+function onPointerMove(e){
+  if(!chart._dragging || !chart.el) return;
+  const rect = chart.el.getBoundingClientRect();
+  const px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  chart._dragX = px;
+  const xVal = pxToChartX(px);
+  applyDragToConditions(xVal);
+  e.preventDefault();
+}
+
+function onPointerUp(e){
+  if(!chart._dragging) return;
+  chart._dragging = false;
+  chart._dragX = null;
+  // opcional: recalcula condiciones definitivas con la selección
+  // o deja como guía visual. Aquí no tocamos valores originales.
+}
+
+/* attach */
+if(chart && chart.el){
+  chart.el.style.cursor = 'ew-resize';
+  chart.el.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+  chart.el.addEventListener('touchstart', onPointerDown, {passive:false});
+  window.addEventListener('touchmove', onPointerMove, {passive:false});
+  window.addEventListener('touchend', onPointerUp);
+}
+
   chart.init(); chart.draw(0.5);
   calc(); recalc();
   try{ loadRelated(); }catch(e){}
