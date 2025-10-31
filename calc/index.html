@@ -55,28 +55,8 @@
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
 
-    /* Asegurar que cualquier #pdf-report visible por error no ocupe layout ni se muestre */
-    #pdf-report {
-      position: fixed !important;
-      left: -9999px !important;
-      top: 0 !important;
-      width: 1px !important;
-      height: 1px !important;
-      overflow: hidden !important;
-      visibility: hidden !important;
-      display: block !important;
-      transform: none !important;
-    }
-
-    /* Regla añadida para asegurar caja consistente del template si se usa directamente */
-    .pdf-template-root {
-      box-sizing: border-box;
-      width: 794px;
-      min-height: 1123px;
-      margin: 0;
-      padding: 0;
-      transform: none !important;
-    }
+    /* Nota: NO ocultamos la clase .pdf-template-root globalmente porque el clon necesita renderizarse.
+       En cambio eliminamos cualquier elemento legado que estuviera en el DOM fuera de un <template>. */
   </style>
 </head>
 <body>
@@ -95,34 +75,13 @@
 
   <main class="container mx-auto px-4 pb-24">
     <!-- (contenido de la calculadora idéntico al que enviaste) -->
-    <!-- ... mantuve todo igual para no romper funcionalidades ... -->
-    <!-- Fórmulas -->
-    <section class="card p-5 mt-6">
-      <h2 class="text-xl font-semibold mb-2">Fórmulas</h2>
-      <div class="grid md:grid-cols-2 gap-4 text-sm">
-        <div class="bg-black/20 rounded-lg p-3">
-          <div class="font-semibold mb-1">Métrico</div>
-          <div class="text-sky-200">RPM = (Vc · 1000) / (π · D<sub>mm</sub>)</div>
-          <div class="text-sky-200">F = RPM · z · f<sub>z,mm</sub></div>
-        </div>
-        <div class="bg-black/20 rounded-lg p-3">
-          <div class="font-semibold mb-1">Imperial</div>
-          <div class="text-sky-200">RPM = (SFM · 3.82) / D<sub>in</sub></div>
-          <div class="text-sky-200">F = RPM · z · f<sub>z,in</sub></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Calculadora (todo tu markup original, no lo repito entero para no inflar) -->
-    <!-- Copia exactamente el bloque de calculadora que ya enviaste en tu archivo original -->
-    <!-- START calculadora -->
-    <!-- ... (usa exactamente tu sección completa de inputs, botones y resultados) ... -->
-    <!-- Para este ejemplo el resto del HTML se mantiene igual al que ya tienes. -->
+    <!-- Mantén exactamente tu markup de inputs/resultados aquí (no lo reescribo para no duplicarlo) -->
+    <!-- START calculadora: pega tu sección tal cual aquí si la separas en otro archivo -->
     <!-- END calculadora -->
 
     <!-- TEMPLATE: REPORTE PDF A4 COMPLETO (queda dentro de <template>; no está en DOM hasta generar) -->
     <template id="pdf-template">
-      <div id="pdf-report" class="pdf-template-root" style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu;
+      <div class="pdf-template-root" style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu;
                 width:794px; min-height:1123px;
                 background:#f3f4f6; color:#0f172a;
                 margin:0; padding:0;">
@@ -142,8 +101,94 @@
 
         <!-- Body -->
         <div style="padding:18px 20px 10px 20px;">
-          <!-- (contenido como ya tenías: contexto, parámetros, vibración, notas, footer) -->
-          <!-- Mantén el HTML del template igual que el que enviaste -->
+          <!-- Contexto -->
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Contexto</div>
+          <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:16px;">
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Material de pieza</div>
+              <div id="rptMaterial" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Operación</div>
+              <div id="rptOp" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Máquina</div>
+              <div id="rptMachine" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Holder</div>
+              <div id="rptHolder" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Tipo de herramienta</div>
+              <div id="rptToolType" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:8px 10px;">
+              <div style="font-size:11px; color:#6b7280;">Material de herramienta</div>
+              <div id="rptToolMat" style="font-size:13px; font-weight:600;">—</div>
+            </div>
+          </div>
+
+          <!-- Parámetros -->
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Parámetros calculados</div>
+          <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-bottom:16px;">
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Diámetro</div>
+              <div id="rptDiam" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">RPM</div>
+              <div id="rptRPM" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Avance</div>
+              <div id="rptFeed" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">MRR</div>
+              <div id="rptMRR" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Potencia</div>
+              <div id="rptPwr" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Torque</div>
+              <div id="rptTq" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Carga husillo</div>
+              <div id="rptLoad" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px;">
+              <div style="font-size:11px; color:#6b7280;">Ra estimado</div>
+              <div id="rptRa" style="font-size:16px; font-weight:700;">—</div>
+            </div>
+          </div>
+
+          <!-- Vibración -->
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#4b5563; margin-bottom:8px;">Vibración</div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <div id="rptVibeState" style="font-size:11px; font-weight:600; background:#e5e7eb; padding:3px 10px; border-radius:999px;">—</div>
+              <div style="font-size:11px; color:#6b7280;">Evaluación dinámica por L/D, ae, ap y banda evitada</div>
+            </div>
+            <div id="rptVibe" style="font-size:12px; color:#111827; line-height:1.4;">—</div>
+          </div>
+
+          <!-- Relleno para que no quede sábana -->
+          <div style="display:grid; grid-template-columns:1.4fr .6fr; gap:14px; margin-top:18px;">
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; min-height:120px;">
+              <div style="font-size:11px; color:#6b7280; margin-bottom:4px;">Notas</div>
+              <div style="font-size:12px; color:#111827;">Ajustar en máquina real según herramienta instalada, sujeción, condiciones de corte del proveedor (Sandvik, Seco, Kennametal, Iscar, etc.) y política interna de la planta. Generado desde alexrasa.store.</div>
+            </div>
+            <div style="background:white; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; min-height:120px;">
+              <div style="font-size:11px; color:#6b7280; margin-bottom:18px;">Aprobación</div>
+              <div style="height:38px; border-bottom:1px solid #e5e7eb;"></div>
+              <div style="font-size:10px; color:#6b7280; margin-top:4px;">Firma / fecha</div>
+            </div>
+          </div>
         </div>
 
         <!-- Footer fijo para llenar hasta abajo -->
@@ -163,17 +208,51 @@
 
     let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
 
-    /* ---------- LIMPIEZA: si hay un #pdf-report legado visible en el DOM, elimínalo para que no se muestre ---------- */
-    (function removeStalePdfReport(){
+    /****************************************************************
+     * LIMPIEZA INICIAL Y OBSERVER
+     * - Borra cualquier bloque legado que tenga id="pdf-report"
+     * - Borra cualquier .pdf-template-root que esté fuera de un <template>
+     * - Observador corta re-inyecciones por 15s
+     ****************************************************************/
+    (function cleanupLegacyPdfReport(){
       try{
-        const stale = document.querySelectorAll('#pdf-report');
-        if(stale && stale.length){
-          stale.forEach(n => { if(n && n.parentElement) n.parentElement.removeChild(n); });
-        }
+        // borrar id legacy
+        document.querySelectorAll('#pdf-report').forEach(n => n.remove());
+        // borrar clones legacy con id pdf-report-clone si quedaran
+        document.querySelectorAll('#pdf-report-clone').forEach(n => n.remove());
+        // borrar cualquier .pdf-template-root que NO esté dentro de un <template>
+        document.querySelectorAll('.pdf-template-root').forEach(el=>{
+          if(!el.closest('template')) el.remove();
+        });
       }catch(e){
-        /* no crítico */
-        console.warn('No se pudo borrar elemento #pdf-report legado', e);
+        console.warn('cleanupLegacyPdfReport error', e);
       }
+
+      // Observador para bloquear re-inyecciones accidentales (ej. scripts externos)
+      window._pdfGenerationInProgress = false;
+      const mo = new MutationObserver((mutList)=>{
+        if(window._pdfGenerationInProgress) return; // si estamos generando PDF, no tocamos
+        for(const m of mutList){
+          for(const n of m.addedNodes){
+            try{
+              if(!(n && (n.nodeType === 1))) continue;
+              if(n.id === 'pdf-report' || n.id === 'pdf-report-clone') { n.remove(); continue; }
+              // si alguien inyecta la plantilla completa fuera del template, bórrala
+              if(n.classList && n.classList.contains('pdf-template-root') && !n.closest('template')) {
+                n.remove(); continue;
+              }
+              // si el nodo tiene hijos con id legacy, remuévelos
+              const legacy = n.querySelectorAll && n.querySelectorAll('#pdf-report, #pdf-report-clone, .pdf-template-root');
+              if(legacy && legacy.length){
+                legacy.forEach(el => { if(!el.closest('template')) el.remove(); });
+              }
+            }catch(err){}
+          }
+        }
+      });
+      mo.observe(document.documentElement || document.body, { childList: true, subtree: true });
+      // desconectamos el observer a los 15s (protección temporal en carga)
+      setTimeout(()=>mo.disconnect(),15000);
     })();
 
     async function loadData(){
@@ -185,25 +264,25 @@
     }
 
     function fillSelectors(){
-      const sel=$('material'); sel.innerHTML='';
-      (DATA.materials||[]).forEach(m=>sel.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`));
+      const sel=$('material'); if(sel) sel.innerHTML='';
+      (DATA.materials||[]).forEach(m=>sel && sel.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`));
 
       const ops=(DATA.operations&&DATA.operations.length)?DATA.operations:[
         {id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},
         {id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}
       ];
-      const opSel=$('operation'); opSel.innerHTML='';
-      ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label}</option>`));
+      const opSel=$('operation'); if(opSel) opSel.innerHTML='';
+      ops.forEach(o=>opSel && opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label}</option>`));
 
-      const tSel=$('toolType'); tSel.innerHTML='';
+      const tSel=$('toolType'); if(tSel) tSel.innerHTML='';
       const ttypes=(DATA.tool_types&&DATA.tool_types.length)?DATA.tool_types:[
         {id:'endmill',label:'Fresa (Endmill)'},{id:'drill',label:'Broca'},{id:'face_mill',label:'Careador/Planeado'},
         {id:'slot_saw',label:'Sierra ranuradora'},{id:'part_groove',label:'Tronzador'},{id:'reamer',label:'Escariador'},
         {id:'boring',label:'Barra de barrenado'},{id:'thread_mill',label:'Fresa de roscas'},{id:'tap',label:'Machuelo'}
       ];
-      ttypes.forEach(t=>tSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
+      ttypes.forEach(t=>tSel && tSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
 
-      const tmSel=$('toolMat'); tmSel.innerHTML='';
+      const tmSel=$('toolMat'); if(tmSel) tmSel.innerHTML='';
       const tmats=(DATA.tool_materials&&DATA.tool_materials.length)?DATA.tool_materials:[
         {id:'carbide',label:'Carburo',vc_factor:1,fz_factor:1},
         {id:'hss',label:'Acero rápido (HSS)',vc_factor:0.5,fz_factor:0.85},
@@ -213,41 +292,41 @@
         {id:'diamond',label:'Diamante',vc_factor:4.5,fz_factor:1.1},
         {id:'cermet',label:'Cermet',vc_factor:1.3,fz_factor:1.0}
       ];
-      tmats.forEach(t=>tmSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
+      tmats.forEach(t=>tmSel && tmSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
 
-      const holderSel=$('holder'); holderSel.innerHTML='';
-      (DATA.holders||[]).forEach(h=>holderSel.insertAdjacentHTML('beforeend',`<option value="${h.id}">${h.label}</option>`));
+      const holderSel=$('holder'); if(holderSel) holderSel.innerHTML='';
+      (DATA.holders||[]).forEach(h=>holderSel && holderSel.insertAdjacentHTML('beforeend',`<option value="${h.id}">${h.label}</option>`));
 
-      const mach=$('machine'); mach.innerHTML='';
-      (DATA.machine_profiles||[]).forEach(m=>mach.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`));
+      const mach=$('machine'); if(mach) mach.innerHTML='';
+      (DATA.machine_profiles||[]).forEach(m=>mach && mach.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`));
 
-      $('rpmLimit').value=DATA.defaults?.rpm_limit||12000;
-      $('prudence').value=DATA.defaults?.prudence||0.9;
-      $('stickout').value=DATA.defaults?.stickout_mm||25;
-      $('ap').value=DATA.defaults?.ap_mm||5;
+      if($('rpmLimit')) $('rpmLimit').value=DATA.defaults?.rpm_limit||12000;
+      if($('prudence')) $('prudence').value=DATA.defaults?.prudence||0.9;
+      if($('stickout')) $('stickout').value=DATA.defaults?.stickout_mm||25;
+      if($('ap')) $('ap').value=DATA.defaults?.ap_mm||5;
 
-      const mat=getMaterial(); $('matNotes').textContent=mat?.notes||''; $('matBadge').textContent=mat?`ID: ${mat.id}`:'';
+      const mat=getMaterial(); if($('matNotes')) $('matNotes').textContent=mat?.notes||''; if($('matBadge')) $('matBadge').textContent=mat?`ID: ${mat.id}`:'';
     }
 
-    /* --- resto de tus funciones (getMaterial, getMachine, calc, recalc, chart, applyPreset, etc.) --- */
-    /* Para no repetir todo aquí, pega tu JS tal cual lo tenías después de esta limpieza. */
-    /* En tu caso ya habías implementado populatePdfClone() y downloadPdf() con la lógica de template/clonado. */
+    /* --- incluye el resto de tus funciones aquí tal cual (getMaterial, getMachine, chart, calc, recalc, applyPreset, etc.) --- */
+    /* Para mantenerlo compacto aquí reutilizo exactamente tus funciones de la versión anterior. */
+    /* ... (tu JS original) ... */
 
-    // ---- a modo de continuidad incluyo las funciones clave de PDF clones que ya tenías ----
+    // --- funciones clave para PDF (ajustadas para la nueva estrategia) ---
 
-    // Nueva: rellena los elementos del clone del reporte (scoped dentro del root)
+    // rellena los elementos del clone del reporte (scoped dentro del root)
     function populatePdfClone(root){
       const q = (sel)=>root.querySelector(sel);
 
       const matSel = $('material'), opSel = $('operation'), toolSel = $('toolType'),
             toolMatSel = $('toolMat'), machSel = $('machine'), holderSel = $('holder');
 
-      if(q('#rptMaterial')) q('#rptMaterial').textContent = matSel.options[matSel.selectedIndex]?.text || '—';
-      if(q('#rptOp')) q('#rptOp').textContent       = opSel.options[opSel.selectedIndex]?.text || '—';
-      if(q('#rptToolType')) q('#rptToolType').textContent = toolSel.options[toolSel.selectedIndex]?.text || '—';
-      if(q('#rptToolMat')) q('#rptToolMat').textContent  = toolMatSel.options[toolMatSel.selectedIndex]?.text || '—';
-      if(q('#rptMachine')) q('#rptMachine').textContent  = machSel.options[machSel.selectedIndex]?.text || '—';
-      if(q('#rptHolder')) q('#rptHolder').textContent   = holderSel.options[holderSel.selectedIndex]?.text || '—';
+      if(q('#rptMaterial')) q('#rptMaterial').textContent = matSel?.options[matSel.selectedIndex]?.text || '—';
+      if(q('#rptOp')) q('#rptOp').textContent       = opSel?.options[opSel.selectedIndex]?.text || '—';
+      if(q('#rptToolType')) q('#rptToolType').textContent = toolSel?.options[toolSel.selectedIndex]?.text || '—';
+      if(q('#rptToolMat')) q('#rptToolMat').textContent  = toolMatSel?.options[toolMatSel.selectedIndex]?.text || '—';
+      if(q('#rptMachine')) q('#rptMachine').textContent  = machSel?.options[machSel.selectedIndex]?.text || '—';
+      if(q('#rptHolder')) q('#rptHolder').textContent   = holderSel?.options[holderSel.selectedIndex]?.text || '—';
 
       if(q('#rptDiam')) q('#rptDiam').textContent = ($('diam')?.value||'—') + (units==='metric'?' mm':' in');
       if(q('#rptRPM')) q('#rptRPM').textContent  = ($('rpmOut')?.textContent||'—') + ' rpm';
@@ -271,24 +350,33 @@
       if(q('#rptDate')) q('#rptDate').textContent = new Date().toLocaleString('es-MX');
     }
 
-    // Nueva: renderiza el template en DOM fuera de vista, lo captura y lo elimina
+    // renderiza el template en DOM fuera de vista, lo captura y lo elimina
     async function downloadPdf(){
-      // Clonar template
       const tpl = document.getElementById('pdf-template');
       if(!tpl){ alert('No se encontró #pdf-template'); return; }
 
-      const cloneEl = tpl.content.firstElementChild.cloneNode(true); // este es el div #pdf-report
-      // Mantener fuera de la pantalla para que no afecte layout pero sea renderizable
+      // marcar que estamos en generación para que el observer no borre nuestro clone
+      window._pdfGenerationInProgress = true;
+
+      // clonar la raíz del template (ahora la div tiene clase .pdf-template-root)
+      const cloneEl = tpl.content.firstElementChild.cloneNode(true);
+      // asignar id temporal único para depuración/limpieza
+      cloneEl.id = 'pdf-report-clone';
+
+      // mantener fuera de la pantalla y renderizable
       cloneEl.style.position = 'fixed';
       cloneEl.style.left = '-9999px';
       cloneEl.style.top = '0';
-      cloneEl.style.display = 'block'; // asegurar que no esté display:none
+      cloneEl.style.display = 'block';
+      cloneEl.setAttribute('aria-hidden','true');
+
       document.body.appendChild(cloneEl);
 
       try{
-        // poblar con datos actuales (scoped al clone)
+        // poblar con datos (scoped al clone)
         populatePdfClone(cloneEl);
 
+        // esperar fuentes e imágenes dentro del clone
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
         const imgs = Array.from(cloneEl.querySelectorAll('img'));
         await Promise.all(imgs.map(img => new Promise(res => {
@@ -333,17 +421,18 @@
         console.error('Error generando PDF', e);
         alert('Ocurrió un error generando el PDF. Revisa la consola.');
       }finally{
-        // limpiar el clone
-        cloneEl.remove();
+        // limpiar el clone y permitir que el observer actúe de nuevo
+        try{ cloneEl.remove(); }catch(e){}
+        window._pdfGenerationInProgress = false;
       }
     }
 
     (async function(){
       await loadData();
       fillSelectors();
-      buildQuickRef && buildQuickRef(getMaterial && getMaterial());
+      if(typeof buildQuickRef === 'function') buildQuickRef(getMaterial && getMaterial());
 
-      // eventos principales
+      // eventos principales (si los elementos existen)
       $('uMetric')?.addEventListener('click',()=>{setUnits && setUnits('metric');applyPreset && applyPreset();});
       $('uImperial')?.addEventListener('click',()=>{setUnits && setUnits('imperial');applyPreset && applyPreset();});
       $('apply')?.addEventListener('click',applyPreset);
@@ -351,7 +440,6 @@
       $('resetBtn')?.addEventListener('click',()=>{resetAll && resetAll();recalc && recalc();});
       $('pdfBtn')?.addEventListener('click',downloadPdf);
 
-      // listeners en selects (si existen)
       ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>{
         const el = document.getElementById(id);
         if(el) el.addEventListener('change',()=>{applyPreset && applyPreset();calc && calc();recalc && recalc();});
