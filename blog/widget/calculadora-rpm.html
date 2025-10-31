@@ -50,6 +50,17 @@
     .hint{color:var(--muted);font-size:.75rem}
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
+
+    /* Regla añadida para asegurar caja consistente y evitar transformaciones heredadas que corten el render */
+    #pdf-report{
+      box-sizing: border-box;
+      width: 794px;
+      min-height: 1123px;
+      margin: 0;
+      padding: 0;
+      transform: none !important;
+      -webkit-transform: none !important;
+    }
   </style>
 </head>
 <body>
@@ -622,8 +633,7 @@
       $('raOut').textContent=fmt2(Ra_um);
 
       let lifeMin=NaN;
-      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}
-      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
+      if(mat?.taylor?.n && mat?.taylor?.C){lifeMin=Math.pow((mat.taylor.C/Vc_m_min),(1/(mat.taylor.n)));}      $('lifeOut').textContent=Number.isFinite(lifeMin)?fmt1(lifeMin):'—';
 
       const holder=getHolder();
       const W=DATA.vibration?.weights||{ld:0.55,ae:0.20,ap:0.15,fz:0.10};
@@ -854,24 +864,87 @@
       buildPdfData();
 
       const element=$('pdf-report');
-      const wasHidden=element.classList.contains('hidden');
-      if(wasHidden)element.classList.remove('hidden');
+      const wasHidden = element.classList.contains('hidden');
 
-      const opt={
-        margin:0,
-        filename:'reporte-condiciones-maquinado.pdf',
-        image:{type:'jpeg',quality:0.98},
-        html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:794,windowHeight:1123},
-        jsPDF:{unit:'pt',format:'a4',orientation:'portrait'},
-        pagebreak:{mode:['css','legacy']}
+      // guardar estilos previos
+      const prev = {
+        display: element.style.display,
+        position: element.style.position,
+        left: element.style.left,
+        top: element.style.top,
+        transform: element.style.transform,
+        zIndex: element.style.zIndex,
+        visibility: element.style.visibility,
+        opacity: element.style.opacity,
+        width: element.style.width,
+        boxSizing: element.style.boxSizing
       };
 
-      window.html2pdf().set(opt).from(element).save().then(()=>{
-        if(wasHidden)element.classList.add('hidden');
-      }).catch(e=>{
-        console.error(e);
-        if(wasHidden)element.classList.add('hidden');
-      });
+      // Hacer visible y colocar fuera del flujo para renderizar sin cortes
+      element.classList.remove('hidden');
+      element.style.display = 'block';
+      element.style.position = 'absolute';
+      element.style.left = '50%';
+      element.style.top = '20px';
+      element.style.transform = 'translateX(-50%)';
+      element.style.zIndex = '9999';
+      element.style.visibility = 'visible';
+      element.style.opacity = '0'; // invisible visualmente, pero renderizable
+      element.style.width = '794px';
+      element.style.boxSizing = 'border-box';
+
+      try{
+        // esperar fuentes y cargar imágenes (evita recortes por recursos pendientes)
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        // espera imágenes internas del bloque PDF
+        const imgs = Array.from(element.querySelectorAll('img'));
+        await Promise.all(imgs.map(img => new Promise(resolve => {
+          if(!img) return resolve();
+          if(img.complete) return resolve();
+          img.onload = img.onerror = ()=>resolve();
+          setTimeout(()=>resolve(), 3000);
+        })));
+
+        // Pequeña espera adicional para permitir reflows finales
+        await new Promise(r => setTimeout(r, 120));
+
+        const opt={
+          margin: 8,
+          filename:'reporte-condiciones-maquinado.pdf',
+          image:{type:'jpeg',quality:0.95},
+          html2canvas:{
+            scale:2,
+            useCORS:true,
+            allowTaint:false,
+            logging:false,
+            width: 794,
+            height: 1123,
+            windowWidth: 794,
+            windowHeight: 1123,
+            backgroundColor: '#ffffff'
+          },
+          jsPDF:{unit:'pt',format:'a4',orientation:'portrait'},
+          pagebreak:{mode:['css','legacy']}
+        };
+
+        await window.html2pdf().set(opt).from(element).save();
+      }catch(e){
+        console.error('PDF error',e);
+        alert('Error generando PDF. Revisa la consola.');
+      }finally{
+        // restaurar estilos previos
+        element.style.display = prev.display || '';
+        element.style.position = prev.position || '';
+        element.style.left = prev.left || '';
+        element.style.top = prev.top || '';
+        element.style.transform = prev.transform || '';
+        element.style.zIndex = prev.zIndex || '';
+        element.style.visibility = prev.visibility || '';
+        element.style.opacity = prev.opacity || '';
+        element.style.width = prev.width || '';
+        element.style.boxSizing = prev.boxSizing || '';
+        if(wasHidden) element.classList.add('hidden');
+      }
     }
 
     (async function(){
