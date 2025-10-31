@@ -395,98 +395,122 @@
     // DATA se poblará desde /data/cutting-data.json o desde window.CUTTING_DATA si existe.
     let DATA={materials:[], holders:[], vibration:{}, defaults:{}, machine_profiles:[], tool_types:[], tool_materials:[], operations:[]}, units='metric';
 
-    async function loadData(){
-      // intenta fetch remoto
-      try{
-        const r=await fetch('/data/cutting-data.json',{cache:'no-store'});
-        if(r.ok){
-          DATA=await r.json();
-        } else {
-          // si no existe archivo, intenta variable global (útil para desarrollo/local)
-          if(window.CUTTING_DATA) DATA=window.CUTTING_DATA;
-          else console.warn('No se cargó /data/cutting-data.json y no existe window.CUTTING_DATA');
-        }
-      }catch(e){
-        // fallback a variable global si fetch falla
-        if(window.CUTTING_DATA) DATA=window.CUTTING_DATA;
-        else console.warn('Error cargando cutting-data.json', e);
+    // ---------- REEMPLAZAR loadData() y fillSelectors() ----------
+async function loadData(){
+  const tries = [
+    `/data/cutting-data.json?t=${Date.now()}`,
+    `./data/cutting-data.json?t=${Date.now()}`,
+    `/assets/data/cutting-data.json?t=${Date.now()}`,
+    `/cutting-data.json?t=${Date.now()}`,
+    `/assets/cutting-data.json?t=${Date.now()}`
+  ];
+
+  let json = null;
+  for(const url of tries){
+    try{
+      console.debug('[cutting] intentando cargar JSON desde', url);
+      const r = await fetch(url, {cache: 'no-store'});
+      if(r && r.ok){
+        json = await r.json();
+        console.info('[cutting] JSON cargado desde', url);
+        break;
+      } else {
+        console.warn('[cutting] respuesta no ok desde', url, r && r.status);
       }
-
-      // Normalizaciones: aceptar machine_profiles o machines_profiles
-      if(!DATA.machine_profiles && DATA.machines_profiles) DATA.machine_profiles = DATA.machines_profiles;
-      if(!Array.isArray(DATA.machine_profiles)) DATA.machine_profiles = [];
-
-      // Asegurar nombres legibles para máquinas (m.name)
-      DATA.machine_profiles = DATA.machine_profiles.map(m=>{
-        const name = m.name || (m.model?`${m.brand?m.brand+' ':''}${m.model}`.trim()) || (m.brand||m.model||m.id||'Máquina');
-        return Object.assign({}, m, { name });
-      });
-
-      // Asegurar arrays mínimos
-      DATA.materials = DATA.materials || [];
-      DATA.holders = DATA.holders || [];
-      DATA.tool_types = DATA.tool_types || [];
-      DATA.tool_materials = DATA.tool_materials || [];
-      DATA.operations = DATA.operations || [];
-      DATA.defaults = DATA.defaults || {};
-      DATA.vibration = DATA.vibration || {};
-
-      // Exponer para debugging en consola
-      window.DATA = DATA;
+    }catch(e){
+      console.warn('[cutting] error fetch', url, e);
     }
+  }
 
-    function fillSelectors(){
-      // Material
-      const sel=$('material'); sel.innerHTML='';
-      (DATA.materials||[]).forEach(m=>sel.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name||m.id}</option>`));
+  if(!json && window.__CUTTING_DATA){
+    console.info('[cutting] usando window.__CUTTING_DATA fallback');
+    json = window.__CUTTING_DATA;
+  }
 
-      // Operaciones
-      const ops=(DATA.operations&&DATA.operations.length)?DATA.operations:[
-        {id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},
-        {id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}
-      ];
-      const opSel=$('operation'); opSel.innerHTML='';
-      ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label||o.id}</option>`));
-
-      // Tipos de herramienta
-      const tSel=$('toolType'); tSel.innerHTML='';
-      const ttypes=(DATA.tool_types&&DATA.tool_types.length)?DATA.tool_types:[
-        {id:'endmill',label:'Fresa (Endmill)'},{id:'drill',label:'Broca'},{id:'face_mill',label:'Careador/Planeado'},
-        {id:'slot_saw',label:'Sierra ranuradora'},{id:'part_groove',label:'Tronzador'},{id:'reamer',label:'Escariador'},
-        {id:'boring',label:'Barra de barrenado'},{id:'thread_mill',label:'Fresa de roscas'},{id:'tap',label:'Machuelo'}
-      ];
-      ttypes.forEach(t=>tSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label||t.id}</option>`));
-
-      // Materiales de herramienta
-      const tmSel=$('toolMat'); tmSel.innerHTML='';
-      const tmats=(DATA.tool_materials&&DATA.tool_materials.length)?DATA.tool_materials:[
-        {id:'carbide',label:'Carburo',vc_factor:1,fz_factor:1},
-        {id:'hss',label:'Acero rápido (HSS)',vc_factor:0.5,fz_factor:0.85},
-        {id:'ceramic',label:'Cerámico',vc_factor:2.0,fz_factor:0.9},
-        {id:'cbn',label:'CBN',vc_factor:3.0,fz_factor:0.8},
-        {id:'pcd',label:'PCD',vc_factor:4.0,fz_factor:1.1},
-        {id:'diamond',label:'Diamante',vc_factor:4.5,fz_factor:1.1},
-        {id:'cermet',label:'Cermet',vc_factor:1.3,fz_factor:1.0}
-      ];
-      tmats.forEach(t=>tmSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label||t.id}</option>`));
-
-      // Holders
-      const holderSel=$('holder'); holderSel.innerHTML='';
-      (DATA.holders||[]).forEach(h=>holderSel.insertAdjacentHTML('beforeend',`<option value="${h.id}">${h.label||h.id}</option>`));
-
-      // Máquinas: usar machine_profiles normalizado
-      const mach=$('machine'); mach.innerHTML='';
-      (DATA.machine_profiles||[]).forEach(m=>mach.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`));
-
-      // Defaults
-      $('rpmLimit').value=DATA.defaults?.rpm_limit||12000;
-      $('prudence').value=DATA.defaults?.prudence||0.9;
-      $('stickout').value=DATA.defaults?.stickout_mm||25;
-      $('ap').value=DATA.defaults?.ap_mm||5;
-
-      // Mostrar notas del material por defecto
-      const mat=getMaterial(); $('matNotes').textContent=mat?.notes||''; $('matBadge').textContent=mat?`ID: ${mat.id}`:'';
+  if(!json){
+    console.error('[cutting] No se pudo cargar cutting-data.json. Revisa ruta / permisos / servidor.');
+    if(!document.getElementById('cutting-warn')){
+      const warn = document.createElement('div');
+      warn.id = 'cutting-warn';
+      warn.style.cssText = 'position:fixed;right:12px;top:12px;background:#7c2d2d;color:white;padding:10px 14px;border-radius:10px;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.4);font-size:13px';
+      warn.textContent = 'ERROR: no se pudo cargar cutting-data.json. Revisa ruta en /data/ o servidor local.';
+      document.body.appendChild(warn);
     }
+    DATA = DATA || {};
+    DATA.materials = DATA.materials || [];
+    DATA.holders = DATA.holders || [];
+    DATA.machine_profiles = DATA.machine_profiles || [];
+    DATA.tool_types = DATA.tool_types || [];
+    DATA.tool_materials = DATA.tool_materials || [];
+    DATA.operations = DATA.operations || [];
+    DATA.defaults = DATA.defaults || {};
+    DATA.vibration = DATA.vibration || {};
+    window.DATA = DATA;
+    return;
+  }
+
+  // Normalizar claves
+  if(json.machines_profiles && !json.machine_profiles){
+    json.machine_profiles = json.machines_profiles;
+  }
+  // Normalizar nombre/display en máquinas
+  if(Array.isArray(json.machine_profiles)){
+    json.machine_profiles = json.machine_profiles.map(m=>{
+      if(!m.name && m.model){
+        return Object.assign({}, m, {name: `${m.brand?m.brand+' ':''}${m.model}`});
+      }
+      return m;
+    });
+  }
+
+  DATA = Object.assign({}, DATA, json);
+  window.DATA = DATA;
+  console.debug('[cutting] DATA preparada', {materials: (DATA.materials||[]).length, machines: (DATA.machine_profiles||[]).length});
+}
+
+function fillSelectors(){
+  const sel = $('material');
+  sel.innerHTML = '<option value="">-- seleccionar --</option>';
+  (DATA.materials||[]).forEach(m=>{
+    sel.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name||m.id}</option>`);
+  });
+
+  const ops = (DATA.operations && DATA.operations.length)? DATA.operations :
+    [{id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},{id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}];
+  const opSel = $('operation'); opSel.innerHTML = '';
+  ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label||o.id}</option>`));
+
+  const tSel = $('toolType'); tSel.innerHTML = '';
+  const ttypes = (DATA.tool_types&&DATA.tool_types.length)? DATA.tool_types : [
+    {id:'endmill',label:'Fresa (Endmill)'},{id:'drill',label:'Broca'},{id:'face_mill',label:'Careador/Planeado'},{id:'slot_saw',label:'Sierra ranuradora'},{id:'part_groove',label:'Tronzador'},{id:'reamer',label:'Escariador'},{id:'boring',label:'Barra de barrenado'},{id:'thread_mill',label:'Fresa de roscas'},{id:'tap',label:'Machuelo'}
+  ];
+  ttypes.forEach(t=>tSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label||t.id}</option>`));
+
+  const tmSel = $('toolMat'); tmSel.innerHTML = '';
+  const tmats = (DATA.tool_materials&&DATA.tool_materials.length)? DATA.tool_materials : [
+    {id:'carbide',label:'Carburo',vc_factor:1,fz_factor:1},{id:'hss',label:'Acero rápido (HSS)',vc_factor:0.5,fz_factor:0.85},{id:'ceramic',label:'Cerámico',vc_factor:2.0,fz_factor:0.9}
+  ];
+  tmats.forEach(t=>tmSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label||t.id}</option>`));
+
+  const holderSel = $('holder'); holderSel.innerHTML = '';
+  (DATA.holders||[]).forEach(h=>holderSel.insertAdjacentHTML('beforeend',`<option value="${h.id}">${h.label||h.id}</option>`));
+
+  const mach = $('machine'); mach.innerHTML = '<option value="">-- seleccionar --</option>';
+  (DATA.machine_profiles||[]).forEach(m=>{
+    const label = m.name || ((m.brand?m.brand+' ':'') + (m.model||m.type||m.id||'Máquina'));
+    mach.insertAdjacentHTML('beforeend',`<option value="${m.id}">${label}</option>`);
+  });
+
+  $('rpmLimit').value = DATA.defaults?.rpm_limit||12000;
+  $('prudence').value = DATA.defaults?.prudence||0.9;
+  $('stickout').value = DATA.defaults?.stickout_mm||25;
+  $('ap').value = DATA.defaults?.ap_mm||5;
+
+  if(!$('material').value && (DATA.materials||[]).length) $('material').value = (DATA.materials[0].id||'');
+  $('matNotes').textContent = (getMaterial()?.notes)||'';
+  $('matBadge').textContent = getMaterial()?`ID: ${getMaterial().id}`:'';
+}
+
 
     function getMaterial(){const id=$('material').value;return (DATA.materials||[]).find(m=>m.id===id);}
     function getMachine(){const id=$('machine').value; return (DATA.machine_profiles||[]).find(m=>m.id===id) || {};}
