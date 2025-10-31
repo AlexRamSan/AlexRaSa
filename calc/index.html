@@ -1,458 +1,332 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de Costo-Beneficio — AlexRaSa</title>
-  <meta name="description" content="Calcula ahorros por ciclo, vida de herramienta y tiempos muertos. ROI, payback y comparativas A vs P para procesos de maquinado." />
-  <meta name="theme-color" content="#0F172A" />
-  <meta name="robots" content="index,follow" />
+<script>
+/* ===== Helpers ===== */
+function fmt(n){ return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function q(id){ return document.getElementById(id); }
 
-  <!-- Canonical / Hreflang -->
-  <link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="es" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+/* ===== Presets & Storage ===== */
+const PRESETS = {
+  "Mazak/heavy": { cicloA:60, cicloP:30, vidaA:800, vidaP:2000, costoHerr:128.87, costoHora:50, pmes:10000, inversion:2000, tmuertoA:120, tmuertoP:30 },
+  "Pequeña/turn": { cicloA:120, cicloP:90, vidaA:600, vidaP:1200, costoHerr:80, costoHora:35, pmes:3000, inversion:1500, tmuertoA:60, tmuertoP:15 }
+};
+const STORAGE_KEY = 'ars_scenarios_v1';
 
-  <!-- Favicon / App Icons -->
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
-  <link rel="manifest" href="/site.webmanifest" />
+/* ===== Read / Apply form ===== */
+function readForm(){
+  return {
+    cicloA:+q('cicloA').value||0,
+    cicloP:+q('cicloP').value||0,
+    vidaA:+q('vidaA').value||0,
+    vidaP:+q('vidaP').value||0,
+    costoHerr:+q('costoHerr').value||0,
+    costoHora:+q('costoHora').value||0,
+    pmes:+q('pmes').value||0,
+    inversion:+q('inversion').value||0,
+    tmuertoA:+q('tmuertoA').value||0,
+    tmuertoP:+q('tmuertoP').value||0,
+    incCiclo:q('incCiclo')?.checked ?? true,
+    incHerr:q('incHerr')?.checked ?? true,
+    incTM:q('incTM')?.checked ?? true,
+    case: q('caseSelect')?.value || 'personalizado'
+  };
+}
+function writeForm(obj){
+  const keys = ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP'];
+  keys.forEach(k=>{ if(obj[k]!==undefined) q(k).value = obj[k]; });
+  if(obj.incCiclo !== undefined) q('incCiclo').checked = !!obj.incCiclo;
+  if(obj.incHerr !== undefined)  q('incHerr').checked  = !!obj.incHerr;
+  if(obj.incTM !== undefined)    q('incTM').checked    = !!obj.incTM;
+  if(obj.case !== undefined)     q('caseSelect').value = obj.case;
+  applyInclusions();
+}
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
-  <meta property="og:description" content="Estima ahorros en tiempo de ciclo, vida de herramienta y tiempos muertos. Calcula ROI, payback y compara Actual vs Propuesta." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <meta property="og:image" content="https://alexrasa.store/og/og-image.png" />
-  <meta property="og:site_name" content="AlexRaSa" />
-  <meta property="og:locale" content="es_MX" />
+/* ===== Escenarios (localStorage) ===== */
+function saveScenario(){
+  const name = prompt('Nombre del escenario (ej: cliente X - mejora ciclo):');
+  if(!name) return;
+  const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const sc = { name, date: new Date().toISOString(), data: readForm() };
+  list.unshift(sc);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0,20)));
+  alert('Escenario guardado.');
+}
+function showScenarioPicker(){
+  const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  if(list.length===0){ alert('No tienes escenarios guardados.'); return; }
+  const names = list.map((s,i)=>`${i+1}. ${s.name} — ${new Date(s.date).toLocaleString()}`);
+  const idx = prompt('Escenarios:\n' + names.join('\n') + '\nEscribe el número para cargarlo:');
+  const i = parseInt(idx,10)-1;
+  if(isNaN(i) || !list[i]) return;
+  writeForm(list[i].data);
+  calcular();
+}
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
-  <meta name="twitter:description" content="ROI, payback y distribución de ahorros para procesos CNC." />
-  <meta name="twitter:image" content="https://alexrasa.store/og/og-image.png" />
+/* ===== Compartir via link (encode base64 JSON) ===== */
+function makeShareLink(){
+  const data = readForm();
+  const b = btoa(encodeURIComponent(JSON.stringify(data)));
+  const url = location.origin + location.pathname + '?s=' + b;
+  prompt('Link para compartir. Copiar:', url);
+}
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
+/* ===== Cargar desde link si hay param ?s=... ===== */
+(function loadFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const s = params.get('s');
+  if(!s) return;
+  try{
+    const raw = decodeURIComponent(atob(s));
+    const obj = JSON.parse(raw);
+    writeForm(obj);
+    // Indicar que venimos de link
+    setTimeout(()=>{ alert('Escenario cargado desde link. Revisa valores y presiona Calcular.'); }, 200);
+  }catch(e){ console.warn('No se pudo cargar escenario desde URL', e); }
+})();
 
-  <!-- Estilos locales -->
-  <style>
-    html { scroll-behavior: smooth; }
-    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
-    .reveal.show { opacity: 1; transform: none; }
-    @keyframes bounceSoft { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-    .animate-bounce-soft { animation: bounceSoft 2.8s ease-in-out infinite; }
+/* ===== PDF export ===== */
+async function exportPDF(){
+  const main = document.getElementById('calc');
+  if(!main){ alert('No se encontró la sección a exportar.'); return; }
+  const origScroll = window.scrollY;
+  window.scrollTo(0,0);
+  try{
+    const canvas = await html2canvas(main, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const img = canvas.toDataURL('image/jpeg', 0.95);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'px', format:[canvas.width, canvas.height] });
+    pdf.addImage(img, 'JPEG', 0, 0, canvas.width, canvas.height);
+    pdf.save('calculadora-escenario.pdf');
+  }catch(e){
+    console.error(e); alert('Error al generar PDF. Revisa consola.');
+  } finally { window.scrollTo(0, origScroll); }
+}
 
-    /* Fix iOS: evita zoom al escribir y solapes */
-    input, select, textarea { font-size:16px; }
-    /* Safe area / espacio inferior para barra fija */
-    .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
-  </style>
+/* ===== UI helpers existentes (no tocar) ===== */
+function setEnabled(ids, on){
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.disabled = !on;
+    el.classList.toggle('bg-gray-100', !on);
+    el.classList.toggle('cursor-not-allowed', !on);
+  });
+}
+function applyInclusions(){
+  const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
+  const incHerr  = document.getElementById('incHerr')?.checked ?? true;
+  const incTM    = document.getElementById('incTM')?.checked ?? true;
+  setEnabled(['cicloA','cicloP'], incCiclo);
+  setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
+  setEnabled(['tmuertoA','tmuertoP'], incTM);
+}
 
-  <!-- Google tag -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);} gtag('js', new Date());
-    gtag('config', 'G-GDQ8NN6T6Q');
-  </script>
-</head>
-<body class="bg-gray-50 text-gray-800 antialiased">
+/* ===== Render SVGs (reuse tus funciones) ===== */
+function renderDonut(targetId, parts, labels){
+  // same code que ya tenías (abrigo corto para no reescribir)
+  const total = parts.reduce((a,b)=>a+b,0);
+  const W=320,H=210,cx=110,cy=105,r=80,th=28;
+  let start=0; const colors=['#6366F1','#22C55E','#F59E0B','#06B6D4','#EF4444'];
+  const segs = parts.map((v,i)=>{
+    const frac = total>0 ? v/total : 0;
+    const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
+    const large = (a1-a0)>Math.PI ? 1:0;
+    const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+    const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
+    const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
+    const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
+    const pct = total>0 ? Math.round(frac*100) : 0;
+    return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>`+
+           (pct>0?`<text x="220" y="${26+18*i}" font-size="12" fill="#334155">${labels[i]}: ${pct}%</text>`:'');
+  }).join('');
+  const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="#fff"></circle>`+
+                 `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
+  const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
+  const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+}
+function renderBars(targetId, pairs){
+  // reuse la función que ya tenías
+  const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
+    lines: String(lbl).replace(' (', '\n(').split('\n'),
+    a, b, lowerIsBetter
+  }));
+  const approxChar = 7;
+  const labelCol = Math.max(100, Math.min(200, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
+  const barStartX = labelCol + 12;
+  const barMax = 240;
+  const rowH = 32;
+  const rowGap = 12;
+  const padY = 16;
+  const W = barStartX + barMax + 120;
+  const H = padY + rowsData.length * (rowH + rowGap) + 28;
+  const maxVal = Math.max(...rowsData.flatMap(r => [r.a, r.b].map(v => Math.abs(v) || 0)), 1);
+  let y = padY;
+  const rows = rowsData.map(r => {
+    const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
+    const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
+    const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
+    const label = `<text x="0" y="${y+12}" font-size="12" fill="#334155">`
+      + r.lines.map((ln, i) => i === 0 ? ln : `<tspan x="0" dy="1.2em">${ln}</tspan>`).join('')
+      + `</text>`;
+    const bars = `
+      <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
+      <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
+      <text x="${barStartX + aw + 4}" y="${y+9}"  font-size="10" fill="#475569">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
+      <text x="${barStartX + bw + 4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
+    `;
+    const out = label + bars;
+    y += rowH + rowGap;
+    return out;
+  }).join('');
+  const legendY = H - 18;
+  const legend = `
+    <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
+    <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10" fill="#334155">Actual</text>
+    <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
+    <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10" fill="#334155">Propuesta</text>
+  `;
+  const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
+  const el = document.getElementById(targetId);
+  if (el) el.innerHTML = svg;
+}
 
-  <!-- ===== HEADER ===== -->
-  <header id="siteHeader" class="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between gap-3">
-        <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Ir al inicio">
-          <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-10 w-auto" width="160" height="40" />
-          <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span class="text-blue-600">.store</span></span>
-        </a>
-        <nav class="hidden lg:flex items-center gap-6 text-sm">
-          <a href="/" class="hover:text-blue-600">Inicio</a>
-          <a href="/SolidCAM/" class="hover:text-blue-600">Soluciones</a>
-          <a href="/#servicios" class="hover:text-blue-600">Servicios</a>
-          <a href="/#recursos" class="hover:text-blue-600">Recursos</a>
-          <a href="/#contacto" class="hover:text-blue-600">Contacto</a>
-        </nav>
-        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-      </div>
-    </div>
-  </header>
+/* ===== Cálculo central (adaptado a casos) ===== */
+function calcular(){
+  const f = readForm();
 
-  <!-- ===== HERO ===== -->
-  <section class="relative reveal">
-    <div class="absolute inset-0 -z-10">
-      <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-70"></div>
-      <div class="absolute inset-0 bg-slate-900/60"></div>
-    </div>
-    <div class="max-w-6xl mx-auto px-4 py-10 md:py-20 text-white">
-      <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">Calculadora de <span class="text-sky-400">Costo-Beneficio</span></h1>
-      <p class="mt-3 text-white/90 max-w-3xl">Estima ahorros por <strong>tiempo de ciclo</strong>, <strong>vida de herramienta</strong> y <strong>tiempos muertos</strong>. Obtén <strong>ROI</strong>, <strong>payback</strong> y una comparativa <em>Actual vs Propuesta</em>.</p>
-    </div>
-  </section>
+  // Si el usuario eligió un caso, ajustamos las inclusiones para guiar la UX
+  switch(f.case){
+    case 'ciclo':
+      q('incCiclo').checked = true;
+      q('incHerr').checked = false;
+      q('incTM').checked = false;
+      break;
+    case 'herramienta':
+      q('incCiclo').checked = false;
+      q('incHerr').checked = true;
+      q('incTM').checked = false;
+      break;
+    case 'programacion':
+      // Programación se modela como reducción de tiempo muerto y/o ciclo según preferencia
+      q('incCiclo').checked = true;
+      q('incHerr').checked = false;
+      q('incTM').checked = true;
+      break;
+    case 'tmuerto':
+      q('incCiclo').checked = false;
+      q('incHerr').checked = false;
+      q('incTM').checked = true;
+      break;
+    default:
+      // personalizado: no tocar
+      break;
+  }
+  applyInclusions();
 
-  <!-- ===== CALCULADORA ===== -->
-  <main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-14 grid gap-4 sm:gap-6 lg:grid-cols-8 reveal">
-    <!-- FORM -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
-      <h2 class="text-lg font-semibold text-gray-900">Parámetros del proceso</h2>
-      <div class="grid gap-3 mt-3">
-        <label class="text-sm">Tiempo de ciclo actual (s)
-          <input id="cicloA" type="number" value="60" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Tiempo de ciclo propuesto (s)
-          <input id="cicloP" type="number" value="45" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Vida útil actual (pzas)
-          <input id="vidaA" type="number" value="1300" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Vida útil propuesta (pzas)
-          <input id="vidaP" type="number" value="2500" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Costo de herramienta (USD)
-          <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Costo por hora máquina (USD)
-          <input id="costoHora" type="number" value="50" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Piezas por mes
-          <input id="pmes" type="number" value="10000" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">Inversión inicial (USD)
-          <input id="inversion" type="number" value="2000" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">T. muerto actual (min/mes)
-          <input id="tmuertoA" type="number" value="120" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
-        <label class="text-sm">T. muerto propuesto (min/mes)
-          <input id="tmuertoP" type="number" value="30" class="mt-1 w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-300">
-        </label>
+  const cicloA = +q('cicloA').value || 0;
+  const cicloP = +q('cicloP').value || 0;
+  const vidaA = +q('vidaA').value || 0;
+  const vidaP = +q('vidaP').value || 0;
+  const costoHerr = +q('costoHerr').value || 0;
+  const costoHora = +q('costoHora').value || 0;
+  const pmes = +q('pmes').value || 0;
+  const inversion = +q('inversion').value || 0;
+  const tmuertoA = +q('tmuertoA').value || 0;
+  const tmuertoP = +q('tmuertoP').value || 0;
 
-        <h3 class="text-sm font-semibold mt-2">Tipos de ahorro a incluir</h3>
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
-        </div>
-        <!-- Oculto en móvil: usamos el botón fijo -->
-        <button id="btnCalcular" class="hidden md:block mt-3 w-full px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">Calcular</button>
-      </div>
-    </section>
+  // Ahorro por ciclo (USD/mes)
+  const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
 
-    <!-- TABLA -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-4">
-      <h2 class="text-lg font-semibold text-gray-900">Comparativa A vs P</h2>
-      <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
-        <table class="w-full border-separate [border-spacing:0_8px] text-sm">
-          <thead>
-            <tr class="text-gray-600">
-              <th class="text-left font-medium px-2">Métrica</th>
-              <th class="text-right font-medium px-2">Actual</th>
-              <th class="text-right font-medium px-2">Propuesta</th>
-              <th class="text-right font-medium px-2">Δ Mejora</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyComp"></tbody>
-        </table>
-      </div>
-    </section>
+  // Herramienta
+  const consA = (vidaA>0) ? (pmes / vidaA) : 0;
+  const consP = (vidaP>0) ? (pmes / vidaP) : 0;
+  const costoHerrA = consA * costoHerr;
+  const costoHerrP = consP * costoHerr;
+  const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
 
-    <!-- RESULTADOS (más delgada) -->
-    <section class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-2">
-      <h2 class="text-lg font-semibold text-gray-900">Resultados</h2>
-      <div class="mt-3 grid gap-3">
-        <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <div class="text-sm">Ahorro mensual</div>
-          <div id="ahorro" class="text-right font-bold text-xl text-emerald-700">$0</div>
-        </div>
-        <div id="kpiTMBox" class="rounded-lg border border-teal-200 bg-teal-50 p-3">
-          <div class="text-sm">Ahorro por tiempo muerto (USD/mes)</div>
-          <div id="ahorroTM" class="text-right font-bold text-lg text-teal-700">$0</div>
-        </div>
-        <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <div class="text-sm">ROI anual</div>
-          <div id="roi" class="text-right font-bold text-lg text-blue-700">0%</div>
-        </div>
-        <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-          <div class="text-sm">ROI mensual</div>
-          <div id="roiMensual" class="text-right font-bold text-lg text-indigo-700">0%</div>
-        </div>
-        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <div class="text-sm">Payback (meses)</div>
-          <div id="payback" class="text-right font-bold text-lg text-amber-700">0</div>
-        </div>
-      </div>
-    </section>
+  // Tiempo muerto mensual (min -> horas)
+  const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
 
-    <!-- VISUALES -->
-    <section id="visuales" class="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 lg:col-span-8 lg:col-start-1">
-      <h2 class="text-lg font-semibold text-gray-900">Visuales</h2>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="rounded-lg border border-gray-200 p-3">
-          <p class="text-sm font-semibold text-gray-700">Distribución de ahorros</p>
-          <div id="vizAhorros" class="mt-4"></div>
-        </div>
-        <div class="rounded-lg border border-gray-200 p-3">
-          <p class="text-sm font-semibold text-gray-700">Comparativa rápida</p>
-          <div id="vizPerf" class="mt-4"></div>
-        </div>
-      </div>
-    </section>
-  </main>
+  const incCiclo = q('incCiclo')?.checked ?? true;
+  const incHerr  = q('incHerr')?.checked ?? true;
+  const incTM    = q('incTM')?.checked ?? true;
 
-  <!-- BOTÓN FIJO EN MÓVIL -->
-  <div class="md:hidden fixed inset-x-0 bottom-0 z-40 safe-bottom bg-white/95 backdrop-blur border-t border-gray-200 px-4 py-2">
-    <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
-      Calcular
-    </button>
-  </div>
+  const ahorroTotal = Math.max(0,
+    (incCiclo ? ahorroCiclo : 0) +
+    (incHerr  ? ahorroHerr  : 0) +
+    (incTM    ? ahorroTM    : 0)
+  );
 
-  <!-- FOOTER -->
-  <footer class="bg-gray-100 py-6 border-t border-gray-300 mt-16 text-center">
-    <div class="max-w-6xl mx-auto px-4 text-sm text-gray-600">
-      © 2025 AlexRaSa — Ingeniería, innovación y eficiencia.
-    </div>
-  </footer>
+  const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
+  const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
+  const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
 
-  <!-- BOTÓN WHATSAPP (oculto en pantallas chicas para no tapar inputs) -->
-  <a href="https://wa.me/524425992802?text=Hola%20Miguel,%20quiero%20usar%20la%20calculadora%20de%20costo-beneficio."
-     class="hidden sm:inline-flex fixed bottom-6 right-6 items-center gap-2 px-4 py-3 rounded-full shadow-lg bg-green-500 text-white hover:bg-green-600 transition animate-bounce-soft"
-     aria-label="Chatear por WhatsApp" rel="noopener noreferrer">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-      <path d="M19.11 17.44c-.27-.14-1.58-.78-1.83-.86-.25-.09-.43-.14-.61.14-.18.27-.7.86-.86 1.04-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.18-1.34-.81-.72-1.36-1.61-1.52-1.88-.16-.27-.02-.42.12-.55.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.28s.98 2.64 1.11 2.82c.14.18 1.93 2.95 4.68 4.14.65.28 1.16.45 1.55.58.65.21 1.24.18 1.71.11.52-.08 1.58-.65 1.81-1.27.23-.62.23-1.15.16-1.27-.07-.11-.25-.18-.52-.32z"/>
-      <path d="M26.02 5.97A12.9 12.9 0 0 0 16 2C8.83 2 3 7.83 3 15c0 2.29.6 4.44 1.66 6.31L3 30l8.88-1.63A12.96 12.96 0 0 0 16 28c7.17 0 13-5.83 13-13 0-3.47-1.35-6.72-3.98-9.03z"/>
-    </svg>
-    <span class="font-medium">WhatsApp</span>
-  </a>
+  q('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
+  q('roi').textContent        = `${fmt(roiAnual)}%`;
+  q('roiMensual').textContent = `${fmt(roiMensual)}%`;
+  q('payback').textContent    = fmt(payback);
+  q('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
 
-  <!-- ===== SCRIPTS ===== -->
-  <script>
-    // Sombra en header
-    const siteHeader = document.getElementById('siteHeader');
-    window.addEventListener('scroll', () => { siteHeader.classList.toggle('shadow', window.scrollY > 2); }, { passive: true });
+  const tmWrap = q('kpiTMBox');
+  if (tmWrap) tmWrap.classList.toggle('opacity-50', !incTM);
 
-    // Scroll-reveal
-    (function() {
-      const els = document.querySelectorAll('.reveal');
-      if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('show')); return; }
-      const io = new IntersectionObserver((entries, obs) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); } });
-      }, { threshold: 0.12 });
-      els.forEach(el => io.observe(el));
-    })();
+  // Tabla comparativa
+  const pphA = cicloA>0 ? 3600/cicloA : 0;
+  const pphP = cicloP>0 ? 3600/cicloP : 0;
+  const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
+  const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
 
-    // ====== LÓGICA DE LA CALCULADORA ======
-    function fmt(n){return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function delta(a,p,{higherIsBetter=true}={}){ if(a===0 && p===0) return {val:0, up:false}; const d = (p-a) / (a===0 ? 1 : a) * 100; const up = higherIsBetter ? d>0 : d<0; return {val:d, up}; }
+  function row(name,a,p,opt){
+    const d = delta(a,p,opt||{});
+    const badge = `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${d.up? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'}">${(d.val>=0?'+':'')+fmt(d.val)}%</span>`;
+    return `<tr class="bg-gray-50 ring-1 ring-gray-200">
+      <td class="px-2 py-2">${name}</td>
+      <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
+      <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
+      <td class="px-2 py-2 text-right">${badge}</td>
+    </tr>`;
+  }
+  const rows = [
+    row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
+    row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
+    row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
+    row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
+    row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
+    row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
+    row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
+    row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
+  ].join('');
+  q('tbodyComp').innerHTML = rows;
 
-    function calcular(){
-      const cicloA = +document.getElementById('cicloA').value || 0;
-      const cicloP = +document.getElementById('cicloP').value || 0;
-      const vidaA = +document.getElementById('vidaA').value || 0;
-      const vidaP = +document.getElementById('vidaP').value || 0;
-      const costoHerr = +document.getElementById('costoHerr').value || 0;
-      const costoHora = +document.getElementById('costoHora').value || 0;
-      const pmes = +document.getElementById('pmes').value || 0;
-      const inversion = +document.getElementById('inversion').value || 0;
-      const tmuertoA = +document.getElementById('tmuertoA').value || 0; // min/mes
-      const tmuertoP = +document.getElementById('tmuertoP').value || 0; // min/mes
+  // Visuales
+  const parts = [], labels = [];
+  const ahorroCicloPOS = Math.max(0, ahorroCiclo);
+  const ahorroHerrPOS  = Math.max(0, ahorroHerr);
+  const ahorroTMPOS    = Math.max(0, ahorroTM);
+  if(incCiclo && ahorroCicloPOS>0) { parts.push(ahorroCicloPOS); labels.push('Ciclo'); }
+  if(incHerr  && ahorroHerrPOS>0)  { parts.push(ahorroHerrPOS);  labels.push('Herramienta'); }
+  if(incTM    && ahorroTMPOS>0)    { parts.push(ahorroTMPOS);    labels.push('Tiempo muerto'); }
+  renderDonut('vizAhorros', parts, labels);
+  renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
+}
 
-      // Ahorro por ciclo
-      const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
+/* ===== Listeners iniciales ===== */
+document.getElementById('btnCalcular')?.addEventListener('click', calcular);
+document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
+['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP']
+  .forEach(id => document.getElementById(id)?.addEventListener('input', () => { if (window.innerWidth >= 768) calcular(); }));
+['incCiclo','incHerr','incTM'].forEach(id=>{ document.getElementById(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); }); });
 
-      // Herramienta
-      const consA = (vidaA>0) ? (pmes / vidaA) : 0;
-      const consP = (vidaP>0) ? (pmes / vidaP) : 0;
-      const costoHerrA = consA * costoHerr;
-      const costoHerrP = consP * costoHerr;
-      const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
+q('caseSelect')?.addEventListener('change', ()=>{ calcular(); });
+q('btnSaveScenario')?.addEventListener('click', saveScenario);
+q('btnLoadScenario')?.addEventListener('click', showScenarioPicker);
 
-      // Tiempo muerto mensual (min/mes -> horas/mes)
-      const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
+/* Quick actions: share and pdf - colocarlos en la UI donde prefieras.
+   Si no tienes botones, los puedes invocar desde consola: makeShareLink(); exportPDF(); */
+window.makeShareLink = makeShareLink;
+window.exportPDF = exportPDF;
 
-      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-      const incTM    = document.getElementById('incTM')?.checked ?? true;
-
-      const ahorroTotal = Math.max(0,
-        (incCiclo ? ahorroCiclo : 0) +
-        (incHerr  ? ahorroHerr  : 0) +
-        (incTM    ? ahorroTM    : 0)
-      );
-
-      const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
-      const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
-      const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
-
-      document.getElementById('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
-      document.getElementById('roi').textContent        = `${fmt(roiAnual)}%`;
-      document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
-      document.getElementById('payback').textContent    = fmt(payback);
-      document.getElementById('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
-
-      const tmWrap = document.getElementById('kpiTMBox');
-      if (tmWrap) tmWrap.classList.toggle('opacity-50', !incTM);
-
-      // Comparativa
-      const pphA = cicloA>0 ? 3600/cicloA : 0;
-      const pphP = cicloP>0 ? 3600/cicloP : 0;
-      const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
-      const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
-
-      function delta(a,p,{higherIsBetter=true}={}){
-        if(a===0 && p===0) return {val:0, up:false};
-        const d = (p-a) / (a===0 ? 1 : a) * 100;
-        const up = higherIsBetter ? d>0 : d<0;
-        return {val:d, up};
-      }
-      function row(name,a,p,opt){
-        const d = delta(a,p,opt||{});
-        const badge = `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${d.up? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'}">${(d.val>=0?'+':'')+fmt(d.val)}%</span>`;
-        return `<tr class="bg-gray-50 ring-1 ring-gray-200">
-          <td class="px-2 py-2">${name}</td>
-          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
-          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
-          <td class="px-2 py-2 text-right">${badge}</td>
-        </tr>`;
-      }
-      const rows = [
-        row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
-        row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
-        row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
-        row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
-        row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
-        row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
-        row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
-        row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
-      ].join('');
-      document.getElementById('tbodyComp').innerHTML = rows;
-
-      // VISUALES
-      const parts = [], labels = [];
-      const ahorroCicloPOS = Math.max(0, ahorroCiclo);
-      const ahorroHerrPOS  = Math.max(0, ahorroHerr);
-      const ahorroTMPOS    = Math.max(0, ahorroTM);
-      if(incCiclo) { parts.push(ahorroCicloPOS); labels.push('Ciclo'); }
-      if(incHerr)  { parts.push(ahorroHerrPOS);  labels.push('Herramienta'); }
-      if(incTM)    { parts.push(ahorroTMPOS);    labels.push('Tiempo muerto'); }
-      renderDonut('vizAhorros', parts, labels);
-      renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
-    }
-
-    function setEnabled(ids, on){
-      ids.forEach(id=>{
-        const el=document.getElementById(id);
-        if(!el) return;
-        el.disabled = !on;
-        el.classList.toggle('bg-gray-100', !on);
-        el.classList.toggle('cursor-not-allowed', !on);
-      });
-    }
-    function applyInclusions(){
-      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-      const incTM    = document.getElementById('incTM')?.checked ?? true;
-      setEnabled(['cicloA','cicloP'], incCiclo);
-      setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
-      setEnabled(['tmuertoA','tmuertoP'], incTM);
-    }
-
-    // SVGs sin librerías
-    function renderDonut(targetId, parts, labels){
-      const total = parts.reduce((a,b)=>a+b,0);
-      const W=320,H=210,cx=110,cy=105,r=80,th=28;
-      let start=0; const colors=['#6366F1','#22C55E','#F59E0B','#06B6D4','#EF4444'];
-      const segs = parts.map((v,i)=>{
-        const frac = total>0 ? v/total : 0;
-        const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
-        const large = (a1-a0)>Math.PI ? 1:0;
-        const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
-        const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
-        const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
-        const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
-        const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
-        const pct = total>0 ? Math.round(frac*100) : 0;
-        return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>`+
-               (pct>0?`<text x="220" y="${26+18*i}" font-size="12" fill="#334155">${labels[i]}: ${pct}%</text>`:'');
-      }).join('');
-      const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="#fff"></circle>`+
-                     `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
-      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
-      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
-    }
-
-    function renderBars(targetId, pairs){
-      const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
-        lines: String(lbl).replace(' (', '\n(').split('\n'),
-        a, b, lowerIsBetter
-      }));
-      const approxChar = 7;
-      const labelCol = Math.max(100, Math.min(200, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
-      const barStartX = labelCol + 12;
-      const barMax = 240;
-      const rowH = 32;
-      const rowGap = 12;
-      const padY = 16;
-
-      const W = barStartX + barMax + 120;
-      const H = padY + rowsData.length * (rowH + rowGap) + 28;
-
-      const maxVal = Math.max(...rowsData.flatMap(r => [r.a, r.b].map(v => Math.abs(v) || 0)), 1);
-
-      let y = padY;
-      const rows = rowsData.map(r => {
-        const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
-        const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
-        const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
-        const label = `<text x="0" y="${y+12}" font-size="12" fill="#334155">`
-          + r.lines.map((ln, i) => i === 0 ? ln : `<tspan x="0" dy="1.2em">${ln}</tspan>`).join('')
-          + `</text>`;
-        const bars = `
-          <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
-          <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
-          <text x="${barStartX + aw + 4}" y="${y+9}"  font-size="10" fill="#475569">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
-          <text x="${barStartX + bw + 4}" y="${y+21}" font-size="10" fill="#475569">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
-        `;
-        const out = label + bars;
-        y += rowH + rowGap;
-        return out;
-      }).join('');
-
-      const legendY = H - 18;
-      const legend = `
-        <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
-        <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10" fill="#334155">Actual</text>
-        <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
-        <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10" fill="#334155">Propuesta</text>
-      `;
-
-      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
-      const el = document.getElementById(targetId);
-      if (el) el.innerHTML = svg;
-    }
-
-    // Listeners
-    document.getElementById('btnCalcular')?.addEventListener('click', calcular);
-    document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
-    ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP']
-      .forEach(id => document.getElementById(id)?.addEventListener('input', () => {
-        // Recalcula "en vivo" en desktop; en móvil puedes tocar el botón fijo
-        if (window.innerWidth >= 768) calcular();
-      }));
-    ['incCiclo','incHerr','incTM'].forEach(id=>{
-      document.getElementById(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); });
-    });
-
-    // Estado inicial
-    applyInclusions();
-    calcular();
-  </script>
-</body>
-</html>
+/* Estado inicial */
+applyInclusions();
+calcular();
+</script>
