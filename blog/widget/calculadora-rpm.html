@@ -910,37 +910,108 @@ async function downloadPdf(){
 async function loadRelated(){ try{ const r = await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) return; const j = await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){} }
 function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url = p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img = p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
 /* --- Controls manuales para RPM / Feed --- */
+/* --- Controls manuales para RPM / Feed --- */
 const $q = (s)=>document.querySelector(s);
-
-function unitsText(){
-  return units === 'metric' ? 'métrico' : 'imperial';
-}
 
 function updateUnitsLabels(){
   const u = units === 'metric' ? 'mm/min' : 'IPM';
   if($('manualFeedUnitLabel')) $('manualFeedUnitLabel').textContent = u;
-  if($('unitsLabel')) $('unitsLabel').textContent = unitsText();
+  if($('unitsLabel')) $('unitsLabel').textContent = units === 'metric' ? 'métrico' : 'imperial';
+  // Actualiza feedUnit principal
+  if($('feedUnit')) $('feedUnit').textContent = (units === 'metric') ? 'mm/min' : 'IPM';
 }
 
+/**
+ * Convierte los valores visibles en los inputs manuales cuando cambian las unidades.
+ * fromUnit / toUnit: 'metric' | 'imperial'
+ */
+function convertManualInputsOnUnitChange(fromUnit, toUnit){
+  if(!$('manualFeed')) return;
+  let v = Number(parseFloat($('manualFeed').value));
+  if(!Number.isFinite(v)) return;
+  if(fromUnit === toUnit) return;
+
+  if(fromUnit === 'metric' && toUnit === 'imperial'){
+    // mm/min -> IPM
+    const ipm = v / 25.4;
+    $('manualFeed').value = Math.round(ipm * 100) / 100;
+  } else if(fromUnit === 'imperial' && toUnit === 'metric'){
+    // IPM -> mm/min
+    const mmmin = v * 25.4;
+    $('manualFeed').value = Math.round(mmmin);
+  }
+}
+
+/**
+ * Re-define setUnits aquí (sustituye la versión anterior). Convierte inputs manuales si hace falta.
+ */
+function setUnits(u){
+  const prev = units;
+  units = u;
+  $('uMetric')?.classList.toggle('is-on', u==='metric');
+  $('uImperial')?.classList.toggle('is-on', u==='imperial');
+
+  // convertir manual inputs si existía un valor antes
+  convertManualInputsOnUnitChange(prev, units);
+
+  updateUnitsLabels();
+
+  // Actualiza feedUnit y resetea algunos textos
+  if($('sumOut')) $('sumOut').textContent = 'Unidad: ' + (u==='metric' ? 'métrico' : 'imperial');
+  window.units = units;
+}
+
+/**
+ * Guarda/normaliza los valores ingresados manualmente y los convierte a internos (mm/min).
+ * Devuelve { rpmManual, feed_mm_min, feed_input_was_valid }
+ */
 function manualValuesToInternal(){
-  // lee valores manuales y devuelve {rpm, feed_mm_min}
-  const rpmManual = Number(parseFloat($('manualRPM')?.value)) || NaN;
-  let feedManual = Number(parseFloat($('manualFeed')?.value)) || NaN;
-  if(Number.isFinite(feedManual)){
+  const rpmManual = Number(parseFloat($('manualRPM')?.value));
+  let feedManual = Number(parseFloat($('manualFeed')?.value));
+  const feedValid = Number.isFinite(feedManual);
+  if(feedValid){
     if(units === 'imperial'){
       // input en IPM -> convertir a mm/min
       feedManual = feedManual * 25.4;
     }
   }
-  return { rpmManual, feedManual };
+  return { rpmManual: Number.isFinite(rpmManual) ? rpmManual : NaN, feed_mm_min: feedValid ? feedManual : NaN, feed_input_was_valid: feedValid };
 }
 
+/**
+ * Establece las baselines usadas para calcular escalas de sliders.
+ * Se llama desde calc() (cuando hay un cálculo base válido).
+ */
+function setBaselines(force=false){
+  if(force || !Number.isFinite(window.baseRPM)){
+    window.baseRPM = Number.isFinite(window.rpm) ? window.rpm : NaN;
+  }
+  if(force || !Number.isFinite(window.baseFeed)){
+    window.baseFeed = Number.isFinite(window.feed) ? window.feed : NaN;
+  }
+  // Asegura que los sliders muestren 1 (100%) respecto a la baseline
+  const rpmEl = $('rpmSlider'), feedEl = $('feedSlider');
+  if(rpmEl && Number.isFinite(window.baseRPM) && Number.isFinite(window.rpm)){
+    const ratio = window.baseRPM ? (window.rpm / window.baseRPM) : 1;
+    rpmEl.value = String(Math.max(parseFloat(rpmEl.min||0.01), Math.min(parseFloat(rpmEl.max||10), ratio)));
+  }
+  if(feedEl && Number.isFinite(window.baseFeed) && Number.isFinite(window.feed)){
+    const ratioF = window.baseFeed ? (window.feed / window.baseFeed) : 1;
+    feedEl.value = String(Math.max(parseFloat(feedEl.min||0.01), Math.min(parseFloat(feedEl.max||10), ratioF)));
+  }
+}
+
+/**
+ * Aplica los valores manuales ingresados (si el modo manual está activo).
+ * Actualiza window.rpm / window.feed con valores convertidos y clamp por límites de máquina.
+ */
 function applyManualValues(){
   const enabled = !!$('enableManual')?.checked;
   if(!enabled) return;
-  const { rpmManual, feedManual } = manualValuesToInternal();
+  const { rpmManual, feed_mm_min } = manualValuesToInternal();
   let rpmUse = Number.isFinite(rpmManual) ? rpmManual : window.rpm || 0;
-  let feedUse = Number.isFinite(feedManual) ? feedManual : window.feed || 0;
+  let feedUse = Number.isFinite(feed_mm_min) ? feed_mm_min : window.feed || 0;
+
   const mach = getMachine();
   const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit')?.value) || mach?.rpm_max || 12000;
   if(rpmUse > rpmLimit) rpmUse = rpmLimit;
@@ -950,35 +1021,72 @@ function applyManualValues(){
   window.feed = feedUse;
 
   // sincronizar sliders con escala relativa respecto a baseline (si existe baseline)
-  // si no hay baseline, dejamos sliders en 1
   const baselineRPM = Number.isFinite(window.baseRPM) ? window.baseRPM : window.rpm;
   const baselineFeed = Number.isFinite(window.baseFeed) ? window.baseFeed : window.feed;
-  if(baselineRPM > 0) $('rpmSlider').value = String(Math.max(0.01, Math.min(3, window.rpm / baselineRPM)));
-  if(baselineFeed > 0) $('feedSlider').value = String(Math.max(0.01, Math.min(3, window.feed / baselineFeed)));
 
-  // actualiza mostramos
+  if(baselineRPM > 0) {
+    const s = Math.max(0.01, Math.min(10, window.rpm / baselineRPM));
+    const el = $('rpmSlider');
+    if(el){
+      const max = parseFloat(el.max) || 10, min = parseFloat(el.min) || 0.01;
+      el.value = String(Math.max(min, Math.min(max, s)));
+    }
+  }
+  if(baselineFeed > 0){
+    const s2 = Math.max(0.01, Math.min(10, window.feed / baselineFeed));
+    const el2 = $('feedSlider');
+    if(el2){
+      const max2 = parseFloat(el2.max) || 10, min2 = parseFloat(el2.min) || 0.01;
+      el2.value = String(Math.max(min2, Math.min(max2, s2)));
+    }
+  }
+
+  // aplicar como valores activos y recalcular vistas dependientes
   recalc();
 }
 
-/* sincronización slider -> manual inputs (cuando modo manual activo) */
+/**
+ * Cuando mueven los sliders: calcular valores actuales y actualizar inputs / displays.
+ */
 function syncInputsFromSliders(){
   const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value||'1');
   const feedScale = parseFloat(($('feedSlider')||{value:1}).value||'1');
+
   // baseline values
   const baseRPM = Number.isFinite(window.baseRPM) ? window.baseRPM : (window.rpm || 0);
   const baseFeed = Number.isFinite(window.baseFeed) ? window.baseFeed : (window.feed || 0);
 
-  const rpmNow = Math.round(Math.min((window.rpmLimit||baseRPM*10||12000), baseRPM * rpmScale));
-  let feedNow = baseFeed * feedScale;
+  // calc rpmNow / feedNow (con clamp por limites de slider y máquina)
+  const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit')?.value) || getMachine()?.rpm_max || 12000;
+  let rpmNow = Number.isFinite(baseRPM) ? Math.round(Math.min(rpmLimit, baseRPM * rpmScale)) : Math.round(Math.min(rpmLimit, (window.rpm||0) * rpmScale));
+  let feedNow = Number.isFinite(baseFeed) ? baseFeed * feedScale : (window.feed || 0) * feedScale;
+
   const mach = getMachine();
   if(mach?.feed_max_mm_min) feedNow = Math.min(feedNow, mach.feed_max_mm_min);
 
+  // Respect slider's declared min/max visually (si alguien puso valores extremos)
+  const rpmEl = $('rpmSlider'), feedEl = $('feedSlider');
+  if(rpmEl){
+    const min = parseFloat(rpmEl.min) || 0.01, max = parseFloat(rpmEl.max) || 10;
+    const ratio = baseRPM ? (rpmNow / baseRPM) : 1;
+    const clampedRatio = Math.max(min, Math.min(max, ratio));
+    rpmNow = Math.round(baseRPM * clampedRatio);
+  }
+  if(feedEl){
+    const minF = parseFloat(feedEl.min) || 0.01, maxF = parseFloat(feedEl.max) || 10;
+    const ratioF = baseFeed ? (feedNow / baseFeed) : 1;
+    const clampedRatioF = Math.max(minF, Math.min(maxF, ratioF));
+    feedNow = baseFeed * clampedRatioF;
+  }
+
   if($('enableManual')?.checked){
+    // escribimos en los inputs manuales para dar retroalimentación (convertir según unidad)
     if($('manualRPM')) $('manualRPM').value = Number.isFinite(rpmNow) ? rpmNow : '';
-    if($('manualFeed')) {
+    if($('manualFeed')){
       if(units==='metric') $('manualFeed').value = Number.isFinite(feedNow) ? Math.round(feedNow) : '';
-      else $('manualFeed').value = Number.isFinite(feedNow) ? (Math.round(feedNow/25.4*100)/100) : '';
+      else $('manualFeed').value = Number.isFinite(feedNow) ? (Math.round((feedNow/25.4)*100)/100) : '';
     }
+    // aplicar como valores activos (recalc ya se llama dentro)
     applyManualValues();
   } else {
     // si no está en manual, actualizar displays basados en rpm/feed ajustados
@@ -988,55 +1096,44 @@ function syncInputsFromSliders(){
   }
 }
 
-/* sincroniza baseline de referencia después de un calc() automático */
-function setBaselines(){
-  window.baseRPM = Number.isFinite(window.rpm) ? window.rpm : NaN;
-  window.baseFeed = Number.isFinite(window.feed) ? window.feed : NaN;
-  // inicializa campos manuales con baseline (no activas)
-  if($('manualRPM') && !$('enableManual')?.checked) $('manualRPM').value = Math.round(window.baseRPM || 0);
-  if($('manualFeed') && !$('enableManual')?.checked){
-    if(units==='metric') $('manualFeed').value = Math.round(window.baseFeed || 0);
-    else $('manualFeed').value = Number.isFinite(window.baseFeed) ? (Math.round((window.baseFeed/25.4)*100)/100) : '';
-  }
-}
-
-/* Eventos y hooks */
-(function attachManualHooks(){
-  // update labels según unidad
-  updateUnitsLabels();
-
-  // when user toggles manual mode
-  $('enableManual')?.addEventListener('change', (e)=>{
+/* --- listeners y wiring --- */
+(function wireManualControls(){
+  // cuando se activa/desactiva modo manual
+  const en = $('enableManual');
+  if(en) en.addEventListener('change', (e)=>{
     const on = e.target.checked;
+    const manualRPM = $('manualRPM'), manualFeed = $('manualFeed');
     if(on){
-      // si activamos manual, dejar valores actuales en inputs
-      if($('manualRPM') && Number.isFinite(window.rpm)) $('manualRPM').value = Math.round(window.rpm);
-      if($('manualFeed')){
-        if(units==='metric') $('manualFeed').value = Math.round(window.feed || 0);
-        else $('manualFeed').value = Number.isFinite(window.feed) ? (Math.round((window.feed/25.4)*100)/100) : '';
+      // poblar inputs manuales con valores actuales (convertir a unidad visible)
+      if($('rpmOut')) manualRPM.value = Number.isFinite(window.rpm) ? Math.round(window.rpm) : '';
+      if($('feedOut') && manualFeed){
+        if(units === 'metric') manualFeed.value = Number.isFinite(window.feed) ? Math.round(window.feed) : '';
+        else manualFeed.value = Number.isFinite(window.feed) ? (Math.round((window.feed/25.4)*100)/100) : '';
       }
+      // asegurar baselines
+      setBaselines(true);
       applyManualValues();
     } else {
-      // desactivar manual -> restaurar baseline y recalc con sliders
-      if(Number.isFinite(window.baseRPM)) window.rpm = window.baseRPM;
-      if(Number.isFinite(window.baseFeed)) window.feed = window.baseFeed;
-      $('rpmSlider').value = 1; $('feedSlider').value = 1;
+      // quitamos modo manual -> recalc con valores base
       recalc();
     }
   });
 
-  // manual inputs -> aplicar
-  $('manualRPM')?.addEventListener('input', ()=>{ if($('enableManual')?.checked) applyManualValues(); });
-  $('manualFeed')?.addEventListener('input', ()=>{ if($('enableManual')?.checked) applyManualValues(); });
+  // inputs manuales
+  const mr = $('manualRPM');
+  if(mr) mr.addEventListener('input', ()=>{ applyManualValues(); });
+  const mf = $('manualFeed');
+  if(mf) mf.addEventListener('input', ()=>{ applyManualValues(); });
 
-  // sliders -> sincronizar
-  $('rpmSlider')?.addEventListener('input', ()=>{ syncInputsFromSliders(); });
-  $('feedSlider')?.addEventListener('input', ()=>{ syncInputsFromSliders(); });
+  // sliders: sincronizar al mover
+  const rsl = $('rpmSlider'), fsl = $('feedSlider');
+  if(rsl) rsl.addEventListener('input', syncInputsFromSliders);
+  if(fsl) fsl.addEventListener('input', syncInputsFromSliders);
 
-  // cuando cambian unidades, actualizar labels
-  const unitButtons = ['uMetric','uImperial'];
-  unitButtons.forEach(id => { const el = $(id); if(el) el.addEventListener('click', ()=>{ updateUnitsLabels(); /* mantener coherencia */ }); });
+  // Si cambian unidades via botones, updateUnitsLabels ya será llamada por setUnits (que también convierte manual inputs)
+  updateUnitsLabels();
 })();
+
   </script>
 
 </body>
