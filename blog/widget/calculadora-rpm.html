@@ -9,6 +9,8 @@
 
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-YcsIPv1V1+0oJz/KQb+8EoeY4ufyqtj4d7XbcJ8I8rEAyDPU2cZ1sQHP9R5cWvDHHxQbyChS9QFQ6AqgQZ4G2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <style>
     :root{
@@ -51,6 +53,16 @@
     .hint{color:var(--muted);font-size:.75rem}
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
+    /* PDF styles: for html2pdf */
+    #pdf-report{background:#0f172a;color:#e5eefb;max-width:780px;padding:24px;border-radius:16px;border:1px solid #1f2a3a;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;}
+    #pdf-report h2{font-size:1.1rem;margin-bottom:.8rem}
+    #pdf-report .sec-title{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.4rem}
+    #pdf-report .grid{display:grid;gap:.5rem}
+    #pdf-report .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    #pdf-report .item{background:rgba(15,23,42,.35);border:1px solid rgba(148,163,184,.12);border-radius:.75rem;padding:.55rem .65rem}
+    #pdf-report .item label{display:block;font-size:.65rem;color:#94a3b8}
+    #pdf-report .item span{font-weight:600;font-size:.8rem}
+    #pdf-report .footer{margin-top:1rem;font-size:.55rem;color:#94a3b8}
   </style>
 </head>
 <body>
@@ -182,6 +194,7 @@
       <div class="flex flex-wrap gap-3 mt-4">
         <button id="calcBtn" class="btn btn-primary">Calcular</button>
         <button id="resetBtn" class="btn">Reiniciar</button>
+        <button id="pdfBtn" class="btn">PDF</button>
       </div>
 
       <!-- Resultados -->
@@ -247,6 +260,64 @@
       <div id="relGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       <div id="relEmpty" class="text-slate-400 text-sm">Se mostrarán artículos recientes del blog.</div>
     </section>
+
+    <!-- REPORTE PDF -->
+    <div id="pdf-report" class="hidden">
+      <h2 class="text-sky-100 font-semibold">Reporte de condiciones aplicadas</h2>
+      <p class="text-xs text-slate-400 mb-3">Generado desde alexrasa.store · Calculadora RPM/avance — Pro</p>
+
+      <div class="sec-title">Contexto</div>
+      <div class="grid grid-2 mb-3">
+        <div class="item">
+          <label>Material de pieza</label>
+          <span id="rptMaterial"></span>
+        </div>
+        <div class="item">
+          <label>Operación</label>
+          <span id="rptOp"></span>
+        </div>
+        <div class="item">
+          <label>Máquina</label>
+          <span id="rptMachine"></span>
+        </div>
+        <div class="item">
+          <label>Holder</label>
+          <span id="rptHolder"></span>
+        </div>
+        <div class="item">
+          <label>Tipo de herramienta</label>
+          <span id="rptToolType"></span>
+        </div>
+        <div class="item">
+          <label>Material de herramienta</label>
+          <span id="rptToolMat"></span>
+        </div>
+      </div>
+
+      <div class="sec-title">Parámetros calculados</div>
+      <div class="grid grid-2 mb-3">
+        <div class="item"><label>Diámetro</label><span id="rptDiam"></span></div>
+        <div class="item"><label>RPM</label><span id="rptRPM"></span></div>
+        <div class="item"><label>Avance</label><span id="rptFeed"></span></div>
+        <div class="item"><label>MRR</label><span id="rptMRR"></span></div>
+        <div class="item"><label>Potencia</label><span id="rptPwr"></span></div>
+        <div class="item"><label>Torque</label><span id="rptTq"></span></div>
+        <div class="item"><label>Carga husillo</label><span id="rptLoad"></span></div>
+        <div class="item"><label>Ra estimado</label><span id="rptRa"></span></div>
+      </div>
+
+      <div class="sec-title">Vibración</div>
+      <div class="item mb-3">
+        <label>Evaluación</label>
+        <span id="rptVibeState"></span>
+        <div id="rptVibe" style="font-size:.7rem;margin-top:.25rem;color:#e2e8f0;"></div>
+      </div>
+
+      <div class="footer">
+        Fecha/hora: <span id="rptDate"></span><br>
+        Nota: Estos datos son orientativos. Ajustar en máquina considerando herramienta real, sujeción y condiciones de planta.
+      </div>
+    </div>
   </main>
 
   <script>
@@ -262,17 +333,15 @@
       try{
         const r=await fetch('/data/cutting-data.json',{cache:'no-store'});
         if(r.ok){ DATA = await r.json(); }
-      }catch(e){ /* fallback mínimo si no carga JSON */ }
+      }catch(e){ }
       window.DATA = DATA;
     }
 
     // ===== Selects
     function fillSelectors(){
-      // Material pieza
       const sel=$('material'); sel.innerHTML='';
       (DATA.materials||[]).forEach(m=>{ sel.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`); });
 
-      // Operaciones
       const ops = (DATA.operations&&DATA.operations.length)? DATA.operations : [
         {id:'rough',label:'Desbaste'},{id:'finish',label:'Acabado'},{id:'adaptive',label:'Trocoidal/Adaptativo'},{id:'slot',label:'Ranurado'},
         {id:'cut',label:'Corte'},{id:'part',label:'Tronzado'},{id:'drill',label:'Barrenado'}
@@ -280,7 +349,6 @@
       const opSel=$('operation'); opSel.innerHTML='';
       ops.forEach(o=>opSel.insertAdjacentHTML('beforeend',`<option value="${o.id}">${o.label}</option>`));
 
-      // Tipos de herramienta
       const tSel=$('toolType'); tSel.innerHTML='';
       const ttypes = (DATA.tool_types&&DATA.tool_types.length)? DATA.tool_types : [
         {id:'endmill',label:'Fresa (Endmill)'},
@@ -295,7 +363,6 @@
       ];
       ttypes.forEach(t=>tSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
 
-      // Material de herramienta
       const tmSel=$('toolMat'); tmSel.innerHTML='';
       const tmats = (DATA.tool_materials&&DATA.tool_materials.length)? DATA.tool_materials : [
         {id:'carbide',label:'Carburo',vc_factor:1,fz_factor:1},
@@ -308,15 +375,12 @@
       ];
       tmats.forEach(t=>tmSel.insertAdjacentHTML('beforeend',`<option value="${t.id}">${t.label}</option>`));
 
-      // Holders
       const holderSel=$('holder'); holderSel.innerHTML='';
       (DATA.holders||[]).forEach(h=>{ holderSel.insertAdjacentHTML('beforeend',`<option value="${h.id}">${h.label}</option>`); });
 
-      // Máquinas
       const mach=$('machine'); mach.innerHTML='';
       (DATA.machine_profiles||[]).forEach(m=>{ mach.insertAdjacentHTML('beforeend',`<option value="${m.id}">${m.name}</option>`); });
 
-      // Defaults
       $('rpmLimit').value = DATA.defaults?.rpm_limit || 12000;
       $('prudence').value = DATA.defaults?.prudence || 0.9;
       $('stickout').value = DATA.defaults?.stickout_mm || 25;
@@ -329,14 +393,7 @@
     function getMachine(){ const id=$('machine').value; return (DATA.machine_profiles||[]).find(m=>m.id===id) || {}; }
     function getToolType(){ const id=$('toolType').value; return (DATA.tool_types||[]).find(t=>t.id===id)||{}; }
     function getToolMat(){ const id=$('toolMat').value; return (DATA.tool_materials||[]).find(t=>t.id===id)||{vc_factor:1,fz_factor:1}; }
-
-    function diaBucketFz(mat, Dmm, op){
-      if(!mat?.fz_mm) return null;
-      const arr=[...mat.fz_mm].sort((a,b)=>a.dia_max_mm-b.dia_max_mm);
-      const picked = arr.find(b=>Dmm<=b.dia_max_mm) || arr[arr.length-1];
-      const range = picked?.[op] || picked?.[op==='finish'?'finish':'rough'];
-      return Array.isArray(range)?range:null;
-    }
+    function getHolder(){ const id=$('holder').value; return (DATA.holders||[]).find(h=>h.id===id); }
 
     function setUnits(u){
       units=u;
@@ -355,6 +412,14 @@
       return { L, ae_pct, ap_mm };
     }
 
+    function diaBucketFz(mat, Dmm, op){
+      if(!mat?.fz_mm) return null;
+      const arr=[...mat.fz_mm].sort((a,b)=>a.dia_max_mm-b.dia_max_mm);
+      const picked = arr.find(b=>Dmm<=b.dia_max_mm) || arr[arr.length-1];
+      const range = picked?.[op] || picked?.[op==='finish'?'finish':'rough'];
+      return Array.isArray(range)?range:null;
+    }
+
     function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct){
       const ae = Math.max(0.01, Math.min(0.95, ae_pct/100));
       if(ae >= 0.5) return {fzEff:fz_mm, k:1};
@@ -366,11 +431,9 @@
     function applyPreset(){
       const mat=getMaterial(); const op=$('operation').value; const D=parseFloat($('diam').value)||10; $('diam').value=D;
 
-      // Base por material
       const vcBase = mat?.vc_m_min?.[op] || mat?.vc_m_min?.rough || [100,200];
       const fzBase = diaBucketFz(mat, (units==='metric'?D:(D*25.4)), op) || [0.03,0.08];
 
-      // Modificadores por tipo/material de herramienta
       const ttype = getToolType();
       const tmat  = getToolMat();
       const vcF = (ttype?.vc_factor ?? 1) * (tmat?.vc_factor ?? 1);
@@ -479,7 +542,6 @@
       const L_mm  = Number.isFinite(L_input) && L_input>0 ? L_input : est.L;
       $('vibeInfo').innerHTML = `Estimado: <code>L=${fmt1(L_mm)} mm</code>, <code>ae≈${Math.round(ae_ratio*100)}% D</code>, <code>ap≈${fmt1(ap_mm)} mm</code>`;
 
-      // MRR con avance efectivo
       const MRR_mm3_min = ap_mm * ae_mm * effFeed;
       const MRR_cm3_min = MRR_mm3_min / 1000;
       $('mrrOut').textContent = fmt1(MRR_cm3_min);
@@ -507,8 +569,7 @@
       if(mat?.taylor?.n && mat?.taylor?.C){ lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n))); }
       $('lifeOut').textContent = Number.isFinite(lifeMin) ? fmt1(lifeMin) : '—';
 
-      const holderId = $('holder').value;
-      const holder = (DATA.holders||[]).find(h=>h.id===holderId) || (DATA.holders||[])[0];
+      const holder = getHolder();
 
       const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
       const stiff = holder?.stiffness_factor || 1.0;
@@ -531,7 +592,6 @@
       }
       $('vibeMsg').innerHTML = msg;
 
-      // expone base ya capada
       window.feed = effFeed;
       window.rpm = rpm;
       window.rpmLimit = rpmLimit;
@@ -554,7 +614,6 @@
       const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit').value) || mach?.rpm_max || 12000;
       const rpmAdj = Math.min(window.rpm * rpmScale, rpmLimit);
 
-      // feed base ya viene capado; si usuario baja, respetamos
       const feedAdj = window.feed * feedScale;
       let effFeed;
       if (feedScale < 1) {
@@ -578,7 +637,6 @@
       const Kc = mat?.Kc_N_per_mm2 || 1500;
       const eta = DATA.defaults?.efficiency || 0.8;
 
-      // MRR con avance efectivo
       const MRR_mm3_min = ae * ap * effFeed;
       $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
 
@@ -600,16 +658,12 @@
       const Re = 0.02 * Dmm; const Ra_um = (fz_mm*fz_mm)/(8*Re) * 1000;
       $('raOut').textContent = fmt2(Ra_um);
 
-      // Vida (Taylor) con penalización por riesgo
       const Vc_m_min = (Math.PI * Dmm * rpmAdj) / 1000;
       let lifeMin = NaN;
-      if(mat?.taylor?.n && mat?.taylor?.C){
-        lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n)));
-      }
+      if(mat?.taylor?.n && mat?.taylor?.C){ lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n))); }
 
+      const holder = getHolder();
       const W = DATA.vibration?.weights || {ld:0.55,ae:0.20,ap:0.15,fz:0.10};
-      const holderId = $('holder').value;
-      const holder = (DATA.holders||[]).find(h=>h.id===holderId) || (DATA.holders||[])[0];
       const stiff = holder?.stiffness_factor || 1.0;
       const L_over_D = L / Dmm;
       const ap_ratio = Math.min(1.2, ap/Math.max(1,Dmm));
@@ -700,6 +754,59 @@
       $('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
     }
 
+    // === PDF helpers ===
+    function buildPdfData(){
+      const matSel = $('material');
+      const opSel  = $('operation');
+      const toolSel= $('toolType');
+      const toolMatSel= $('toolMat');
+      const machSel= $('machine');
+      const holderSel = $('holder');
+
+      $('rptMaterial').textContent = matSel.options[matSel.selectedIndex]?.text || '';
+      $('rptOp').textContent       = opSel.options[opSel.selectedIndex]?.text || '';
+      $('rptToolType').textContent = toolSel.options[toolSel.selectedIndex]?.text || '';
+      $('rptToolMat').textContent  = toolMatSel.options[toolMatSel.selectedIndex]?.text || '';
+      $('rptMachine').textContent  = machSel.options[machSel.selectedIndex]?.text || '';
+      $('rptHolder').textContent   = holderSel.options[holderSel.selectedIndex]?.text || '';
+
+      $('rptDiam').textContent = ($('diam').value || '—') + (units==='metric' ? ' mm' : ' in');
+      $('rptRPM').textContent  = $('rpmOut').textContent + ' rpm';
+      $('rptFeed').textContent = $('feedOut').textContent + ' ' + $('feedUnit').textContent;
+      $('rptMRR').textContent  = $('mrrOut').textContent + ' cm³/min';
+      $('rptPwr').textContent  = $('pwrOut').textContent + ' kW';
+      $('rptTq').textContent   = $('tqOut').textContent + ' N·m';
+      $('rptLoad').textContent = $('loadOut').textContent + ' %';
+      $('rptRa').textContent   = $('raOut').textContent + ' µm';
+
+      // estado de vibración
+      const vibeBox = document.querySelector('.vibe-box');
+      let state = '—';
+      if (vibeBox.classList.contains('ok')) state = 'Sweet spot';
+      else if (vibeBox.classList.contains('warn')) state = 'Atento';
+      else if (vibeBox.classList.contains('bad')) state = 'Vibra';
+      $('rptVibeState').textContent = state;
+
+      // mensaje sin etiquetas
+      const raw = $('vibeMsg').innerHTML.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      $('rptVibe').textContent = raw;
+
+      $('rptDate').textContent = new Date().toLocaleString('es-MX');
+    }
+
+    function downloadPdf(){
+      buildPdfData();
+      const element = document.getElementById('pdf-report');
+      const opt = {
+        margin:       10,
+        filename:     'reporte-condiciones-maquinado.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+
     (async function(){
       await loadData();
       fillSelectors();
@@ -714,6 +821,8 @@
         if(id==='resetBtn') $(id).addEventListener('click',()=>{ resetAll(); recalc(); });
       });
       ['material','operation','toolType','toolMat','holder','machine'].forEach(id=>$(id).addEventListener('change',()=>{ applyPreset(); calc(); recalc(); }));
+
+      $('pdfBtn').addEventListener('click', downloadPdf);
 
       setUnits('metric');
       applyPreset();
