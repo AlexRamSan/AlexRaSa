@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora de RPM y avance — extendida</title>
-  <meta name="description" content="Calcula RPM, avance, MRR, potencia, torque, deflexión, Ra y riesgo de vibración. Presets por material, máquina, operación y herramienta. Métrico/imperial." />
+  <meta name="description" content="Calcula RPM, avance, MRR, potencia, torque, deflexión, Ra y riesgo de vibración. Presets cargados desde cutting-data.json." />
   <link rel="canonical" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
   <meta name="color-scheme" content="dark" />
 
@@ -610,6 +610,7 @@ function calc(){
 
   const Kc = mat?.Kc_N_per_mm2 || 1500;
   const eta = DATA.defaults?.efficiency || 0.8;
+  // CORRECCIÓN: dividir por 1e6 para pasar de N·mm/s a kW correctamente
   const P_kW = (Kc * (MRR_mm3_min/60)) / (1e6 * eta);
   const T_Nm = (60 * P_kW * 1000) / (2 * Math.PI * rpm);
   if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
@@ -694,7 +695,8 @@ function recalc(){
   const MRR_mm3_min = ae * ap * effFeed;
   if($('mrrOut')) $('mrrOut').textContent = fmt1(MRR_mm3_min/1000);
 
-  const P_kW = (Kc * (MRR_mm3_min/60)) / (1000 * eta);
+  // CORRECCIÓN: dividir por 1e6 para pasar de N·mm/s a kW correctamente
+  const P_kW = (Kc * (MRR_mm3_min/60)) / (1e6 * eta);
   const T_Nm = (60 * P_kW * 1000) / (2 * Math.PI * rpmAdj);
   if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
   if($('tqOut')) $('tqOut').textContent = fmt2(T_Nm);
@@ -735,7 +737,7 @@ function recalc(){
   else if(risk >= SWEET) state='warn';
   const vb = document.querySelector('.vibe-box'); if(vb){ vb.classList.remove('ok','warn','bad'); vb.classList.add(state); }
   const badge = `<span class="badge ${state}">${state==='ok'?'Sweet spot':state==='warn'?'Atento':'Vibra'}</span>`;
-  if($('vibeMsg')) $('vibeMsg').innerHTML = `${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;
+  if($('vibeMsg')) $('vibeMsg').innerHTML = `${badge} · L/D=${fmt2(L_over_D)} · f<sub>tp</sub>=${fmt1(toothHz)} Hz · riesgo=${fmt2(risk)}.`;  
 
   const bar = $('sweetBarDual');
   let color = "from-rose-600 to-rose-700";
