@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de RPM y avance — extendida</title>
+  <title>Calculadora de RPM y avance — Pro (AlexRaSa)</title>
   <meta name="description" content="Calcula RPM, avance, MRR, potencia, torque, deflexión, Ra y riesgo de vibración. Presets cargados desde cutting-data.json." />
   <link rel="canonical" href="https://alexrasa.store/blog/calculadora-rpm-avance.html" />
   <meta name="color-scheme" content="dark" />
@@ -144,22 +144,21 @@
         <button id="resetBtn" class="btn" title="Reinicia todos los campos a valores por defecto">Reiniciar</button>
         <button id="pdfBtn" class="btn" title="Genera un PDF con el reporte de condiciones">PDF</button>
       </div>
-      <!-- Parámetros de corte adicionales (re-añadir) -->
-<div class="mt-3 grid md:grid-cols-3 gap-3 items-end">
-  <div class="field">
-    <label>Participación radial aₑ (%)</label>
-    <input id="aePct" type="number" step="0.1" placeholder="ej. 25" value="" title="Participación radial (aₑ) expresada como % del diámetro.">
-  </div>
-  <div class="field">
-    <label>Profundidad de corte aₚ (mm)</label>
-    <input id="ap" type="number" step="0.01" placeholder="ej. 5" value="" title="Profundidad de corte (aₚ) en mm.">
-  </div>
-  <div class="field">
-    <label>Longitud de herramienta / stickout (mm)</label>
-    <input id="stickout" type="number" step="1" placeholder="ej. 25" value="" title="Longitud de herramienta sobresaliente (stickout) en mm. Afecta L/D y vibración.">
-  </div>
-</div>
 
+      <div class="mt-3 grid md:grid-cols-3 gap-3 items-end">
+        <div class="field">
+          <label>Participación radial aₑ (%)</label>
+          <input id="aePct" type="number" step="0.1" placeholder="ej. 25" value="" title="Participación radial (aₑ) expresada como % del diámetro.">
+        </div>
+        <div class="field">
+          <label>Profundidad de corte aₚ (mm)</label>
+          <input id="ap" type="number" step="0.01" placeholder="ej. 5" value="" title="Profundidad de corte (aₚ) en mm.">
+        </div>
+        <div class="field">
+          <label>Longitud de herramienta / stickout (mm)</label>
+          <input id="stickout" type="number" step="1" placeholder="ej. 25" value="" title="Longitud de herramienta sobresaliente (stickout) en mm. Afecta L/D y vibración.">
+        </div>
+      </div>
 
       <!-- Resultados -->
       <div class="grid md:grid-cols-3 gap-4 mt-6">
@@ -318,7 +317,7 @@
   </main>
 
   <script>
-/* (se mantiene todo tu JS original; solo se han añadido los atributos title en el HTML) */
+/* Utilidades y formato */
 const $ = (id)=>document.getElementById(id);
 const fmt0 = (n)=>Number.isFinite(n)?Math.round(n).toLocaleString('es-MX'):'—';
 const fmt1 = (n)=>Number.isFinite(n)?(Math.round(n*10)/10).toLocaleString('es-MX'):'—';
@@ -336,7 +335,7 @@ let DATA = {
 };
 let units = 'metric';
 
-// Carga robusta de cutting-data.json
+/* Carga robusta de cutting-data.json */
 async function loadData(){
   try{
     const url = '/data/cutting-data.json';
@@ -363,6 +362,7 @@ async function loadData(){
   }
 }
 
+/* Rellenar selectores con datos */
 function fillSelectors(){
   const sel = $('material'); if(sel) sel.innerHTML = '';
   (DATA.materials || []).forEach(m => sel?.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`));
@@ -393,9 +393,7 @@ function fillSelectors(){
   if($('stickout')) $('stickout').value = DATA.defaults?.stickout_mm || 25;
   if($('ap')) $('ap').value = DATA.defaults?.ap_mm || 5;
 
-  const mat = getMaterial();
-  if($('matNotes')) $('matNotes').textContent = mat?.notes || '';
-  buildQuickRef(mat);
+  buildQuickRef(getMaterial());
 }
 
 function getMaterial(){ const el = $('material'); const id = el?.value; return (DATA.materials||[]).find(m=>m.id===id); }
@@ -413,6 +411,7 @@ function setUnits(u){
   window.units = units;
 }
 
+/* Estimaciones vibración y fz bucket */
 function estimateVibeParams(Dmm,op){
   const L = Number(parseFloat($('stickout')?.value)) || Math.max(DATA.defaults?.stickout_mm||25, (op==='finish'?2.0:3.0)*Dmm);
   const opDef = (DATA.operations||[]).find(o=>o.id===op);
@@ -429,6 +428,7 @@ function diaBucketFz(mat,Dmm,op){
   return Array.isArray(range) ? range : null;
 }
 
+/* Chip-thinning */
 function chipThinningAdjustedFz(fz_mm, Dmm, ae_pct, helix_deg=30, corner_mm=0){
   const r = Math.max(0.001, Math.min(1.0, ae_pct/100.0));
   const s = Math.sqrt(r * (2.0 - r));
@@ -459,7 +459,7 @@ const chart = {
     const resize = () => {
       this.el.width = Math.max(640, this.el.clientWidth * 2);
       this.el.height = Math.max(220, this.el.clientHeight * 2);
-      this.draw(0.5);
+      this.draw(0.5,false);
     };
     new ResizeObserver(resize).observe(this.el.parentElement);
     resize();
@@ -500,15 +500,18 @@ const chart = {
     ctx.setLineDash([]);
     ctx.fillStyle='rgba(148,163,184,0.95)'; ctx.font='20px system-ui'; ctx.fillText('Riesgo de vibración',30,34);
   },
-  drawMarker(risk){
+  drawMarker(risk,inBand=false){
     if(!this.ctx) return;
     const ctx = this.ctx;
     const X = this.xToPx(Math.max(this.xMin, Math.min(this.xMax, risk)));
-    let col = 'rgba(34,197,94,1)'; if(risk>=1.0) col='rgba(239,68,68,1)'; else if(risk>=0.65) col='rgba(245,158,11,1)';
+    let col = 'rgba(34,197,94,1)'; 
+    if(inBand) col='rgba(239,68,68,1)';
+    else if(risk>=1.0) col='rgba(239,68,68,1)'; 
+    else if(risk>=0.65) col='rgba(245,158,11,1)';
     ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(X,20); ctx.lineTo(X,this.el.height-30); ctx.stroke();
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X, this.yToPx(this.pdf(risk)), 9, 0, Math.PI*2); ctx.fill();
   },
-  draw(risk=0.5){ this.drawBase(); this.drawMarker(risk); }
+  draw(risk=0.5,inBand=false){ this.drawBase(); this.drawMarker(risk,inBand); }
 };
 window.chart = chart;
 
@@ -550,13 +553,13 @@ function applyPreset(){
     if($('fz')) $('fz').value = (((fzRange[0]+fzRange[1])/2)/25.4).toFixed(3);
   }
 
-  if($('matNotes')) $('matNotes').textContent = mat?.notes || '';
   buildQuickRef(mat);
   const est = estimateVibeParams(((units==='metric')?D:D*25.4), op);
   if($('aePct')) $('aePct').value = Math.round(est.ae_pct);
   if(!$('ap')?.value) if($('ap')) $('ap').value = fmt2(est.ap_mm);
 }
 
+/* Cálculo principal */
 function calc(){
   const D = parseFloat($('diam')?.value);
   const z = parseInt($('flutes')?.value,10);
@@ -573,7 +576,7 @@ function calc(){
     if($('rpmOut')) $('rpmOut').textContent='—';
     if($('feedOut')) $('feedOut').textContent='—';
     if($('vibeMsg')) $('vibeMsg').textContent='Faltan datos.';
-    chart.draw(0.5);
+    chart.draw(0.5,false);
     return;
   }
 
@@ -642,13 +645,28 @@ function calc(){
     T_Nm = (60 * P_W) / (2 * Math.PI * rpm);
   }
 
+  // Mostrar potencia real (kW) siempre; controlar carga (%) para no mostrar 200% sin aclarar
   if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
-  if($('tqOut')) $('tqOut').textContent = Number.isFinite(T_Nm) ? fmt2(T_Nm) : '—';
 
-  let loadPct = NaN;
-  if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
-  if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct) ? fmt1(loadPct) : '—';
-  if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?' } kW` : '';
+  // Carga respecto a potencia nominal de la máquina: calculamos raw y mostramos un valor acotado al 100%,
+  // pero entregamos aviso en pwrNote si excede.
+  let rawLoadPct = NaN;
+  if(mach?.power_kw) rawLoadPct = 100 * P_kW / mach.power_kw;
+  let displayLoad = Number.isFinite(rawLoadPct) ? Math.min(100, rawLoadPct) : NaN;
+  if($('loadOut')) $('loadOut').textContent = Number.isFinite(displayLoad) ? fmt1(displayLoad) : '—';
+  if($('pwrNote')) {
+    if(Number.isFinite(rawLoadPct) && rawLoadPct > 100) {
+      $('pwrNote').textContent = `${fmt1(P_kW)} kW de ${mach.power_kw || '?'} kW — Sobrecarga estimada: ${fmt1(rawLoadPct)}%.`;
+    } else {
+      $('pwrNote').textContent = Number.isFinite(rawLoadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : `${fmt1(P_kW)} kW`;
+    }
+  }
+
+  if($('tqOut')) $('tqOut').textContent = Number.isFinite(T_Nm) ? fmt2(T_Nm) : '—';
+  // Si el torque supera el torque nominal de la máquina, añadimos nota de advertencia
+  if(Number.isFinite(T_Nm) && mach?.torque_nm && T_Nm > mach.torque_nm){
+    if($('pwrNote')) $('pwrNote').textContent += ` Torque excede límite máquina (${fmt2(mach.torque_nm)} N·m).`;
+  }
   // ---- fin POTENCIA / TORQUE ----
 
   const toothHz = (rpm*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
@@ -663,6 +681,7 @@ function calc(){
   if(mat?.taylor?.n && mat?.taylor?.C){ lifeMin = Math.pow((mat.taylor.C / Vc_m_min), (1/(mat.taylor.n))); }
   if($('lifeOut')) $('lifeOut').textContent = Number.isFinite(lifeMin) ? fmt1(lifeMin) : '—';
 
+  // VIBRACIÓN: cálculo de riesgo con pesos desde JSON
   const holder = getHolder();
   const W = DATA.vibration?.weights || { ld:0.55, ae:0.20, ap:0.15, fz:0.10 };
   const stiff = holder?.stiffness_factor || 1.0;
@@ -687,10 +706,11 @@ function calc(){
   if($('vibeMsg')) $('vibeMsg').innerHTML = msg;
 
   window.feed = effFeed; window.rpm = rpm; window.rpmLimit = rpmLimit;
-    setBaselines();
-  chart.draw(risk);
+  setBaselines();
+  chart.draw(risk,inBand);
 }
 
+/* recalc: cuando se usan sliders/manual */
 function recalc(){
   if(!(window.rpm>0 && window.feed>0)) return;
   const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value||'1');
@@ -702,7 +722,7 @@ function recalc(){
   const mach = getMachine();
   const unitsLocal = window.units||'metric';
 
-  const rpmLimit = window.rpmLimit||parseFloat($('rpmLimit')?.value)||mach?.rpm_max||12000;
+  const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit')?.value) || mach?.rpm_max || 12000;
   const rpmAdj = Math.min(window.rpm * rpmScale, rpmLimit);
 
   const feedAdj = window.feed * feedScale;
@@ -740,10 +760,21 @@ function recalc(){
   if($('pwrOut')) $('pwrOut').textContent = fmt2(P_kW);
   if($('tqOut')) $('tqOut').textContent = Number.isFinite(T_Nm) ? fmt2(T_Nm) : '—';
 
-  let loadPct = NaN;
-  if(mach?.power_kw) loadPct = Math.min(200, 100 * P_kW / mach.power_kw);
-  if($('loadOut')) $('loadOut').textContent = Number.isFinite(loadPct)?fmt1(loadPct):'—';
-  if($('pwrNote')) $('pwrNote').textContent = Number.isFinite(loadPct)?`${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : '';
+  // Carga: mostramos % acotado a 100% y añadimos nota si hay sobrecarga real
+  let rawLoadPct = NaN;
+  if(mach?.power_kw) rawLoadPct = 100 * P_kW / mach.power_kw;
+  let displayLoad = Number.isFinite(rawLoadPct) ? Math.min(100, rawLoadPct) : NaN;
+  if($('loadOut')) $('loadOut').textContent = Number.isFinite(displayLoad)?fmt1(displayLoad):'—';
+  if($('pwrNote')) {
+    if(Number.isFinite(rawLoadPct) && rawLoadPct > 100) {
+      $('pwrNote').textContent = `${fmt1(P_kW)} kW de ${mach.power_kw || '?'} kW — Sobrecarga estimada: ${fmt1(rawLoadPct)}%.`;
+    } else {
+      $('pwrNote').textContent = Number.isFinite(rawLoadPct) ? `${fmt1(P_kW)} kW de ${mach.power_kw||'?'} kW` : `${fmt1(P_kW)} kW`;
+    }
+  }
+  if(Number.isFinite(T_Nm) && mach?.torque_nm && T_Nm > mach.torque_nm){
+    if($('pwrNote')) $('pwrNote').textContent += ` Torque excede límite máquina (${fmt2(mach.torque_nm)} N·m).`;
+  }
   // ---- fin POTENCIA / TORQUE ----
 
   const toothHz = (rpmAdj*z)/60; if($('toothHzOut')) $('toothHzOut').textContent = fmt1(toothHz);
@@ -788,9 +819,10 @@ function recalc(){
   if($('rpmLabel')) $('rpmLabel').textContent = `${Math.round(rpmScale*100)} % — RPM`;
   if($('feedLabel')) $('feedLabel').textContent = `${Math.round(feedScale*100)} % — Avance`;
 
-  chart.draw(risk);
+  chart.draw(risk,inBand);
 }
 
+/* Reset y helpers */
 function resetAll(){
   if($('diam')) $('diam').value='';
   if($('flutes')) $('flutes').value=3;
@@ -798,12 +830,13 @@ function resetAll(){
   if($('vc')) $('vc').value=''; if($('fz')) $('fz').value=''; if($('prudence')) $('prudence').value = DATA.defaults?.prudence || 0.9;
   if($('aePct')) $('aePct').value=''; if($('ap')) $('ap').value=DATA.defaults?.ap_mm || 5; if($('stickout')) $('stickout').value = DATA.defaults?.stickout_mm || 25;
   if($('helix')) $('helix').value='30'; if($('cornerRad')) $('cornerRad').value='0'; if($('useGeom')) $('useGeom').checked=false;
-  applyPreset(); chart.draw(0.5);
+  applyPreset(); chart.draw(0.5,false);
   if($('sumOut')) $('sumOut').textContent='Ingresa datos y calcula.';
   ['mrrOut','pwrOut','tqOut','loadOut','raOut','toothHzOut','lifeOut'].forEach(id=>{ if($(id)) $(id).textContent='—'; });
   if($('vibeMsg')) $('vibeMsg').textContent=''; if($('vibeInfo')) $('vibeInfo').textContent='L/D, aₑ y aₚ se estiman del diámetro, operación y L.';
 }
 
+/* PDF population */
 function populatePdfClone(root){
   const q = (sel)=>root.querySelector(sel);
   const matSel = $('material'), opSel = $('operation'), toolSel = $('toolType'),
@@ -899,89 +932,77 @@ async function downloadPdf(){
 
   setUnits('metric');
   applyPreset();
-  chart.init(); chart.draw(0.5);
+  chart.init(); chart.draw(0.5,false);
   calc(); recalc();
   try{ loadRelated(); }catch(e){/* silent */ }
   $('rpmSlider')?.addEventListener('input',recalc);
   $('feedSlider')?.addEventListener('input',recalc);
+
+  // Convert manual inputs on unit change
+  const prevSetUnits = setUnits;
+  setUnits = function(u){
+    const prev = units;
+    prevSetUnits(u);
+    // convertir manual inputs si existía un valor antes
+    if(prev !== u && $('manualFeed')){
+      let v = Number(parseFloat($('manualFeed').value));
+      if(Number.isFinite(v)){
+        if(prev === 'metric' && u === 'imperial'){ $('manualFeed').value = Math.round((v / 25.4) * 100) / 100; }
+        else if(prev === 'imperial' && u === 'metric'){ $('manualFeed').value = Math.round(v * 25.4); }
+      }
+    }
+    updateUnitsLabels();
+  };
+
+  // wiring manual controls
+  (function wireManualControls(){
+    const en = $('enableManual');
+    if(en) en.addEventListener('change', (e)=>{
+      const on = e.target.checked;
+      const manualRPM = $('manualRPM'), manualFeed = $('manualFeed');
+      if(on){
+        if($('rpmOut')) manualRPM.value = Number.isFinite(window.rpm) ? Math.round(window.rpm) : '';
+        if($('feedOut') && manualFeed){
+          if(units === 'metric') manualFeed.value = Number.isFinite(window.feed) ? Math.round(window.feed) : '';
+          else manualFeed.value = Number.isFinite(window.feed) ? (Math.round((window.feed/25.4)*100)/100) : '';
+        }
+        setBaselines(true);
+        applyManualValues();
+      } else {
+        recalc();
+      }
+    });
+
+    const mr = $('manualRPM'); if(mr) mr.addEventListener('input', ()=>{ applyManualValues(); });
+    const mf = $('manualFeed'); if(mf) mf.addEventListener('input', ()=>{ applyManualValues(); });
+    const rsl = $('rpmSlider'), fsl = $('feedSlider');
+    if(rsl) rsl.addEventListener('input', syncInputsFromSliders);
+    if(fsl) fsl.addEventListener('input', syncInputsFromSliders);
+    updateUnitsLabels();
+  })();
+
 })();
 
-/* carga mínima related posts */
-async function loadRelated(){ try{ const r = await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) return; const j = await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){} }
-function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url = p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img = p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
-/* --- Controls manuales para RPM / Feed --- */
-/* --- Controls manuales para RPM / Feed --- */
-const $q = (s)=>document.querySelector(s);
-
+/* Helpers para manual mode y sliders (copiados/ajustados del original) */
 function updateUnitsLabels(){
   const u = units === 'metric' ? 'mm/min' : 'IPM';
   if($('manualFeedUnitLabel')) $('manualFeedUnitLabel').textContent = u;
   if($('unitsLabel')) $('unitsLabel').textContent = units === 'metric' ? 'métrico' : 'imperial';
-  // Actualiza feedUnit principal
   if($('feedUnit')) $('feedUnit').textContent = (units === 'metric') ? 'mm/min' : 'IPM';
 }
 
-/**
- * Convierte los valores visibles en los inputs manuales cuando cambian las unidades.
- * fromUnit / toUnit: 'metric' | 'imperial'
- */
-function convertManualInputsOnUnitChange(fromUnit, toUnit){
-  if(!$('manualFeed')) return;
-  let v = Number(parseFloat($('manualFeed').value));
-  if(!Number.isFinite(v)) return;
-  if(fromUnit === toUnit) return;
-
-  if(fromUnit === 'metric' && toUnit === 'imperial'){
-    // mm/min -> IPM
-    const ipm = v / 25.4;
-    $('manualFeed').value = Math.round(ipm * 100) / 100;
-  } else if(fromUnit === 'imperial' && toUnit === 'metric'){
-    // IPM -> mm/min
-    const mmmin = v * 25.4;
-    $('manualFeed').value = Math.round(mmmin);
-  }
-}
-
-/**
- * Re-define setUnits aquí (sustituye la versión anterior). Convierte inputs manuales si hace falta.
- */
-function setUnits(u){
-  const prev = units;
-  units = u;
-  $('uMetric')?.classList.toggle('is-on', u==='metric');
-  $('uImperial')?.classList.toggle('is-on', u==='imperial');
-
-  // convertir manual inputs si existía un valor antes
-  convertManualInputsOnUnitChange(prev, units);
-
-  updateUnitsLabels();
-
-  // Actualiza feedUnit y resetea algunos textos
-  if($('sumOut')) $('sumOut').textContent = 'Unidad: ' + (u==='metric' ? 'métrico' : 'imperial');
-  window.units = units;
-}
-
-/**
- * Guarda/normaliza los valores ingresados manualmente y los convierte a internos (mm/min).
- * Devuelve { rpmManual, feed_mm_min, feed_input_was_valid }
- */
 function manualValuesToInternal(){
   const rpmManual = Number(parseFloat($('manualRPM')?.value));
   let feedManual = Number(parseFloat($('manualFeed')?.value));
   const feedValid = Number.isFinite(feedManual);
   if(feedValid){
     if(units === 'imperial'){
-      // input en IPM -> convertir a mm/min
       feedManual = feedManual * 25.4;
     }
   }
   return { rpmManual: Number.isFinite(rpmManual) ? rpmManual : NaN, feed_mm_min: feedValid ? feedManual : NaN, feed_input_was_valid: feedValid };
 }
 
-/**
- * Establece las baselines usadas para calcular escalas de sliders.
- * Se llama desde calc() (cuando hay un cálculo base válido).
- */
 function setBaselines(force=false){
   if(force || !Number.isFinite(window.baseRPM)){
     window.baseRPM = Number.isFinite(window.rpm) ? window.rpm : NaN;
@@ -989,7 +1010,6 @@ function setBaselines(force=false){
   if(force || !Number.isFinite(window.baseFeed)){
     window.baseFeed = Number.isFinite(window.feed) ? window.feed : NaN;
   }
-  // Asegura que los sliders muestren 1 (100%) respecto a la baseline
   const rpmEl = $('rpmSlider'), feedEl = $('feedSlider');
   if(rpmEl && Number.isFinite(window.baseRPM) && Number.isFinite(window.rpm)){
     const ratio = window.baseRPM ? (window.rpm / window.baseRPM) : 1;
@@ -1001,10 +1021,6 @@ function setBaselines(force=false){
   }
 }
 
-/**
- * Aplica los valores manuales ingresados (si el modo manual está activo).
- * Actualiza window.rpm / window.feed con valores convertidos y clamp por límites de máquina.
- */
 function applyManualValues(){
   const enabled = !!$('enableManual')?.checked;
   if(!enabled) return;
@@ -1020,7 +1036,6 @@ function applyManualValues(){
   window.rpm = rpmUse;
   window.feed = feedUse;
 
-  // sincronizar sliders con escala relativa respecto a baseline (si existe baseline)
   const baselineRPM = Number.isFinite(window.baseRPM) ? window.baseRPM : window.rpm;
   const baselineFeed = Number.isFinite(window.baseFeed) ? window.baseFeed : window.feed;
 
@@ -1041,22 +1056,16 @@ function applyManualValues(){
     }
   }
 
-  // aplicar como valores activos y recalcular vistas dependientes
   recalc();
 }
 
-/**
- * Cuando mueven los sliders: calcular valores actuales y actualizar inputs / displays.
- */
 function syncInputsFromSliders(){
   const rpmScale = parseFloat(($('rpmSlider')||{value:1}).value||'1');
   const feedScale = parseFloat(($('feedSlider')||{value:1}).value||'1');
 
-  // baseline values
   const baseRPM = Number.isFinite(window.baseRPM) ? window.baseRPM : (window.rpm || 0);
   const baseFeed = Number.isFinite(window.baseFeed) ? window.baseFeed : (window.feed || 0);
 
-  // calc rpmNow / feedNow (con clamp por limites de slider y máquina)
   const rpmLimit = window.rpmLimit || parseFloat($('rpmLimit')?.value) || getMachine()?.rpm_max || 12000;
   let rpmNow = Number.isFinite(baseRPM) ? Math.round(Math.min(rpmLimit, baseRPM * rpmScale)) : Math.round(Math.min(rpmLimit, (window.rpm||0) * rpmScale));
   let feedNow = Number.isFinite(baseFeed) ? baseFeed * feedScale : (window.feed || 0) * feedScale;
@@ -1064,7 +1073,6 @@ function syncInputsFromSliders(){
   const mach = getMachine();
   if(mach?.feed_max_mm_min) feedNow = Math.min(feedNow, mach.feed_max_mm_min);
 
-  // Respect slider's declared min/max visually (si alguien puso valores extremos)
   const rpmEl = $('rpmSlider'), feedEl = $('feedSlider');
   if(rpmEl){
     const min = parseFloat(rpmEl.min) || 0.01, max = parseFloat(rpmEl.max) || 10;
@@ -1080,59 +1088,22 @@ function syncInputsFromSliders(){
   }
 
   if($('enableManual')?.checked){
-    // escribimos en los inputs manuales para dar retroalimentación (convertir según unidad)
     if($('manualRPM')) $('manualRPM').value = Number.isFinite(rpmNow) ? rpmNow : '';
     if($('manualFeed')){
       if(units==='metric') $('manualFeed').value = Number.isFinite(feedNow) ? Math.round(feedNow) : '';
       else $('manualFeed').value = Number.isFinite(feedNow) ? (Math.round((feedNow/25.4)*100)/100) : '';
     }
-    // aplicar como valores activos (recalc ya se llama dentro)
     applyManualValues();
   } else {
-    // si no está en manual, actualizar displays basados en rpm/feed ajustados
     window.rpm = rpmNow;
     window.feed = feedNow;
     recalc();
   }
 }
 
-/* --- listeners y wiring --- */
-(function wireManualControls(){
-  // cuando se activa/desactiva modo manual
-  const en = $('enableManual');
-  if(en) en.addEventListener('change', (e)=>{
-    const on = e.target.checked;
-    const manualRPM = $('manualRPM'), manualFeed = $('manualFeed');
-    if(on){
-      // poblar inputs manuales con valores actuales (convertir a unidad visible)
-      if($('rpmOut')) manualRPM.value = Number.isFinite(window.rpm) ? Math.round(window.rpm) : '';
-      if($('feedOut') && manualFeed){
-        if(units === 'metric') manualFeed.value = Number.isFinite(window.feed) ? Math.round(window.feed) : '';
-        else manualFeed.value = Number.isFinite(window.feed) ? (Math.round((window.feed/25.4)*100)/100) : '';
-      }
-      // asegurar baselines
-      setBaselines(true);
-      applyManualValues();
-    } else {
-      // quitamos modo manual -> recalc con valores base
-      recalc();
-    }
-  });
-
-  // inputs manuales
-  const mr = $('manualRPM');
-  if(mr) mr.addEventListener('input', ()=>{ applyManualValues(); });
-  const mf = $('manualFeed');
-  if(mf) mf.addEventListener('input', ()=>{ applyManualValues(); });
-
-  // sliders: sincronizar al mover
-  const rsl = $('rpmSlider'), fsl = $('feedSlider');
-  if(rsl) rsl.addEventListener('input', syncInputsFromSliders);
-  if(fsl) fsl.addEventListener('input', syncInputsFromSliders);
-
-  // Si cambian unidades via botones, updateUnitsLabels ya será llamada por setUnits (que también convierte manual inputs)
-  updateUnitsLabels();
-})();
+/* loadRelated placeholder */
+async function loadRelated(){ try{ const r = await fetch('/api/list-posts',{cache:'no-store'}); if(!r.ok) return; const j = await r.json(); renderRel((j.items||[]).slice(0,3)); }catch(e){} }
+function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url = p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img = p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
 
   </script>
 
