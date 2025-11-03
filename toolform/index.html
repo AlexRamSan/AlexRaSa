@@ -12,8 +12,146 @@
 </head>
 <body class="bg-[#0b1220] text-[#e6eef8]">
   <main class="max-w-5xl mx-auto p-6">
-    <div id="tool-selection-root"></div>
-  </main>
+  <div class="dark-card">
+    <h2 class="text-lg font-semibold mb-3">Selección de herramienta — AlexRaSa</h2>
+    <form id="toolForm" autocomplete="off">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs muted">Máquina *</label>
+          <select id="machineType" class="w-full mt-1 p-2 rounded bg-slate-800" required>
+            <option value="vmc">VMC</option>
+            <option value="hmc">HMC</option>
+            <option value="lathe">Torno</option>
+            <option value="turn-mill">Turn-Mill</option>
+            <option value="router">Router</option>
+            <option value="5axis">5-ejes</option>
+            <option value="drill">Taladro</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Unidades</label>
+          <select id="units" class="w-full mt-1 p-2 rounded bg-slate-800">
+            <option value="metric" selected>Métrico (mm)</option>
+            <option value="imperial">Imperial (in)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Material pieza *</label>
+          <select id="workMaterial" class="w-full mt-1 p-2 rounded bg-slate-800" required>
+            <option value="al">Aluminio</option>
+            <option value="st">Acero</option>
+            <option value="ss">Inoxidable</option>
+            <option value="ti">Titanio</option>
+            <option value="ci">Fundición</option>
+            <option value="pl">Plástico</option>
+            <option value="cm">Composite</option>
+            <option value="other">Otro</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Operación *</label>
+          <select id="operation" class="w-full mt-1 p-2 rounded bg-slate-800" required>
+            <option value="face">Fresado frontal</option>
+            <option value="contour">Fresado contorno</option>
+            <option value="pocket">Bolsillo</option>
+            <option value="slot">Ranura</option>
+            <option value="drill">Taladrado</option>
+            <option value="turning">Torneado</option>
+            <option value="thread">Roscar</option>
+            <option value="five">5-ejes</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Tipo herramienta *</label>
+          <select id="toolType" class="w-full mt-1 p-2 rounded bg-slate-800" required></select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Material herramienta *</label>
+          <select id="toolMaterial" class="w-full mt-1 p-2 rounded bg-slate-800" required></select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Recubrimiento</label>
+          <select id="coating" class="w-full mt-1 p-2 rounded bg-slate-800">
+            <option value="none">Ninguno</option><option>TiN</option><option>TiAlN</option><option>AlTiN</option><option>DLC</option><option>PCD</option><option>Otro</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Diámetro (D) *</label>
+          <input id="diameter" type="number" min="0.01" step="0.01" class="w-full mt-1 p-2 rounded bg-slate-800" placeholder="mm">
+        </div>
+
+        <div>
+          <label class="text-xs muted"># Faltas / Cortes (z)</label>
+          <input id="flutes" type="number" min="1" max="12" value="4" class="w-full mt-1 p-2 rounded bg-slate-800">
+        </div>
+
+        <div>
+          <label class="text-xs muted">Profundidad axial (ap)</label>
+          <input id="ap" type="number" step="0.01" class="w-full mt-1 p-2 rounded bg-slate-800" placeholder="mm">
+        </div>
+
+        <div>
+          <label class="text-xs muted">Ingreso radial (ae)</label>
+          <input id="ae" type="text" class="w-full mt-1 p-2 rounded bg-slate-800" placeholder="mm o %D">
+        </div>
+
+        <div>
+          <label class="text-xs muted">Stickout (porte)</label>
+          <input id="stickout" type="number" step="0.1" class="w-full mt-1 p-2 rounded bg-slate-800" placeholder="mm">
+        </div>
+
+        <div>
+          <label class="text-xs muted">Refrigeración</label>
+          <select id="cooling" class="w-full mt-1 p-2 rounded bg-slate-800">
+            <option>Soluble</option><option>MQL</option><option>Seco</option><option>Nebulizado</option><option>Aire</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs muted">Prioridad</label>
+          <select id="priority" class="w-full mt-1 p-2 rounded bg-slate-800">
+            <option value="cycle">Min tiempo de ciclo</option><option value="toollife">Max vida de herramienta</option><option value="balance" selected>Balance</option>
+          </select>
+        </div>
+
+        <div class="col-span-1 md:col-span-2" id="opExtra"></div>
+
+        <div>
+          <label class="text-xs muted">Longitud de corte (mm)</label>
+          <input id="cutLength" type="number" min="1" step="1" class="w-full mt-1 p-2 rounded bg-slate-800" placeholder="ej. 120">
+        </div>
+
+        <div class="col-span-1 md:col-span-2">
+          <label class="text-xs muted">Notas / Restricciones</label>
+          <textarea id="notes" class="w-full mt-1 p-2 rounded bg-slate-800" rows="3"></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-4">
+        <button id="calcBtn" type="button" class="px-4 py-2 bg-indigo-600 rounded">Calcular y Recomendar</button>
+        <button id="exportBtn" type="button" class="px-4 py-2 bg-emerald-600 rounded">Exportar JSON</button>
+        <button id="pdfBtn" type="button" class="px-4 py-2 bg-sky-600 rounded">Exportar PDF</button>
+      </div>
+
+      <pre id="jsonOut" class="mt-3 p-3 bg-slate-800 rounded text-xs overflow-auto" style="max-height:320px"></pre>
+    </form>
+
+    <section class="mt-6 p-4 rounded dark-card">
+      <div class="flex justify-between items-center">
+        <h3 class="font-semibold">Proveedores</h3>
+        <button id="addVendorBtn" class="px-2 py-1 bg-rose-500 rounded text-sm">Agregar</button>
+      </div>
+      <div id="vendorsList" class="mt-3 space-y-2"></div>
+    </section>
+  </div>
+</main>
   <script src="/toolform/js/tool-selection.js"></script>
 </body>
 </html>
