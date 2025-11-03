@@ -1,6 +1,5 @@
 // scripts/generate-links.js
-// Usage example:
-// node scripts/generate-links.js --dir=./public --out=./public/links.json --baseUrl=/
+// Uso: node scripts/generate-links.js --dir=./ --out=./links.json --baseUrl=/
 const fs = require('fs');
 const path = require('path');
 
@@ -27,10 +26,16 @@ function walk(dir){
   catch(e){ return; }
   for(const f of files){
     const full = path.join(dir, f.name);
-    if (f.isDirectory()) { walk(full); continue; }
+    if (f.isDirectory()) {
+      // skip .git and node_modules by default
+      if (f.name === '.git' || f.name === 'node_modules') continue;
+      walk(full);
+      continue;
+    }
     const ext = path.extname(f.name).toLowerCase();
     if (!extAllow.includes(ext)) continue;
     let rel = path.relative(root, full).replace(/\\/g, '/');
+    if (!rel) rel = f.name;
     let url = baseUrl === '' ? '/' + rel : baseUrl + '/' + rel;
     if (!url.startsWith('/')) url = '/' + url;
     let title = f.name;
@@ -47,7 +52,7 @@ function walk(dir){
           if (h1) title = h1[1].trim();
         }
       }
-    } catch(e) {}
+    } catch(e){}
     const stat = fs.statSync(full);
     items.push({
       title,
@@ -63,6 +68,7 @@ walk(root);
 
 items.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
 
+// ensure output dir exists
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(items, null, 2), 'utf8');
 console.log(`Wrote ${out} (${items.length} items).`);
