@@ -1,7 +1,6 @@
 // scripts/generate-links.js
+// Usage example:
 // node scripts/generate-links.js --dir=./public --out=./public/links.json --baseUrl=/
-// No depende de librerías externas.
-
 const fs = require('fs');
 const path = require('path');
 
@@ -17,26 +16,23 @@ argv.forEach((a, i) => {
 
 const root = path.resolve(opts.dir || '.');
 const out = opts.out ? path.resolve(opts.out) : path.resolve('links.json');
-const baseUrl = (opts.baseUrl || '/').replace(/\/+$/, ''); // no trailing slash
+const baseUrl = (opts.baseUrl || '/').replace(/\/+$/, '');
 const extAllow = (opts.ext || '.html,.htm,.md,.pdf').split(',').map(s=>s.trim().toLowerCase());
 
 const items = [];
 
 function walk(dir){
-  const files = fs.readdirSync(dir, { withFileTypes: true });
+  let files;
+  try { files = fs.readdirSync(dir, { withFileTypes: true }); }
+  catch(e){ return; }
   for(const f of files){
     const full = path.join(dir, f.name);
-    if (f.isDirectory()) {
-      walk(full);
-      continue;
-    }
+    if (f.isDirectory()) { walk(full); continue; }
     const ext = path.extname(f.name).toLowerCase();
     if (!extAllow.includes(ext)) continue;
     let rel = path.relative(root, full).replace(/\\/g, '/');
-    // create URL: baseUrl + '/' + rel
     let url = baseUrl === '' ? '/' + rel : baseUrl + '/' + rel;
     if (!url.startsWith('/')) url = '/' + url;
-    // try to get title
     let title = f.name;
     try {
       const txt = fs.readFileSync(full, 'utf8');
@@ -44,18 +40,14 @@ function walk(dir){
         const m = txt.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (m) title = m[1].trim();
       } else if (ext === '.md') {
-        // frontmatter title
         const fm = txt.match(/^\s*---[\s\S]*?title:\s*["']?(.+?)["']?\s*[\r\n]/i);
         if (fm) title = fm[1].trim();
         else {
-          // first H1
           const h1 = txt.match(/^\s*#\s+(.+)$/m);
           if (h1) title = h1[1].trim();
         }
       }
-    } catch(e) {
-      // ignore read errors
-    }
+    } catch(e) {}
     const stat = fs.statSync(full);
     items.push({
       title,
@@ -69,8 +61,8 @@ function walk(dir){
 
 walk(root);
 
-// sort by date desc
 items.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
 
+fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(items, null, 2), 'utf8');
 console.log(`Wrote ${out} (${items.length} items).`);
