@@ -453,4 +453,3 @@ function createCard(payload) {
       notes: notesEl ? notesEl.value : ''
     }; return { form, detailed_recommendation: buildDetailedRecommendation(form), timestamp: new Date().toISOString() }; }
   });
-}();
