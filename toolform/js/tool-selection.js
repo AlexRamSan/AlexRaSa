@@ -134,62 +134,92 @@
     }
 
     function buildDetailedRecommendation(form) {
-      const baseChoice = chooseToolForProcess({ operation: form.operation, machine: form.machine, material: form.workMaterial, diameter: form.diameter, priority: form.priority });
-      let toolFamily = (form.toolMaterial || '').toLowerCase() || 'carbide';
-      if (toolFamily.includes('hss')) toolFamily='hss';
-      if (toolFamily.includes('pcd')) toolFamily='pcd';
-      if (toolFamily.includes('cbn')) toolFamily='cbn';
-      if (toolFamily.includes('cermet')) toolFamily='cermet';
+  const baseChoice = chooseToolForProcess({
+    operation: form.operation,
+    machine: form.machine,
+    material: form.workMaterial,
+    diameter: form.diameter,
+    priority: form.priority
+  });
 
-      const vcRow = VC_TABLE[form.workMaterial] || VC_TABLE['st'];
-      let vc = (vcRow && vcRow[toolFamily]) ? vcRow[toolFamily] : (vcRow && vcRow['carbide'] ? vcRow['carbide'] : 100);
-      if (form.priority === 'toollife') vc *= 0.75;
-      if (form.priority === 'cycle') vc *= 1.05;
+  // Normalizar material de herramienta
+  let toolFamily = (form.toolMaterial || '').toLowerCase() || 'carbide';
+  if (toolFamily.includes('hss')) toolFamily = 'hss';
+  if (toolFamily.includes('pcd')) toolFamily = 'pcd';
+  if (toolFamily.includes('cbn')) toolFamily = 'cbn';
+  if (toolFamily.includes('cermet')) toolFamily = 'cermet';
 
-      let D_mm = form.diameter;
-      if (form.units === 'imperial' && form.diameter) D_mm = inToMm(form.diameter);
+  // Defaults sensatos para evitar nulls
+  const DEFAULT_DIAM_MM = 6; // si no hay diámetro asumimos 6 mm
+  let D_mm = (form.diameter && !isNaN(form.diameter)) ? Number(form.diameter) : DEFAULT_DIAM_MM;
+  if (form.units === 'imperial' && form.diameter) D_mm = inToMm(form.diameter);
 
-      const rpm = computeRPM(vc, D_mm);
-      const fz = recommendedFz(form.operation, form.workMaterial, D_mm || 6);
-      const feed = computeFeed(rpm, fz, form.flutes || 1);
-      const ae_mm = parseAe(form.ae, D_mm) || (D_mm ? safe(0.5 * D_mm,2) : null);
-      const ap = form.ap || (form.operation==='face' ? safe(2) : safe(1));
-      const mrr = computeMRR(ap, ae_mm, feed);
-      const kc = KC_TABLE[form.workMaterial] || KC_TABLE.other;
-      const power_kW = (mrr && kc) ? safe((kc * mrr) / 60000000, 3) : null;
-      const cutLen = form.cutLength || 100;
-      const cycle_min = (feed && cutLen) ? safe(cutLen / feed, 3) : null;
-      const cycle_sec = cycle_min ? safe(cycle_min * 60, 2) : null;
-      const vibRatio = form.stickout && D_mm ? (form.stickout / D_mm) : 0;
-      const vibRisk = vibRatio>3 ? 'ALTA' : vibRatio>1.5 ? 'MEDIA' : 'BAJA';
+  const vcRow = VC_TABLE[form.workMaterial] || VC_TABLE['st'];
+  let vc = (vcRow && vcRow[toolFamily]) ? vcRow[toolFamily] : (vcRow && vcRow['carbide'] ? vcRow['carbide'] : 100);
+  if (form.priority === 'toollife') vc *= 0.75;
+  if (form.priority === 'cycle') vc *= 1.05;
 
-      const rationale = [];
-      rationale.push(`Material pieza: ${displayMaterial(form.workMaterial)}.`);
-      rationale.push(`Selección: ${baseChoice.tool} (${baseChoice.family}).`);
-      rationale.push(`Por qué: ${baseChoice.why.join(' ')}`);
-      rationale.push(`Geometría sugerida: ${baseChoice.geometry}.`);
-      rationale.push(`Parámetros aproximados: vc ≈ ${safe(vc)} m/min, rpm ≈ ${rpm} rpm, fz ≈ ${fz} mm/diente, avance ≈ ${feed} mm/min.`);
-      rationale.push(`Condiciones: ap ≈ ${ap} mm, ae ≈ ${ae_mm} mm.`);
-      rationale.push(`MRR ≈ ${mrr} mm³/min. Potencia ≈ ${power_kW} kW.`);
-      rationale.push(`Tiempo de corte ≈ ${cycle_min} min (${cycle_sec} s) para ${cutLen} mm.`);
-      if (vibRisk!=='BAJA') rationale.push(`Precaución: ${vibRisk} riesgo de vibración (porte/diametro = ${safe(vibRatio,2)}).`);
+  // Flutes por defecto
+  const flutes = (form.flutes && !isNaN(form.flutes)) ? Number(form.flutes) : 1;
 
-      return {
-        selection: {
-          tool: baseChoice.tool,
-          tool_family: baseChoice.family,
-          recommended_material: baseChoice.family,
-          recommended_coating: baseChoice.coating,
-          geometry: baseChoice.geometry
-        },
-        parameters: {
-          vc_mmin: safe(vc),
-          rpm, fz, feed_mm_per_min: feed, ap_mm: ap, ae_mm, mrr_mm3_per_min: mrr, power_kW, cycle_min, cycle_sec, cut_length_mm: cutLen
-        },
-        rationale_text: rationale.join(' '),
-        heuristics: { vibrationRisk: vibRisk, vibRatio: safe(vibRatio,2) }
-      };
-    }
+  // Cálculos
+  const rpm = computeRPM(vc, D_mm);
+  const fz = recommendedFz(form.operation, form.workMaterial, D_mm || DEFAULT_DIAM_MM);
+  const feed = computeFeed(rpm, fz, flutes);
+  const ae_mm = parseAe(form.ae, D_mm) || safe(0.5 * D_mm, 2); // por defecto 50% D
+  const ap = (form.ap && !isNaN(form.ap)) ? Number(form.ap) : (form.operation === 'face' ? safe(2) : safe(1));
+  const mrr = computeMRR(ap, ae_mm, feed);
+  const kc = KC_TABLE[form.workMaterial] || KC_TABLE.other;
+  const power_kW = (mrr && kc) ? safe((kc * mrr) / 60000000, 3) : null;
+  const cutLen = form.cutLength || 100;
+  const cycle_min = (feed && cutLen) ? safe(cutLen / feed, 3) : null;
+  const cycle_sec = cycle_min ? safe(cycle_min * 60, 2) : null;
+
+  // Vibration
+  const vibRatio = form.stickout && D_mm ? (form.stickout / D_mm) : 0;
+  const vibRisk = vibRatio > 3 ? 'ALTA' : vibRatio > 1.5 ? 'MEDIA' : 'BAJA';
+
+  // Coating: prefer user selection si existe (y no es 'none'), si no usar heurística
+  const userCoating = (form.coating && String(form.coating).toLowerCase() !== 'none') ? form.coating : null;
+  const recommendedCoating = userCoating || baseChoice.coating || 'Ninguno';
+
+  const rationale = [];
+  rationale.push(`Material pieza: ${displayMaterial(form.workMaterial)}.`);
+  rationale.push(`Selección: ${baseChoice.tool} (${baseChoice.family}).`);
+  rationale.push(`Por qué: ${baseChoice.why.join(' ')}`);
+  rationale.push(`Geometría sugerida: ${baseChoice.geometry}.`);
+  rationale.push(`Parámetros aproximados: vc ≈ ${safe(vc)} m/min, rpm ≈ ${rpm !== null ? rpm : '—'} rpm, fz ≈ ${fz} mm/diente, avance ≈ ${feed !== null ? feed : '—'} mm/min.`);
+  rationale.push(`Condiciones: ap ≈ ${ap} mm, ae ≈ ${ae_mm} mm.`);
+  rationale.push(`MRR ≈ ${mrr !== null ? mrr : '—'} mm³/min. Potencia ≈ ${power_kW !== null ? power_kW : '—'} kW.`);
+  rationale.push(`Tiempo de corte ≈ ${cycle_min !== null ? cycle_min + ' min' : '—'} (${cycle_sec !== null ? cycle_sec + ' s' : '—'}) para ${cutLen} mm.`);
+  if (vibRisk !== 'BAJA') rationale.push(`Precaución: ${vibRisk} riesgo de vibración (porte/diametro = ${safe(vibRatio, 2)}).`);
+
+  return {
+    selection: {
+      tool: baseChoice.tool,
+      tool_family: baseChoice.family,
+      recommended_material: baseChoice.family,
+      recommended_coating: recommendedCoating,
+      geometry: baseChoice.geometry
+    },
+    parameters: {
+      vc_mmin: safe(vc),
+      rpm: rpm !== null ? rpm : null,
+      fz,
+      feed_mm_per_min: feed !== null ? feed : null,
+      ap_mm: ap,
+      ae_mm,
+      mrr_mm3_per_min: mrr !== null ? mrr : null,
+      power_kW: power_kW !== null ? power_kW : null,
+      cycle_min: cycle_min !== null ? cycle_min : null,
+      cycle_sec: cycle_sec !== null ? cycle_sec : null,
+      cut_length_mm: cutLen
+    },
+    rationale_text: rationale.join(' '),
+    heuristics: { vibrationRisk: vibRisk, vibRatio: safe(vibRatio, 2) }
+  };
+}
+
 
     // ---- Render tarjetas ----
     function renderCards(payload) {
