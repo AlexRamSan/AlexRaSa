@@ -99,15 +99,35 @@
 });
 
 
-    // Populate tool options
-    function populateToolOptions() {
-      const m = machineTypeEl.value;
-      const types = TOOL_TYPES_BY_MACHINE[m] || TOOL_TYPES_BY_MACHINE['vmc'];
-      toolTypeEl.innerHTML = types.map(t => `<option value="${t}">${t}</option>`).join('');
-      const mats = (m === 'lathe' || m==='turn-mill') ? TOOL_MATERIALS.lathe : TOOL_MATERIALS.default;
-      toolMaterialEl.innerHTML = mats.map(x=>`<option value="${x}">${x}</option>`).join('');
-    }
-    populateToolOptions();
+    // Reemplazar por esto: poblado robusto y con placeholders
+function populateToolOptions() {
+  if (!toolTypeEl || !toolMaterialEl) {
+    console.warn('toolType o toolMaterial no existe en el DOM.');
+    return;
+  }
+
+  // Normalizar valor (evita problemas de mayúsculas)
+  const rawMachine = (machineTypeEl && machineTypeEl.value) ? String(machineTypeEl.value) : '';
+  const m = rawMachine.trim().toLowerCase();
+
+  // Buscar opciones por máquina; fallback a 'vmc' o a array vacío
+  const types = TOOL_TYPES_BY_MACHINE[m] || TOOL_TYPES_BY_MACHINE['vmc'] || [];
+  toolTypeEl.innerHTML = `<option value="">Selecciona tipo de herramienta</option>` +
+    types.map(t => `<option value="${t}">${t}</option>`).join('');
+
+  // Selección de materiales según tipo de máquina (normalizado)
+  const mats = (m === 'lathe' || m === 'turn-mill' || m === 'torno') ? TOOL_MATERIALS.lathe : TOOL_MATERIALS.default;
+  toolMaterialEl.innerHTML = `<option value="">Selecciona material</option>` +
+    mats.map(x => `<option value="${x}">${x}</option>`).join('');
+}
+
+// Re-attach listener (asegúrate de no duplicarlo)
+machineTypeEl && machineTypeEl.removeEventListener && machineTypeEl.removeEventListener('change', populateToolOptions);
+machineTypeEl && machineTypeEl.addEventListener && machineTypeEl.addEventListener('change', populateToolOptions);
+
+// Llamada inicial (si ya existe en tu archivo, déjala)
+populateToolOptions();
+
     machineTypeEl.addEventListener('change', populateToolOptions);
 
     // Operation extras
