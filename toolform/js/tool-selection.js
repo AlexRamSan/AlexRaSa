@@ -1,6 +1,6 @@
-// tool-selection.js (coloca en /toolform/js/tool-selection.js)
+// tool-selection.js - versión tarjetas imprimibles
 (() => {
-  // --- Datos base (editar data/cutting-data.json si quieres parametrizar) ---
+  // ---- base data (puedes cargar data/cutting-data.json si quieres) ----
   let VC_TABLE = {
     al: { carbide: 800, hss: 300, pcd: 1200 },
     st: { carbide: 150, hss: 60, cermet: 120 },
@@ -11,7 +11,6 @@
     cm: { carbide: 20 }
   };
   const KC_TABLE = { al:600, st:2000, ss:3000, ti:5000, ci:1500, pl:200, cm:4000, other:2000 };
-
   const TOOL_TYPES_BY_MACHINE = {
     vmc: ['Fresa de extremo','Fresa de cara','Broca','Insertos','PCD/CBN'],
     hmc: ['Fresa de extremo','Insertos','Fresa de cara','PCD/CBN'],
@@ -23,43 +22,38 @@
   };
   const TOOL_MATERIALS = { default: ['Carburo','HSS','Cermet','PCD','CBN'], lathe: ['Carburo','Cermet','CBN'] };
 
-  // --- helpers ---
+  // ---- helpers ----
   const inToMm = i => i*25.4;
   function computeRPM(vc_mmin, D_mm) { if (!vc_mmin || !D_mm) return null; return Math.round((1000 * vc_mmin) / (Math.PI * D_mm)); }
   function computeFeed(rpm, fz, z) { if (!rpm || !fz || !z) return null; return Math.round(rpm * fz * z * 100)/100; }
   function computeMRR(ap, ae_mm, feed) { if (!ap || !ae_mm || !feed) return null; return Math.round(ap * ae_mm * feed); }
   function safe(n, dp=3){ return (n===null || n===undefined) ? null : Math.round(n * Math.pow(10,dp))/Math.pow(10,dp); }
+  function displayMaterial(code){ const map={al:'Aluminio',st:'Acero',ss:'Inoxidable',ti:'Titanio',ci:'Fundición',pl:'Plástico',cm:'Composite',other:'Otro'}; return map[code]||code; }
 
-  // Try load external data if available
+  // load external JSON if existe
   fetch('data/cutting-data.json').then(r=>r.ok? r.json(): null).then(json => {
     if (!json) return;
     if (json.vc_table) VC_TABLE = json.vc_table;
     if (json.kc_table) Object.assign(KC_TABLE, json.kc_table);
   }).catch(()=>{});
 
-  // DOM ready
+  // ---- DOM ----
   document.addEventListener('DOMContentLoaded', () => {
-    const root = document.getElementById('tool-selection-root');
-    if (!root) { console.error('tool-selection root no encontrado. Añade <div id="tool-selection-root"></div>'); return; }
+    const $ = id => document.getElementById(id);
+    const machineTypeEl = $('machineType'), unitsEl = $('units'), workMaterialEl = $('workMaterial'),
+          operationEl = $('operation'), toolTypeEl = $('toolType'), toolMaterialEl = $('toolMaterial'),
+          diameterEl = $('diameter'), flutesEl = $('flutes'), apEl = $('ap'), aeEl = $('ae'),
+          stickoutEl = $('stickout'), coolingEl = $('cooling'), priorityEl = $('priority'),
+          cutLengthEl = $('cutLength'), notesEl = $('notes'), calcBtn = $('calcBtn'),
+          jsonOut = $('jsonOut'), pdfBtn = $('pdfBtn'), exportBtn = $('exportBtn'),
+          printAllBtn = $('printAllBtn'), resultsCards = $('resultsCards');
 
-    // Get elements
-    const get = id => document.getElementById(id);
-    const machineTypeEl = get('machineType'), unitsEl = get('units'), workMaterialEl = get('workMaterial'),
-          operationEl = get('operation'), toolTypeEl = get('toolType'), toolMaterialEl = get('toolMaterial'),
-          diameterEl = get('diameter'), flutesEl = get('flutes'), apEl = get('ap'), aeEl = get('ae'),
-          stickoutEl = get('stickout'), coolingEl = get('cooling'), priorityEl = get('priority'),
-          cutLengthEl = get('cutLength'), notesEl = get('notes'), calcBtn = get('calcBtn'),
-          jsonOut = get('jsonOut'), pdfBtn = get('pdfBtn'), exportBtn = get('exportBtn'),
-          addVendorBtn = get('addVendorBtn'), vendorsList = get('vendorsList');
-
-    // Ensure required elements exist
-    const required = [machineTypeEl, workMaterialEl, operationEl, toolTypeEl, toolMaterialEl, diameterEl, calcBtn, jsonOut];
-    if (required.some(x=>!x)) {
-      console.error('Faltan elementos necesarios en el DOM. Reemplaza index.html por la versión proporcionada.');
+    if (!machineTypeEl || !workMaterialEl || !operationEl || !calcBtn || !resultsCards) {
+      console.error('Formulario incompleto o contenedores no encontrados.');
       return;
     }
 
-    // Populate select options initial
+    // populate tool options
     function populateToolOptions() {
       const m = machineTypeEl.value;
       const types = TOOL_TYPES_BY_MACHINE[m] || TOOL_TYPES_BY_MACHINE['vmc'];
@@ -70,82 +64,18 @@
     populateToolOptions();
     machineTypeEl.addEventListener('change', populateToolOptions);
 
-    // Operation extras
-    function renderExtras() {
-      const v = operationEl.value;
-      const opExtra = get('opExtra');
+    // extra fields render on operation change (keeps simple)
+    operationEl.addEventListener('change', ()=> {
+      const opExtra = $('opExtra');
       opExtra.innerHTML = '';
-      if (v === 'drill') {
-        opExtra.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><label class="text-xs muted">Ángulo punta</label><input id="pointAngle" value="118" class="w-full mt-1 p-2 rounded bg-slate-800"></div><div><label class="text-xs muted">Peck</label><select id="peck" class="w-full mt-1 p-2 rounded bg-slate-800"><option>No</option><option>Sí</option></select></div></div>`;
-      } else if (v === 'thread') {
-        opExtra.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><label class="text-xs muted">Paso</label><input id="threadPitch" class="w-full mt-1 p-2 rounded bg-slate-800"></div><div><label class="text-xs muted">Tipo</label><input id="threadType" class="w-full mt-1 p-2 rounded bg-slate-800"></div></div>`;
+      if (operationEl.value === 'drill') {
+        opExtra.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><label class="text-xs muted">Ángulo punta</label><input id="pointAngle" value="118" class="w-full mt-1 p-2 rounded bg-slate-800"></div></div>`;
+      } else if (operationEl.value === 'thread') {
+        opExtra.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><label class="text-xs muted">Paso (mm)</label><input id="threadPitch" class="w-full mt-1 p-2 rounded bg-slate-800"></div></div>`;
       }
-    }
-    renderExtras();
-    operationEl.addEventListener('change', renderExtras);
-
-    // Vendors (in-memory)
-    let vendors = [{id:1,name:'Proveedor A',contact:'ventas@provA.com', commissionPct:8},{id:2,name:'Proveedor B',contact:'ventas@provB.com', commissionPct:10}];
-    function renderVendors() {
-      vendorsList.innerHTML = vendors.map(v => `
-        <div class="flex items-center justify-between p-2 rounded bg-slate-800">
-          <div><div class="font-medium">${v.name} <span class="text-xs muted">(${v.commissionPct}% comisión)</span></div><div class="text-xs muted">${v.contact}</div></div>
-          <div class="flex gap-2">
-            <button class="px-2 py-1 bg-indigo-600 rounded text-sm" data-oid="${v.id}">Solicitar</button>
-            <button class="px-2 py-1 bg-rose-500 rounded text-sm" data-rid="${v.id}">Eliminar</button>
-          </div>
-        </div>
-      `).join('');
-      vendorsList.querySelectorAll('button[data-oid]').forEach(b => b.addEventListener('click', (e) => {
-        const id = Number(e.currentTarget.getAttribute('data-oid')); orderFromVendor(id);
-      }));
-      vendorsList.querySelectorAll('button[data-rid]').forEach(b => b.addEventListener('click', (e) => {
-        const id = Number(e.currentTarget.getAttribute('data-rid')); removeVendor(id);
-      }));
-    }
-    renderVendors();
-    addVendorBtn.addEventListener('click', ()=> {
-      const name = prompt('Nombre proveedor'); if(!name) return;
-      const contact = prompt('Email de contacto') || '';
-      const commission = Number(prompt('Comisión % (ej. 8)')) || 0;
-      const id = Math.max(0,...vendors.map(v=>v.id))+1;
-      vendors.push({id,name,contact,commissionPct:commission});
-      renderVendors();
     });
 
-    function orderFromVendor(id) {
-      const v = vendors.find(x=>x.id===id);
-      if (!v) return alert('Proveedor no encontrado');
-      const payload = buildPayload();
-      const subject = encodeURIComponent(`Solicitud de herramienta - ${v.name}`);
-      const body = encodeURIComponent(`Solicito cotización:\n\n${JSON.stringify(payload,null,2)}\n\nComisión solicitada: ${v.commissionPct}%`);
-      window.location.href = `mailto:${v.contact}?subject=${subject}&body=${body}`;
-    }
-    function removeVendor(id) { vendors = vendors.filter(x=>x.id!==id); renderVendors(); }
-
-    // Read form
-    function readForm() {
-      return {
-        machine: machineTypeEl.value,
-        units: unitsEl.value,
-        workMaterial: workMaterialEl.value,
-        operation: operationEl.value,
-        toolType: toolTypeEl.value,
-        toolMaterial: toolMaterialEl.value,
-        coating: get('coating').value,
-        diameter: Number(diameterEl.value) || null,
-        flutes: Number(flutesEl.value) || 1,
-        ap: Number(apEl.value) || null,
-        ae: aeEl.value || null,
-        stickout: Number(stickoutEl.value) || null,
-        cooling: coolingEl.value,
-        priority: priorityEl.value,
-        cutLength: Number(cutLengthEl.value) || null,
-        notes: notesEl.value || ''
-      };
-    }
-
-    // Recommendation engine
+    // ---------------- recommendation engine (same heuristics) ----------------
     function recommendedFz(operation, materialCode, diameter) {
       const D = Number(diameter) || 6;
       const small = D <= 3, med = D > 3 && D <= 12;
@@ -261,42 +191,87 @@
       };
     }
 
-    // Utility
-    function inToMm(i){ return i*25.4; }
-    function displayMaterial(code){ const map={al:'Aluminio',st:'Acero',ss:'Inoxidable',ti:'Titanio',ci:'Fundición',pl:'Plástico',cm:'Composite',other:'Otro'}; return map[code]||code; }
-
-    // Build payload and display
-    function buildPayload(){
-      const form = readForm();
-      const detailed = buildDetailedRecommendation(form);
-      return { form, detailed_recommendation: detailed, timestamp: new Date().toISOString() };
+    // ---- Render tarjetas ----
+    function renderCards(payload) {
+      resultsCards.innerHTML = '';
+      // If user defined a single "job length" long job: we produce single card summarizing.
+      const card = createCard(payload);
+      resultsCards.appendChild(card);
+      jsonOut.textContent = JSON.stringify(payload, null, 2);
     }
 
-    // Buttons
-    calcBtn.addEventListener('click', ()=> {
-      const out = buildPayload();
-      jsonOut.textContent = JSON.stringify(out, null, 2);
-      // expose to rpm calculator if exists
-      if (window.integrateWithRpmCalculator) {
-        try { window.integrateWithRpmCalculator(out); } catch(e){ console.warn(e); }
-      }
-    });
+    function createCard(payload) {
+      const form = payload.form;
+      const det = payload.detailed_recommendation;
+      const wrapper = document.createElement('article');
+      wrapper.className = 'result-card';
+      // header
+      const h = document.createElement('h4');
+      h.innerHTML = `<strong>${det.selection.tool}</strong> — ${det.selection.tool_family} <span class="badge-small">${det.selection.recommended_coating || ''}</span>`;
+      wrapper.appendChild(h);
+      // meta
+      const meta = document.createElement('div');
+      meta.className = 'result-meta';
+      meta.innerHTML = `<div class="kv">${displayMaterial(form.workMaterial)}</div>
+                        <div class="kv">Máquina: ${form.machine}</div>
+                        <div class="kv">Operación: ${form.operation}</div>
+                        <div class="kv">Longitud: ${form.cutLength || 0} mm</div>`;
+      wrapper.appendChild(meta);
+      // parameters block
+      const p = document.createElement('div');
+      p.innerHTML = `<div><strong>Parámetros</strong></div>
+        <div class="kv">vc ≈ ${det.parameters.vc_mmin} m/min · rpm ≈ ${det.parameters.rpm} rpm</div>
+        <div class="kv">fz ≈ ${det.parameters.fz} mm/diente · Avance ≈ ${det.parameters.feed_mm_per_min} mm/min</div>
+        <div class="kv">ap ${det.parameters.ap_mm} mm · ae ${det.parameters.ae_mm} mm</div>
+        <div class="kv">MRR ≈ ${det.parameters.mrr_mm3_per_min} mm³/min · Potencia ≈ ${det.parameters.power_kW} kW</div>
+        <div class="kv">Tiempo de corte ≈ ${det.parameters.cycle_min} min (${det.parameters.cycle_sec} s)</div>`;
+      wrapper.appendChild(p);
+      // rationale
+      const r = document.createElement('div');
+      r.innerHTML = `<div><strong>Por qué</strong></div><div class="kv">${det.rationale_text}</div>`;
+      wrapper.appendChild(r);
+      // actions
+      const actions = document.createElement('div');
+      actions.className = 'result-actions';
+      const printBtn = document.createElement('button');
+      printBtn.className = 'px-3 py-1 bg-gray-600 rounded text-sm';
+      printBtn.innerText = 'Imprimir tarjeta';
+      printBtn.addEventListener('click', ()=> printCard(wrapper));
+      const pdfB = document.createElement('button');
+      pdfB.className = 'px-3 py-1 bg-sky-600 rounded text-sm';
+      pdfB.innerText = 'Exportar PDF';
+      pdfB.addEventListener('click', async ()=> {
+        // usar el mismo snapshot que el botón global
+        await exportCardPdf(wrapper, `${form.machine || 'job'}_${Date.now()}.pdf`);
+      });
+      actions.appendChild(printBtn);
+      actions.appendChild(pdfB);
+      wrapper.appendChild(actions);
+      return wrapper;
+    }
 
-    exportBtn.addEventListener('click', ()=> {
-      if (!jsonOut.textContent) return alert('Calcula primero.');
-      const blob = new Blob([jsonOut.textContent], {type:'application/json'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tool-selection.json'; document.body.appendChild(a); a.click(); a.remove();
-    });
+    // imprimir solo la tarjeta: abrir nueva ventana con estilos y llamar print
+    function printCard(cardEl) {
+      const win = window.open('', '_blank', 'width=800,height=1000');
+      if (!win) return alert('Popups bloqueados. Habilita popups para imprimir.');
+      const html = buildPrintHtml(cardEl.outerHTML);
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      // esperar un tick para que cargue y luego imprimir
+      setTimeout(()=> { win.print(); /*win.close();*/ }, 500);
+    }
 
-    pdfBtn.addEventListener('click', async ()=> {
-      calcBtn.click();
-      const node = get('toolForm');
-      const clone = node.cloneNode(true);
-      clone.style.background = '#0b1220';
-      clone.classList.add('pdf-shot');
-      clone.style.position = 'fixed'; clone.style.left = '-9999px';
-      document.body.appendChild(clone);
-      const canvas = await html2canvas(clone, {scale:2, backgroundColor:'#0b1220'});
+    // exportar PDF de una tarjeta usando html2canvas + jsPDF
+    async function exportCardPdf(cardEl, filename='card.pdf') {
+      const clone = cardEl.cloneNode(true);
+      // create a shell
+      const shell = document.createElement('div');
+      shell.style.background = '#0b1220';
+      shell.style.padding = '12px';
+      shell.appendChild(clone);
+      document.body.appendChild(shell);
+      const canvas = await html2canvas(shell, {scale:2, backgroundColor:'#0b1220'});
       const imgData = canvas.toDataURL('image/png');
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({orientation:'portrait', unit:'pt', format:'a4'});
@@ -304,21 +279,79 @@
       const imgProps = pdf.getImageProperties(imgData);
       const pdfH = (imgProps.height * pageWidth) / imgProps.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pdfH);
-      pdf.save('tool-selection.pdf');
-      clone.remove();
+      pdf.save(filename);
+      shell.remove();
+    }
+
+    function buildPrintHtml(innerHTML) {
+      // simple printable page using current styles minimally
+      const style = document.querySelector('style') ? document.querySelector('style').outerHTML : '';
+      return `
+        <!doctype html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Imprimir tarjeta</title>
+          <style>
+            body{ background:#0b1220; color:#e6eef8; font-family:Inter,Arial; padding:12px; }
+            .result-card{ background:#0f172a; border:1px solid rgba(255,255,255,0.03); padding:12px; border-radius:8px; color:#e6eef8; }
+            h4{ margin:0 0 6px 0; }
+            .kv{ font-size:13px; color:#c8d6e3; margin-top:4px; }
+          </style>
+        </head>
+        <body>
+          <div id="print-shell">
+            ${innerHTML}
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    // imprimir todo (abre popup con todas las tarjetas HTML y print)
+    printAllBtn && printAllBtn.addEventListener('click', ()=> {
+      const htmlCards = resultsCards.innerHTML;
+      if (!htmlCards) return alert('Calcula primero para generar tarjetas.');
+      const win = window.open('', '_blank', 'width=1000,height=1200');
+      if (!win) return alert('Popups bloqueados. Habilita popups para imprimir.');
+      const html = buildPrintHtml(htmlCards);
+      win.document.open(); win.document.write(html); win.document.close();
+      setTimeout(()=> win.print(), 500);
     });
 
-    // CSV order quick-generate
-    get('orderCsvBtn') && get('orderCsvBtn').addEventListener('click', ()=> {
+    // export JSON
+    exportBtn.addEventListener('click', ()=> {
       if (!jsonOut.textContent) return alert('Calcula primero.');
-      const payload = JSON.parse(jsonOut.textContent);
-      const rows = [['item','diameter','toolType','toolMaterial','coating','qty','notes'], [payload.detailed_recommendation.selection.geometry || 'Recomendado', payload.form.diameter||'', payload.form.toolType, payload.form.toolMaterial, payload.form.coating, 1, payload.form.notes||'']];
-      const csv = rows.map(r=>r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
-      const blob = new Blob([csv], {type:'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pedido_herramienta.csv'; document.body.appendChild(a); a.click(); a.remove();
+      const blob = new Blob([jsonOut.textContent], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tool-selection.json'; document.body.appendChild(a); a.click(); a.remove();
     });
 
-    // expose manual call
+    // calc button: build payload and render cards
+    calcBtn.addEventListener('click', ()=> {
+      const form = {
+        machine: machineTypeEl.value,
+        units: unitsEl.value,
+        workMaterial: workMaterialEl.value,
+        operation: operationEl.value,
+        toolType: toolTypeEl.value,
+        toolMaterial: toolMaterialEl.value,
+        coating: $('coating') ? $('coating').value : '',
+        diameter: Number(diameterEl.value) || null,
+        flutes: Number(flutesEl.value) || 1,
+        ap: Number(apEl.value) || null,
+        ae: aeEl.value || null,
+        stickout: Number(stickoutEl.value) || null,
+        cooling: coolingEl.value,
+        priority: priorityEl.value,
+        cutLength: Number(cutLengthEl.value) || null,
+        notes: notesEl.value || ''
+      };
+      const detailed = buildDetailedRecommendation(form);
+      const payload = { form, detailed_recommendation: detailed, timestamp: new Date().toISOString() };
+      renderCards(payload);
+    });
+
+    // expose small API
     window.getToolRecommendation = function(form){ return buildDetailedRecommendation(form); };
   });
-
 })();
