@@ -1,0 +1,26 @@
+name: Generate Links JSON
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Generate links.json
+        run: node scripts/generate-links.js --dir=./public --out=./public/links.json --baseUrl=/
+      - name: Commit links.json (if changed)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add public/links.json || true
+          git commit -m "chore: update links.json (auto)" || echo "no changes to commit"
+          git push origin HEAD:main || echo "push failed"
