@@ -1,43 +1,27 @@
-<!-- Glosario de páginas — AlexRaSa
-
-Instrucciones rápidas:
-- Para añadir manualmente: edita el array `links` en el script o sube un archivo links.json en la misma carpeta con formato [{"title":"","url":"","desc":"","tags":[""],"date":"YYYY-MM-DD"}, ...]
-- Para edición desde la UI: usa el formulario "Añadir enlace". Los enlaces se guardan en localStorage (clave: glossary_links).
-- Para desplegar en servidor: sube este archivo y opcionalmente links.json; si existe links.json se cargará y se combinará con lo guardado en localStorage.
-
-Características:
-- Búsqueda en vivo.
-- Filtrado por tags.
-- Orden por fecha o alfabético.
-- Añadir/editar/eliminar desde UI.
-- Exportar/Importar JSON.
-- Copiar Markdown y abrir en nueva pestaña.
-
-Autor: Miguel (AlexRaSa)
--->
-
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Glosario — AlexRaSa</title>
-  <meta name="description" content="Glosario de páginas y recursos — AlexRaSa.store" />
-
+  <meta name="description" content="Glosario centralizado de páginas y recursos — AlexRaSa.store" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Forzar modo oscuro visual por defecto */
     :root { color-scheme: dark; }
     html,body { background:#0b1220; color:#e6eef8; }
     .card { background: rgba(17,24,39,0.6); }
     .muted { color:#9fb3c8; }
+    .tag { border:1px solid rgba(148,163,184,0.12); color:#9fb3c8; }
+    a { color: #bfe9ff; }
+    /* small helpers */
+    .small{font-size:.85rem}
   </style>
 </head>
 <body class="min-h-screen p-6">
   <div class="max-w-6xl mx-auto">
     <header class="mb-6">
       <h1 class="text-3xl font-semibold">Glosario de páginas</h1>
-      <p class="muted">Lista centralizada de URLs. Añade, busca y exporta. Guardado local automático.</p>
+      <p class="muted small">Lista centralizada de URLs. Se intentará cargar <code>/links.json</code> automáticamente.</p>
     </header>
 
     <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -53,19 +37,28 @@ Autor: Miguel (AlexRaSa)
             <option value="alpha">Alfabético</option>
           </select>
         </div>
+
+        <div class="flex gap-2 mt-3">
+          <button id="reloadRemote" class="p-2 rounded bg-sky-600 hover:bg-sky-700 small">Recargar /links.json</button>
+          <button id="mergeRemote" class="p-2 rounded border border-gray-700 small">Fusionar remoto</button>
+          <label class="ml-auto small muted">Auto-reload:
+            <input id="autoReload" type="checkbox" class="ml-2" />
+          </label>
+        </div>
+
         <div id="list" class="mt-4 space-y-3"></div>
       </div>
 
       <aside class="card p-4 rounded">
-        <h2 class="font-medium mb-2">Añadir enlace</h2>
+        <h2 class="font-medium mb-2">Añadir / editar enlace</h2>
         <form id="addForm" class="space-y-2">
           <input id="title" placeholder="Título" required class="w-full p-2 rounded border border-gray-700 bg-transparent" />
-          <input id="url" placeholder="https://..." required class="w-full p-2 rounded border border-gray-700 bg-transparent" />
+          <input id="url" placeholder="/ruta/o/https://..." required class="w-full p-2 rounded border border-gray-700 bg-transparent" />
           <input id="desc" placeholder="Descripción corta" class="w-full p-2 rounded border border-gray-700 bg-transparent" />
           <input id="tags" placeholder="Tags (separados por comas)" class="w-full p-2 rounded border border-gray-700 bg-transparent" />
           <input id="date" type="date" class="w-full p-2 rounded border border-gray-700 bg-transparent" />
           <div class="flex gap-2">
-            <button class="flex-1 p-2 rounded bg-sky-600 hover:bg-sky-700" type="submit">Guardar</button>
+            <button class="flex-1 p-2 rounded bg-emerald-600 hover:bg-emerald-700" type="submit">Guardar</button>
             <button id="clearStore" type="button" class="p-2 rounded border border-gray-700">Reset</button>
           </div>
         </form>
@@ -81,67 +74,94 @@ Autor: Miguel (AlexRaSa)
       </aside>
     </section>
 
-    <footer class="mt-8 muted text-sm">Tip: si subes un archivo <code>links.json</code> en la misma carpeta, la página cargará ese listado al abrirse.</footer>
+    <footer class="mt-8 muted text-sm">
+      Tip: si usas GitHub Action que genera <code>links.json</code> en la raíz del repo, la página lo cargará automáticamente.
+    </footer>
   </div>
 
   <script>
-    // Sample default links. Edit here or use the UI.
-    const sampleLinks = [
-      { title: "Calculadora RPM y avance", url: "/blog/calculadora-rpm-avance.html", desc: "Calculadora extendida: RPM, avance, MRR, vibración.", tags:["calculadora","rpm"], date: "2025-10-31" },
-      { title: "Calculadora de Costo-Beneficio", url: "/calculadora-costo-beneficio/", desc: "ROI, payback y comparativas A vs P.", tags:["roi","costo"], date: "2025-10-22" },
-      { title: "Post: Reducir tiempos de ciclo 30%", url: "/blog/como-reducir-tiempos-de-ciclo-un-30-usando-cam-datos-y-disciplina-de-taller.html", desc: "Resumen y pasos aplicables en planta.", tags:["post","cam"], date: "2025-11-03" }
-    ];
+    // ====== Config ======
+    const STORAGE_KEY = 'glossary_links_v1';
+    const REMOTE_PATHS = ['/links.json', 'links.json']; // intenta en este orden
+    const AUTO_RELOAD_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 
-    const STORAGE_KEY = 'glossary_links';
-    let links = [];
+    // ====== State ======
+    let links = []; // guardadas por el usuario (localStorage)
+    let remoteLinks = []; // cargadas desde /links.json
+    let autoReloadTimer = null;
 
-    // Utilities
+    // ====== Helpers ======
     const $ = id => document.getElementById(id);
-
     function uniqTags(list) {
       const s = new Set();
-      list.forEach(l => (l.tags||[]).forEach(t => s.add(t.trim())));
+      list.forEach(l => (l.tags||[]).forEach(t => s.add(String(t).trim())));
       return Array.from(s).filter(Boolean).sort();
     }
+    function normalizeLink(it){
+      return {
+        title: String(it.title || it.url || '').trim(),
+        url: String(it.url || '').trim(),
+        desc: String(it.desc || '').trim(),
+        tags: Array.isArray(it.tags) ? it.tags.map(t=>String(t).trim()).filter(Boolean) : (it.tags?String(it.tags).split(',').map(x=>x.trim()).filter(Boolean):[]),
+        date: it.date || ''
+      };
+    }
 
-    function renderTagOptions() {
+    // ====== Storage ======
+    function loadFromStorage(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        links = raw ? JSON.parse(raw) : [];
+      } catch(e) { links = []; }
+    }
+    function saveToStorage(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+    }
+
+    // ====== Render ======
+    function renderTagOptions(){
       const sel = $('tagFilter');
-      const tags = uniqTags(links.concat(sampleLinks));
+      const tags = uniqTags([...links, ...remoteLinks]);
       sel.innerHTML = '<option value="">Filtrar por tag</option>' + tags.map(t => `<option value="${t}">${t}</option>`).join('');
     }
 
-    function renderList() {
+    function renderList(){
       const q = $('q').value.trim().toLowerCase();
       const tag = $('tagFilter').value;
       const sortBy = $('sortBy').value;
-      let out = links.concat(sampleLinks);
-      if (q) out = out.filter(it => (it.title+" "+ (it.desc||"") +" "+ (it.tags||[]).join(' ')).toLowerCase().includes(q));
-      if (tag) out = out.filter(it => (it.tags||[]).map(t=>t.trim()).includes(tag));
-      if (sortBy === 'date_desc') out.sort((a,b)=> (b.date||'') > (a.date||'') ? 1 : -1);
-      if (sortBy === 'date_asc') out.sort((a,b)=> (a.date||'') > (b.date||'') ? 1 : -1);
+      // combine remoteLinks + links (user entries take precedence if URLs match)
+      const combinedMap = new Map();
+      [...remoteLinks, ...links].forEach(it => {
+        const n = normalizeLink(it);
+        combinedMap.set(n.url || n.title, n);
+      });
+      let out = Array.from(combinedMap.values());
+      if (q) out = out.filter(it => ((it.title + ' ' + it.desc + ' ' + (it.tags||[]).join(' ')).toLowerCase().includes(q)));
+      if (tag) out = out.filter(it => (it.tags||[]).includes(tag));
+      if (sortBy === 'date_desc') out.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+      if (sortBy === 'date_asc') out.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
       if (sortBy === 'alpha') out.sort((a,b)=> a.title.localeCompare(b.title));
 
       const listEl = $('list');
       if (!out.length) { listEl.innerHTML = '<p class="muted">No hay enlaces.</p>'; return; }
-
       listEl.innerHTML = out.map((it, idx) => {
-        const tagsHtml = (it.tags||[]).map(t=>`<span class="px-2 py-0.5 rounded-full text-xs border border-gray-700 mr-1">${t}</span>`).join('');
+        const tagsHtml = (it.tags||[]).map(t=>`<span class="px-2 py-0.5 rounded-full text-xs tag mr-1">${t}</span>`).join('');
         const date = it.date?`<div class="text-xs muted">${it.date}</div>`:'';
-        const isSample = sampleLinks.some(s=>s.url===it.url && s.title===it.title);
+        const safeUrl = it.url || '#';
         return `
           <article class="card p-3 rounded flex justify-between items-start">
             <div>
-              <a href="${it.url}" target="_blank" class="text-lg font-medium hover:underline">${it.title}</a>
-              <div class="muted text-sm">${it.desc||''}</div>
+              <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-lg font-medium hover:underline">${escape(it.title)}</a>
+              <div class="muted text-sm">${escape(it.desc)}</div>
               <div class="mt-2">${tagsHtml}</div>
             </div>
             <div class="text-right flex flex-col items-end gap-2">
               ${date}
               <div class="flex flex-col gap-2">
-                <button class="p-1 px-2 rounded border border-gray-700 text-sm" onclick="openLink('${encodeURIComponent(it.url)}')">Abrir</button>
-                ${ isSample ? '<button class="p-1 px-2 rounded border border-gray-700 text-sm" disabled>Ejemplo</button>' : `<button class="p-1 px-2 rounded border border-gray-700 text-sm" onclick="editLink(${idx})">Editar</button>` }
-                ${ isSample ? '' : `<button class="p-1 px-2 rounded border border-rose-600 text-sm" onclick="deleteLink(${idx})">Eliminar</button>` }
-                <button class="p-1 px-2 rounded border border-gray-700 text-sm" onclick="copyMd(${idx})">MD</button>
+                <button class="p-1 px-2 rounded border border-gray-700 text-sm" onclick="window.open('${safeUrl}','_blank')">Abrir</button>
+                <button class="p-1 px-2 rounded border border-gray-700 text-sm" onclick="editLink('${encodeURIComponent(safeUrl)}')">Editar</button>
+                <button class="p-1 px-2 rounded border border-rose-600 text-sm" onclick="deleteLink('${encodeURIComponent(safeUrl)}')">Eliminar</button>
+                <button class="p-1 px-2 rounded border border-gray-700 text-sm" onclick="copyMd('${encodeURIComponent(safeUrl)}')">MD</button>
               </div>
             </div>
           </article>
@@ -149,39 +169,71 @@ Autor: Miguel (AlexRaSa)
       }).join('');
     }
 
-    function openLink(enc) { const u = decodeURIComponent(enc); window.open(u, '_blank'); }
+    function escape(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    function loadFromStorage() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        links = raw ? JSON.parse(raw) : [];
-      } catch(e) { links = []; }
+    // ====== Remote loading ======
+    async function fetchRemoteLinks(){
+      for(const p of REMOTE_PATHS){
+        try {
+          const res = await fetch(p, { cache: 'no-store' });
+          if (!res.ok) continue;
+          const arr = await res.json();
+          if (!Array.isArray(arr)) continue;
+          remoteLinks = arr.map(normalizeLink);
+          console.log('Glosario: cargado', p, remoteLinks.length, 'items');
+          renderTagOptions();
+          renderList();
+          return true;
+        } catch(e){
+          // siguiente path
+        }
+      }
+      console.log('Glosario: no se encontró links.json en las ubicaciones probadas.');
+      return false;
     }
-    function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(links)); }
 
-    // Form submit
-    $('addForm').addEventListener('submit', e => {
+    // Merge remote into local store (adds remote entries that local doesn't have)
+    function mergeRemoteIntoLocal(){
+      const localUrls = new Set(links.map(l => l.url));
+      const toAdd = remoteLinks.filter(r => r.url && !localUrls.has(r.url));
+      if (toAdd.length) {
+        links = links.concat(toAdd);
+        saveToStorage();
+        renderTagOptions();
+        renderList();
+        alert('Se añadieron ' + toAdd.length + ' enlaces desde el remoto.');
+      } else {
+        alert('No hay nuevos enlaces para fusionar.');
+      }
+    }
+
+    // ====== UI Actions ======
+    $('addForm')?.addEventListener('submit', (e) => {
       e.preventDefault();
       const t = $('title').value.trim();
       const u = $('url').value.trim();
+      if(!u || !t){ alert('Título y URL son requeridos'); return; }
       const d = $('desc').value.trim();
       const tags = $('tags').value.split(',').map(s=>s.trim()).filter(Boolean);
       const date = $('date').value || new Date().toISOString().slice(0,10);
+      // replace if exists same url
+      links = links.filter(l => l.url !== u);
       links.push({ title:t, url:u, desc:d, tags, date });
       saveToStorage();
-      render();
+      renderTagOptions();
+      renderList();
       $('addForm').reset();
     });
 
-    // Clear store
-    $('clearStore').addEventListener('click', () => {
+    $('clearStore')?.addEventListener('click', () => {
       if (!confirm('Eliminar todos los enlaces guardados en localStorage?')) return;
       localStorage.removeItem(STORAGE_KEY);
-      loadFromStorage(); render();
+      loadFromStorage();
+      renderTagOptions();
+      renderList();
     });
 
-    // Export
-    $('exportBtn').addEventListener('click', () => {
+    $('exportBtn')?.addEventListener('click', () => {
       const data = JSON.stringify(links, null, 2);
       const blob = new Blob([data], {type:'application/json'});
       const a = document.createElement('a');
@@ -191,8 +243,7 @@ Autor: Miguel (AlexRaSa)
       URL.revokeObjectURL(a.href);
     });
 
-    // Import
-    $('importFile').addEventListener('change', (ev) => {
+    $('importFile')?.addEventListener('change', (ev) => {
       const f = ev.target.files[0];
       if (!f) return;
       const reader = new FileReader();
@@ -200,71 +251,92 @@ Autor: Miguel (AlexRaSa)
         try {
           const arr = JSON.parse(reader.result);
           if (!Array.isArray(arr)) throw new Error('Formato inválido');
-          // merge
-          links = links.concat(arr.map(it=>({ title:it.title, url:it.url, desc:it.desc||'', tags:it.tags||[], date:it.date||new Date().toISOString().slice(0,10)})));
-          saveToStorage(); render();
+          const normalized = arr.map(normalizeLink);
+          // merge avoiding duplicates by url
+          const urls = new Set(links.map(l=>l.url));
+          normalized.forEach(n => { if (!urls.has(n.url)) links.push(n); });
+          saveToStorage();
+          renderTagOptions();
+          renderList();
           ev.target.value = '';
+          alert('Import OK: ' + normalized.length + ' items procesados.');
         } catch(err) { alert('JSON inválido: '+err.message); }
       };
       reader.readAsText(f);
     });
 
-    // Copy all as markdown
-    $('copyAllMd').addEventListener('click', async () => {
-      const all = links.concat(sampleLinks);
+    $('copyAllMd')?.addEventListener('click', async () => {
+      const all = Array.from(new Map([...remoteLinks, ...links].map(it => [it.url || it.title, it])).values());
       const md = all.map(it => `- [${it.title}](${it.url}) - ${it.desc||''}`).join('\n');
       try { await navigator.clipboard.writeText(md); alert('Copiado al portapapeles.'); } catch(e){ prompt('Copiar manualmente:', md); }
     });
 
-    // Copy single MD
-    window.copyMd = async (idx) => {
-      const it = links[idx];
+    window.copyMd = async (encUrl) => {
+      const url = decodeURIComponent(encUrl);
+      const it = (links.concat(remoteLinks)).find(x => x.url === url);
+      if(!it){ alert('No encontrado'); return; }
       const md = `[${it.title}](${it.url}) - ${it.desc||''}`;
       try { await navigator.clipboard.writeText(md); alert('Markdown copiado.'); } catch(e){ prompt('Copiar manualmente:', md); }
     };
 
-    // Edit / Delete
-    window.editLink = (idx) => {
-      const it = links[idx];
-      $('title').value = it.title; $('url').value = it.url; $('desc').value = it.desc || ''; $('tags').value = (it.tags||[]).join(', '); $('date').value = it.date || '';
-      // Remove original so save acts as edit
-      links.splice(idx,1); saveToStorage(); render();
+    window.editLink = (encUrl) => {
+      const url = decodeURIComponent(encUrl);
+      const it = links.find(l => l.url === url) || remoteLinks.find(l => l.url === url);
+      if(!it){ alert('No editable (es remoto y no local). Copia/pega para crear una local.'); return; }
+      $('title').value = it.title || '';
+      $('url').value = it.url || '';
+      $('desc').value = it.desc || '';
+      $('tags').value = (it.tags||[]).join(', ');
+      $('date').value = it.date || '';
+      // remove local entry if exists so saving will replace
+      links = links.filter(l => l.url !== it.url);
+      saveToStorage();
+      renderList();
     };
-    window.deleteLink = (idx) => { if(!confirm('Eliminar enlace?')) return; links.splice(idx,1); saveToStorage(); render(); };
 
-    // attempt to load links.json from same folder (optional)
-    async function tryLoadJson() {
-      try {
-        const res = await fetch('links.json', {cache:'no-store'});
-        if (!res.ok) return;
-        const arr = await res.json();
-        if (Array.isArray(arr)) {
-          // merge but don't overwrite localStorage
-          const normalized = arr.map(it=>({ title:it.title, url:it.url, desc:it.desc||'', tags:it.tags||[], date:it.date||new Date().toISOString().slice(0,10)}));
-          // only add those not present by url
-          normalized.forEach(n => { if (!links.some(l=>l.url===n.url)) links.push(n); });
-          saveToStorage();
-        }
-      } catch(e) { /* silent */ }
+    window.deleteLink = (encUrl) => {
+      const url = decodeURIComponent(encUrl);
+      if(!confirm('Eliminar enlace local con URL: ' + url + '?')) return;
+      const before = links.length;
+      links = links.filter(l => l.url !== url);
+      saveToStorage();
+      renderTagOptions();
+      renderList();
+      alert('Eliminados: ' + (before - links.length));
+    };
+
+    // reload remote button
+    $('reloadRemote')?.addEventListener('click', async () => {
+      const ok = await fetchRemoteLinks();
+      if (!ok) alert('No se encontró /links.json en el sitio.');
+    });
+
+    $('mergeRemote')?.addEventListener('click', () => mergeRemoteIntoLocal());
+
+    // search + filters live
+    ['q','tagFilter','sortBy'].forEach(id => $(id)?.addEventListener('input', renderList));
+
+    // auto reload toggle
+    $('autoReload')?.addEventListener('change', (e) => {
+      if(e.target.checked) startAutoReload(); else stopAutoReload();
+    });
+
+    function startAutoReload(){
+      stopAutoReload();
+      autoReloadTimer = setInterval(() => fetchRemoteLinks(), AUTO_RELOAD_INTERVAL_MS);
+    }
+    function stopAutoReload(){
+      if (autoReloadTimer) { clearInterval(autoReloadTimer); autoReloadTimer = null; }
     }
 
-    function render() { renderTagOptions(); renderList(); }
-
-    // Init
-    (async function(){
+    // ====== Init ======
+    (async function init(){
       loadFromStorage();
-      await tryLoadJson();
-      // if empty and no stored links, prefill sample when first run
-      if (!links.length && !localStorage.getItem(STORAGE_KEY)) { links = []; saveToStorage(); }
-      render();
-
-      // live search filtering
-      ['q','tagFilter','sortBy'].forEach(id => $(id).addEventListener('input', render));
+      // try remote; if none, still render local
+      await fetchRemoteLinks();
+      renderTagOptions();
+      renderList();
     })();
-
-    // open url helper for encoded values used in render
-    window.openLink = openLink;
-
   </script>
 </body>
 </html>
