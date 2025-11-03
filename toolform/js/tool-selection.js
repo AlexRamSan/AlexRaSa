@@ -59,19 +59,45 @@
 
   // DOM
   document.addEventListener('DOMContentLoaded', () => {
-    const $ = id => document.getElementById(id);
-    const machineTypeEl = $('machineType'), unitsEl = $('units'), workMaterialEl = $('workMaterial'),
-          operationEl = $('operation'), toolTypeEl = $('toolType'), toolMaterialEl = $('toolMaterial'),
-          diameterEl = $('diameter'), flutesEl = $('flutes'), apEl = $('ap'), aeEl = $('ae'),
-          stickoutEl = $('stickout'), coolingEl = $('cooling'), priorityEl = $('priority'),
-          cutLengthEl = $('cutLength'), notesEl = $('notes'), calcBtn = $('calcBtn'),
-          jsonOut = $('jsonOut'), pdfBtn = $('pdfBtn'), exportBtn = $('exportBtn'),
-          addVendorBtn = $('addVendorBtn'), vendorsList = $('vendorsList'), resultsCards = $('resultsCards');
+  const $ = id => document.getElementById(id);
+  const machineTypeEl = $('machineType'),
+        unitsEl       = $('units'),
+        workMaterialEl= $('workMaterial'),
+        operationEl   = $('operation'),
+        toolTypeEl    = $('toolType'),
+        toolMaterialEl= $('toolMaterial'),
+        diameterEl    = $('diameter'),
+        flutesEl      = $('flutes'),
+        apEl          = $('ap'),
+        aeEl          = $('ae'),
+        stickoutEl    = $('stickout'),
+        coolingEl     = $('cooling'),
+        priorityEl    = $('priority'),
+        cutLengthEl   = $('cutLength'),
+        notesEl       = $('notes'),
+        calcBtn       = $('calcBtn'),
+        exportBtn     = $('exportBtn'),
+        addVendorBtn  = $('addVendorBtn'),
+        vendorsList   = $('vendorsList'),
+        resultsCards  = $('resultsCards');
 
-    if (!machineTypeEl || !workMaterialEl || !operationEl || !calcBtn || !resultsCards) {
-      console.error('Formulario incompleto o contenedores no encontrados.');
-      return;
-    }
+  // 1) Quitar del DOM el <pre id="jsonOut"> si existe (no se mostrará)
+  const jsonOut = document.getElementById('jsonOut');
+  if (jsonOut) jsonOut.remove();
+
+  // 2) Quitar cualquier botón con id="pdfBtn" para evitar UI muerta y errores
+  const pdfBtn = document.getElementById('pdfBtn');
+  if (pdfBtn) pdfBtn.remove();
+
+  // 3) Comprobación mínima de integridad del formulario
+  if (!machineTypeEl || !workMaterialEl || !operationEl || !calcBtn || !resultsCards) {
+    console.error('Formulario incompleto o contenedores no encontrados.');
+    return;
+  }
+
+  // ... resto del código que ya tienes permanece igual ...
+});
+
 
     // Populate tool options
     function populateToolOptions() {
@@ -261,57 +287,53 @@
     }
 
     // createCard con guiones y recubrimiento seguro
-    function createCard(payload) {
-      const form = payload.form;
-      const det = payload.detailed_recommendation;
-      const p = det.parameters || {};
-      const show = (v, u='') => (v === null || v === undefined) ? '—' : `${v}${u ? ' ' + u : ''}`;
+    // reemplazar la función createCard existente por esta
+function createCard(payload) {
+  const form = payload.form;
+  const det = payload.detailed_recommendation;
+  const p = det.parameters || {};
+  const show = (v, u='') => (v === null || v === undefined) ? '—' : `${v}${u ? ' ' + u : ''}`;
 
-      const wrapper = document.createElement('article');
-      wrapper.className = 'result-card';
+  const wrapper = document.createElement('article');
+  wrapper.className = 'result-card';
 
-      const h = document.createElement('h4');
-      h.innerHTML = `<strong>${det.selection.tool}</strong> — ${det.selection.tool_family} <span class="badge-small">${det.selection.recommended_coating || '—'}</span>`;
-      wrapper.appendChild(h);
+  const h = document.createElement('h4');
+  h.innerHTML = `<strong>${det.selection.tool}</strong> — ${det.selection.tool_family} <span class="badge-small">${det.selection.recommended_coating || '—'}</span>`;
+  wrapper.appendChild(h);
 
-      const meta = document.createElement('div');
-      meta.className = 'result-meta';
-      meta.innerHTML = `<div class="kv">${displayMaterial(form.workMaterial)}</div>
-                        <div class="kv">Máquina: ${form.machine}</div>
-                        <div class="kv">Operación: ${form.operation}</div>
-                        <div class="kv">Longitud: ${show(form.cutLength, 'mm')}</div>`;
-      wrapper.appendChild(meta);
+  const meta = document.createElement('div');
+  meta.className = 'result-meta';
+  meta.innerHTML = `<div class="kv">${displayMaterial(form.workMaterial)}</div>
+                    <div class="kv">Máquina: ${form.machine}</div>
+                    <div class="kv">Operación: ${form.operation}</div>
+                    <div class="kv">Longitud: ${show(form.cutLength, 'mm')}</div>`;
+  wrapper.appendChild(meta);
 
-      const params = document.createElement('div');
-      params.innerHTML = `<div><strong>Parámetros</strong></div>
-        <div class="kv">vc ≈ ${show(p.vc_mmin, 'm/min')} · rpm ≈ ${show(p.rpm, 'rpm')}</div>
-        <div class="kv">fz ≈ ${show(p.fz, 'mm/diente')} · Avance ≈ ${show(p.feed_mm_per_min, 'mm/min')}</div>
-        <div class="kv">ap ${show(p.ap_mm, 'mm')} · ae ${show(p.ae_mm, 'mm')}</div>
-        <div class="kv">MRR ≈ ${show(p.mrr_mm3_per_min, 'mm³/min')} · Potencia ≈ ${show(p.power_kW, 'kW')}</div>
-        <div class="kv">Tiempo de corte ≈ ${show(p.cycle_min, 'min')} (${show(p.cycle_sec, 's')})</div>`;
-      wrapper.appendChild(params);
+  const params = document.createElement('div');
+  params.innerHTML = `<div><strong>Parámetros</strong></div>
+    <div class="kv">vc ≈ ${show(p.vc_mmin, 'm/min')} · rpm ≈ ${show(p.rpm, 'rpm')}</div>
+    <div class="kv">fz ≈ ${show(p.fz, 'mm/diente')} · Avance ≈ ${show(p.feed_mm_per_min, 'mm/min')}</div>
+    <div class="kv">ap ${show(p.ap_mm, 'mm')} · ae ${show(p.ae_mm, 'mm')}</div>
+    <div class="kv">MRR ≈ ${show(p.mrr_mm3_per_min, 'mm³/min')} · Potencia ≈ ${show(p.power_kW, 'kW')}</div>
+    <div class="kv">Tiempo de corte ≈ ${show(p.cycle_min, 'min')} (${show(p.cycle_sec, 's')})</div>`;
+  wrapper.appendChild(params);
 
-      const r = document.createElement('div');
-      r.innerHTML = `<div><strong>Por qué</strong></div><div class="kv">${det.rationale_text}</div>`;
-      wrapper.appendChild(r);
+  const r = document.createElement('div');
+  r.innerHTML = `<div><strong>Por qué</strong></div><div class="kv">${det.rationale_text}</div>`;
+  wrapper.appendChild(r);
 
-      const actions = document.createElement('div');
-      actions.className = 'result-actions';
-      const printBtn = document.createElement('button');
-      printBtn.className = 'px-3 py-1 bg-gray-600 rounded text-sm';
-      printBtn.innerText = 'Imprimir tarjeta';
-      printBtn.addEventListener('click', ()=> printCard(wrapper));
-      const pdfB = document.createElement('button');
-      pdfB.className = 'px-3 py-1 bg-sky-600 rounded text-sm';
-      pdfB.innerText = 'Exportar PDF';
-      pdfB.addEventListener('click', async ()=> {
-        await exportCardPdf(wrapper, `${form.machine || 'job'}_${Date.now()}.pdf`);
-      });
-      actions.appendChild(printBtn);
-      actions.appendChild(pdfB);
-      wrapper.appendChild(actions);
-      return wrapper;
-    }
+  const actions = document.createElement('div');
+  actions.className = 'result-actions';
+  const printBtn = document.createElement('button');
+  printBtn.className = 'px-3 py-1 bg-gray-600 rounded text-sm';
+  printBtn.innerText = 'Imprimir tarjeta';
+  printBtn.addEventListener('click', ()=> printCard(wrapper));
+  actions.appendChild(printBtn);
+
+  wrapper.appendChild(actions);
+  return wrapper;
+}
+
 
     // print single card
     function buildPrintHtml(innerHTML) {
