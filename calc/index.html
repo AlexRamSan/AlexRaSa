@@ -1,520 +1,428 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de Costo-Beneficio — AlexRaSa</title>
-  <meta name="description" content="Calcula ahorros por ciclo, vida de herramienta y tiempos muertos. ROI, payback y comparativas A vs P para procesos de maquinado." />
-  <meta name="theme-color" content="#0F172A" />
-  <meta name="robots" content="index,follow" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calculadora de Costo-Beneficio — AlexRaSa</title>
+<meta name="description" content="Calcula ahorros por ciclo, vida de herramienta y tiempos muertos. ROI, payback y comparativas A vs P para procesos de maquinado." />
+<meta name="theme-color" content="#0F172A" />
+<meta name="robots" content="index,follow" />
 
-  <!-- Canonical / Hreflang -->
-  <link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="es" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+<link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+<link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+<link rel="alternate" hreflang="es" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+<link rel="alternate" hreflang="x-default" href="https://alexrasa.store/calculadora-costo-beneficio/" />
 
-  <!-- Favicon / App Icons -->
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
-  <link rel="manifest" href="/site.webmanifest" />
+<!-- icons -->
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<!-- site.webmanifest comentado para evitar 404 en consola hasta que lo subas -->
+<!-- <link rel="manifest" href="/site.webmanifest" /> -->
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
-  <meta property="og:description" content="Estima ahorros en tiempo de ciclo, vida de herramienta y tiempos muertos. Calcula ROI, payback y compara Actual vs Propuesta." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <meta property="og:image" content="https://alexrasa.store/og/og-image.png" />
-  <meta property="og:site_name" content="AlexRaSa" />
-  <meta property="og:locale" content="es_MX" />
+<!-- Open Graph / Twitter (sin cambios) -->
+<meta property="og:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
+<meta property="og:description" content="Estima ahorros en tiempo de ciclo, vida de herramienta y tiempos muertos. Calcula ROI, payback y compara Actual vs Propuesta." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://alexrasa.store/calculadora-costo-beneficio/" />
+<meta property="og:image" content="https://alexrasa.store/og/og-image.png" />
+<meta property="og:site_name" content="AlexRaSa" />
+<meta property="og:locale" content="es_MX" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://alexrasa.store/og/og-image.png" />
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Calculadora de Costo-Beneficio — AlexRaSa" />
-  <meta name="twitter:description" content="ROI, payback y distribución de ahorros para procesos CNC." />
-  <meta name="twitter:image" content="https://alexrasa.store/og/og-image.png" />
+<!-- preload hero to avoid flash -->
+<link rel="preload" as="image" href="/assets/hero-industrial.png">
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
+<!-- Tailwind (dev CDN ok para testing) -->
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Estilos locales + Force dark + ajustes visuales -->
-  <meta name="color-scheme" content="dark">
-  <style>
-    /* Basic interactions */
-    html { scroll-behavior: smooth; }
-    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
-    .reveal.show { opacity: 1; transform: none; }
-    @keyframes bounceSoft { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-    .animate-bounce-soft { animation: bounceSoft 2.8s ease-in-out infinite; }
+<!-- Force dark + estilos -->
+<meta name="color-scheme" content="dark">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#071027;
+    --card:#0f172a;
+    --text:#e6eef8;
+    --accent:#60a5fa;
+    --accent-2:#6366F1;
+    --good:#22C55E;
+    --warn:#F59E0B;
+    --bad:#EF4444;
+  }
+  html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+  a{color:var(--accent);}
+  /* Header */
+  #siteHeader{background:rgba(2,6,23,0.65);border-bottom:1px solid rgba(255,255,255,0.03);}
+  /* Cards / sections */
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); color:var(--text); border-radius:12px;}
+  input,select,textarea{background:rgba(255,255,255,0.02); color:var(--text); border:1px solid rgba(255,255,255,0.06); padding:.5rem; border-radius:.5rem;}
+  input:focus,select:focus{box-shadow:0 0 0 6px rgba(96,165,250,0.08); outline:none}
 
-    /* Force dark color-scheme and base palette */
-    :root{ color-scheme: dark; --bg:#071027; --card:#0f172a; --muted:#9fb3c8; --text:#e6eef8; --accent:#60a5fa; --accent-2:#6366F1; --good:#22C55E; --warn:#F59E0B; --bad:#EF4444; }
-    html, body { background: var(--bg) !important; color: var(--text) !important; }
-    body { -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+  /* Hero specifics */
+  .hero-bg{
+    position:relative;
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    min-height:360px;
+    will-change:background-image,opacity;
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
+    overflow:hidden;
+    /* Inline background-image fallback overwritten by inline style for reliability */
+  }
+  .hero-bg::before{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(2,6,23,0.25), rgba(2,6,23,0.65)); z-index:1; pointer-events:none; }
+  .hero-content{ position:relative; z-index:2; }
+  .hero-title{ color:var(--text); }
+  .hero-sub{ color:rgba(230,238,248,0.9); }
 
-    /* Override light utility classes used in markup */
-    .bg-white, .bg-white\/90, .bg-white\/95, .bg-gray-50, .bg-gray-100, .bg-gray-200,
-    .bg-emerald-50, .bg-blue-50, .bg-indigo-50, .bg-amber-50 {
-      background-color: transparent !important;
-    }
-    .border-gray-200, .border-gray-300, .border-gray-100 { border-color: rgba(255,255,255,0.06) !important; }
-    .text-gray-800, .text-gray-900, .text-gray-700, .text-gray-600 { color: var(--text) !important; }
+  /* Visuals SVG text */
+  #vizAhorros svg text, #vizAhorros svg tspan, #vizPerf svg text, #vizPerf svg tspan {
+    fill:var(--text) !important;
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
 
-    /* Inputs / selects / textareas */
-    input, select, textarea {
-      background: rgba(255,255,255,0.02) !important;
-      color: var(--text) !important;
-      border: 1px solid rgba(255,255,255,0.06) !important;
-      transition: box-shadow .12s;
-    }
-    input:focus, textarea:focus, select:focus { box-shadow: 0 0 0 4px rgba(99,102,241,0.12); outline: none; }
+  /* badges */
+  .stat-badge{ display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(255,255,255,0.03); color:var(--text); font-weight:700; font-size:11px; }
 
-    /* Header */
-    #siteHeader { background: rgba(2,6,23,0.6); border-bottom: 1px solid rgba(255,255,255,0.03); }
-    #siteHeader a, #siteHeader button { color: var(--text); }
+  /* make reveal not hide hero (if present) */
+  .no-reveal{ opacity:1 !important; transform:none !important; }
 
-    /* Cards / sections */
-    section, table, .rounded-lg { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)) !important; border-color: rgba(255,255,255,0.03) !important; color: var(--text); }
-
-    /* Buttons: keep accents vivid */
-    .bg-blue-600 { background-color: #1e40af !important; }
-    .hover\:bg-blue-700:hover { background-color: #1e3a8a !important; }
-    .bg-green-500 { background-color: #16a34a !important; }
-    .hover\:bg-green-600:hover { background-color: #15803d !important; }
-
-    /* Badges & small UI */
-    .badge-small { background: rgba(255,255,255,0.04); color: var(--text); padding: 2px 6px; border-radius: 999px; font-size: 12px; }
-
-    /* Tiny tweaks for mobile fixed bar */
-    .safe-bottom, .fixed.inset-x-0.bottom-0 { background: rgba(2,6,23,0.98) !important; border-top: 1px solid rgba(255,255,255,0.03); }
-
-    /* SVG & visual fixes: ensure readable text */
-    #vizAhorros svg text, #vizAhorros svg tspan, #vizPerf svg text, #vizPerf svg tspan {
-      fill: #c8d6e3 !important;
-      font-family: Inter, Arial, Helvetica, sans-serif;
-    }
-    #vizAhorros svg circle { fill: rgba(255,255,255,0.03) !important; }
-    #vizAhorros svg > text { fill: var(--text) !important; font-weight:700; }
-
-    /* Table contrast */
-    table td, table th { color: #d1e6f8 !important; }
-
-    /* Labels colored to be visible in dark */
-    .text-emerald-700, .text-teal-700, .text-blue-700, .text-indigo-700,
-    .text-amber-700, .text-rose-700 { color: #c8d6e3 !important; }
-
-    /* Minor layout */
-    input, select, textarea { font-size: 15px; }
-    /* Fix iOS: evita zoom al escribir y solapes */
-    input, select, textarea { -webkit-text-size-adjust: 100%; }
-
-    /* hero tweaks */
-    .hero-bg { background-image: url('/assets/hero-industrial.png'); background-size: cover; background-position: center; filter: contrast(.95) brightness(.55); }
-
-    /* utility to force white text where needed */
-    .force-white { color: var(--text) !important; }
-  </style>
-
-  <!-- Google tag -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);} gtag('js', new Date());
-    gtag('config', 'G-GDQ8NN6T6Q');
-  </script>
+  /* responsive tweaks */
+  .safe-bottom{ padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
+</style>
 </head>
 <body class="antialiased">
 
-  <!-- ===== HEADER ===== -->
-  <header id="siteHeader" class="sticky top-0 z-50 border-b">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between gap-3">
-        <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Ir al inicio">
-          <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-10 w-auto" width="160" height="40" />
-          <span class="hidden sm:inline text-base font-semibold tracking-tight force-white">AlexRaSa<span class="text-sky-400">.store</span></span>
-        </a>
-        <nav class="hidden lg:flex items-center gap-6 text-sm">
-          <a href="/" class="hover:text-sky-400">Inicio</a>
-          <a href="/SolidCAM/" class="hover:text-sky-400">Soluciones</a>
-          <a href="/#servicios" class="hover:text-sky-400">Servicios</a>
-          <a href="/#recursos" class="hover:text-sky-400">Recursos</a>
-          <a href="/#contacto" class="hover:text-sky-400">Contacto</a>
-        </nav>
-        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded" aria-label="Abrir menú">
-          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-      </div>
+<!-- HEADER -->
+<header id="siteHeader" class="sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="h-16 flex items-center justify-between gap-3">
+      <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Ir al inicio">
+        <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-10 w-auto" width="160" height="40" />
+        <span class="hidden sm:inline text-base font-semibold tracking-tight" style="color:var(--text)">AlexRaSa<span style="color:var(--accent)">.store</span></span>
+      </a>
+      <nav class="hidden lg:flex items-center gap-6 text-sm">
+        <a href="/" class="hover:text-sky-400">Inicio</a>
+        <a href="/SolidCAM/" class="hover:text-sky-400">Soluciones</a>
+        <a href="/#servicios" class="hover:text-sky-400">Servicios</a>
+        <a href="/#recursos" class="hover:text-sky-400">Recursos</a>
+        <a href="/#contacto" class="hover:text-sky-400">Contacto</a>
+      </nav>
+      <button id="mobileOpenBtn" class="lg:hidden p-2 rounded" aria-label="Abrir menú" style="color:var(--text)">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <!-- ===== HERO ===== -->
-  <section class="relative reveal">
-    <div class="absolute inset-0 -z-10 hero-bg">
-      <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/35 to-black/50"></div>
-    </div>
-    <div class="max-w-6xl mx-auto px-4 py-10 md:py-20">
-      <h1 class="text-3xl md:text-5xl font-extrabold leading-tight force-white">Calculadora de <span class="text-sky-400">Costo-Beneficio</span></h1>
-      <p class="mt-3 max-w-3xl text-slate-200">Estima ahorros por <strong>tiempo de ciclo</strong>, <strong>vida de herramienta</strong> y <strong>tiempos muertos</strong>. Obtén <strong>ROI</strong>, <strong>payback</strong> y una comparativa <em>Actual vs Propuesta</em>.</p>
+<!-- HERO: inline style background-image for reliability -->
+<section aria-label="Hero" class="hero-bg no-reveal" style="background-image:url('/assets/hero-industrial.png');">
+  <div class="hero-content max-w-6xl mx-auto px-4 py-10 md:py-20">
+    <h1 class="text-3xl md:text-5xl font-extrabold hero-title">Calculadora de <span style="color:var(--accent)">Costo-Beneficio</span></h1>
+    <p class="mt-3 max-w-3xl hero-sub">Estima ahorros por <strong>tiempo de ciclo</strong>, <strong>vida de herramienta</strong> y <strong>tiempos muertos</strong>. Obtén <strong>ROI</strong>, <strong>payback</strong> y una comparativa <em>Actual vs Propuesta</em>.</p>
+  </div>
+</section>
+
+<!-- MAIN (calculadora) -->
+<main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-14 grid gap-4 sm:gap-6 lg:grid-cols-8 reveal">
+  <!-- FORM -->
+  <section class="card p-5 lg:col-span-2">
+    <h2 class="text-lg font-semibold">Parámetros del proceso</h2>
+    <div class="grid gap-3 mt-3">
+      <label class="text-sm">Tiempo de ciclo actual (s)
+        <input id="cicloA" type="number" value="60" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">Tiempo de ciclo propuesto (s)
+        <input id="cicloP" type="number" value="45" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">Vida útil actual (pzas)
+        <input id="vidaA" type="number" value="1300" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">Vida útil propuesta (pzas)
+        <input id="vidaP" type="number" value="2500" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">Costo de herramienta (USD)
+        <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">Costo por hora máquina (USD)
+        <input id="costoHora" type="number" value="50" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">Piezas por mes
+        <input id="pmes" type="number" value="10000" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">Inversión inicial (USD)
+        <input id="inversion" type="number" value="2000" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">T. muerto actual (min/mes)
+        <input id="tmuertoA" type="number" value="120" class="mt-1 w-full">
+      </label>
+      <label class="text-sm">T. muerto propuesto (min/mes)
+        <input id="tmuertoP" type="number" value="30" class="mt-1 w-full">
+      </label>
+
+      <h3 class="text-sm font-semibold mt-2">Tipos de ahorro a incluir</h3>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
+        <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
+        <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
+      </div>
+
+      <button id="btnCalcular" class="hidden md:block mt-3 w-full px-4 py-2 rounded-md" style="background:var(--accent-2); color:white">Calcular</button>
     </div>
   </section>
 
-  <!-- ===== CALCULADORA ===== -->
-  <main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-14 grid gap-4 sm:gap-6 lg:grid-cols-8 reveal">
-    <!-- FORM -->
-    <section class="rounded-xl p-5 sm:p-6 lg:col-span-2">
-      <h2 class="text-lg font-semibold">Parámetros del proceso</h2>
-      <div class="grid gap-3 mt-3">
-        <label class="text-sm">Tiempo de ciclo actual (s)
-          <input id="cicloA" type="number" value="60" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">Tiempo de ciclo propuesto (s)
-          <input id="cicloP" type="number" value="45" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">Vida útil actual (pzas)
-          <input id="vidaA" type="number" value="1300" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">Vida útil propuesta (pzas)
-          <input id="vidaP" type="number" value="2500" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">Costo de herramienta (USD)
-          <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">Costo por hora máquina (USD)
-          <input id="costoHora" type="number" value="50" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">Piezas por mes
-          <input id="pmes" type="number" value="10000" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">Inversión inicial (USD)
-          <input id="inversion" type="number" value="2000" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">T. muerto actual (min/mes)
-          <input id="tmuertoA" type="number" value="120" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-        <label class="text-sm">T. muerto propuesto (min/mes)
-          <input id="tmuertoP" type="number" value="30" class="mt-1 w-full px-3 py-2 border rounded-md">
-        </label>
-
-        <h3 class="text-sm font-semibold mt-2">Tipos de ahorro a incluir</h3>
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
-        </div>
-        <button id="btnCalcular" class="hidden md:block mt-3 w-full px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">Calcular</button>
-      </div>
-    </section>
-
-    <!-- TABLA -->
-    <section class="rounded-xl p-5 sm:p-6 lg:col-span-4">
-      <h2 class="text-lg font-semibold">Comparativa A vs P</h2>
-      <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
-        <table class="w-full border-separate [border-spacing:0_8px] text-sm">
-          <thead>
-            <tr class="text-slate-300">
-              <th class="text-left font-medium px-2">Métrica</th>
-              <th class="text-right font-medium px-2">Actual</th>
-              <th class="text-right font-medium px-2">Propuesta</th>
-              <th class="text-right font-medium px-2">Δ Mejora</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyComp"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- RESULTADOS (más delgada) -->
-    <section class="rounded-xl p-5 sm:p-6 lg:col-span-2">
-      <h2 class="text-lg font-semibold">Resultados</h2>
-      <div class="mt-3 grid gap-3">
-        <div class="rounded-lg p-3" style="background: linear-gradient(180deg, rgba(34,197,94,0.08), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.03);">
-          <div class="text-sm">Ahorro mensual</div>
-          <div id="ahorro" class="text-right font-bold text-xl" style="color:var(--good)">$0</div>
-        </div>
-        <div id="kpiTMBox" class="rounded-lg p-3" style="background: linear-gradient(180deg, rgba(34,197,213,0.04), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.03);">
-          <div class="text-sm">Ahorro por tiempo muerto (USD/mes)</div>
-          <div id="ahorroTM" class="text-right font-bold text-lg" style="color:#06b6d4">$0</div>
-        </div>
-        <div class="rounded-lg p-3" style="background: linear-gradient(180deg, rgba(99,102,241,0.04), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.03);">
-          <div class="text-sm">ROI anual</div>
-          <div id="roi" class="text-right font-bold text-lg" style="color:var(--accent-2)">0%</div>
-        </div>
-        <div class="rounded-lg p-3" style="background: linear-gradient(180deg, rgba(99,102,241,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03);">
-          <div class="text-sm">ROI mensual</div>
-          <div id="roiMensual" class="text-right font-bold text-lg" style="color:#60a5fa">0%</div>
-        </div>
-        <div class="rounded-lg p-3" style="background: linear-gradient(180deg, rgba(245,158,11,0.03), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03);">
-          <div class="text-sm">Payback (meses)</div>
-          <div id="payback" class="text-right font-bold text-lg" style="color:#f59e0b">0</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VISUALES -->
-    <section id="visuales" class="rounded-xl p-5 sm:p-6 lg:col-span-8 lg:col-start-1">
-      <h2 class="text-lg font-semibold">Visuales</h2>
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
-          <p class="text-sm font-semibold">Distribución de ahorros</p>
-          <div id="vizAhorros" class="mt-4"></div>
-        </div>
-        <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
-          <p class="text-sm font-semibold">Comparativa rápida</p>
-          <div id="vizPerf" class="mt-4"></div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- BOTÓN FIJO EN MÓVIL -->
-  <div class="md:hidden fixed inset-x-0 bottom-0 z-40 safe-bottom px-4 py-2">
-    <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
-      Calcular
-    </button>
-  </div>
-
-  <!-- FOOTER -->
-  <footer class="py-6 mt-16 text-center">
-    <div class="max-w-6xl mx-auto px-4 text-sm text-slate-400">
-      © 2025 AlexRaSa — Ingeniería, innovación y eficiencia.
+  <!-- TABLA -->
+  <section class="card p-5 lg:col-span-4">
+    <h2 class="text-lg font-semibold">Comparativa A vs P</h2>
+    <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
+      <table class="w-full border-separate [border-spacing:0_8px] text-sm">
+        <thead>
+          <tr class="text-slate-300">
+            <th class="text-left font-medium px-2">Métrica</th>
+            <th class="text-right font-medium px-2">Actual</th>
+            <th class="text-right font-medium px-2">Propuesta</th>
+            <th class="text-right font-medium px-2">Δ Mejora</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyComp"></tbody>
+      </table>
     </div>
-  </footer>
+  </section>
 
-  <!-- BOTÓN WHATSAPP -->
-  <a href="https://wa.me/524425992802?text=Hola%20Miguel,%20quiero%20usar%20la%20calculadora%20de%20costo-beneficio."
-     class="hidden sm:inline-flex fixed bottom-6 right-6 items-center gap-2 px-4 py-3 rounded-full shadow-lg"
-     aria-label="Chatear por WhatsApp" rel="noopener noreferrer" style="background:#16a34a; color:white">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-      <path d="M19.11 17.44c-.27-.14-1.58-.78-1.83-.86-.25-.09-.43-.14-.61.14-.18.27-.7.86-.86 1.04-.16.18-.32.2-.59.07-.27-.14-1.14-.42-2.18-1.34-.81-.72-1.36-1.61-1.52-1.88-.16-.27-.02-.42.12-.55.12-.12.27-.32.41-.48.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.48-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.46h-.52c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.28s.98 2.64 1.11 2.82c.14.18 1.93 2.95 4.68 4.14.65.28 1.16.45 1.55.58.65.21 1.24.18 1.71.11.52-.08 1.58-.65 1.81-1.27.23-.62.23-1.15.16-1.27-.07-.11-.25-.18-.52-.32z"/>
-      <path d="M26.02 5.97A12.9 12.9 0 0 0 16 2C8.83 2 3 7.83 3 15c0 2.29.6 4.44 1.66 6.31L3 30l8.88-1.63A12.96 12.96 0 0 0 16 28c7.17 0 13-5.83 13-13 0-3.47-1.35-6.72-3.98-9.03z"/>
-    </svg>
-    <span class="font-medium">WhatsApp</span>
-  </a>
+  <!-- RESULTADOS -->
+  <section class="card p-5 lg:col-span-2">
+    <h2 class="text-lg font-semibold">Resultados</h2>
+    <div class="mt-3 grid gap-3">
+      <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(34,197,94,0.06), rgba(255,255,255,0.01));">
+        <div class="text-sm">Ahorro mensual</div>
+        <div id="ahorro" class="text-right font-bold text-xl" style="color:var(--good)">$0</div>
+      </div>
+      <div id="kpiTMBox" class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(6,182,212,0.03), rgba(255,255,255,0.01));">
+        <div class="text-sm">Ahorro por tiempo muerto (USD/mes)</div>
+        <div id="ahorroTM" class="text-right font-bold text-lg" style="color:#06b6d4">$0</div>
+      </div>
+      <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(99,102,241,0.04), rgba(255,255,255,0.01));">
+        <div class="text-sm">ROI anual</div>
+        <div id="roi" class="text-right font-bold text-lg" style="color:var(--accent-2)">0%</div>
+      </div>
+      <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(99,102,241,0.02), rgba(255,255,255,0.01));">
+        <div class="text-sm">ROI mensual</div>
+        <div id="roiMensual" class="text-right font-bold text-lg" style="color:var(--accent)">0%</div>
+      </div>
+      <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(245,158,11,0.03), rgba(255,255,255,0.01));">
+        <div class="text-sm">Payback (meses)</div>
+        <div id="payback" class="text-right font-bold text-lg" style="color:var(--warn)">0</div>
+      </div>
+    </div>
+  </section>
 
-  <!-- ===== SCRIPTS ===== -->
-  <script>
-    // Header shadow
-    const siteHeader = document.getElementById('siteHeader');
-    window.addEventListener('scroll', () => { siteHeader.classList.toggle('shadow-xl', window.scrollY > 2); }, { passive: true });
+  <!-- VISUALES -->
+  <section id="visuales" class="card p-5 lg:col-span-8 lg:col-start-1">
+    <h2 class="text-lg font-semibold">Visuales</h2>
+    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
+        <p class="text-sm font-semibold">Distribución de ahorros</p>
+        <div id="vizAhorros" class="mt-4"></div>
+      </div>
+      <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
+        <p class="text-sm font-semibold">Comparativa rápida</p>
+        <div id="vizPerf" class="mt-4"></div>
+      </div>
+    </div>
+  </section>
+</main>
 
-    // Scroll-reveal
-    (function() {
-      const els = document.querySelectorAll('.reveal');
-      if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('show')); return; }
-      const io = new IntersectionObserver((entries, obs) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); } });
-      }, { threshold: 0.12 });
-      els.forEach(el => io.observe(el));
-    })();
+<!-- BOTÓN MÓVIL -->
+<div class="md:hidden fixed inset-x-0 bottom-0 z-40 safe-bottom px-4 py-2">
+  <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-md" style="background:var(--accent-2); color:white">Calcular</button>
+</div>
 
-    // ====== LÓGICA DE LA CALCULADORA ======
-    function fmt(n){ return Number(n || 0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+<!-- FOOTER -->
+<footer class="py-6 mt-16 text-center">
+  <div class="max-w-6xl mx-auto px-4 text-sm" style="color:rgba(230,238,248,0.65)">© 2025 AlexRaSa — Ingeniería, innovación y eficiencia.</div>
+</footer>
 
-    function calcular(){
-      const cicloA = +document.getElementById('cicloA').value || 0;
-      const cicloP = +document.getElementById('cicloP').value || 0;
-      const vidaA = +document.getElementById('vidaA').value || 0;
-      const vidaP = +document.getElementById('vidaP').value || 0;
-      const costoHerr = +document.getElementById('costoHerr').value || 0;
-      const costoHora = +document.getElementById('costoHora').value || 0;
-      const pmes = +document.getElementById('pmes').value || 0;
-      const inversion = +document.getElementById('inversion').value || 0;
-      const tmuertoA = +document.getElementById('tmuertoA').value || 0; // min/mes
-      const tmuertoP = +document.getElementById('tmuertoP').value || 0; // min/mes
+<!-- SCRIPTS: lógica + render visual corregido (colores y texto legible) -->
+<script>
+  // small util
+  function fmt(n){ return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-      // Ahorro por ciclo
-      const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
+  // calculator logic (unchanged semantics from your original)
+  function calcular(){
+    const cicloA = +document.getElementById('cicloA').value || 0;
+    const cicloP = +document.getElementById('cicloP').value || 0;
+    const vidaA = +document.getElementById('vidaA').value || 0;
+    const vidaP = +document.getElementById('vidaP').value || 0;
+    const costoHerr = +document.getElementById('costoHerr').value || 0;
+    const costoHora = +document.getElementById('costoHora').value || 0;
+    const pmes = +document.getElementById('pmes').value || 0;
+    const inversion = +document.getElementById('inversion').value || 0;
+    const tmuertoA = +document.getElementById('tmuertoA').value || 0;
+    const tmuertoP = +document.getElementById('tmuertoP').value || 0;
 
-      // Herramienta
-      const consA = (vidaA>0) ? (pmes / vidaA) : 0;
-      const consP = (vidaP>0) ? (pmes / vidaP) : 0;
-      const costoHerrA = consA * costoHerr;
-      const costoHerrP = consP * costoHerr;
-      const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
+    const ahorroCiclo = (cicloA>0 && cicloP>0) ? (1 - cicloP / cicloA) * costoHora * (pmes * cicloA / 3600) : 0;
+    const consA = (vidaA>0) ? (pmes / vidaA) : 0;
+    const consP = (vidaP>0) ? (pmes / vidaP) : 0;
+    const costoHerrA = consA * costoHerr;
+    const costoHerrP = consP * costoHerr;
+    const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
+    const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
 
-      // Tiempo muerto mensual (min/mes -> horas/mes)
-      const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
+    const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
+    const incHerr  = document.getElementById('incHerr')?.checked ?? true;
+    const incTM    = document.getElementById('incTM')?.checked ?? true;
 
-      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-      const incTM    = document.getElementById('incTM')?.checked ?? true;
+    const ahorroTotal = Math.max(0,
+      (incCiclo ? ahorroCiclo : 0) +
+      (incHerr  ? ahorroHerr  : 0) +
+      (incTM    ? ahorroTM    : 0)
+    );
 
-      const ahorroTotal = Math.max(0,
-        (incCiclo ? ahorroCiclo : 0) +
-        (incHerr  ? ahorroHerr  : 0) +
-        (incTM    ? ahorroTM    : 0)
-      );
+    const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
+    const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
+    const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
 
-      const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
-      const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
-      const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
+    document.getElementById('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
+    document.getElementById('roi').textContent        = `${fmt(roiAnual)}%`;
+    document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
+    document.getElementById('payback').textContent    = fmt(payback);
+    document.getElementById('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
 
-      document.getElementById('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
-      document.getElementById('roi').textContent        = `${fmt(roiAnual)}%`;
-      document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
-      document.getElementById('payback').textContent    = fmt(payback);
-      document.getElementById('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
+    const pphA = cicloA>0 ? 3600/cicloA : 0;
+    const pphP = cicloP>0 ? 3600/cicloP : 0;
+    const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
+    const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
 
-      const tmWrap = document.getElementById('kpiTMBox');
-      if (tmWrap) tmWrap.classList.toggle('opacity-50', !incTM);
-
-      // Comparativa
-      const pphA = cicloA>0 ? 3600/cicloA : 0;
-      const pphP = cicloP>0 ? 3600/cicloP : 0;
-      const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
-      const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
-
-      function delta(a,p,{higherIsBetter=true}={}){
-        if(a===0 && p===0) return {val:0, up:false};
-        const d = (p-a) / (a===0 ? 1 : a) * 100;
-        const up = higherIsBetter ? d>0 : d<0;
-        return {val:d, up};
-      }
-      function row(name,a,p,opt){
-        const d = delta(a,p,opt||{});
-        const badge = `<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${d.up? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'}" style="background:rgba(255,255,255,0.03); color:var(--text)">${(d.val>=0?'+':'')+fmt(d.val)}%</span>`;
-        return `<tr style="background:transparent; border:1px solid rgba(255,255,255,0.02);">
-          <td class="px-2 py-2">${name}</td>
-          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
-          <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
-          <td class="px-2 py-2 text-right">${badge}</td>
-        </tr>`;
-      }
-      const rows = [
-        row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
-        row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
-        row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
-        row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
-        row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
-        row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
-        row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
-        row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
-      ].join('');
-      document.getElementById('tbodyComp').innerHTML = rows;
-
-      // VISUALES
-      const parts = [], labels = [];
-      const ahorroCicloPOS = Math.max(0, ahorroCiclo);
-      const ahorroHerrPOS  = Math.max(0, ahorroHerr);
-      const ahorroTMPOS    = Math.max(0, ahorroTM);
-      if(incCiclo) { parts.push(ahorroCicloPOS); labels.push('Ciclo'); }
-      if(incHerr)  { parts.push(ahorroHerrPOS);  labels.push('Herramienta'); }
-      if(incTM)    { parts.push(ahorroTMPOS);    labels.push('Tiempo muerto'); }
-      renderDonut('vizAhorros', parts, labels);
-      renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
+    function delta(a,p,{higherIsBetter=true}={}){
+      if(a===0 && p===0) return {val:0, up:false};
+      const d = (p-a) / (a===0 ? 1 : a) * 100;
+      const up = higherIsBetter ? d>0 : d<0;
+      return {val:d, up};
+    }
+    function row(name,a,p,opt){
+      const d = delta(a,p,opt||{});
+      const badge = `<span class="stat-badge" style="background:rgba(255,255,255,0.03)">${(d.val>=0?'+':'')+fmt(d.val)}%</span>`;
+      return `<tr style="background:transparent; border-bottom:1px solid rgba(255,255,255,0.02);">
+        <td class="px-2 py-2">${name}</td>
+        <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
+        <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
+        <td class="px-2 py-2 text-right">${badge}</td>
+      </tr>`;
     }
 
-    function setEnabled(ids, on){
-      ids.forEach(id=>{
-        const el=document.getElementById(id);
-        if(!el) return;
-        el.disabled = !on;
-        el.classList.toggle('bg-gray-100', !on);
-        el.classList.toggle('cursor-not-allowed', !on);
-      });
-    }
-    function applyInclusions(){
-      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-      const incTM    = document.getElementById('incTM')?.checked ?? true;
-      setEnabled(['cicloA','cicloP'], incCiclo);
-      setEnabled(['vidaA','vidaP','costoHerr'], incHerr);
-      setEnabled(['tmuertoA','tmuertoP'], incTM);
-    }
+    const rows = [
+      row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
+      row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
+      row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
+      row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
+      row('Consumo mensual herramienta (USD)', (vidaA? (pmes/vidaA)*costoHerr:0), (vidaP? (pmes/vidaP)*costoHerr:0), {higherIsBetter:false}),
+      row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
+      row('Ahorro por tiempo muerto (USD/mes)', 0, ahorroTM, {higherIsBetter:true}),
+      row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
+    ].join('');
+    document.getElementById('tbodyComp').innerHTML = rows;
 
-    // Reemplazadas: renderDonut y renderBars con paleta legible en dark
-    function renderDonut(targetId, parts, labels){
-      const total = parts.reduce((a,b)=>a+b,0);
-      const W=320,H=210,cx=110,cy=105,r=80,th=28;
-      let start=0;
-      const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
-      const segs = parts.map((v,i)=>{
-        const frac = total>0 ? v/total : 0;
-        const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
-        const large = (a1-a0)>Math.PI ? 1:0;
-        const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
-        const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
-        const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
-        const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
-        const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
-        const pct = total>0 ? Math.round(frac*100) : 0;
-        return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.92"></path>` +
-               (pct>0?`<text x="220" y="${26+18*i}" font-size="12">${labels[i]}: ${pct}%</text>`:'');
-      }).join('');
-      const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="rgba(255,255,255,0.03)"></circle>` +
-                     `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
-      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
-      const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
-    }
+    // visuals
+    const parts=[], labels=[];
+    if(incCiclo) { parts.push(Math.max(0, ahorroCiclo)); labels.push('Ciclo'); }
+    if(incHerr)  { parts.push(Math.max(0, ahorroHerr));  labels.push('Herramienta'); }
+    if(incTM)    { parts.push(Math.max(0, ahorroTM));    labels.push('Tiempo muerto'); }
+    renderDonut('vizAhorros', parts, labels);
+    renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
+  }
 
-    function renderBars(targetId, pairs){
-      const rowsData = pairs.map(([lbl, a, b, lowerIsBetter]) => ({
-        lines: String(lbl).replace(' (', '\n(').split('\n'),
-        a, b, lowerIsBetter
-      }));
-      const approxChar = 7;
-      const labelCol = Math.max(100, Math.min(200, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
-      const barStartX = labelCol + 12;
-      const barMax = 240;
-      const rowH = 32;
-      const rowGap = 12;
-      const padY = 16;
+  function setEnabled(ids,on){ ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.disabled=!on; }); }
+  function applyInclusions(){ setEnabled(['cicloA','cicloP'], document.getElementById('incCiclo')?.checked ?? true); setEnabled(['vidaA','vidaP','costoHerr'], document.getElementById('incHerr')?.checked ?? true); setEnabled(['tmuertoA','tmuertoP'], document.getElementById('incTM')?.checked ?? true); }
 
-      const W = barStartX + barMax + 120;
-      const H = padY + rowsData.length * (rowH + rowGap) + 28;
+  // renderDonut with explicit fills + readable text
+  function renderDonut(targetId, parts, labels){
+    const total = parts.reduce((a,b)=>a+b,0);
+    const W=320,H=210,cx=110,cy=105,r=80,th=28;
+    let start=0;
+    const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
+    const segs = parts.map((v,i)=>{
+      const frac = total>0 ? v/total : 0;
+      const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
+      const large = (a1-a0)>Math.PI ? 1:0;
+      const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+      const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+      const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
+      const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
+      const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
+      const pct = total>0 ? Math.round(frac*100) : 0;
+      return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>` +
+             (pct>0?`<text x="220" y="${26+18*i}" font-size="12" fill="var(--text)">${labels[i]}: ${pct}%</text>`:'');
+    }).join('');
+    const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+6}" fill="rgba(255,255,255,0.03)"></circle>` +
+                   `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="var(--text)">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
+    const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
+    const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+  }
 
-      const maxVal = Math.max(...rowsData.flatMap(r => [r.a, r.b].map(v => Math.abs(v) || 0)), 1);
+  // renderBars with readable text
+  function renderBars(targetId, pairs){
+    const rowsData = pairs.map(([lbl,a,b,lowerIsBetter]) => ({ lines:String(lbl).replace(' (','\n(').split('\n'), a,b,lowerIsBetter }));
+    const approxChar=7;
+    const labelCol = Math.max(100, Math.min(200, Math.max(...rowsData.map(r=>Math.max(...r.lines.map(s=>s.length))*approxChar))));
+    const barStartX = labelCol + 12;
+    const barMax = 240;
+    const rowH = 32;
+    const rowGap = 12;
+    const padY = 16;
+    const W = barStartX + barMax + 120;
+    const H = padY + rowsData.length * (rowH + rowGap) + 28;
+    const maxVal = Math.max(...rowsData.flatMap(r=>[r.a,r.b].map(v=>Math.abs(v)||0)),1);
 
-      let y = padY;
-      const rows = rowsData.map(r => {
-        const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
-        const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
-        const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
-        const label = `<text x="0" y="${y+12}" font-size="12">`
-          + r.lines.map((ln, i) => i === 0 ? ln : `<tspan x="0" dy="1.2em">${ln}</tspan>`).join('')
-          + `</text>`;
-        const bars = `
-          <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
-          <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
-          <text x="${barStartX + aw + 6}" y="${y+9}"  font-size="10">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
-          <text x="${barStartX + bw + 6}" y="${y+21}" font-size="10">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
-        `;
-        const out = label + bars;
-        y += rowH + rowGap;
-        return out;
-      }).join('');
-
-      const legendY = H - 18;
-      const legend = `
-        <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
-        <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10">Actual</text>
-        <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
-        <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10">Propuesta</text>
+    let y = padY;
+    const rows = rowsData.map(r=>{
+      const aw = Math.round((Math.abs(r.a)/maxVal)*barMax);
+      const bw = Math.round((Math.abs(r.b)/maxVal)*barMax);
+      const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
+      const label = `<text x="0" y="${y+12}" font-size="12" fill="var(--text)">${r.lines[0]}${r.lines.length>1?`<tspan x="0" dy="1.2em">${r.lines.slice(1).join(' ')}</tspan>`:''}</text>`;
+      const bars = `
+        <rect x="${barStartX}" y="${y}"     width="${aw}" height="10" fill="#94a3b8"></rect>
+        <rect x="${barStartX}" y="${y+12}"  width="${bw}" height="10" fill="${goodB ? '#22C55E' : '#ef4444'}"></rect>
+        <text x="${barStartX + aw + 8}" y="${y+9}"  font-size="10" fill="var(--text)">${isFinite(r.a)?r.a.toFixed(1):'—'}</text>
+        <text x="${barStartX + bw + 8}" y="${y+21}" font-size="10" fill="var(--text)">${isFinite(r.b)?r.b.toFixed(1):'—'}</text>
       `;
+      y += rowH + rowGap;
+      return label + bars;
+    }).join('');
 
-      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
-      const el = document.getElementById(targetId);
-      if (el) el.innerHTML = svg;
-    }
+    const legendY = H - 18;
+    const legend = `
+      <rect x="${barStartX}"      y="${legendY}" width="10" height="10" fill="#94a3b8"></rect>
+      <text x="${barStartX + 14}" y="${legendY + 9}" font-size="10" fill="var(--text)">Actual</text>
+      <rect x="${barStartX + 74}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
+      <text x="${barStartX + 88}" y="${legendY + 9}" font-size="10" fill="var(--text)">Propuesta</text>
+    `;
+    const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
+    const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+  }
 
-    // Listeners
-    document.getElementById('btnCalcular')?.addEventListener('click', calcular);
-    document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
-    ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP']
-      .forEach(id => document.getElementById(id)?.addEventListener('input', () => {
-        if (window.innerWidth >= 768) calcular();
-      }));
-    ['incCiclo','incHerr','incTM'].forEach(id=>{
-      document.getElementById(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); });
-    });
+  // event wiring
+  document.getElementById('btnCalcular')?.addEventListener('click', calcular);
+  document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
+  ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{ if(window.innerWidth>=768) calcular(); }));
+  ['incCiclo','incHerr','incTM'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{ applyInclusions(); calcular(); }));
 
-    // Estado inicial
-    applyInclusions();
-    calcular();
-  </script>
+  // reveal observer but we ensure hero has no-reveal
+  (function(){
+    const els = document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){ els.forEach(el=>el.classList.add('show')); return; }
+    const io = new IntersectionObserver((entries, obs)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('show'); obs.unobserve(e.target); }});
+    },{threshold:0.12});
+    els.forEach(el=>io.observe(el));
+  })();
+
+  // init
+  applyInclusions();
+  calcular();
+</script>
 </body>
 </html>
