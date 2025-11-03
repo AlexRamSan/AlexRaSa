@@ -1,4 +1,4 @@
-// tool-selection.js - versión completa con valores por defecto y tarjetas imprimibles
+// tool-selection.js - versión corregida y autosuficiente
 (() => {
   // Datos base
   const VC_TABLE = {
@@ -50,87 +50,69 @@
     return small ? 0.04 : med ? 0.09 : 0.14;
   }
 
-  // Intentional: cargar tabla externa opcional
-  fetch('data/cutting-data.json').then(r=>r.ok? r.json(): null).then(json => {
-    if (!json) return;
-    if (json.vc_table) Object.assign(VC_TABLE, json.vc_table);
-    if (json.kc_table) Object.assign(KC_TABLE, json.kc_table);
-  }).catch(()=>{ /* silent */ });
-
-  // DOM
+  // Cuerpo principal: ejecutar cuando DOM listo
   document.addEventListener('DOMContentLoaded', () => {
-  const $ = id => document.getElementById(id);
-  const machineTypeEl = $('machineType'),
-        unitsEl       = $('units'),
-        workMaterialEl= $('workMaterial'),
-        operationEl   = $('operation'),
-        toolTypeEl    = $('toolType'),
-        toolMaterialEl= $('toolMaterial'),
-        diameterEl    = $('diameter'),
-        flutesEl      = $('flutes'),
-        apEl          = $('ap'),
-        aeEl          = $('ae'),
-        stickoutEl    = $('stickout'),
-        coolingEl     = $('cooling'),
-        priorityEl    = $('priority'),
-        cutLengthEl   = $('cutLength'),
-        notesEl       = $('notes'),
-        calcBtn       = $('calcBtn'),
-        exportBtn     = $('exportBtn'),
-        addVendorBtn  = $('addVendorBtn'),
-        vendorsList   = $('vendorsList'),
-        resultsCards  = $('resultsCards');
+    const $ = id => document.getElementById(id);
 
-  // 1) Quitar del DOM el <pre id="jsonOut"> si existe (no se mostrará)
-  const jsonOut = document.getElementById('jsonOut');
-  if (jsonOut) jsonOut.remove();
+    // Referencias DOM
+    const machineTypeEl = $('machineType'),
+          unitsEl       = $('units'),
+          workMaterialEl= $('workMaterial'),
+          operationEl   = $('operation'),
+          toolTypeEl    = $('toolType'),
+          toolMaterialEl= $('toolMaterial'),
+          diameterEl    = $('diameter'),
+          flutesEl      = $('flutes'),
+          apEl          = $('ap'),
+          aeEl          = $('ae'),
+          stickoutEl    = $('stickout'),
+          coolingEl     = $('cooling'),
+          priorityEl    = $('priority'),
+          cutLengthEl   = $('cutLength'),
+          notesEl       = $('notes'),
+          calcBtn       = $('calcBtn'),
+          exportBtn     = $('exportBtn'),
+          addVendorBtn  = $('addVendorBtn'),
+          vendorsList   = $('vendorsList'),
+          resultsCards  = $('resultsCards'),
+          printAllBtn   = $('printAllBtn');
 
-  // 2) Quitar cualquier botón con id="pdfBtn" para evitar UI muerta y errores
-  const pdfBtn = document.getElementById('pdfBtn');
-  if (pdfBtn) pdfBtn.remove();
+    // eliminar visual de debug si existe
+    const jsonOutEl = document.getElementById('jsonOut');
+    if (jsonOutEl) jsonOutEl.remove();
+    // eliminar pdfBtn si existe
+    const pdfBtnEl = document.getElementById('pdfBtn');
+    if (pdfBtnEl) pdfBtnEl.remove();
 
-  // 3) Comprobación mínima de integridad del formulario
-  if (!machineTypeEl || !workMaterialEl || !operationEl || !calcBtn || !resultsCards) {
-    console.error('Formulario incompleto o contenedores no encontrados.');
-    return;
-  }
+    // sanity
+    if (!machineTypeEl || !workMaterialEl || !operationEl || !calcBtn || !resultsCards) {
+      console.error('Formulario incompleto o contenedores no encontrados.');
+      return;
+    }
 
-  // ... resto del código que ya tienes permanece igual ...
-});
+    // variable para exportar JSON sin depender del pre
+    let lastPayload = null;
 
+    // ------------ UI helpers ------------
+    function populateToolOptions() {
+      if (!toolTypeEl || !toolMaterialEl) {
+        console.warn('toolType o toolMaterial no existe en el DOM.');
+        return;
+      }
+      const rawMachine = (machineTypeEl && machineTypeEl.value) ? String(machineTypeEl.value) : '';
+      const m = rawMachine.trim().toLowerCase();
 
-    // Reemplazar por esto: poblado robusto y con placeholders
-function populateToolOptions() {
-  if (!toolTypeEl || !toolMaterialEl) {
-    console.warn('toolType o toolMaterial no existe en el DOM.');
-    return;
-  }
+      const types = TOOL_TYPES_BY_MACHINE[m] || TOOL_TYPES_BY_MACHINE['vmc'] || [];
+      toolTypeEl.innerHTML = `<option value="">Selecciona tipo de herramienta</option>` +
+        types.map(t => `<option value="${t}">${t}</option>`).join('');
 
-  // Normalizar valor (evita problemas de mayúsculas)
-  const rawMachine = (machineTypeEl && machineTypeEl.value) ? String(machineTypeEl.value) : '';
-  const m = rawMachine.trim().toLowerCase();
-
-  // Buscar opciones por máquina; fallback a 'vmc' o a array vacío
-  const types = TOOL_TYPES_BY_MACHINE[m] || TOOL_TYPES_BY_MACHINE['vmc'] || [];
-  toolTypeEl.innerHTML = `<option value="">Selecciona tipo de herramienta</option>` +
-    types.map(t => `<option value="${t}">${t}</option>`).join('');
-
-  // Selección de materiales según tipo de máquina (normalizado)
-  const mats = (m === 'lathe' || m === 'turn-mill' || m === 'torno') ? TOOL_MATERIALS.lathe : TOOL_MATERIALS.default;
-  toolMaterialEl.innerHTML = `<option value="">Selecciona material</option>` +
-    mats.map(x => `<option value="${x}">${x}</option>`).join('');
-}
-
-// Re-attach listener (asegúrate de no duplicarlo)
-machineTypeEl && machineTypeEl.removeEventListener && machineTypeEl.removeEventListener('change', populateToolOptions);
-machineTypeEl && machineTypeEl.addEventListener && machineTypeEl.addEventListener('change', populateToolOptions);
-
-// Llamada inicial (si ya existe en tu archivo, déjala)
-populateToolOptions();
-
+      const mats = (m === 'lathe' || m === 'turn-mill' || m === 'torno') ? TOOL_MATERIALS.lathe : TOOL_MATERIALS.default;
+      toolMaterialEl.innerHTML = `<option value="">Selecciona material</option>` +
+        mats.map(x => `<option value="${x}">${x}</option>`).join('');
+    }
+    populateToolOptions();
     machineTypeEl.addEventListener('change', populateToolOptions);
 
-    // Operation extras
     operationEl.addEventListener('change', ()=> {
       const opExtra = $('opExtra');
       if (!opExtra) return;
@@ -142,7 +124,7 @@ populateToolOptions();
       }
     });
 
-    // Vendors simple
+    // vendors
     let vendors = [{id:1,name:'Proveedor A',contact:'ventas@provA.com', commissionPct:8},{id:2,name:'Proveedor B',contact:'ventas@provB.com', commissionPct:10}];
     function renderVendors(){
       if (!vendorsList) return;
@@ -176,7 +158,53 @@ populateToolOptions();
     }
     function removeVendor(id){ vendors = vendors.filter(x=>x.id!==id); renderVendors(); }
 
-    // Recomendador principal con defaults
+    // carga opcional de cutting-data.json (silencioso)
+    fetch('data/cutting-data.json').then(r=>r.ok? r.json(): null).then(json => {
+      if (!json) return;
+      if (json.vc_table) Object.assign(VC_TABLE, json.vc_table);
+      if (json.kc_table) Object.assign(KC_TABLE, json.kc_table);
+    }).catch(()=>{ /* silent */ });
+
+    // recomendador
+    function chooseToolForProcess({operation, machine, material, diameter, priority}) {
+      const out = { tool:'Fresa de extremo', family:'Carburo', coating:'AlTiN', geometry:'hélice estándar', why:[] };
+      if (operation === 'drill') {
+        out.tool = (diameter && diameter > 12) ? 'Broca sólida (carburo macizo)' : 'Broca insertable';
+        out.family = (diameter && diameter <= 6) ? 'HSS o Carburo' : 'Carburo';
+        out.coating = (material === 'al') ? 'Ninguno / Pulido' : 'AlTiN';
+        out.geometry = 'ángulo punta 118-140°, flauta para evacuación';
+        out.why.push('Taladrado requiere evacuación y rigidez; carburo para diámetros grandes.');
+      } else if (operation === 'turning' || machine === 'lathe') {
+        out.tool = 'Porta-insertos (torneado)';
+        out.family = 'Carburo (placas)';
+        out.coating = (material === 'st' || material === 'ss') ? 'AlTiN/TiCN' : 'AlTiN';
+        out.geometry = 'radio 0.2-0.8 mm para acabado';
+        out.why.push('Insertos permiten cambios rápidos y vida de herramienta');
+      } else {
+        if (['face','pocket','contour','slot'].includes(operation)) {
+          if (priority === 'cycle') {
+            out.tool = 'Fresa de desbaste';
+            out.geometry = 'hélice baja, arista robusta';
+            out.why.push('Optimiza tiempo de ciclo con mayor ap/ae.');
+          } else {
+            out.tool = 'Fresa de acabado';
+            out.geometry = 'hélice alta, filo pulido';
+            out.why.push('Mejor acabado y vida de herramienta.');
+          }
+          if (material === 'al') { out.family='Carburo pulido / PCD'; out.coating='Sin recubrimiento / pulido'; out.why.push('Aluminio necesita filo pulido.'); }
+          if (material === 'ti') { out.family='Carburo alta tenacidad'; out.coating='AlTiN'; out.why.push('Titanio: baja ap y diente pulido.'); }
+          if (material === 'ss') { out.family='Carburo / Cermet'; out.coating='AlTiN / TiCN'; out.why.push('Inoxidable: avances bajos y recubrimiento duro.'); }
+        } else if (operation === 'thread') {
+          out.tool = 'Herramienta de roscar';
+          out.family = 'Carburo o HSS según hilo';
+          out.coating = (material === 'al') ? 'Ninguno' : 'AlTiN';
+          out.geometry = 'perfil de rosca correspondiente';
+          out.why.push('Roscar exige control de avance por paso.');
+        }
+      }
+      return out;
+    }
+
     function buildDetailedRecommendation(form) {
       const baseChoice = chooseToolForProcess({
         operation: form.operation,
@@ -186,14 +214,12 @@ populateToolOptions();
         priority: form.priority
       });
 
-      // Normalizar tool family
       let toolFamily = (form.toolMaterial || '').toLowerCase() || 'carbide';
       if (toolFamily.includes('hss')) toolFamily = 'hss';
       if (toolFamily.includes('pcd')) toolFamily = 'pcd';
       if (toolFamily.includes('cbn')) toolFamily = 'cbn';
       if (toolFamily.includes('cermet')) toolFamily = 'cermet';
 
-      // Defaults sensatos
       const DEFAULT_DIAM_MM = 6;
       let D_mm = (form.diameter && !isNaN(form.diameter)) ? Number(form.diameter) : DEFAULT_DIAM_MM;
       if (form.units === 'imperial' && form.diameter) D_mm = inToMm(form.diameter);
@@ -258,104 +284,62 @@ populateToolOptions();
       };
     }
 
-    // Heurística simple de selección (mantenemos)
-    function chooseToolForProcess({operation, machine, material, diameter, priority}) {
-      const out = { tool:'Fresa de extremo', family:'Carburo', coating:'AlTiN', geometry:'hélice estándar', why:[] };
-      if (operation === 'drill') {
-        out.tool = (diameter && diameter > 12) ? 'Broca sólida (carburo macizo)' : 'Broca insertable';
-        out.family = (diameter && diameter <= 6) ? 'HSS o Carburo' : 'Carburo';
-        out.coating = (material === 'al') ? 'Ninguno / Pulido' : 'AlTiN';
-        out.geometry = 'ángulo punta 118-140°, flauta para evacuación';
-        out.why.push('Taladrado requiere evacuación y rigidez; carburo para diámetros grandes.');
-      } else if (operation === 'turning' || machine === 'lathe') {
-        out.tool = 'Porta-insertos (torneado)';
-        out.family = 'Carburo (placas)';
-        out.coating = (material === 'st' || material === 'ss') ? 'AlTiN/TiCN' : 'AlTiN';
-        out.geometry = 'radio 0.2-0.8 mm para acabado';
-        out.why.push('Insertos permiten cambios rápidos y vida de herramienta');
-      } else {
-        if (['face','pocket','contour','slot'].includes(operation)) {
-          if (priority === 'cycle') {
-            out.tool = 'Fresa de desbaste';
-            out.geometry = 'hélice baja, arista robusta';
-            out.why.push('Optimiza tiempo de ciclo con mayor ap/ae.');
-          } else {
-            out.tool = 'Fresa de acabado';
-            out.geometry = 'hélice alta, filo pulido';
-            out.why.push('Mejor acabado y vida de herramienta.');
-          }
-          if (material === 'al') { out.family='Carburo pulido / PCD'; out.coating='Sin recubrimiento / pulido'; out.why.push('Aluminio necesita filo pulido.'); }
-          if (material === 'ti') { out.family='Carburo alta tenacidad'; out.coating='AlTiN'; out.why.push('Titanio: baja ap y diente pulido.'); }
-          if (material === 'ss') { out.family='Carburo / Cermet'; out.coating='AlTiN / TiCN'; out.why.push('Inoxidable: avances bajos y recubrimiento duro.'); }
-        } else if (operation === 'thread') {
-          out.tool = 'Herramienta de roscar';
-          out.family = 'Carburo o HSS según hilo';
-          out.coating = (material === 'al') ? 'Ninguno' : 'AlTiN';
-          out.geometry = 'perfil de rosca correspondiente';
-          out.why.push('Roscar exige control de avance por paso.');
-        }
-      }
-      return out;
-    }
-
     // Render tarjetas
     function renderCards(payload) {
+      lastPayload = payload;
       resultsCards.innerHTML = '';
       const card = createCard(payload);
       resultsCards.appendChild(card);
-      jsonOut && (jsonOut.textContent = JSON.stringify(payload, null, 2));
     }
 
-    // createCard con guiones y recubrimiento seguro
-    // reemplazar la función createCard existente por esta
-function createCard(payload) {
-  const form = payload.form;
-  const det = payload.detailed_recommendation;
-  const p = det.parameters || {};
-  const show = (v, u='') => (v === null || v === undefined) ? '—' : `${v}${u ? ' ' + u : ''}`;
+    // createCard (solo imprime, sin botón PDF)
+    function createCard(payload) {
+      const form = payload.form;
+      const det = payload.detailed_recommendation;
+      const p = det.parameters || {};
+      const show = (v, u='') => (v === null || v === undefined) ? '—' : `${v}${u ? ' ' + u : ''}`;
 
-  const wrapper = document.createElement('article');
-  wrapper.className = 'result-card';
+      const wrapper = document.createElement('article');
+      wrapper.className = 'result-card';
 
-  const h = document.createElement('h4');
-  h.innerHTML = `<strong>${det.selection.tool}</strong> — ${det.selection.tool_family} <span class="badge-small">${det.selection.recommended_coating || '—'}</span>`;
-  wrapper.appendChild(h);
+      const h = document.createElement('h4');
+      h.innerHTML = `<strong>${det.selection.tool}</strong> — ${det.selection.tool_family} <span class="badge-small">${det.selection.recommended_coating || '—'}</span>`;
+      wrapper.appendChild(h);
 
-  const meta = document.createElement('div');
-  meta.className = 'result-meta';
-  meta.innerHTML = `<div class="kv">${displayMaterial(form.workMaterial)}</div>
-                    <div class="kv">Máquina: ${form.machine}</div>
-                    <div class="kv">Operación: ${form.operation}</div>
-                    <div class="kv">Longitud: ${show(form.cutLength, 'mm')}</div>`;
-  wrapper.appendChild(meta);
+      const meta = document.createElement('div');
+      meta.className = 'result-meta';
+      meta.innerHTML = `<div class="kv">${displayMaterial(form.workMaterial)}</div>
+                        <div class="kv">Máquina: ${form.machine}</div>
+                        <div class="kv">Operación: ${form.operation}</div>
+                        <div class="kv">Longitud: ${show(form.cutLength, 'mm')}</div>`;
+      wrapper.appendChild(meta);
 
-  const params = document.createElement('div');
-  params.innerHTML = `<div><strong>Parámetros</strong></div>
-    <div class="kv">vc ≈ ${show(p.vc_mmin, 'm/min')} · rpm ≈ ${show(p.rpm, 'rpm')}</div>
-    <div class="kv">fz ≈ ${show(p.fz, 'mm/diente')} · Avance ≈ ${show(p.feed_mm_per_min, 'mm/min')}</div>
-    <div class="kv">ap ${show(p.ap_mm, 'mm')} · ae ${show(p.ae_mm, 'mm')}</div>
-    <div class="kv">MRR ≈ ${show(p.mrr_mm3_per_min, 'mm³/min')} · Potencia ≈ ${show(p.power_kW, 'kW')}</div>
-    <div class="kv">Tiempo de corte ≈ ${show(p.cycle_min, 'min')} (${show(p.cycle_sec, 's')})</div>`;
-  wrapper.appendChild(params);
+      const params = document.createElement('div');
+      params.innerHTML = `<div><strong>Parámetros</strong></div>
+        <div class="kv">vc ≈ ${show(p.vc_mmin, 'm/min')} · rpm ≈ ${show(p.rpm, 'rpm')}</div>
+        <div class="kv">fz ≈ ${show(p.fz, 'mm/diente')} · Avance ≈ ${show(p.feed_mm_per_min, 'mm/min')}</div>
+        <div class="kv">ap ${show(p.ap_mm, 'mm')} · ae ${show(p.ae_mm, 'mm')}</div>
+        <div class="kv">MRR ≈ ${show(p.mrr_mm3_per_min, 'mm³/min')} · Potencia ≈ ${show(p.power_kW, 'kW')}</div>
+        <div class="kv">Tiempo de corte ≈ ${show(p.cycle_min, 'min')} (${show(p.cycle_sec, 's')})</div>`;
+      wrapper.appendChild(params);
 
-  const r = document.createElement('div');
-  r.innerHTML = `<div><strong>Por qué</strong></div><div class="kv">${det.rationale_text}</div>`;
-  wrapper.appendChild(r);
+      const r = document.createElement('div');
+      r.innerHTML = `<div><strong>Por qué</strong></div><div class="kv">${det.rationale_text}</div>`;
+      wrapper.appendChild(r);
 
-  const actions = document.createElement('div');
-  actions.className = 'result-actions';
-  const printBtn = document.createElement('button');
-  printBtn.className = 'px-3 py-1 bg-gray-600 rounded text-sm';
-  printBtn.innerText = 'Imprimir tarjeta';
-  printBtn.addEventListener('click', ()=> printCard(wrapper));
-  actions.appendChild(printBtn);
+      const actions = document.createElement('div');
+      actions.className = 'result-actions';
+      const printBtn = document.createElement('button');
+      printBtn.className = 'px-3 py-1 bg-gray-600 rounded text-sm';
+      printBtn.innerText = 'Imprimir tarjeta';
+      printBtn.addEventListener('click', ()=> printCard(wrapper));
+      actions.appendChild(printBtn);
 
-  wrapper.appendChild(actions);
-  return wrapper;
-}
+      wrapper.appendChild(actions);
+      return wrapper;
+    }
 
-
-    // print single card
+    // impresión / pdf helpers
     function buildPrintHtml(innerHTML) {
       return `
         <!doctype html>
@@ -387,7 +371,6 @@ function createCard(payload) {
       setTimeout(()=> { win.print(); }, 500);
     }
 
-    // export PDF single card
     async function exportCardPdf(cardEl, filename='card.pdf') {
       const clone = cardEl.cloneNode(true);
       const shell = document.createElement('div');
@@ -407,8 +390,7 @@ function createCard(payload) {
       shell.remove();
     }
 
-    // Print all cards (uses current resultsCards.innerHTML)
-    const printAllBtn = $('printAllBtn');
+    // acciones globales
     printAllBtn && printAllBtn.addEventListener('click', ()=> {
       const htmlCards = resultsCards.innerHTML;
       if (!htmlCards) return alert('Calcula primero para generar tarjetas.');
@@ -419,14 +401,13 @@ function createCard(payload) {
       setTimeout(()=> win.print(), 500);
     });
 
-    // Export JSON
     exportBtn && exportBtn.addEventListener('click', ()=> {
-      if (!jsonOut || !jsonOut.textContent) return alert('Calcula primero.');
-      const blob = new Blob([jsonOut.textContent], {type:'application/json'});
+      if (!lastPayload) return alert('Calcula primero.');
+      const blob = new Blob([JSON.stringify(lastPayload, null, 2)], {type:'application/json'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tool-selection.json'; document.body.appendChild(a); a.click(); a.remove();
     });
 
-    // Calc
+    // acción calcular
     calcBtn.addEventListener('click', ()=> {
       const form = {
         machine: machineTypeEl.value,
@@ -451,7 +432,7 @@ function createCard(payload) {
       renderCards(payload);
     });
 
-    // Expose API
+    // API pública
     window.getToolRecommendation = function(form){ return buildDetailedRecommendation(form); };
     window.getToolPayload = buildPayload;
     function buildPayload(){ const form = {
@@ -473,3 +454,4 @@ function createCard(payload) {
       notes: notesEl ? notesEl.value : ''
     }; return { form, detailed_recommendation: buildDetailedRecommendation(form), timestamp: new Date().toISOString() }; }
   });
+})();
