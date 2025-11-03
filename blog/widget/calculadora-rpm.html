@@ -62,7 +62,7 @@
 </head>
 <body>
   <!-- ===== HEADER (copiado de Calculadora Costo-Beneficio) ===== -->
-<header id="siteHeader" class="sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200">
+<header id="siteHeader" class="sticky top-0 z-50 bg-black/40 backdrop-blur supports-[backdrop-filter]:bg-black/60 border-b border-gray-200">
   <div class="max-w-6xl mx-auto px-4">
     <div class="h-16 flex items-center justify-between gap-3">
       <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Ir al inicio">
@@ -1149,6 +1149,64 @@ async function loadRelated(){ try{ const r = await fetch('/api/list-posts',{cach
 function renderRel(items){ const GRID=$('relGrid'),EMPTY=$('relEmpty'); if(!items||!items.length){ if(EMPTY) EMPTY.classList.remove('hidden'); return;} if(EMPTY) EMPTY.classList.add('hidden'); if(GRID) GRID.innerHTML=''; items.forEach(p=>{ const url = p.url?.startsWith('http')||p.url?.startsWith('/')?p.url:`/blog/${p.url}`; const img = p.image||'/assets/blog/placeholder.jpg'; const el=document.createElement('article'); el.className='card overflow-hidden'; el.innerHTML=`<a href="${url}" class="block"><img src="${img}" class="w-full aspect-[1200/630] object-cover bg-slate-800" alt=""></a><div class="p-3"><a href="${url}"><h3 class="text-base font-semibold">${p.title||'Post'}</h3></a><p class="text-sm text-slate-400">${(p.description||'').slice(0,120)}</p></div>`; GRID.appendChild(el); }); }
 
   </script>
+<script>
+/* --------- FIX: asegurar recalc + redraw al cambiar inputs manuales --------- */
+(function(){
+  // debounce util
+  function debounce(fn, t=100){
+    let timer;
+    return (...a)=>{ clearTimeout(timer); timer = setTimeout(()=>fn(...a), t); };
+  }
 
+  // Forzar conversión y aplicar valores manuales seguros
+  function ensureApplyManualAndRecalc(){
+    // si el modo manual no está activado no hacemos nada
+    if(!$('enableManual')?.checked) return;
+    // forzar parseo numérico y conversión de unidad si aplica
+    const rpmVal = Number(parseFloat($('manualRPM')?.value));
+    let feedVal = Number(parseFloat($('manualFeed')?.value));
+    if(!Number.isFinite(rpmVal) && Number.isFinite(window.rpm)) {
+      // nada
+    } else if(Number.isFinite(rpmVal)){
+      $('manualRPM').value = Math.round(rpmVal);
+    }
+    if(Number.isFinite(feedVal)){
+      if(window.units === 'imperial') {
+        // convertir IPM -> mm/min para el motor interno
+        feedVal = feedVal * 25.4;
+      }
+      $('manualFeed').value = (window.units === 'metric') ? Math.round(feedVal) : (Math.round((feedVal/25.4)*100)/100);
+    }
+
+    // Llamar función existente que ajusta sliders y setea window.rpm/feed
+    try { applyManualValues(); } catch(e){ console.warn('applyManualValues fallo', e); }
+
+    // recalc() ya es llamada por applyManualValues en tu código.
+    // por si acaso forzamos un recalc seguro y redraw del chart
+    try { recalc(); } catch(e){ console.warn('recalc fallo', e); }
+    try { chart.draw(window._lastRisk ?? 0.5, window._lastInBand ?? false); } catch(e){ /* ignore */ }
+  }
+
+  // adjuntar listeners con debounce
+  const safeHandler = debounce(ensureApplyManualAndRecalc, 120);
+  const mRPM = $('manualRPM'), mFeed = $('manualFeed'), en = $('enableManual');
+
+  if(mRPM) mRPM.addEventListener('input', safeHandler);
+  if(mFeed) mFeed.addEventListener('input', safeHandler);
+  if(en) en.addEventListener('change', safeHandler);
+
+  // Guardar último risk/inBand para redraw si hay necesidad (opcional)
+  // interceptar chart.draw para almacenar últimos valores
+  if(window.chart && window.chart.draw){
+    const orig = window.chart.draw.bind(window.chart);
+    window.chart.draw = function(risk, inBand){
+      window._lastRisk = risk; window._lastInBand = !!inBand;
+      orig(risk, inBand);
+    };
+  }
+})();
+</script>
+
+  
 </body>
 </html>
