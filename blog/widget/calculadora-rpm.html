@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,6 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.1.0/dist/chartjs-chart-matrix.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -39,9 +39,6 @@
     .vibe-box.warn { border-color:#f59e0b; background:rgba(245,158,11,.04) }
     .vibe-box.bad  { border-color:#ef4444; background:rgba(239,68,68,.04) }
     .badge{font-size:.72rem;border-radius:999px;padding:.15rem .5rem;border:1px solid var(--border)}
-    .badge.ok{background:#052e1b;color:#86efac;border-color:#166534}
-    .badge.warn{background:#3a2801;color:#fde68a;border-color:#b45309}
-    .badge.bad{background:#3b0a0a;color:#fecaca;border-color:#b91c1c}
     .hint{color:var(--muted);font-size:.75rem}
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
@@ -50,8 +47,8 @@
     select:focus{ outline:2px solid var(--accent); outline-offset:1px }
     /* Additional layout */
     .top-hero { padding:28px 0 34px }
-    .grid-2 { display:grid; grid-template-columns: 1fr 380px; gap:18px; align-items:start; }
-    .grid-forms { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
+    .grid-2 { display:grid; grid-template-columns: 1fr 420px; gap:18px; align-items:start; }
+    .grid-forms { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; } /* three columns now */
     .muted { color:var(--muted) }
     .section-title{ font-weight:700; color:var(--accent); margin-bottom:8px }
     .result-value{ font-weight:700; font-size:1.05rem }
@@ -59,9 +56,12 @@
     .toggle:checked{ background:var(--accent) }
     .toggle:before{ content:""; position:absolute; left:3px; top:3px; width:18px; height:18px; background:#fff; border-radius:999px; transition:all .18s }
     .toggle:checked:before{ transform:translateX(20px) }
-    .sidebar { width:380px; min-width:300px }
+    .sidebar { width:420px; min-width:320px }
     .hero-visual{ width:100%; height:220px; background-image:url('/assets/hero-industrial.png'); background-size:cover; background-position:center; border-radius:10px }
-    @media(max-width:1024px){ .grid-2{grid-template-columns:1fr} .sidebar{width:100%} .grid-forms{grid-template-columns:1fr} }
+    .heat-legend{display:flex;gap:6px;align-items:center}
+    .heat-legend span{display:inline-block;height:10px;width:36px;border-radius:3px}
+    .col-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    @media(max-width:1100px){ .grid-2{grid-template-columns:1fr} .sidebar{width:100%} .grid-forms{grid-template-columns:1fr} }
   </style>
 
   <meta property="og:image" content="/assets/hero-industrial.png" />
@@ -168,6 +168,11 @@
           <div class="card">
             <div class="section-title">Costos & Opciones</div>
             <div style="display:grid;gap:10px">
+              <div class="field"><label>Máquina (preset)</label>
+                <select id="machineSelect">
+                  <option value="custom">— Seleccionar máquina —</option>
+                </select>
+              </div>
               <div class="field"><label>Costo hora máquina (MXN)</label><input id="machineCost" type="number" step="0.1" value="400" /></div>
               <div class="field"><label>Costo herramienta (MXN)</label><input id="toolCost" type="number" step="0.1" value="1200" /></div>
               <div class="field"><label>Volumen a remover por pieza (cm³)</label><input id="volumen" type="number" step="0.01" value="18" /></div>
@@ -181,29 +186,42 @@
               </div>
             </div>
           </div>
+
+          <div class="card">
+            <div class="section-title">Parámetros de máquina</div>
+            <div style="display:grid;gap:10px">
+              <div class="field"><label>Potencia husillo (kW)</label><input id="machinePower" type="number" step="0.1" value="15" /></div>
+              <div class="field"><label>RPM máx</label><input id="machineMaxRpm" type="number" step="1" value="10000" /></div>
+              <div class="field"><label>Tipo de husillo</label><input id="spindleType" type="text" value="HSK63" /></div>
+              <div class="field"><label>Mínima rigidez E (GPa)</label><input id="E" type="number" step="1" value="210" /></div>
+              <div class="hint">Selecciona una máquina para cargar presets (Doosan, OKK, Hurco, etc.).</div>
+            </div>
+          </div>
         </div>
 
-        <div style="margin-top:12px" class="card">
+        <!-- Optional compact comparator kept but not intrusive -->
+        <div style="margin-top:12px" class="card" id="comparatorCard">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="section-title">Comparador A vs P</div>
-            <div class="muted small">Introduce parámetros B</div>
+            <button id="toggleComparator" class="btn" style="height:34px">Ocultar</button>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">
-            <input id="vcB" type="number" step="0.1" value="120" class="field" placeholder="Vc B" />
-            <input id="fzB" type="number" step="0.0001" value="0.04" class="field" placeholder="fz B" />
-            <input id="aeB" type="number" step="0.01" value="8" class="field" placeholder="ae B" />
-            <input id="apB" type="number" step="0.01" value="1" class="field" placeholder="ap B" />
+          <div id="comparatorBody" style="margin-top:10px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <input id="vcB" type="number" step="0.1" value="120" class="field" placeholder="Vc B" />
+              <input id="fzB" type="number" step="0.0001" value="0.04" class="field" placeholder="fz B" />
+              <input id="aeB" type="number" step="0.01" value="8" class="field" placeholder="ae B" />
+              <input id="apB" type="number" step="0.01" value="1" class="field" placeholder="ap B" />
+            </div>
+            <div style="margin-top:10px"><button id="btnCompare" class="btn btn-primary">Comparar</button></div>
           </div>
-          <div style="margin-top:10px"><button id="btnCompare" class="btn btn-primary">Comparar</button></div>
         </div>
       </div>
 
-      <!-- Sidebar: resultados -->
+      <!-- Sidebar: resultados + heatmap -->
       <aside class="sidebar">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="section-title">Resultados</div>
-            <div class="muted small">Panel derecho</div>
           </div>
           <div id="results" style="margin-top:10px"></div>
 
@@ -213,8 +231,31 @@
           </div>
 
           <div style="margin-top:12px" class="card">
+            <div class="section-title">Heat-map de Vibración</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div class="muted">Ajusta y observa la tendencia</div>
+              <div class="heat-legend">
+                <div class="muted" style="margin-right:8px">Escala</div>
+                <span style="background:#10b981"></span><span style="background:#f59e0b"></span><span style="background:#e11d48"></span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center">
+              <div style="height:260px"><canvas id="heatmapCanvas"></canvas></div>
+              <div>
+                <div class="field"><label>RPM ajuste (%)</label><input id="rpmAdjust" type="range" min="60" max="140" value="100" /></div>
+                <div class="field"><label>Avance ajuste (%)</label><input id="feedAdjust" type="range" min="40" max="160" value="100" /></div>
+                <div class="muted" style="font-size:.85rem;margin-top:8px">RPM: <span id="rpmAdjVal">100%</span></div>
+                <div class="muted" style="font-size:.85rem">Avance: <span id="feedAdjVal">100%</span></div>
+                <div style="margin-top:8px"><button id="recalcHeat" class="btn btn-primary" style="width:100%">Recalcular</button></div>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:8px">Heat-map: eje X = Vc (m/min), eje Y = avance (fz mm/tooth o f mm/rev). Color = prob riesgo vib.</div>
+          </div>
+
+          <div style="margin-top:12px" class="card">
             <div class="section-title">Gráficos</div>
             <div class="canvas-wrap"><canvas id="chartMRR"></canvas></div>
+            <div style="margin-top:10px" class="canvas-wrap"><canvas id="chartVibTrend"></canvas></div>
           </div>
 
           <div style="margin-top:12px" class="card">
@@ -232,17 +273,13 @@
     </div>
   </main>
 
-  <!-- ---------- SCRIPT: lógica/calculos (incluye soporte Porta-insertos) ---------- -->
+  <!-- ---------- SCRIPT: lógica/calculos + heatmap ---------- -->
 <script>
-  // --- Quick fallback para evitar ReferenceError mientras buscamos la referencia correcta ---
-var f = (document.getElementById('fT') && parseFloat(document.getElementById('fT').value)) 
-        || (document.getElementById('fz') && parseFloat(document.getElementById('fz').value)) 
-        || 0.15;
   // Helpers
   const $ = id => document.getElementById(id);
   function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
 
-  // Embedded fallback cutting-data
+  // Embedded fallback cutting-data (igual que antes)
   const EMBEDDED_CUTTING_DATA = {
     "version":"3.1",
     "defaults":{"rpm_limit":12000,"efficiency":0.8,"vibe_gauss":{"mu":0.7,"sigma":0.2},"default_flutes":4},
@@ -273,6 +310,12 @@ var f = (document.getElementById('fT') && parseFloat(document.getElementById('fT
     "tool_types":[
       {"id":"endmill","label":"Fresa (Endmill)","vc_factor":1.0,"fz_factor":1.0,"default_flutes":4},
       {"id":"ball","label":"Fresa bola","vc_factor":0.9,"fz_factor":0.9,"default_flutes":4}
+    ],
+    "holders_extra": [],
+    "machines": [
+      {"id":"doosan_vmc","name":"Doosan VMC (SN Solutions)","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"HSK63"},
+      {"id":"okk_cmh","name":"OKK CMH Series","power_kW":18,"max_rpm":9000,"stickout_default":50,"spindle":"BT40"},
+      {"id":"hurco_vm","name":"Hurco VMC","power_kW":11,"max_rpm":12000,"stickout_default":70,"spindle":"HSK63"}
     ]
   };
 
@@ -289,10 +332,12 @@ var f = (document.getElementById('fT') && parseFloat(document.getElementById('fT
     }
   }
 
-  /* ---------- Parche: soporte torneado con porta-insertos ---------- */
+  /* ---------- Torneado entries ---------- */
   function ensureTurningEntries(){
     const toolIds = ['turn_insert','boring_bar','external_turn_tool'];
     const holderIds = ['PortaInsertos','PortaTorreta','PortaBarrenador'];
+    if(!CUTTING_DATA.tool_types) CUTTING_DATA.tool_types = [];
+    if(!CUTTING_DATA.holders) CUTTING_DATA.holders = [];
     toolIds.forEach(id=>{
       if(!CUTTING_DATA.tool_types.some(t=>t.id===id)){
         if(id==='turn_insert') CUTTING_DATA.tool_types.push({id:'turn_insert', label:'Herramienta de torneado (insertos)', vc_factor:1.0, fz_factor:1.0, default_flutes:1});
@@ -318,97 +363,99 @@ var f = (document.getElementById('fT') && parseFloat(document.getElementById('fT
     torneado: [ 'turn_insert','boring_bar','external_turn_tool' ]
   };
 
-  f// Reemplazar populateFromData y updateModeOptions por estas versiones:
-function populateFromData(defaultMode = 'fresado'){
-  if(!CUTTING_DATA) return;
-  // materiales
-  const mSel = $('materialSelect'); mSel.innerHTML = '';
-  CUTTING_DATA.materials.forEach(m=>{
-    const opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = m.name;
-    mSel.appendChild(opt);
-  });
-
-  // operaciones: si es torneado preferimos ops que contengan 'turn' / 'turn_'
-  const oSel = $('operationSelect'); oSel.innerHTML = '';
-  const opsToShow = (defaultMode === 'torneado')
-    ? CUTTING_DATA.operations.filter(op => /turn/i.test(op.id) || /turn/i.test(op.label))
-    : CUTTING_DATA.operations.filter(op => !/turn/i.test(op.id) && !/turn/i.test(op.label));
-  // si no hay filtrado útil, mostrar todo
-  const finalOps = opsToShow.length ? opsToShow : CUTTING_DATA.operations;
-  finalOps.forEach(o=>{
-    const opt = document.createElement('option');
-    opt.value = o.id;
-    opt.textContent = o.label;
-    oSel.appendChild(opt);
-  });
-
-  // Llenado dinámico de holders/tooltypes según modo
-  updateModeOptions(defaultMode);
-
-  // preset visual (si existe)
-  const presetEl = document.getElementById('presetMode');
-  if(presetEl) presetEl.textContent = (defaultMode === 'torneado') ? 'Torneado' : 'Fresado';
-}
-
-function updateModeOptions(mode){
-  // asegúrate de tener las entradas de torneado definidas
-  ensureTurningEntries();
-
-  // HOLDERS
-  const holderSel = $('holderSelect'); holderSel.innerHTML = '';
-  const idsH = (mode === 'torneado') ? (HOLDERS_BY_MODE.torneado || []) : (HOLDERS_BY_MODE.fresado || []);
-  const knownHolderIds = CUTTING_DATA.holders.map(h=>h.id);
-  // priorizar los ids por modo; si no hay coincidencias, mostrar todos
-  const finalHolderIds = idsH.filter(id=> knownHolderIds.includes(id) );
-  const holdersToShow = finalHolderIds.length ? finalHolderIds : CUTTING_DATA.holders.map(h=>h.id);
-  holdersToShow.forEach(id=>{
-    const h = CUTTING_DATA.holders.find(x=>x.id===id);
-    if(h){
+  // ----- populateFromData & updateModeOptions (según lo pediste) -----
+  function populateFromData(defaultMode = 'fresado'){
+    if(!CUTTING_DATA) return;
+    // materiales
+    const mSel = $('materialSelect'); mSel.innerHTML = '';
+    CUTTING_DATA.materials.forEach(m=>{
       const opt = document.createElement('option');
-      opt.value = h.id;
-      opt.textContent = h.label || h.id;
-      holderSel.appendChild(opt);
-    }
-  });
+      opt.value = m.id;
+      opt.textContent = m.name;
+      mSel.appendChild(opt);
+    });
 
-  // TOOL TYPES
-  const toolSel = $('toolTypeSelect'); toolSel.innerHTML = '';
-  const idsT = (mode === 'torneado') ? (TOOLTYPES_BY_MODE.torneado || []) : (TOOLTYPES_BY_MODE.fresado || []);
-  const knownToolIds = CUTTING_DATA.tool_types.map(t=>t.id);
-  const finalToolIds = idsT.filter(id=> knownToolIds.includes(id) );
-  const toolsToShow = finalToolIds.length ? finalToolIds : CUTTING_DATA.tool_types.map(t=>t.id);
-  toolsToShow.forEach(id=>{
-    const t = CUTTING_DATA.tool_types.find(x=>x.id===id);
-    if(t){
+    // operaciones: si es torneado preferimos ops que contengan 'turn' / 'turn_'
+    const oSel = $('operationSelect'); oSel.innerHTML = '';
+    const opsToShow = (defaultMode === 'torneado')
+      ? CUTTING_DATA.operations.filter(op => /turn/i.test(op.id) || /turn/i.test(op.label))
+      : CUTTING_DATA.operations.filter(op => !/turn/i.test(op.id) && !/turn/i.test(op.label));
+    // si no hay filtrado útil, mostrar todo
+    const finalOps = opsToShow.length ? opsToShow : CUTTING_DATA.operations;
+    finalOps.forEach(o=>{
       const opt = document.createElement('option');
-      opt.value = t.id;
-      opt.textContent = t.label || t.id;
-      toolSel.appendChild(opt);
-    }
-  });
+      opt.value = o.id;
+      opt.textContent = o.label;
+      oSel.appendChild(opt);
+    });
 
-  // select por defecto los primeros
-  if(holderSel.options.length) holderSel.value = holderSel.options[0].value;
-  if(toolSel.options.length) toolSel.value = toolSel.options[0].value;
+    // machine presets
+    const mPres = $('machineSelect'); mPres.innerHTML = '<option value="custom">— Seleccionar máquina —</option>';
+    (CUTTING_DATA.machines || []).forEach(m=>{
+      const opt = document.createElement('option');
+      opt.value = m.id; opt.textContent = m.name;
+      mPres.appendChild(opt);
+    });
 
-  // si cambiamos a torneado, filtrar operaciones a las de torneado si las hay
-  const opSel = $('operationSelect');
-  if(opSel){
-    const turnOps = CUTTING_DATA.operations.filter(op => /turn/i.test(op.id) || /turn/i.test(op.label));
-    if(mode === 'torneado' && turnOps.length){
-      opSel.innerHTML = '';
-      turnOps.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.label; opSel.appendChild(opt); });
-    } else {
-      // si venimos de torneado y no queremos operaciones de torneado, mantener/recargar default list
-      // (no hacemos nada para no sobrescribir una selección del usuario)
+    // Llenado dinámico de holders/tooltypes según modo
+    updateModeOptions(defaultMode);
+
+    // preset visual (si existe)
+    const presetEl = document.getElementById('presetMode');
+    if(presetEl) presetEl.textContent = (defaultMode === 'torneado') ? 'Torneado' : 'Fresado';
+  }
+
+  function updateModeOptions(mode){
+    ensureTurningEntries();
+
+    // HOLDERS
+    const holderSel = $('holderSelect'); holderSel.innerHTML = '';
+    const idsH = (mode === 'torneado') ? (HOLDERS_BY_MODE.torneado || []) : (HOLDERS_BY_MODE.fresado || []);
+    const knownHolderIds = CUTTING_DATA.holders.map(h=>h.id);
+    const finalHolderIds = idsH.filter(id=> knownHolderIds.includes(id) );
+    const holdersToShow = finalHolderIds.length ? finalHolderIds : CUTTING_DATA.holders.map(h=>h.id);
+    holdersToShow.forEach(id=>{
+      const h = CUTTING_DATA.holders.find(x=>x.id===id);
+      if(h){
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = h.label || h.id;
+        holderSel.appendChild(opt);
+      }
+    });
+
+    // TOOL TYPES
+    const toolSel = $('toolTypeSelect'); toolSel.innerHTML = '';
+    const idsT = (mode === 'torneado') ? (TOOLTYPES_BY_MODE.torneado || []) : (TOOLTYPES_BY_MODE.fresado || []);
+    const knownToolIds = CUTTING_DATA.tool_types.map(t=>t.id);
+    const finalToolIds = idsT.filter(id=> knownToolIds.includes(id) );
+    const toolsToShow = finalToolIds.length ? finalToolIds : CUTTING_DATA.tool_types.map(t=>t.id);
+    toolsToShow.forEach(id=>{
+      const t = CUTTING_DATA.tool_types.find(x=>x.id===id);
+      if(t){
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.label || t.id;
+        toolSel.appendChild(opt);
+      }
+    });
+
+    // select por defecto
+    if(holderSel.options.length) holderSel.value = holderSel.options[0].value;
+    if(toolSel.options.length) toolSel.value = toolSel.options[0].value;
+
+    // si cambiamos a torneado, filtrar operaciones a las de torneado si las hay
+    const opSel = $('operationSelect');
+    if(opSel){
+      const turnOps = CUTTING_DATA.operations.filter(op => /turn/i.test(op.id) || /turn/i.test(op.label));
+      if(mode === 'torneado' && turnOps.length){
+        opSel.innerHTML = '';
+        turnOps.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.label; opSel.appendChild(opt); });
+      }
     }
   }
-}
 
-
-  // Vibration scoring
+  // Vibration scoring (igual)
   function vibrationRiskScore(params){
     const w = CUTTING_DATA.vibration.weights;
     const Lnorm = Math.min(1, (params.L||0)/200);
@@ -423,14 +470,14 @@ function updateModeOptions(mode){
     return {raw:score,prob:p};
   }
 
-  // Fresado
-  function computeFresado(){
-    const D = parseFloat($('diam').value) || 0.001;
-    const z = parseInt($('z').value) || 1;
-    let vc = parseFloat($('vc').value) || 0.1;
-    let fz = parseFloat($('fz').value) || 0.0001;
-    const ae = parseFloat($('ae').value) || 0.1;
-    const ap = parseFloat($('ap').value) || 0.1;
+  // computeFresado / computeTorneado (idénticas a las tuyas)
+  function computeFresado(override={}) {
+    const D = parseFloat(override.diam ?? $('diam').value) || 0.001;
+    const z = parseInt(override.z ?? $('z').value) || 1;
+    let vc = parseFloat(override.vc ?? $('vc').value) || 0.1;
+    let fz = parseFloat(override.fz ?? $('fz').value) || 0.0001;
+    const ae = parseFloat(override.ae ?? $('ae').value) || 0.1;
+    const ap = parseFloat(override.ap ?? $('ap').value) || 0.1;
     const mat = CUTTING_DATA.materials.find(m=>m.id==$('materialSelect').value) || CUTTING_DATA.materials[0];
     const holder = CUTTING_DATA.holders.find(h=>h.id==$('holderSelect').value) || CUTTING_DATA.holders[0];
     const toolType = CUTTING_DATA.tool_types.find(t=>t.id==$('toolTypeSelect').value) || CUTTING_DATA.tool_types[0];
@@ -470,12 +517,11 @@ function updateModeOptions(mode){
     return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'fresado'};
   }
 
-  // Torneado
-  function computeTorneado(){
-    const D = parseFloat($('diamT').value) || 0.001;
-    const ap = parseFloat($('apT').value) || 0.5;
-    let vc = parseFloat($('vcT').value) || 0.1;
-    const f = parseFloat($('fT').value) || 0.1;
+  function computeTorneado(override={}) {
+    const D = parseFloat(override.diamT ?? $('diamT').value) || 0.001;
+    const ap = parseFloat(override.apT ?? $('apT').value) || 0.5;
+    let vc = parseFloat(override.vcT ?? $('vcT').value) || 0.1;
+    const f = parseFloat(override.fT ?? $('fT').value) || 0.1;
     const mat = CUTTING_DATA.materials.find(m=>m.id==$('materialSelect').value) || CUTTING_DATA.materials[0];
     const holder = CUTTING_DATA.holders.find(h=>h.id==$('holderSelect').value) || CUTTING_DATA.holders[0];
     const toolType = CUTTING_DATA.tool_types.find(t=>t.id==$('toolTypeSelect').value) || CUTTING_DATA.tool_types[0];
@@ -513,8 +559,11 @@ function updateModeOptions(mode){
     return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'torneado'};
   }
 
-  // Render
+  // Charts global refs
   let chartMRR = null;
+  let chartVib = null; // trend / line
+  let heatmapChart = null;
+
   function renderChart(A){
     const ctx = $('chartMRR').getContext('2d');
     const labels=[]; const dataMRR=[];
@@ -541,6 +590,102 @@ function updateModeOptions(mode){
     }
     if(chartMRR) chartMRR.destroy();
     chartMRR = new Chart(ctx,{type:'line',data:{labels, datasets:[{label:'MRR (cm3/min)', data:dataMRR, fill:true, tension:0.25}]}, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+  }
+
+  function renderVibTrend(A){
+    const ctx = $('chartVibTrend').getContext('2d');
+    // sample trend: compute vib.prob across scaled feed multipliers
+    const labels=[]; const data=[];
+    const baseFeed = (A.mode==='torneado') ? (parseFloat($('fT').value)||0.15) : (parseFloat($('fz').value)||0.06);
+    for(let i=0;i<=10;i++){
+      const mult = 0.5 + 0.1*i; labels.push((mult*100).toFixed(0)+'%');
+      const override = {};
+      if(A.mode==='torneado') override.fT = baseFeed * mult;
+      else override.fz = baseFeed * mult;
+      const cell = (A.mode==='torneado') ? computeTorneado(override) : computeFresado(override);
+      data.push(cell.vib.prob);
+    }
+    if(chartVib) chartVib.destroy();
+    chartVib = new Chart(ctx,{type:'bar', data:{labels, datasets:[{label:'Prob. vib', data, borderRadius:4}]}, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true, max:1}}}});
+  }
+
+  // Heatmap builder using Chart.Matrix
+  function buildHeatmap(A){
+    // grid over Vc (x) and feed (y)
+    const mode = A.mode;
+    const baseVc = (mode==='torneado') ? parseFloat($('vcT').value)||120 : parseFloat($('vc').value)||180;
+    const baseFeed = (mode==='torneado') ? parseFloat($('fT').value)||0.15 : parseFloat($('fz').value)||0.06;
+    const rpmAdj = parseFloat($('rpmAdjust').value)/100;
+    const feedAdj = parseFloat($('feedAdjust').value)/100;
+    $('rpmAdjVal').textContent = Math.round(rpmAdj*100)+'%';
+    $('feedAdjVal').textContent = Math.round(feedAdj*100)+'%';
+
+    const xSteps = 12, ySteps = 12;
+    const vcMin = baseVc * 0.6 * rpmAdj, vcMax = baseVc * 1.4 * rpmAdj;
+    const feedMin = baseFeed * 0.4 * feedAdj, feedMax = baseFeed * 1.6 * feedAdj;
+
+    const xVals = []; for(let i=0;i<xSteps;i++) xVals.push(vcMin + (vcMax-vcMin)*(i/(xSteps-1)));
+    const yVals = []; for(let j=0;j<ySteps;j++) yVals.push(feedMin + (feedMax-feedMin)*(j/(ySteps-1)));
+
+    const data = [];
+    for(let j=0;j<ySteps;j++){
+      for(let i=0;i<xSteps;i++){
+        const vc = xVals[i], feedVal = yVals[j];
+        // compute vib
+        const override = {};
+        if(mode==='torneado'){ override.vcT = vc; override.fT = feedVal; } else { override.vc = vc; override.fz = feedVal; }
+        const cell = (mode==='torneado') ? computeTorneado(override) : computeFresado(override);
+        data.push({x:i, y:j, v: cell.vib.prob});
+      }
+    }
+
+    // destroy previous
+    if(heatmapChart) heatmapChart.destroy();
+    const ctx = $('heatmapCanvas').getContext('2d');
+
+    heatmapChart = new Chart(ctx, {
+      type: 'matrix',
+      data: {
+        datasets: [{
+          label: 'VibHeat',
+          data: data,
+          width: ({chart}) => (chart.chartArea || {width:1}).width / xSteps - 2,
+          height: ({chart}) => (chart.chartArea || {height:1}).height / ySteps - 2,
+        }]
+      },
+      options: {
+        animation: {duration: 0},
+        plugins:{legend:{display:false}},
+        scales: {
+          x: {display:true, ticks:{display:false}, grid:{display:false}},
+          y: {display:true, ticks:{display:false}, grid:{display:false}},
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              title: (ctx)=> {
+                const i = ctx[0].raw.x; const j = ctx[0].raw.y;
+                const vc = xVals[i].toFixed(1); const feed = (yVals[j]).toFixed(4);
+                return `Vc ${vc} m/min · feed ${feed} ${mode==='torneado'?'mm/rev':'mm/tooth'}`;
+              },
+              label: (ctx)=> `Prob vib: ${ (ctx.raw.v*100).toFixed(1) }%`
+            }
+          }
+        },
+        // color mapping per value
+        parsing: false,
+        elements: {
+          rectangle: {
+            backgroundColor: (ctx)=>{
+              const v = ctx.raw.v;
+              if(v > 0.8) return '#e11d48';
+              if(v > 0.5) return '#f59e0b';
+              return '#10b981';
+            }
+          }
+        }
+      }
+    });
   }
 
   function renderCompareTable(A,B){
@@ -619,7 +764,12 @@ function updateModeOptions(mode){
       out.appendChild(st);
     }
 
+    // charts & heatmap
     renderChart(A);
+    renderVibTrend(A);
+    buildHeatmap(A);
+
+    // clear compare table
     renderCompareTable(A, null);
   }
 
@@ -648,7 +798,7 @@ function updateModeOptions(mode){
       const cost_machineB = (time_minB/60) * (parseFloat($('machineCost').value)||0);
       B = {rpm:rpmB, mrr_cm3_min:mrrB, time_min:time_minB, cost_machine:cost_machineB, pieces_per_tool:0};
     }
-    renderCompareTable(A,B);
+    renderCompareTable( (modeT? computeTorneado():computeFresado()), B );
   });
 
   // Exports
@@ -664,7 +814,7 @@ function updateModeOptions(mode){
 
   $('btnExportPdf').addEventListener('click', async ()=>{
     const element = document.body;
-    const canvas = await html2canvas(element, {scale:1.4});
+    const canvas = await html2canvas(element, {scale:1.2});
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({orientation:'portrait',unit:'px',format:[canvas.width, canvas.height]});
@@ -682,7 +832,22 @@ function updateModeOptions(mode){
     if(op.default_ap && $('apT')) $('apT').value = op.default_ap;
   }
 
-  // Event wiring
+  // Machine preset change
+  $('machineSelect').addEventListener('change', ()=>{
+    const id = $('machineSelect').value;
+    const m = (CUTTING_DATA.machines||[]).find(x=>x.id===id);
+    if(m){
+      $('machinePower').value = m.power_kW;
+      $('machineMaxRpm').value = m.max_rpm;
+      $('spindleType').value = m.spindle;
+      $('stickout').value = m.stickout_default;
+      // optional: adjust costs heuristically
+      $('machineCost').value = Math.max(150, Math.round(m.power_kW*30));
+    }
+    render();
+  });
+
+  // Mode toggles
   document.getElementById('modeF').addEventListener('click', ()=>{
     document.getElementById('modeF').classList.add('is-on'); document.getElementById('modeT').classList.remove('is-on');
     document.getElementById('modeFresadoFields').style.display='block'; document.getElementById('modeTorneadoFields').style.display='none';
@@ -692,6 +857,17 @@ function updateModeOptions(mode){
     document.getElementById('modeT').classList.add('is-on'); document.getElementById('modeF').classList.remove('is-on');
     document.getElementById('modeFresadoFields').style.display='none'; document.getElementById('modeTorneadoFields').style.display='block';
     updateModeOptions('torneado'); render();
+  });
+
+  // sliders
+  $('recalcHeat').addEventListener('click', ()=>{ buildHeatmap( (document.getElementById('modeT').classList.contains('is-on')? computeTorneado():computeFresado()) ); });
+  ['rpmAdjust','feedAdjust'].forEach(id => { $(id).addEventListener('input', ()=>{ $('rpmAdjVal').textContent = Math.round($('rpmAdjust').value)+'%'; $('feedAdjVal').textContent = Math.round($('feedAdjust').value)+'%'; }); });
+
+  // Toggle comparator
+  $('toggleComparator').addEventListener('click', ()=>{
+    const body = $('comparatorBody');
+    if(body.style.display === 'none'){ body.style.display='block'; $('toggleComparator').textContent='Ocultar'; }
+    else { body.style.display='none'; $('toggleComparator').textContent='Mostrar'; }
   });
 
   // Auto render on input change
