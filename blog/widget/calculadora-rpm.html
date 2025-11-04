@@ -311,22 +311,110 @@
   let CUTTING_DATA = null;
 
   async function loadCuttingData(){
-    try{
-      const resp = await fetch('/data/cutting-data.json', {cache:'no-store'});
-      if(!resp.ok) throw new Error('no externo');
-      const remote = await resp.json();
-      CUTTING_DATA = Object.assign({}, EMBEDDED_CUTTING_DATA, remote);
-      ['machines','materials','holders','operations','tool_types'].forEach(k=>{
-        CUTTING_DATA[k] = (remote && remote[k] && remote[k].length) ? remote[k] : EMBEDDED_CUTTING_DATA[k] || [];
-      });
-      if(!CUTTING_DATA.machines || !CUTTING_DATA.machines.length) CUTTING_DATA.machines = EMBEDDED_CUTTING_DATA.machines;
-      console.log('cutting-data.json cargado desde /data/cutting-data.json');
-    }catch(e){
-      CUTTING_DATA = EMBEDDED_CUTTING_DATA;
-      console.warn('Usando embedded cutting-data.');
+  try{
+    const resp = await fetch('/data/cutting-data.json',{cache:'no-store'});
+    if(!resp.ok) throw new Error('no externo');
+    CUTTING_DATA = await resp.json();
+    console.log('cutting-data.json cargado desde /data/cutting-data.json');
+  }catch(e){
+    CUTTING_DATA = EMBEDDED_CUTTING_DATA;
+    console.warn('No se cargó externo. Usando EMBEDDED_CUTTING_DATA');
+  }
+  // Merge/garantía: si faltan holders / tool_types / machines etc., agrégalas desde el embedded
+  mergeEmbeddedLists();
+}
+// Copia/mezcla datos del EMBEDDED a CUTTING_DATA sin duplicados
+function mergeEmbeddedLists(){
+  if(typeof EMBEDDED_CUTTING_DATA !== 'object') return;
+  const keys = ['holders','tool_types','machines','operations','materials'];
+  keys.forEach(key=>{
+    const src = Array.isArray(EMBEDDED_CUTTING_DATA[key]) ? EMBEDDED_CUTTING_DATA[key] : [];
+    if(!Array.isArray(CUTTING_DATA[key]) || CUTTING_DATA[key].length === 0){
+      CUTTING_DATA[key] = JSON.parse(JSON.stringify(src));
+      return;
     }
+    const existing = new Set(CUTTING_DATA[key].map(x=>x.id));
+    src.forEach(item=>{ if(!existing.has(item.id)) CUTTING_DATA[key].push(item); });
+  });
+}
+  // Nuevo exportador PDF: incluye resumen (results) + charts (chartMRR, chartBell, chartVibTrend)
+async function exportFullPdf(){
+  const { jsPDF } = window.jspdf || {};
+  if(!jsPDF){
+    alert('jsPDF no disponible.');
+    return;
+  }
+  const pdf = new jsPDF('p','pt','a4');
+  const pageW = pdf.internal.pageSize.getWidth();
+  const margin = 36;
+  let cursorY = 40;
+
+  // Título
+  pdf.setFontSize(14);
+  pdf.text('Reporte — Calculadora RPM y Avance', margin, cursorY);
+  cursorY += 20;
+
+  // Renderizar el bloque de resultados a imagen con html2canvas
+  try{
+    const resultsEl = document.getElementById('results');
+    if(resultsEl){
+      const canvasRes = await html2canvas(resultsEl, {scale:1.5, backgroundColor: null});
+      const imgRes = canvasRes.toDataURL('image/png');
+      const imgW = pageW - margin*2;
+      const imgH = canvasRes.height * (imgW / canvasRes.width);
+      if(cursorY + imgH > pdf.internal.pageSize.getHeight() - margin){
+        pdf.addPage(); cursorY = margin;
+      }
+      pdf.addImage(imgRes, 'PNG', margin, cursorY, imgW, imgH);
+      cursorY += imgH + 12;
+    }
+  }catch(err){
+    console.warn('html2canvas results failed', err);
   }
 
+  // Function to add a Chart.js chart image, creating a new page if needed
+  async function addChartImage(chartInstance){
+    if(!chartInstance) return;
+    const img = chartInstance.toBase64Image();
+    // load to get natural dimensions
+    const im = new Image();
+    im.src = img;
+    await new Promise(r => { im.onload = r; im.onerror = r; });
+    const imgW = pageW - margin*2;
+    const imgH = im.height * (imgW / im.width);
+    if(cursorY + imgH > pdf.internal.pageSize.getHeight() - margin){
+      pdf.addPage();
+      cursorY = margin;
+    }
+    pdf.addImage(img, 'PNG', margin, cursorY, imgW, imgH);
+    cursorY += imgH + 12;
+  }
+
+  // Agregar gráficos (orden: MRR, Campana, Tendencia)
+  await addChartImage(window.chartMRR);
+  await addChartImage(window.chartBell);
+  await addChartImage(window.chartVibTrend);
+
+  // Pie: metadatos básicos
+  const now = new Date().toLocaleString();
+  pdf.setFontSize(10);
+  if(cursorY + 30 > pdf.internal.pageSize.getHeight() - margin){
+    pdf.addPage(); cursorY = margin;
+  }
+  pdf.text(`Generado: ${now}`, margin, cursorY);
+  cursorY += 12;
+
+  pdf.save('reporte_calculadora_rpm.pdf');
+}
+
+// Reemplaza handler previo del botón por el nuevo exportFullPdf
+const oldBtn = document.getElementById('btnExportPdf');
+if(oldBtn){
+  oldBtn.removeEventListener('click', ()=>{}); // limpia si existe el handler viejo (no da error)
+  oldBtn.addEventListener('click', exportFullPdf);
+}
+
+// ----------------- END: REEMPLAZAR / INSERTAR -----------------
   function ensureTurningEntries(){
     if(!CUTTING_DATA.tool_types) CUTTING_DATA.tool_types = [];
     if(!CUTTING_DATA.holders) CUTTING_DATA.holders = [];
