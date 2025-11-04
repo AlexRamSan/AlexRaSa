@@ -38,10 +38,42 @@
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
     .grid-2 { display:grid; grid-template-columns: 1fr 420px; gap:18px; align-items:start; }
-    .grid-forms { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+    .grid-forms { display:grid;grid-template-columns: repeat(3, 1fr); gap:12px; }
     .section-title{ font-weight:700; color:var(--accent); margin-bottom:8px }
     .sidebar { width:420px; min-width:320px }
     @media(max-width:1100px){ .grid-2{grid-template-columns:1fr} .sidebar{width:100%} .grid-forms{grid-template-columns:1fr} }
+
+    /* Dark selects (forzar en todos los navegadores) */
+    select,
+    select optgroup,
+    select option {
+      background-color: var(--card) !important;
+      color: var(--ink) !important;
+    }
+    select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: none;
+      border-radius: 8px;
+      padding-right: 0.6rem;
+      outline: none;
+    }
+    select::-ms-expand { display: none; }
+    select:focus {
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
+      border-color: var(--accent);
+    }
+    option:hover,
+    option:focus,
+    select option:checked {
+      background-color: rgba(14,165,233,0.12);
+      color: var(--ink);
+    }
+
+    /* Mejor contraste para inputs numéricos */
+    input[type=number] { background: rgba(255,255,255,0.02); color:var(--ink); }
+    .result-value{ font-weight:700; font-size:1.05rem; color:var(--ink) }
   </style>
 </head>
 <body>
@@ -166,7 +198,7 @@
     </aside>
   </div>
 
-  <!-- FULL-WIDTH: Heatmap + Gráficos (reemplaza el comparador) -->
+  <!-- FULL-WIDTH: Heatmap + Gráficos -->
   <section style="margin-top:18px">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -210,16 +242,29 @@
 
   const EMBEDDED_CUTTING_DATA = {
     "version":"3.2",
-    "defaults":{"rpm_limit":14000,"efficiency":0.8,"vibe_gauss":{"mu":0.7,"sigma":0.2},"default_flutes":4},
+    "defaults":{"rpm_limit":24000,"efficiency":0.8,"vibe_gauss":{"mu":0.7,"sigma":0.2},"default_flutes":4},
     "vibration":{"avoid_band_hz":[600,900],"risk_threshold":0.8,"weights":{"ld":0.5,"ae":0.2,"ap":0.2,"fz":0.1}},
     "holders":[ {"id":"ER Collet","label":"Portapinzas ER","stiffness_factor":1.0}, {"id":"REGOFIX_powRgrip","label":"REGO-FIX powRgrip","stiffness_factor":1.45} ],
     "materials":[ {"id":"alu_6061","name":"Aluminio 6061","Kc_N_per_mm2":800,"taylor":{"C":1000,"n":0.12}}, {"id":"steel_1045","name":"Acero 1045","Kc_N_per_mm2":2000,"taylor":{"C":300,"n":0.2}} ],
     "operations":[ {"id":"rough","label":"Desbaste","default_ae_pct":30,"default_ap_per_d":0.5}, {"id":"finish","label":"Acabado","default_ae_pct":12,"default_ap_per_d":0.2} ],
     "tool_types":[ {"id":"endmill","label":"Fresa (Endmill)","vc_factor":1.0,"fz_factor":1.0,"default_flutes":4} ],
     "machines": [
-      {"id":"doosan_vmc","brand":"Doosan","model":"DNM4500 VMC","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"HSK63"},
-      {"id":"okk_cmh","brand":"OKK","model":"CMH Series","type":"CMH","power_kW":18,"max_rpm":9000,"stickout_default":50,"spindle":"BT40"},
-      {"id":"fanuc_robodrill","brand":"Fanuc","model":"Robodrill α-DiB","type":"Robodrill","power_kW":3.7,"max_rpm":24000,"stickout_default":40,"spindle":"BT30"}
+      {"id":"doosan_vmc_4500","brand":"Doosan","model":"DNM4500","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"HSK63"},
+      {"id":"doosan_puma_lathe","brand":"Doosan","model":"PUMA 2600","type":"Lathe","power_kW":22,"max_rpm":4000,"stickout_default":80,"spindle":"A2-6"},
+      {"id":"okk_cmh_100","brand":"OKK","model":"CMH-800","type":"CMH","power_kW":18,"max_rpm":9000,"stickout_default":50,"spindle":"BT40"},
+      {"id":"mazak_vcn_530c","brand":"Mazak","model":"VCN-530C","type":"VMC","power_kW":20,"max_rpm":12000,"stickout_default":70,"spindle":"BT40"},
+      {"id":"haas_vf_2","brand":"Haas","model":"VF-2","type":"VMC","power_kW":11,"max_rpm":7500,"stickout_default":60,"spindle":"BT40"},
+      {"id":"dm_gmori_cmx_600","brand":"DMG Mori","model":"CMX 600 V","type":"VMC","power_kW":18,"max_rpm":12000,"stickout_default":65,"spindle":"BT40"},
+      {"id":"fanuc_robodrill_alpha","brand":"Fanuc","model":"Robodrill α-DiB","type":"Robodrill","power_kW":3.7,"max_rpm":24000,"stickout_default":40,"spindle":"BT30"},
+      {"id":"makino_a51nx","brand":"Makino","model":"A51nx","type":"VMC","power_kW":22,"max_rpm":12000,"stickout_default":75,"spindle":"HSK63"},
+      {"id":"okuma_lathe_lb3000","brand":"Okuma","model":"LB3000","type":"Lathe","power_kW":15,"max_rpm":3500,"stickout_default":90,"spindle":"A2-6"},
+      {"id":"nakamura_tome_bT200","brand":"Nakamura-Tome","model":"NTY3","type":"Multi-turn","power_kW":18,"max_rpm":4000,"stickout_default":80,"spindle":"A2-8"},
+      {"id":"hyundai_wia_daejeon","brand":"Hyundai WIA","model":"KF-3000","type":"VMC","power_kW":18,"max_rpm":10000,"stickout_default":70,"spindle":"BT40"},
+      {"id":"brother_tc_s","brand":"Brother","model":"TC-S2C","type":"Lathe","power_kW":7.5,"max_rpm":3000,"stickout_default":50,"spindle":"A2-6"},
+      {"id":"miyano_bnd_42","brand":"Miyano","model":"BNJ-51","type":"Lathe","power_kW":11,"max_rpm":5000,"stickout_default":70,"spindle":"A2-6"},
+      {"id":"kitamura_mycenter","brand":"Kitamura","model":"Mycenter-3X","type":"VMC","power_kW":7.5,"max_rpm":12000,"stickout_default":50,"spindle":"BT30"},
+      {"id":"spinner_slb_65","brand":"Spinner","model":"SLB 65","type":"Lathe","power_kW":18,"max_rpm":4000,"stickout_default":85,"spindle":"A2-6"},
+      {"id":"okuma_multurn_150","brand":"Okuma","model":"MULTUS B200II","type":"Mill-Turn","power_kW":30,"max_rpm":8000,"stickout_default":95,"spindle":"HSK100"}
     ]
   };
 
@@ -228,7 +273,15 @@
     try{
       const resp = await fetch('/data/cutting-data.json', {cache:'no-store'});
       if(!resp.ok) throw new Error('no externo');
-      CUTTING_DATA = await resp.json();
+      const remote = await resp.json();
+      // merge basic structure but prefer remote where present, else fallback
+      CUTTING_DATA = Object.assign({}, EMBEDDED_CUTTING_DATA, remote);
+      // ensure arrays prefer remote content but fallback to embedded
+      ['machines','materials','holders','operations','tool_types'].forEach(k=>{
+        CUTTING_DATA[k] = (remote && remote[k] && remote[k].length) ? remote[k] : EMBEDDED_CUTTING_DATA[k] || [];
+      });
+      if(!CUTTING_DATA.machines || !CUTTING_DATA.machines.length) CUTTING_DATA.machines = EMBEDDED_CUTTING_DATA.machines;
+      console.log('cutting-data.json cargado desde /data/cutting-data.json');
     }catch(e){
       CUTTING_DATA = EMBEDDED_CUTTING_DATA;
       console.warn('Usando embedded cutting-data.');
@@ -513,8 +566,11 @@
       $('spindleType').value = m.spindle;
       $('stickout').value = m.stickout_default;
       $('stickoutDefault').value = m.stickout_default;
-      $('machineCost').value = Math.max(150, Math.round(m.power_kW*30));
-    } else $('machineModel').value='';
+      // heurística rápida para costo máquina
+      $('machineCost').value = Math.max(150, Math.round(m.power_kW * 30));
+    } else {
+      $('machineModel').value='';
+    }
     render();
   });
 
