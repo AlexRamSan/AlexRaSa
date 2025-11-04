@@ -464,18 +464,46 @@
     }
 
     function renderCompareTable(A,B){
-      const tbody = $('tableCompare').querySelector('tbody'); tbody.innerHTML='';
-      if(!B){ const tr=document.createElement('tr'); tr.innerHTML = `<td class="muted">Comparador</td><td colspan="3" class="small muted">Activa "Comparador A vs P" y presiona Comparar</td>`; tbody.appendChild(tr); return; }
-      const rows = [ ['RPM', fmt(A.rpm,0), fmt(B.rpm,0), fmt(B.rpm - A.rpm,0)], ['MRR (cm3/min)', fmt(A.mrr_cm3_min,3), fmt(B.mrr_cm3_min,3), fmt(B.mrr_cm3_min - A.mrr_cm3_min,3)], ['Tiempo/pieza (min)', fmt(A.time_min,2), fmt(B.time_min,2), fmt(B.time_min - A.time_min,2)], ['Costo/pieza (MXN)', fmt(A.cost_per_piece,2), fmt(B.cost_per_piece,2), fmt(B.cost_per_piece - A.cost_per_piece,2)], ['Piezas por herramienta', fmt(A.pieces_per_tool,0), fmt(B.pieces_per_tool,0), fmt(B.pieces_per_tool - A.pieces_per_tool,0)], ['Vib. prob', fmt(A.vib.prob,2), (B?fmt(vibrationRiskScore({L:parseFloat($('stickout').value||60),ae:parseFloat($('aeB').value||8),ap:parseFloat($('apB').value||1),fz:parseFloat($('fzB').value||0.04),D:parseFloat($('diam').value||12)}).prob:'') , fmt(((B? vibrationRiskScore({L:parseFloat($('stickout').value||60),ae:parseFloat($('aeB').value||8),ap:parseFloat($('apB').value||1),fz:parseFloat($('fzB').value||0.04),D:parseFloat($('diam').value||12)}).prob:0) - A.vib.prob),2)] ];
-      rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td class="muted small">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`; tbody.appendChild(tr); });
-    }
+  const tbody = $('tableCompare').querySelector('tbody');
+  tbody.innerHTML = '';
+  if(!B){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="muted">Comparador</td><td colspan="3" class="small muted">Activa "Comparador A vs P" y presiona Comparar</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  // calcular vib B de forma separada para evitar paréntesis confusos
+  const vibB = vibrationRiskScore({
+    L: parseFloat($('stickout').value || 60),
+    ae: parseFloat($('aeB').value || 8),
+    ap: parseFloat($('apB').value || 1),
+    fz: parseFloat($('fzB').value || 0.04),
+    D: parseFloat($('diam').value || 12)
+  });
+
+  const rows = [
+    ['RPM', fmt(A.rpm,0), fmt(B.rpm,0), fmt(B.rpm - A.rpm,0)],
+    ['MRR (cm3/min)', fmt(A.mrr_cm3_min,3), fmt(B.mrr_cm3_min,3), fmt(B.mrr_cm3_min - A.mrr_cm3_min,3)],
+    ['Tiempo/pieza (min)', fmt(A.time_min,2), fmt(B.time_min,2), fmt(B.time_min - A.time_min,2)],
+    ['Costo/pieza (MXN)', fmt(A.cost_per_piece,2), fmt(B.cost_per_piece,2), fmt(B.cost_per_piece - A.cost_per_piece,2)],
+    ['Piezas por herramienta', fmt(A.pieces_per_tool,0), fmt(B.pieces_per_tool,0), fmt(B.pieces_per_tool - A.pieces_per_tool,0)],
+    ['Vib. prob', fmt(A.vib.prob,2), fmt(vibB.prob,2), fmt(vibB.prob - A.vib.prob,2)]
+  ];
+
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="muted small">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
 
     // Exports
     $('btnExportCsv').addEventListener('click', ()=>{
       const {A,B} = computeAll($('enableCompare').checked);
       const rows = [ ['metric','A','B'] , ['RPM',A.rpm,(B?B.rpm:'')], ['MRR_cm3_min',A.mrr_cm3_min,(B?B.mrr_cm3_min:'')], ['time_min',A.time_min,(B?B.time_min:'')], ['cost_piece',A.cost_per_piece,(B?B.cost_per_piece:'')], ['vib_prob',A.vib.prob,(B? vibrationRiskScore({L:parseFloat($('stickout').value||60),ae:parseFloat($('aeB').value||8),ap:parseFloat($('apB').value||1),fz:parseFloat($('fzB').value||0.04),D:parseFloat($('diam').value||12)}).prob:'')] ];
-      const csv = rows.map(r=>r.join(',')).join('
-');
+      const csv = rows.map(r=> r.join(',') ).join('\\n');
       const blob = new Blob([csv], {type:'text/csv'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href=url; a.download='calculadora_rpm_export.csv'; a.click(); URL.revokeObjectURL(url);
