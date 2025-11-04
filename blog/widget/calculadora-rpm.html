@@ -1,563 +1,633 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de RPM y avance (AlexRaSa)</title>
-  <meta name="description" content="Calcula RPM, avance, MRR, potencia, torque y vibración. Presets cargados desde cutting-data.json." />
+  <title>Calculadora RPM y Avance — AlexRaSa (con máquinas)</title>
+  <meta name="description" content="Calculadora: condiciones de corte, potencia, vida de herramienta y vibración. Incluye perfiles de máquinas." />
   <meta name="color-scheme" content="dark" />
 
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.1.0/dist/chartjs-chart-matrix.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     :root{
       --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
-      --accent:#0ea5e9; --rose:#e11d48; --emerald:#10b981; --indigo:#6366f1;
+      --accent:#0ea5e9; --rose:#e11d48; --emerald:#10b981; --amber:#f59e0b;
     }
     html{scroll-behavior:smooth}
-    body{background:var(--bg);color:var(--ink);font-family:system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu;margin:0}
+    body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu;margin:0}
     .container{max-width:1180px;margin:0 auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px}
     .lead{color:var(--muted)}
-    .btn{border:1px solid var(--border);background:rgba(255,255,255,.04);padding:.5rem .8rem;border-radius:8px}
-    .btn-primary{background:var(--accent);border-color:var(--accent);color:#061018}
-    .tab{padding:.5rem .8rem;border-radius:8px;border:1px solid var(--border);background:rgba(148,163,184,.06)}
-    .tab.is-on{background:var(--accent);border-color:var(--accent);color:#061018}
     .field>label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:.25rem}
     .field>input,.field>select{width:100%;border-radius:8px;padding:.5rem .6rem;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--ink)}
-    .kpi-value{font-size:1.35rem;color:#eaf2ff}
-    .pill{font-size:.7rem;border:1px solid var(--border);border-radius:999px;padding:.12rem .5rem;color:var(--muted)}
-    .vibe-box{background:rgba(148,163,184,.04);border:1px dashed var(--border);border-radius:10px;padding:12px;transition:background .18s,border-color .18s}
-    .hint{color:var(--muted);font-size:.75rem}
+    .section-title{ font-weight:700; color:var(--accent); margin-bottom:8px }
+    .grid-3{ display:grid; grid-template-columns: 1fr 1fr 360px; gap:14px; align-items:start; }
+    .grid-forms{ display:grid; grid-template-columns: 1fr; gap:12px; }
+    .kpi-value{font-size:1.2rem;color:#eaf2ff}
     .canvas-wrap{width:100%;height:220px}
     .canvas-wrap canvas{width:100%;height:100%}
-    .grid-2 { display:grid; grid-template-columns: 1fr 420px; gap:18px; align-items:start; }
-    .grid-forms { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
-    .section-title{ font-weight:700; color:var(--accent); margin-bottom:8px }
-    .sidebar { width:420px; min-width:320px }
-    @media(max-width:1100px){ .grid-2{grid-template-columns:1fr} .sidebar{width:100%} .grid-forms{grid-template-columns:1fr} }
+    .heatmap-canvas{width:100%;height:260px;border-radius:8px;background:linear-gradient(180deg, rgba(0,0,0,.02), transparent)}
+    .row-four{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+    @media(max-width:1024px){ .grid-3{grid-template-columns:1fr} .row-four{grid-template-columns:1fr 1fr} }
+    .hero{padding:28px 0}
+    header{background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.03)}
+    .btn{display:inline-block;padding:.5rem .8rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--ink)}
+    .btn-primary{background:var(--accent);border-color:var(--accent);color:#061018}
+    .muted{color:var(--muted)}
+    .small{font-size:.85rem}
   </style>
 </head>
 <body>
-<header class="sticky top-0 z-50 bg-black/40 backdrop-blur border-b border-gray-200">
-  <div class="max-w-6xl mx-auto px-4">
-    <div class="h-16 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2"><img src="/assets/logo.png" alt="Logo" class="h-10" /></a>
-      <nav class="hidden lg:flex gap-6 text-sm">
-        <a href="/">Inicio</a><a href="/#soluciones">Soluciones</a><a href="/#recursos">Recursos</a>
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;height:64px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="/assets/logo.png" alt="logo" style="height:42px">
+        <div>
+          <div style="font-weight:700">AlexRaSa.store</div>
+          <div class="muted small">Calculadora de RPM y Avance — Industrial</div>
+        </div>
+      </div>
+      <nav class="muted small" style="display:flex;gap:14px">
+        <a href="/" class="muted">Inicio</a><a href="#" class="muted">Recursos</a><a href="#" class="muted">Contacto</a>
       </nav>
     </div>
-  </div>
-</header>
+  </header>
 
-<section class="py-10 text-white">
-  <div class="max-w-6xl mx-auto px-4">
-    <h1 class="text-3xl font-extrabold">Calculadora de <span style="color:var(--accent)">RPM y Avance</span></h1>
-    <p class="lead mt-2">Estimaciones de condiciones de corte, potencia y riesgo de vibración.</p>
-  </div>
-</section>
-
-<main class="container">
-  <div class="grid-2">
-    <!-- Inputs -->
-    <div>
-      <div class="card mb-4">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><h2 style="margin:0;font-weight:800">Entradas</h2><div class="lead">Presets y parámetros</div></div>
-          <div style="display:flex;gap:8px"><button id="modeF" class="tab is-on">Fresado</button><button id="modeT" class="tab">Torneado</button></div>
-        </div>
-      </div>
-
-      <div class="grid-forms">
-        <!-- Parámetros principales (col 1) -->
-        <div class="card">
-          <div class="section-title">Parámetros principales</div>
-          <div style="display:grid;gap:10px">
-            <div class="field"><label>Material</label><select id="materialSelect"></select></div>
-            <div class="field"><label>Operación</label><select id="operationSelect"></select></div>
-            <div class="field"><label>Sujeción / Holder</label><select id="holderSelect"></select></div>
-            <div class="field"><label>Tipo herramienta</label><select id="toolTypeSelect"></select></div>
-
-            <div id="modeFresadoFields">
-              <div class="field"><label>Diámetro herramienta D (mm)</label><input id="diam" type="number" step="0.01" value="12" /></div>
-              <div class="field"><label>Dientes (z)</label><input id="z" type="number" step="1" value="4" /></div>
-              <div class="field"><label>Vel. corte Vc (m/min)</label><input id="vc" type="number" step="0.1" value="180" /></div>
-              <div class="field"><label>fz (mm/tooth)</label><input id="fz" type="number" step="0.0001" value="0.06" /></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <div class="field"><label>Ae (mm)</label><input id="ae" type="number" step="0.01" value="10" /></div>
-                <div class="field"><label>Ap (mm)</label><input id="ap" type="number" step="0.01" value="2" /></div>
-              </div>
-            </div>
-
-            <div id="modeTorneadoFields" style="display:none">
-              <div class="field"><label>Diámetro pieza D (mm)</label><input id="diamT" type="number" step="0.01" value="60" /></div>
-              <div class="field"><label>Prof. corte ap (mm)</label><input id="apT" type="number" step="0.01" value="2" /></div>
-              <div class="field"><label>Vc (m/min)</label><input id="vcT" type="number" step="0.1" value="120" /></div>
-              <div class="field"><label>Avance f (mm/rev)</label><input id="fT" type="number" step="0.001" value="0.15" /></div>
-            </div>
-
-            <div class="field"><label>Stickout L (mm)</label><input id="stickout" type="number" step="1" value="60" /></div>
-          </div>
-        </div>
-
-        <!-- Costos & Opciones (col 2) -->
-        <div class="card">
-          <div class="section-title">Costos & Opciones</div>
-          <div style="display:grid;gap:10px">
-            <div class="field"><label>Costo hora máquina (MXN)</label><input id="machineCost" type="number" step="0.1" value="400" /></div>
-            <div class="field"><label>Costo herramienta (MXN)</label><input id="toolCost" type="number" step="0.1" value="1200" /></div>
-            <div class="field"><label>Volumen a remover (cm³)</label><input id="volumen" type="number" step="0.01" value="18" /></div>
-            <div class="field"><label>Constante Taylor C</label><input id="C" type="number" step="1" value="40000" /></div>
-            <div class="field"><label>Exponente n (Taylor)</label><input id="n" type="number" step="0.01" value="0.25" /></div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <label><input id="enableCycle" type="checkbox" class="toggle" checked /> <span class="muted">Tiempo</span></label>
-              <label><input id="enableKc" type="checkbox" class="toggle" checked /> <span class="muted">Kc/Pot.</span></label>
-              <label><input id="enableStability" type="checkbox" class="toggle" checked /> <span class="muted">Vibración</span></label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Parámetros de máquina (col 3) -->
-        <div class="card">
-          <div class="section-title">Parámetros de máquina</div>
-          <div style="display:grid;gap:10px">
-            <div class="field"><label>Máquina (preset)</label>
-              <select id="machineSelect"><option value="custom">— Seleccionar máquina —</option></select>
-            </div>
-            <div class="field"><label>Marca / Modelo</label><input id="machineModel" type="text" value="" /></div>
-            <div class="field"><label>Potencia husillo (kW)</label><input id="machinePower" type="number" step="0.1" value="15" /></div>
-            <div class="field"><label>RPM máx</label><input id="machineMaxRpm" type="number" step="1" value="10000" /></div>
-            <div class="field"><label>Tipo de husillo</label><input id="spindleType" type="text" value="HSK63" /></div>
-            <div class="field"><label>E aproximado (GPa)</label><input id="E" type="number" step="1" value="210" /></div>
-            <div class="field"><label>Stickout por defecto (mm)</label><input id="stickoutDefault" type="number" step="1" value="60" /></div>
-            <div class="hint">Los presets se definen en el array <code>CUTTING_DATA.machines</code>.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="card">
-        <div class="section-title">Resultados</div>
-        <div id="results" style="margin-top:10px"></div>
-
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button id="btnExportPdf" class="btn btn-primary" style="flex:1">Exportar PDF</button>
-          <button id="btnExportCsv" class="btn" style="flex:1">Exportar CSV</button>
-        </div>
-
-        <div style="margin-top:12px" class="card">
-          <div class="section-title">Tabla resumen</div>
-          <div style="max-height:200px;overflow:auto;margin-top:8px">
-            <table id="tableCompare" style="width:100%;font-size:13px">
-              <thead><tr><th class="muted">Métrica</th><th class="muted">Valor</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </aside>
-  </div>
-
-  <!-- FULL-WIDTH: Heatmap + Gráficos (reemplaza el comparador) -->
-  <section style="margin-top:18px">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div style="display:flex;gap:18px;align-items:center;justify-content:space-between">
         <div>
-          <h3 style="margin:0;font-weight:800">Heat-map de Vibración & Gráficos</h3>
-          <div class="muted">Ajusta RPM y avance para ver la tendencia y la matriz de riesgo.</div>
+          <h1 style="margin:0;font-size:28px;font-weight:800">Calculadora de <span style="color:var(--accent)">RPM y Avance</span></h1>
+          <p class="muted" style="margin-top:6px">Condiciones de corte, potencia, vida útil e indicador de vibración. Selecciona máquina para autocompletar parámetros.</p>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="muted">Escala</div>
-          <div style="display:flex;gap:6px">
-            <div style="width:28px;height:12px;background:#10b981;border-radius:3px"></div>
-            <div style="width:28px;height:12px;background:#f59e0b;border-radius:3px"></div>
-            <div style="width:28px;height:12px;background:#e11d48;border-radius:3px"></div>
-          </div>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;margin-top:12px">
-        <div style="height:360px"><canvas id="heatmapCanvas"></canvas></div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div class="field"><label>RPM ajuste (%)</label><input id="rpmAdjust" type="range" min="60" max="140" value="100" /></div>
-          <div class="field"><label>Avance ajuste (%)</label><input id="feedAdjust" type="range" min="40" max="160" value="100" /></div>
-          <div class="muted">RPM: <span id="rpmAdjVal">100%</span></div>
-          <div class="muted">Avance: <span id="feedAdjVal">100%</span></div>
-          <div><button id="recalcHeat" class="btn btn-primary" style="width:100%">Recalcular Heatmap</button></div>
-          <div style="margin-top:6px" class="hint">Eje X = Vc (m/min). Eje Y = Avance (fz mm/tooth o f mm/rev). Color = probabilidad de vibración.</div>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-        <div class="card"><div class="section-title">MRR (tendencia)</div><div class="canvas-wrap"><canvas id="chartMRR"></canvas></div></div>
-        <div class="card"><div class="section-title">Tendencia Vibración</div><div class="canvas-wrap"><canvas id="chartVibTrend"></canvas></div></div>
+        <div style="width:260px;height:120px;background:url('/assets/hero-industrial.png') center/cover;border-radius:8px"></div>
       </div>
     </div>
   </section>
-</main>
+
+  <!-- MAIN -->
+  <main class="container" style="margin-bottom:48px">
+    <div class="grid-3">
+      <!-- 1) Parámetros principales -->
+      <div class="card">
+        <div class="section-title">Parámetros principales</div>
+        <div class="grid-forms">
+          <div class="field"><label>Material</label><select id="materialSelect"></select></div>
+          <div class="field"><label>Operación</label><select id="operationSelect"></select></div>
+          <div class="field"><label>Sujeción / Holder</label><select id="holderSelect"></select></div>
+          <div class="field"><label>Tipo herramienta</label><select id="toolTypeSelect"></select></div>
+
+          <div id="modeFresadoFields">
+            <div class="field"><label>Diámetro herramienta D (mm)</label><input id="diam" type="number" step="0.01" value="12" /></div>
+            <div class="field"><label>Dientes / cortantes (z)</label><input id="z" type="number" step="1" value="4" /></div>
+            <div class="field"><label>Velocidad de corte Vc (m/min)</label><input id="vc" type="number" step="0.1" value="180" /></div>
+            <div class="field"><label>Avance por diente fz (mm/tooth)</label><input id="fz" type="number" step="0.0001" value="0.06" /></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="field"><label>Ae (mm)</label><input id="ae" type="number" step="0.01" value="10" /></div>
+              <div class="field"><label>Ap (mm)</label><input id="ap" type="number" step="0.01" value="2" /></div>
+            </div>
+          </div>
+
+          <div id="modeTorneadoFields" style="display:none">
+            <div class="field"><label>Diámetro pieza D (mm)</label><input id="diamT" type="number" step="0.01" value="60" /></div>
+            <div class="field"><label>Profundidad de corte ap (mm)</label><input id="apT" type="number" step="0.01" value="2" /></div>
+            <div class="field"><label>Velocidad de corte Vc (m/min)</label><input id="vcT" type="number" step="0.1" value="120" /></div>
+            <div class="field"><label>Avance f (mm/rev)</label><input id="fT" type="number" step="0.001" value="0.15" /></div>
+          </div>
+
+          <div class="field"><label>Stickout L (mm)</label><input id="stickout" type="number" step="1" value="60" /></div>
+
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <button id="modeF" class="btn btn-primary">Fresado</button>
+            <button id="modeT" class="btn">Torneado</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2) Costos & Opciones -->
+      <div class="card">
+        <div class="section-title">Costos & Opciones</div>
+        <div style="display:grid;gap:10px">
+          <div class="field"><label>Costo hora máquina (MXN)</label><input id="machineCost" type="number" step="0.1" value="400" /></div>
+          <div class="field"><label>Costo herramienta (MXN)</label><input id="toolCost" type="number" step="0.1" value="1200" /></div>
+          <div class="field"><label>Volumen a remover por pieza (cm³)</label><input id="volumen" type="number" step="0.01" value="18" /></div>
+          <div class="field"><label>Constante Taylor C</label><input id="C" type="number" step="1" value="40000" /></div>
+          <div class="field"><label>Exponente n (Taylor)</label><input id="n" type="number" step="0.01" value="0.25" /></div>
+
+          <div style="display:flex;gap:10px;align-items:center">
+            <label><input id="enableCycle" type="checkbox" checked /> <span class="muted">Tiempo</span></label>
+            <label><input id="enableKc" type="checkbox" checked /> <span class="muted">Kc / Pot.</span></label>
+            <label><input id="enableStability" type="checkbox" checked /> <span class="muted">Vibración</span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3) Parámetros de máquina (nuevo) -->
+      <aside class="card">
+        <div class="section-title">Parámetros de máquina</div>
+
+        <div class="field"><label>Seleccionar máquina (marca / modelo)</label>
+          <select id="machineSelect"><option value="">Cargando máquinas...</option></select>
+        </div>
+
+        <div style="display:grid;gap:8px;margin-top:8px">
+          <div class="field"><label>Tipo</label><input id="machineType" readonly /></div>
+          <div class="field"><label>RPM max</label><input id="machineRPMMax" readonly /></div>
+          <div class="field"><label>Potencia (kW)</label><input id="machinePowerKW" readonly /></div>
+          <div class="field"><label>Torque (Nm)</label><input id="machineTorqueNM" readonly /></div>
+          <div class="field"><label>Feed max (mm/min)</label><input id="machineFeedMax" readonly /></div>
+
+          <div style="display:grid;gap:8px;margin-top:8px">
+            <label class="muted small">Ajuste RPM (%) <span id="rpmAdjLabel">100%</span></label>
+            <input id="rpmAdj" type="range" min="50" max="140" value="100" />
+            <label class="muted small">Multiplicador avance <span id="feedAdjLabel">1.00x</span></label>
+            <input id="feedAdj" type="range" min="50" max="200" value="100" />
+          </div>
+
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <button id="btnExportPdf" class="btn btn-primary" style="flex:1">Exportar PDF</button>
+            <button id="btnExportCsv" class="btn" style="flex:1">Exportar CSV</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Results full-width cards (time/power/toollife/vibration) -->
+    <div style="margin-top:18px">
+      <div class="row-four">
+        <div class="card" id="cardCycle"><div class="muted">Tiempo/pieza (min)</div><div class="kpi-value" id="kpiTime">—</div></div>
+        <div class="card" id="cardPower"><div class="muted">Potencia (kW)</div><div class="kpi-value" id="kpiPower">—</div></div>
+        <div class="card" id="cardTool"><div class="muted">Piezas por herramienta</div><div class="kpi-value" id="kpiTool">—</div></div>
+        <div class="card" id="cardVib"><div class="muted">Riesgo vibración (prob)</div><div class="kpi-value" id="kpiVib">—</div></div>
+      </div>
+    </div>
+
+    <!-- Charts & Heatmap: ancho completo -->
+    <div style="margin-top:18px">
+      <div class="card" style="margin-bottom:12px">
+        <div class="section-title">Tendencia: MRR / Ajustes</div>
+        <div class="canvas-wrap"><canvas id="chartMRR"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Heatmap de vibración (RPM vs Avance)</div>
+        <div style="margin-bottom:8px" class="muted small">Colores: verde=estable, amarillo=alerta, rojo=riesgo. Usa sliders para ajustar RPM y avance.</div>
+        <canvas id="heatmapCanvas" class="heatmap-canvas"></canvas>
+      </div>
+    </div>
+  </main>
 
 <script>
-  const $ = id => document.getElementById(id);
-  function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
+/* -----------------------
+  Carga cutting-data externo si existe. Si no, usamos fallback embebido corto.
+  Nota: usamos el cutting-data.json que subiste. (citado: turn3file0)
+------------------------*/
+let CUTTING_DATA = null;
+const EMBED = {
+  "defaults":{"efficiency":0.8,"vibe_gauss":{"mu":0.7,"sigma":0.2},"default_flutes":4},
+  "vibration":{"avoid_band_hz":[600,900],"risk_threshold":0.8,"weights":{"ld":0.5,"ae":0.2,"ap":0.2,"fz":0.1}},
+  "holders":[{"id":"ER Collet","label":"Portapinzas ER","stiffness_factor":1.0}],
+  "materials":[{"id":"alu_6061","name":"Aluminio 6061","Kc_N_per_mm2":800,"taylor":{"C":1000,"n":0.12}}],
+  "operations":[{"id":"rough","label":"Desbaste","default_ae_pct":30}],
+  "tool_types":[{"id":"endmill","label":"Fresa (endmill)","vc_factor":1,"fz_factor":1,"default_flutes":4}],
+  "machines_profiles":[]
+};
 
-  const EMBEDDED_CUTTING_DATA = {
-    "version":"3.2",
-    "defaults":{"rpm_limit":14000,"efficiency":0.8,"vibe_gauss":{"mu":0.7,"sigma":0.2},"default_flutes":4},
-    "vibration":{"avoid_band_hz":[600,900],"risk_threshold":0.8,"weights":{"ld":0.5,"ae":0.2,"ap":0.2,"fz":0.1}},
-    "holders":[ {"id":"ER Collet","label":"Portapinzas ER","stiffness_factor":1.0}, {"id":"REGOFIX_powRgrip","label":"REGO-FIX powRgrip","stiffness_factor":1.45} ],
-    "materials":[ {"id":"alu_6061","name":"Aluminio 6061","Kc_N_per_mm2":800,"taylor":{"C":1000,"n":0.12}}, {"id":"steel_1045","name":"Acero 1045","Kc_N_per_mm2":2000,"taylor":{"C":300,"n":0.2}} ],
-    "operations":[ {"id":"rough","label":"Desbaste","default_ae_pct":30,"default_ap_per_d":0.5}, {"id":"finish","label":"Acabado","default_ae_pct":12,"default_ap_per_d":0.2} ],
-    "tool_types":[ {"id":"endmill","label":"Fresa (Endmill)","vc_factor":1.0,"fz_factor":1.0,"default_flutes":4} ],
-    "machines": [
-      {"id":"doosan_vmc","brand":"Doosan","model":"DNM4500 VMC","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"HSK63"},
-      {"id":"okk_cmh","brand":"OKK","model":"CMH Series","type":"CMH","power_kW":18,"max_rpm":9000,"stickout_default":50,"spindle":"BT40"},
-      {"id":"fanuc_robodrill","brand":"Fanuc","model":"Robodrill α-DiB","type":"Robodrill","power_kW":3.7,"max_rpm":24000,"stickout_default":40,"spindle":"BT30"}
-    ]
-  };
+async function loadCuttingData(){
+  try{
+    const resp = await fetch('/data/cutting-data.json', {cache:'no-store'});
+    if(!resp.ok) throw new Error('no externo');
+    CUTTING_DATA = await resp.json();
+    console.log('cutting-data.json loaded');
+  }catch(e){
+    CUTTING_DATA = EMBED;
+    console.warn('Using embedded fallback cutting data.');
+  }
+}
 
-  let CUTTING_DATA = null;
-  async function loadCuttingData(){
-    try{
-      const resp = await fetch('/data/cutting-data.json', {cache:'no-store'});
-      if(!resp.ok) throw new Error('no externo');
-      CUTTING_DATA = await resp.json();
-    }catch(e){
-      CUTTING_DATA = EMBEDDED_CUTTING_DATA;
-      console.warn('Usando embedded cutting-data.');
+/* Helpers */
+const $ = id => document.getElementById(id);
+function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
+
+/* ---------- populateFromData & updateModeOptions (reemplazadas) ---------- */
+function ensureTurningEntries(){
+  if(!CUTTING_DATA) return;
+  const toolIds = ['turn_insert','boring_bar','external_turn_tool'];
+  const holderIds = ['PortaInsertos','PortaTorreta','PortaBarrenador'];
+  toolIds.forEach(id=>{
+    if(!CUTTING_DATA.tool_types.some(t=>t.id===id)){
+      CUTTING_DATA.tool_types.push({id:id,label:id,vc_factor:1,fz_factor:1,default_flutes:1});
     }
-  }
-
-  function ensureTurningEntries(){
-    if(!CUTTING_DATA.tool_types) CUTTING_DATA.tool_types = [];
-    if(!CUTTING_DATA.holders) CUTTING_DATA.holders = [];
-    const toolIds=['turn_insert']; toolIds.forEach(id=>{ if(!CUTTING_DATA.tool_types.some(t=>t.id===id)) CUTTING_DATA.tool_types.push({id:'turn_insert',label:'Herram. torneado',vc_factor:1,fz_factor:1,default_flutes:1}); });
-    const holderIds=['PortaInsertos']; holderIds.forEach(id=>{ if(!CUTTING_DATA.holders.some(h=>h.id===id)) CUTTING_DATA.holders.push({id:'PortaInsertos',label:'Porta-insertos',stiffness_factor:1.15}); });
-  }
-
-  const HOLDERS_BY_MODE = { fresado:['ER Collet','REGOFIX_powRgrip'], torneado:['PortaInsertos','REGOFIX_powRgrip'] };
-  const TOOLTYPES_BY_MODE = { fresado:['endmill'], torneado:['turn_insert'] };
-
-  function populateFromData(defaultMode='fresado'){
-    if(!CUTTING_DATA) return;
-    const mSel = $('materialSelect'); mSel.innerHTML=''; (CUTTING_DATA.materials||[]).forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.name; mSel.appendChild(o); });
-    const oSel = $('operationSelect'); oSel.innerHTML=''; (CUTTING_DATA.operations||[]).forEach(op=>{ const o=document.createElement('option'); o.value=op.id; o.textContent=op.label; oSel.appendChild(o); });
-
-    const mPres = $('machineSelect'); mPres.innerHTML = '<option value="custom">— Seleccionar máquina —</option>';
-    (CUTTING_DATA.machines||[]).forEach(m=>{ const opt=document.createElement('option'); opt.value=m.id; opt.textContent=`${m.brand} · ${m.model} · ${m.type}`; mPres.appendChild(opt); });
-
-    updateModeOptions(defaultMode);
-  }
-
-  function updateModeOptions(mode){
-    ensureTurningEntries();
-    const holderSel = $('holderSelect'); holderSel.innerHTML='';
-    const idsH = (mode==='torneado')?HOLDERS_BY_MODE.torneado:HOLDERS_BY_MODE.fresado;
-    const knownHolderIds = (CUTTING_DATA.holders||[]).map(h=>h.id);
-    const finalHolderIds = idsH.filter(id=>knownHolderIds.includes(id));
-    const holdersToShow = finalHolderIds.length ? finalHolderIds : (CUTTING_DATA.holders||[]).map(h=>h.id);
-    holdersToShow.forEach(id=>{ const h = (CUTTING_DATA.holders||[]).find(x=>x.id===id); if(h){ const o=document.createElement('option'); o.value=h.id; o.textContent=h.label||h.id; holderSel.appendChild(o); } });
-
-    const toolSel = $('toolTypeSelect'); toolSel.innerHTML='';
-    const idsT = (mode==='torneado')?TOOLTYPES_BY_MODE.torneado:TOOLTYPES_BY_MODE.fresado;
-    const knownToolIds = (CUTTING_DATA.tool_types||[]).map(t=>t.id);
-    const finalToolIds = idsT.filter(id=>knownToolIds.includes(id));
-    const toolsToShow = finalToolIds.length ? finalToolIds : (CUTTING_DATA.tool_types||[]).map(t=>t.id);
-    toolsToShow.forEach(id=>{ const t=(CUTTING_DATA.tool_types||[]).find(x=>x.id===id); if(t){ const o=document.createElement('option'); o.value=t.id; o.textContent=t.label||t.id; toolSel.appendChild(o); } });
-
-    if(holderSel.options.length) holderSel.value = holderSel.options[0].value;
-    if(toolSel.options.length) toolSel.value = toolSel.options[0].value;
-  }
-
-  function vibrationRiskScore(params){
-    const w = CUTTING_DATA.vibration.weights;
-    const Lnorm = Math.min(1,(params.L||0)/200);
-    const aenorm = Math.min(1,((params.ae||0)/(params.D||1)));
-    const apnorm = Math.min(1,((params.ap||0)/((params.D||1)*1.5)));
-    const fznorm = Math.min(1,((params.fz||0)/0.5));
-    const score = ((w.ld||0.5)*Lnorm + (w.ae||0.2)*aenorm + (w.ap||0.2)*apnorm + (w.fz||0.1)*fznorm);
-    const mu = CUTTING_DATA.defaults.vibe_gauss.mu || 0.7;
-    const sigma = CUTTING_DATA.defaults.vibe_gauss.sigma || 0.2;
-    const z = (score - mu)/sigma;
-    const p = 1/(1+Math.exp(-z));
-    return {raw:score,prob:p};
-  }
-
-  function computeFresado(override={}) {
-    const D = parseFloat(override.diam ?? $('diam').value) || 0.001;
-    const z = parseInt(override.z ?? $('z').value) || 1;
-    let vc = parseFloat(override.vc ?? $('vc').value) || 0.1;
-    let fz = parseFloat(override.fz ?? $('fz').value) || 0.0001;
-    const ae = parseFloat(override.ae ?? $('ae').value) || 0.1;
-    const ap = parseFloat(override.ap ?? $('ap').value) || 0.1;
-    const mat = (CUTTING_DATA.materials||[]).find(m=>m.id==$('materialSelect').value) || (CUTTING_DATA.materials||[])[0];
-    const holder = (CUTTING_DATA.holders||[]).find(h=>h.id==$('holderSelect').value) || (CUTTING_DATA.holders||[])[0];
-    const toolType = (CUTTING_DATA.tool_types||[]).find(t=>t.id==$('toolTypeSelect').value) || (CUTTING_DATA.tool_types||[])[0];
-    vc = vc * (toolType.vc_factor || 1.0);
-    fz = fz * (toolType.fz_factor || 1.0);
-
-    const Kc0 = mat?.Kc_N_per_mm2 || 2000;
-    const mexp = parseFloat($('mexp')?.value) || 0.2;
-    const rpm = (vc*1000)/(Math.PI*D);
-    const feed_mm_min = rpm * z * fz;
-    const mrr_mm3_min = feed_mm_min * ae * ap;
-    const mrr_cm3_min = mrr_mm3_min / 1000;
-    const chip_h = fz;
-    const Kc_h = Kc0 * Math.pow(chip_h + 1e-6, -mexp);
-    const eta = CUTTING_DATA.defaults.efficiency || 0.8;
-    const power_kW = (Kc_h * mrr_mm3_min) / (60*1000) / eta;
-    const volumen = parseFloat($('volumen').value)||0.001;
-    const time_min = volumen / Math.max(mrr_cm3_min,1e-9);
-    const cost_machine = (time_min/60) * (parseFloat($('machineCost').value)||0);
-    const life_min = (mat?.taylor?.C) || parseFloat($('C').value) || 40000;
-    const n = (mat?.taylor?.n) || parseFloat($('n').value) || 0.25;
-    const toolLife_min = life_min / Math.pow(Math.max(vc,1e-6), n);
-    const pieces_per_tool = Math.max(Math.floor(toolLife_min / Math.max(time_min,1e-9)),1);
-    const tool_cost_per_piece = (parseFloat($('toolCost').value)||0) / pieces_per_tool;
-    const F_radial = Kc_h * ae * ap * 0.001;
-    const E = (parseFloat($('E')?.value)||210) * 1000;
-    const I = Math.PI * Math.pow(D,4) / 64;
-    const L = parseFloat($('stickout').value||60);
-    const stiffness_factor = holder?.stiffness_factor || 1.0;
-    const delta_mm = (F_radial * Math.pow(L,3)) / (3 * E * I + 1e-9) / stiffness_factor;
-    const k_eff = (3 * E * I) / Math.pow(L,3) * stiffness_factor;
-    const m_eff = 0.02;
-    const f_n = (1/(2*Math.PI)) * Math.sqrt(Math.abs(k_eff / (m_eff*1000)));
-    const toothHz = (rpm/60) * z;
-    const vib = vibrationRiskScore({L, ae, ap, fz, D});
-    return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'fresado'};
-  }
-
-  function computeTorneado(override={}) {
-    const D = parseFloat(override.diamT ?? $('diamT').value) || 0.001;
-    const ap = parseFloat(override.apT ?? $('apT').value) || 0.5;
-    let vc = parseFloat(override.vcT ?? $('vcT').value) || 0.1;
-    const f = parseFloat(override.fT ?? $('fT').value) || 0.1;
-    const mat = (CUTTING_DATA.materials||[]).find(m=>m.id==$('materialSelect').value) || (CUTTING_DATA.materials||[])[0];
-    const holder = (CUTTING_DATA.holders||[]).find(h=>h.id==$('holderSelect').value) || (CUTTING_DATA.holders||[])[0];
-    const toolType = (CUTTING_DATA.tool_types||[]).find(t=>t.id==$('toolTypeSelect').value) || (CUTTING_DATA.tool_types||[])[0];
-    vc = vc * (toolType.vc_factor || 1.0);
-
-    const rpm = (vc*1000)/(Math.PI*D);
-    const feed_mm_min = rpm * f;
-    const mrr_mm3_min = Math.PI * D * ap * f * rpm / 4;
-    const mrr_cm3_min = mrr_mm3_min / 1000;
-    const chip_h = f;
-    const mexp = parseFloat($('mexp')?.value) || 0.2;
-    const Kc0 = mat?.Kc_N_per_mm2 || 2000;
-    const Kc_h = Kc0 * Math.pow(chip_h + 1e-6, -mexp);
-    const eta = CUTTING_DATA.defaults.efficiency || 0.8;
-    const power_kW = (Kc_h * mrr_mm3_min) / (60*1000) / eta;
-    const volumen = parseFloat($('volumen').value)||0.001;
-    const time_min = volumen / Math.max(mrr_cm3_min,1e-9);
-    const cost_machine = (time_min/60) * (parseFloat($('machineCost').value)||0);
-    const life_min = (mat?.taylor?.C) || parseFloat($('C').value) || 40000;
-    const n = (mat?.taylor?.n) || parseFloat($('n').value) || 0.25;
-    const toolLife_min = life_min / Math.pow(Math.max(vc,1e-6), n);
-    const pieces_per_tool = Math.max(Math.floor(toolLife_min / Math.max(time_min,1e-9)),1);
-    const tool_cost_per_piece = (parseFloat($('toolCost').value)||0) / pieces_per_tool;
-    const F_radial = Kc_h * ap * f * 0.001;
-    const E = (parseFloat($('E')?.value)||210) * 1000;
-    const I = Math.PI * Math.pow(D,4) / 64;
-    const L = parseFloat($('stickout').value||60);
-    const stiffness_factor = (holder?.stiffness_factor||1.0);
-    const delta_mm = (F_radial * Math.pow(L,3)) / (3 * E * I + 1e-9) / stiffness_factor;
-    const k_eff = (3 * E * I) / Math.pow(L,3) * stiffness_factor;
-    const m_eff = 0.02;
-    const f_n = (1/(2*Math.PI)) * Math.sqrt(Math.abs(k_eff / (m_eff*1000)));
-    const toothHz = rpm/60;
-    const vib = vibrationRiskScore({L, ae:ap, ap, fz:f, D});
-    return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'torneado'};
-  }
-
-  let chartMRR=null, chartVib=null, heatmapChart=null;
-
-  function renderChart(A){
-    const ctx = $('chartMRR').getContext('2d');
-    const labels=[]; const dataMRR=[];
-    const base = (A.mode === 'torneado') ? parseFloat($('vcT').value||120) : parseFloat($('vc').value||180);
-    for(let k=0;k<=10;k++){ const vcx = base*(0.6 + 0.08*k); labels.push(Math.round(vcx));
-      if(A.mode==='torneado'){ const D = parseFloat($('diamT').value)||60; const ap = parseFloat($('apT').value)||2; const f = parseFloat($('fT').value)||0.15; const rpm=(vcx*1000)/(Math.PI*D); const mrr=Math.PI*D*ap*f*rpm/4/1000; dataMRR.push(mrr);
-      } else { const D = parseFloat($('diam').value)||12; const z = parseInt($('z').value)||4; const fz = parseFloat($('fz').value)||0.06; const rpm=(vcx*1000)/(Math.PI*D); const feed = rpm*z*fz; const mrr = feed * parseFloat($('ae').value||10) * parseFloat($('ap').value||2)/1000; dataMRR.push(mrr); }
+  });
+  holderIds.forEach(id=>{
+    if(!CUTTING_DATA.holders.some(h=>h.id===id)){
+      CUTTING_DATA.holders.push({id:id,label:id,stiffness_factor:1.05});
     }
-    if(chartMRR) chartMRR.destroy();
-    chartMRR = new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'MRR (cm3/min)',data:dataMRR,fill:true,tension:0.25}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-  }
+  });
+}
 
-  function renderVibTrend(A){
-    const ctx = $('chartVibTrend').getContext('2d');
-    const labels=[]; const data=[];
-    const baseFeed = (A.mode==='torneado') ? (parseFloat($('fT').value)||0.15) : (parseFloat($('fz').value)||0.06);
-    for(let i=0;i<=10;i++){ const mult=0.5+0.1*i; labels.push((mult*100).toFixed(0)+'%'); const override={}; if(A.mode==='torneado') override.fT=baseFeed*mult; else override.fz=baseFeed*mult; const cell=(A.mode==='torneado')?computeTorneado(override):computeFresado(override); data.push(cell.vib.prob); }
-    if(chartVib) chartVib.destroy();
-    chartVib = new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Prob. vib',data,borderRadius:4}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:1}}}});
-  }
+const HOLDERS_BY_MODE = { fresado: ['ER Collet'], torneado: ['PortaInsertos'] };
+const TOOLTYPES_BY_MODE = { fresado: ['endmill'], torneado: ['turn_insert'] };
 
-  function buildHeatmap(A){
-    const mode = A.mode;
-    const baseVc = (mode==='torneado') ? parseFloat($('vcT').value)||120 : parseFloat($('vc').value)||180;
-    const baseFeed = (mode==='torneado') ? parseFloat($('fT').value)||0.15 : parseFloat($('fz').value)||0.06;
-    const rpmAdj = parseFloat($('rpmAdjust').value)/100;
-    const feedAdj = parseFloat($('feedAdjust').value)/100;
-    $('rpmAdjVal').textContent = Math.round(rpmAdj*100)+'%'; $('feedAdjVal').textContent = Math.round(feedAdj*100)+'%';
+function populateFromData(defaultMode = 'fresado'){
+  if(!CUTTING_DATA) return;
+  // materiales
+  const mSel = $('materialSelect'); mSel.innerHTML = '';
+  CUTTING_DATA.materials.forEach(m=>{
+    const opt = document.createElement('option'); opt.value = m.id; opt.textContent = m.name; mSel.appendChild(opt);
+  });
+  // operaciones
+  const oSel = $('operationSelect'); oSel.innerHTML = '';
+  const opsToShow = (defaultMode === 'torneado')
+    ? CUTTING_DATA.operations.filter(op => /turn/i.test(op.id) || /turn/i.test(op.label))
+    : CUTTING_DATA.operations.filter(op => !/turn/i.test(op.id) && !/turn/i.test(op.label));
+  const finalOps = opsToShow.length ? opsToShow : CUTTING_DATA.operations;
+  finalOps.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.label; oSel.appendChild(opt); });
 
-    const xSteps=16,ySteps=12;
-    const vcMin = baseVc*0.6*rpmAdj, vcMax = baseVc*1.4*rpmAdj;
-    const feedMin = baseFeed*0.4*feedAdj, feedMax = baseFeed*1.6*feedAdj;
-    const xVals=[]; for(let i=0;i<xSteps;i++) xVals.push(vcMin + (vcMax-vcMin)*(i/(xSteps-1)));
-    const yVals=[]; for(let j=0;j<ySteps;j++) yVals.push(feedMin + (feedMax-feedMin)*(j/(ySteps-1)));
+  // holders/tool types
+  updateModeOptions(defaultMode);
 
-    const data=[];
-    for(let j=0;j<ySteps;j++){ for(let i=0;i<xSteps;i++){
-      const vc = xVals[i], feedVal = yVals[j];
-      const override = {}; if(mode==='torneado'){ override.vcT=vc; override.fT=feedVal; } else { override.vc=vc; override.fz=feedVal; }
-      const cell = (mode==='torneado') ? computeTorneado(override) : computeFresado(override);
-      data.push({x:i,y:j,v:cell.vib.prob});
-    } }
-
-    if(heatmapChart) heatmapChart.destroy();
-    const ctx = $('heatmapCanvas').getContext('2d');
-    heatmapChart = new Chart(ctx,{
-      type:'matrix',
-      data:{datasets:[{label:'VibHeat',data:data,
-        width:({chart})=> (chart.chartArea||{width:1}).width/xSteps - 2,
-        height:({chart})=> (chart.chartArea||{height:1}).height/ySteps - 2
-      }]},
-      options:{
-        animation:{duration:0},
-        plugins:{legend:{display:false}, tooltip:{callbacks:{title:(ctx)=>{ const i=ctx[0].raw.x, j=ctx[0].raw.y; const vc=xVals[i].toFixed(1); const feed=yVals[j].toFixed(4); return `Vc ${vc} m/min · feed ${feed} ${mode==='torneado'?'mm/rev':'mm/tooth'}`; }, label:(ctx)=>`Prob vib: ${(ctx.raw.v*100).toFixed(1)}%` } } },
-        parsing:false,
-        elements:{ rectangle:{ backgroundColor:(ctx)=>{ const v=ctx.raw.v; if(v>0.8) return '#e11d48'; if(v>0.5) return '#f59e0b'; return '#10b981'; } } },
-        scales:{ x:{display:false}, y:{display:false} }
-      }
+  // machines
+  const mMachine = $('machineSelect'); mMachine.innerHTML='';
+  const profiles = (CUTTING_DATA.machines_profiles && CUTTING_DATA.machines_profiles.length) ? CUTTING_DATA.machines_profiles : (CUTTING_DATA.machines_by_brand? [].concat(...Object.values(CUTTING_DATA.machines_by_brand).flatMap(v=>Object.values(v).flat())):[]);
+  // fallback: if machines_profiles present use them
+  const machineList = (CUTTING_DATA.machines_profiles && CUTTING_DATA.machines_profiles.length) ? CUTTING_DATA.machines_profiles : (CUTTING_DATA.machines_by_brand? (function(){
+      const arr=[];
+      Object.keys(CUTTING_DATA.machines_by_brand||{}).forEach(brand=>{
+        const types = CUTTING_DATA.machines_by_brand[brand];
+        Object.keys(types).forEach(t=>{
+          types[t].forEach(m=>{
+            arr.push({id: m.ref_id || (brand+'_'+(m.name||'x')).replace(/\s+/g,'_'), brand:brand, model:m.name, type:m.type_label || m.type, rpm_max:m.rpm_max, power_kw:m.power_kw, torque_nm:m.torque_nm, feed_max_mm_min:m.feed_max_mm_min});
+          });
+        });
+      });
+      return arr;
+  })() : []);
+  const finalList = machineList.length?machineList:profiles;
+  if(!finalList.length){
+    const opt=document.createElement('option'); opt.value=''; opt.textContent='(no hay perfiles de máquina)'; mMachine.appendChild(opt);
+  } else {
+    const blank = document.createElement('option'); blank.value=''; blank.textContent='— Selecciona máquina —'; mMachine.appendChild(blank);
+    finalList.forEach(m=>{
+      const id = m.id || m.ref_id || (m.brand? (m.brand+'_'+m.model).replace(/\s+/g,'_') : (m.name||'machine'));
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.dataset.rpm = m.rpm_max || m.rpm_max || '';
+      opt.dataset.power = m.power_kw || '';
+      opt.dataset.torque = m.torque_nm || '';
+      opt.dataset.feed = m.feed_max_mm_min || '';
+      opt.textContent = (m.brand?m.brand+' ':'') + (m.model||m.name);
+      mMachine.appendChild(opt);
     });
   }
+}
 
-  function renderTableSummary(A){
-    const tbody = $('tableCompare').querySelector('tbody'); tbody.innerHTML='';
-    const rows = [
-      ['Modo', A.mode],
-      ['RPM', fmt(A.rpm,0)],
-      ['MRR (cm3/min)', fmt(A.mrr_cm3_min,3)],
-      ['Tiempo/pieza (min)', fmt(A.time_min,2)],
-      ['Costo máquina (MXN)', fmt(A.cost_machine,2)],
-      ['Prob. vib', fmt(A.vib.prob,2)]
-    ];
-    rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td class="muted small">${r[0]}</td><td>${r[1]}</td>`; tbody.appendChild(tr); });
-  }
-
-  function render(){
-    applyOperationDefaults();
-    const modeT = document.getElementById('modeT').classList.contains('is-on');
-    const A = modeT ? computeTorneado() : computeFresado();
-    const out = $('results'); out.innerHTML='';
-    const s=document.createElement('div'); s.className='card';
-    s.innerHTML=`<div style="font-weight:800">Resumen — ${A.mode}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-        <div class="muted">RPM</div><div class="result-value">${fmt(A.rpm,0)}</div>
-        <div class="muted">Avance (mm/min)</div><div class="result-value">${fmt(A.feed_mm_min,2)}</div>
-        <div class="muted">MRR (cm³/min)</div><div class="result-value">${fmt(A.mrr_cm3_min,3)}</div>
-        <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)}</div>
-      </div>`; out.appendChild(s);
-
-    if($('enableCycle').checked){
-      const c=document.createElement('div'); c.className='card'; c.innerHTML=`<div style="font-weight:800">Tiempo & Coste</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-          <div class="muted">Tiempo/pieza (min)</div><div class="result-value">${fmt(A.time_min,2)}</div>
-          <div class="muted">Costo/herr. p/pieza</div><div class="result-value">${fmt(A.tool_cost_per_piece,2)}</div>
-        </div>`; out.appendChild(c);
-    }
-
-    if($('enableKc').checked){
-      const k=document.createElement('div'); k.className='card'; k.innerHTML=`<div style="font-weight:800">Kc & Potencia</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-          <div class="muted">Chip thickness (mm)</div><div class="result-value">${fmt(A.chip_h,4)}</div>
-          <div class="muted">Kc(h) (N/mm²)</div><div class="result-value">${fmt(A.Kc_h,1)}</div>
-          <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)}</div>
-        </div>`; out.appendChild(k);
-    }
-
-    if($('enableStability').checked){
-      const st=document.createElement('div'); st.className='card';
-      const riskColor = A.vib.prob > CUTTING_DATA.vibration.risk_threshold ? '#e11d48' : (A.vib.prob>0.5 ? '#f59e0b' : '#10b981');
-      st.innerHTML=`<div style="font-weight:800">Vibración</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-          <div class="muted">f_n (Hz)</div><div class="result-value">${fmt(A.f_n,1)}</div>
-          <div class="muted">Freq rel (Hz)</div><div class="result-value">${fmt(A.toothHz,1)}</div>
-          <div class="muted">Score</div><div class="result-value">${fmt(A.vib.raw,3)}</div>
-          <div class="muted">Prob. riesgo</div><div class="result-value"><span style="display:inline-block;background:${riskColor};width:10px;height:10px;border-radius:999px;margin-right:6px"></span>${fmt(A.vib.prob,2)}</div>
-        </div>`; out.appendChild(st);
-    }
-
-    renderChart(A);
-    renderVibTrend(A);
-    buildHeatmap(A);
-    renderTableSummary(A);
-  }
-
-  // Machine selector: carga presets al cambiar
-  $('machineSelect').addEventListener('change', ()=>{
-    const id = $('machineSelect').value;
-    const m = (CUTTING_DATA.machines||[]).find(x=>x.id===id);
-    if(m){
-      $('machineModel').value = `${m.brand} ${m.model}`;
-      $('machinePower').value = m.power_kW;
-      $('machineMaxRpm').value = m.max_rpm;
-      $('spindleType').value = m.spindle;
-      $('stickout').value = m.stickout_default;
-      $('stickoutDefault').value = m.stickout_default;
-      $('machineCost').value = Math.max(150, Math.round(m.power_kW*30));
-    } else $('machineModel').value='';
-    render();
+function updateModeOptions(mode){
+  ensureTurningEntries();
+  // holders
+  const holderSel = $('holderSelect'); holderSel.innerHTML='';
+  const idsH = (mode==='torneado')? (HOLDERS_BY_MODE.torneado || []) : (HOLDERS_BY_MODE.fresado || []);
+  const knownHolderIds = (CUTTING_DATA.holders||[]).map(h=>h.id);
+  const finalHolderIds = idsH.filter(id=> knownHolderIds.includes(id));
+  const holdersToShow = finalHolderIds.length ? finalHolderIds : (CUTTING_DATA.holders||[]).map(h=>h.id);
+  holdersToShow.forEach(id=>{
+    const h = (CUTTING_DATA.holders||[]).find(x=>x.id===id);
+    if(h){ const opt=document.createElement('option'); opt.value=h.id; opt.textContent=h.label||h.id; holderSel.appendChild(opt); }
   });
 
-  // Mode toggle
-  $('modeF').addEventListener('click', ()=>{ $('modeF').classList.add('is-on'); $('modeT').classList.remove('is-on'); $('modeFresadoFields').style.display='block'; $('modeTorneadoFields').style.display='none'; updateModeOptions('fresado'); render(); });
-  $('modeT').addEventListener('click', ()=>{ $('modeT').classList.add('is-on'); $('modeF').classList.remove('is-on'); $('modeFresadoFields').style.display='none'; $('modeTorneadoFields').style.display='block'; updateModeOptions('torneado'); render(); });
-
-  // Heatmap controls
-  $('recalcHeat').addEventListener('click', ()=>{ buildHeatmap( (document.getElementById('modeT').classList.contains('is-on')? computeTorneado():computeFresado()) ); });
-  ['rpmAdjust','feedAdjust'].forEach(id => { $(id).addEventListener('input', ()=>{ $('rpmAdjVal').textContent = $('rpmAdjust').value + '%'; $('feedAdjVal').textContent = $('feedAdjust').value + '%'; }); });
-
-  // Exports
-  $('btnExportCsv').addEventListener('click', ()=>{
-    const modeT = document.getElementById('modeT').classList.contains('is-on');
-    const A = modeT ? computeTorneado() : computeFresado();
-    const rows = [['metric','value'], ['RPM',A.rpm], ['MRR_cm3_min',A.mrr_cm3_min], ['time_min',A.time_min], ['cost_piece',A.cost_machine], ['vib_prob',A.vib.prob]];
-    const csv = rows.map(r=> r.join(',') ).join('\n');
-    const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='export_calculadora.csv'; a.click(); URL.revokeObjectURL(url);
+  // tool types
+  const toolSel = $('toolTypeSelect'); toolSel.innerHTML='';
+  const idsT = (mode==='torneado')? (TOOLTYPES_BY_MODE.torneado || []) : (TOOLTYPES_BY_MODE.fresado || []);
+  const knownToolIds = (CUTTING_DATA.tool_types||[]).map(t=>t.id);
+  const finalToolIds = idsT.filter(id=> knownToolIds.includes(id));
+  const toolsToShow = finalToolIds.length ? finalToolIds : (CUTTING_DATA.tool_types||[]).map(t=>t.id);
+  toolsToShow.forEach(id=>{
+    const t = (CUTTING_DATA.tool_types||[]).find(x=>x.id===id);
+    if(t){ const opt=document.createElement('option'); opt.value=t.id; opt.textContent=t.label||t.id; toolSel.appendChild(opt); }
   });
 
-  $('btnExportPdf').addEventListener('click', async ()=>{
-    const canvas = await html2canvas(document.body, {scale:1.2});
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({orientation:'portrait',unit:'px',format:[canvas.width,canvas.height]});
-    pdf.addImage(imgData,'PNG',0,0,canvas.width,canvas.height);
-    pdf.save('reporte_calculadora_rpm.pdf');
-  });
+  if(holderSel.options.length) holderSel.value = holderSel.options[0].value;
+  if(toolSel.options.length) toolSel.value = toolSel.options[0].value;
 
-  function applyOperationDefaults(){
-    const op = (CUTTING_DATA.operations||[]).find(x=>x.id==$('operationSelect').value);
-    const D = parseFloat($('diam')?.value)||12;
-    if(!op) return;
-    if(op.default_ae_pct && $('ae')) $('ae').value = Math.max(1, Math.round((op.default_ae_pct/100)*D*100)/100);
-    if(op.default_ap_per_d && $('ap')) $('ap').value = Math.max(0.01, Math.round((op.default_ap_per_d*D)*100)/100);
-    if(op.default_ap && $('apT')) $('apT').value = op.default_ap;
+  // if switching to torneado, filter operations if present
+  const opSel = $('operationSelect');
+  if(opSel){
+    const turnOps = (CUTTING_DATA.operations||[]).filter(op => /turn/i.test(op.id) || /turn/i.test(op.label));
+    if(mode==='torneado' && turnOps.length){
+      opSel.innerHTML=''; turnOps.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.label; opSel.appendChild(opt); });
+    }
   }
+}
 
-  // auto render on change
-  ['input','change'].forEach(ev=> document.querySelectorAll('input,select').forEach(i=>i.addEventListener(ev, ()=>{ render(); })));
+/* ---------- vibration scoring (same as versión anterior) ---------- */
+function vibrationRiskScore(params){
+  const w = (CUTTING_DATA.vibration && CUTTING_DATA.vibration.weights) || {ld:0.5,ae:0.2,ap:0.2,fz:0.1};
+  const Lnorm = Math.min(1, (params.L||0)/200);
+  const aenorm = Math.min(1, ((params.ae||0) / (params.D||1)));
+  const apnorm = Math.min(1, ((params.ap||0) / ((params.D||1)*1.5)));
+  const fznorm = Math.min(1, ((params.fz||0) / 0.5));
+  const score = ( (w.ld||0.5)*Lnorm + (w.ae||0.2)*aenorm + (w.ap||0.2)*apnorm + (w.fz||0.1)*fznorm );
+  const mu = (CUTTING_DATA.defaults && CUTTING_DATA.defaults.vibe_gauss && CUTTING_DATA.defaults.vibe_gauss.mu) || 0.7;
+  const sigma = (CUTTING_DATA.defaults && CUTTING_DATA.defaults.vibe_gauss && CUTTING_DATA.defaults.vibe_gauss.sigma) || 0.2;
+  const z = (score - mu)/sigma;
+  const p = 1/(1+Math.exp(-z));
+  return {raw:score,prob:p};
+}
 
-  (async ()=>{ await loadCuttingData(); populateFromData(); updateModeOptions('fresado'); applyOperationDefaults(); render(); })();
+/* ---------- compute functions ---------- */
+function computeFresado(rpmOverride=null, feedAdj=1){
+  const D = parseFloat($('diam').value) || 0.001;
+  const z = parseInt($('z').value) || 1;
+  let vc = parseFloat($('vc').value) || 0.1;
+  let fz = parseFloat($('fz').value) || 0.0001;
+  const ae = parseFloat($('ae').value) || 0.1;
+  const ap = parseFloat($('ap').value) || 0.1;
+  const mat = (CUTTING_DATA.materials||[]).find(m=>m.id==$('materialSelect').value) || (CUTTING_DATA.materials||[])[0] || {Kc_N_per_mm2:2000,taylor:{C:40000,n:0.25}};
+  const holder = (CUTTING_DATA.holders||[]).find(h=>h.id==$('holderSelect').value) || (CUTTING_DATA.holders||[])[0] || {stiffness_factor:1.0};
+  const toolType = (CUTTING_DATA.tool_types||[]).find(t=>t.id==$('toolTypeSelect').value) || (CUTTING_DATA.tool_types||[])[0] || {vc_factor:1,fz_factor:1};
+  vc = vc * (toolType.vc_factor || 1.0);
+  fz = fz * (toolType.fz_factor || 1.0) * feedAdj;
+  const rpm = rpmOverride || (vc*1000)/(Math.PI*D);
+  const feed_mm_min = rpm * z * fz;
+  const mrr_mm3_min = feed_mm_min * ae * ap;
+  const mrr_cm3_min = mrr_mm3_min / 1000;
+  const chip_h = fz;
+  const Kc0 = mat.Kc_N_per_mm2 || 2000;
+  const mexp = (mat.taylor && mat.taylor.n) ? mat.taylor.n : parseFloat($('n')?.value) || 0.2;
+  const Kc_h = Kc0 * Math.pow(chip_h + 1e-6, -mexp);
+  const eta = (CUTTING_DATA.defaults && CUTTING_DATA.defaults.efficiency) || 0.8;
+  const power_kW = (Kc_h * mrr_mm3_min) / (60*1000) / eta;
+  const volumen = parseFloat($('volumen').value)||0.001;
+  const time_min = volumen / Math.max(mrr_cm3_min,1e-9);
+  const cost_machine = (time_min/60) * (parseFloat($('machineCost').value)||0);
+  const life_min = (mat?.taylor?.C) || parseFloat($('C').value) || 40000;
+  const n = (mat?.taylor?.n) || parseFloat($('n').value) || 0.25;
+  const toolLife_min = life_min / Math.pow(Math.max(vc,1e-6), n);
+  const pieces_per_tool = Math.max(Math.floor(toolLife_min / Math.max(time_min,1e-9)),1);
+  const tool_cost_per_piece = (parseFloat($('toolCost').value)||0) / pieces_per_tool;
+  const F_radial = Kc_h * ae * ap * 0.001;
+  const E = (parseFloat($('E')?.value)||210) * 1000;
+  const I = Math.PI * Math.pow(D,4) / 64;
+  const L = parseFloat($('stickout').value||60);
+  const stiffness_factor = holder.stiffness_factor || 1.0;
+  const delta_mm = (F_radial * Math.pow(L,3)) / (3 * E * I + 1e-9) / stiffness_factor;
+  const k_eff = (3 * E * I) / Math.pow(L,3) * stiffness_factor;
+  const m_eff = 0.02;
+  const f_n = (1/(2*Math.PI)) * Math.sqrt(Math.abs(k_eff / (m_eff*1000)));
+  const toothHz = (rpm/60) * z;
+  const vib = vibrationRiskScore({L, ae, ap, fz, D});
+  return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'fresado'};
+}
+
+function computeTorneado(rpmOverride=null, feedAdj=1){
+  const D = parseFloat($('diamT').value) || 0.001;
+  const ap = parseFloat($('apT').value) || 0.5;
+  let vc = parseFloat($('vcT').value) || 0.1;
+  const f = parseFloat($('fT').value) || 0.1;
+  const mat = (CUTTING_DATA.materials||[]).find(m=>m.id==$('materialSelect').value) || (CUTTING_DATA.materials||[])[0] || {Kc_N_per_mm2:2000,taylor:{C:40000,n:0.25}};
+  const holder = (CUTTING_DATA.holders||[]).find(h=>h.id==$('holderSelect').value) || (CUTTING_DATA.holders||[])[0] || {stiffness_factor:1.0};
+  const toolType = (CUTTING_DATA.tool_types||[]).find(t=>t.id==$('toolTypeSelect').value) || (CUTTING_DATA.tool_types||[])[0] || {vc_factor:1};
+  vc = vc * (toolType.vc_factor || 1.0);
+  const rpm = rpmOverride || (vc*1000)/(Math.PI*D);
+  const feed_mm_min = rpm * (f*feedAdj);
+  const mrr_mm3_min = Math.PI * D * ap * f * rpm / 4;
+  const mrr_cm3_min = mrr_mm3_min / 1000;
+  const chip_h = f;
+  const Kc0 = mat.Kc_N_per_mm2 || 2000;
+  const mexp = (mat.taylor && mat.taylor.n) ? mat.taylor.n : parseFloat($('n')?.value) || 0.2;
+  const Kc_h = Kc0 * Math.pow(chip_h + 1e-6, -mexp);
+  const eta = (CUTTING_DATA.defaults && CUTTING_DATA.defaults.efficiency) || 0.8;
+  const power_kW = (Kc_h * mrr_mm3_min) / (60*1000) / eta;
+  const volumen = parseFloat($('volumen').value)||0.001;
+  const time_min = volumen / Math.max(mrr_cm3_min,1e-9);
+  const cost_machine = (time_min/60) * (parseFloat($('machineCost').value)||0);
+  const life_min = (mat?.taylor?.C) || parseFloat($('C').value) || 40000;
+  const n = (mat?.taylor?.n) || parseFloat($('n').value) || 0.25;
+  const toolLife_min = life_min / Math.pow(Math.max(vc,1e-6), n);
+  const pieces_per_tool = Math.max(Math.floor(toolLife_min / Math.max(time_min,1e-9)),1);
+  const tool_cost_per_piece = (parseFloat($('toolCost').value)||0) / pieces_per_tool;
+  const F_radial = Kc_h * ap * f * 0.001;
+  const E = (parseFloat($('E')?.value)||210) * 1000;
+  const I = Math.PI * Math.pow(D,4) / 64;
+  const L = parseFloat($('stickout').value||60);
+  const stiffness_factor = holder.stiffness_factor || 1.0;
+  const delta_mm = (F_radial * Math.pow(L,3)) / (3 * E * I + 1e-9) / stiffness_factor;
+  const k_eff = (3 * E * I) / Math.pow(L,3) * stiffness_factor;
+  const m_eff = 0.02;
+  const f_n = (1/(2*Math.PI)) * Math.sqrt(Math.abs(k_eff / (m_eff*1000)));
+  const toothHz = rpm/60;
+  const vib = vibrationRiskScore({L, ae:ap, ap, fz:f*feedAdj, D});
+  return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'torneado'};
+}
+
+/* ---------- Charts & Heatmap ---------- */
+let chartMRR = null;
+let ctxMRR = null;
+function renderChart(A){
+  const ctx = $('chartMRR').getContext('2d');
+  const labels=[]; const dataMRR=[];
+  const base = (A.mode === 'torneado') ? (parseFloat($('vcT').value||120)) : (parseFloat($('vc').value||180));
+  for(let k=0;k<=10;k++){
+    const vcx = base*(0.6 + 0.08*k);
+    labels.push(Math.round(vcx));
+    if(A.mode==='torneado'){
+      const D = parseFloat($('diamT').value)||60;
+      const ap = parseFloat($('apT').value)||2;
+      const f = parseFloat($('fT').value)||0.15;
+      const rpm = (vcx*1000)/(Math.PI*D);
+      const mrr = Math.PI * D * ap * f * rpm / 4 / 1000;
+      dataMRR.push(mrr);
+    }else{
+      const D = parseFloat($('diam').value)||12;
+      const z = parseInt($('z').value)||4;
+      const fz = parseFloat($('fz').value)||0.06;
+      const rpm = (vcx*1000)/(Math.PI*D);
+      const feed = rpm*z*fz;
+      const mrr = feed * parseFloat($('ae').value||10) * parseFloat($('ap').value||2)/1000;
+      dataMRR.push(mrr);
+    }
+  }
+  if(chartMRR) chartMRR.destroy();
+  chartMRR = new Chart(ctx,{type:'line',data:{labels, datasets:[{label:'MRR (cm3/min)', data:dataMRR, fill:true, tension:0.25}]}, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+}
+
+/* Heatmap: dibuja en canvas una rejilla de RPM% vs avance% y colorea por prob vibración */
+function drawHeatmap(A){
+  const canvas = $('heatmapCanvas');
+  const ctx = canvas.getContext('2d');
+  const DPR = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  canvas.width = Math.floor(W * DPR); canvas.height = Math.floor(H * DPR);
+  ctx.scale(DPR, DPR);
+  ctx.clearRect(0,0,W,H);
+  // grid size
+  const cols = 28, rows = 18;
+  const cellW = W/cols, cellH = H/rows;
+  // base rpm and feed
+  const baseRPM = A.rpm;
+  // sample range: rpmAdj slider modifies effective rpm, but heatmap shows percent variation around machine/choice
+  const rpmMin = baseRPM * 0.6, rpmMax = baseRPM * 1.15;
+  const feedBase = A.feed_mm_min || 1;
+  const feedMin = Math.max(0.01, feedBase * 0.5), feedMax = feedBase * 2.0;
+  // iterate
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const p = c/(cols-1), q = r/(rows-1);
+      const rpmTest = rpmMin + p*(rpmMax-rpmMin);
+      const feedTest = feedMin + (1-q)*(feedMax-feedMin); // invert y so top=high feed
+      // approximate fz: feedTest / (rpm*z)
+      const z = parseInt($('z').value) || 4;
+      const fzTest = Math.max(0.00001, feedTest / (rpmTest * z));
+      // compute vib prob using vibrationRiskScore
+      const D = parseFloat($('diam').value) || 12;
+      const ae = parseFloat($('ae').value) || 10;
+      const ap = parseFloat($('ap').value) || 2;
+      const L = parseFloat($('stickout').value) || 60;
+      const vib = vibrationRiskScore({L, ae, ap, fz: fzTest, D});
+      const pV = vib.prob;
+      // color map: green -> yellow -> red
+      let color;
+      if(pV < 0.5) color = lerpColor('#0b6623','#f59e0b', pV/0.5); // green->amber
+      else color = lerpColor('#f59e0b','#e11d48', (pV-0.5)/0.5); // amber->red
+      ctx.fillStyle = color;
+      ctx.fillRect(c*cellW, r*cellH, cellW+0.5, cellH+0.5);
+    }
+  }
+  // overlay axes
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0,H-24,W,24);
+  ctx.fillStyle = '#bcd7ff'; ctx.font='12px system-ui';
+  ctx.fillText('RPM (left → right): ' + Math.round(rpmMin) + ' — ' + Math.round(rpmMax) + ' | Avance (top → bottom): ' + Math.round(feedMax) + ' — ' + Math.round(feedMin), 10, H-8);
+}
+
+/* Utility to interpolate hex colors */
+function hexToRgb(hex){ hex=hex.replace('#',''); return {r:parseInt(hex.substring(0,2),16),g:parseInt(hex.substring(2,4),16),b:parseInt(hex.substring(4,6),16)}}
+function rgbToHex(r,g,b){ const to = n=>('0'+Math.round(n).toString(16)).slice(-2); return '#'+to(r)+to(g)+to(b);}
+function lerpColor(a,b,t){
+  const A=hexToRgb(a), B=hexToRgb(b);
+  return rgbToHex(A.r + (B.r-A.r)*t, A.g + (B.g-A.g)*t, A.b + (B.b-A.b)*t);
+}
+
+/* render UI results + charts + heatmap */
+function render(){
+  applyOperationDefaults();
+  const modeT = document.getElementById('modeT').classList.contains('is-on');
+  const rpmAdjPct = parseFloat($('rpmAdj').value)/100;
+  const feedAdj = parseFloat($('feedAdj').value)/100;
+  const A = modeT ? computeTorneado(null, feedAdj) : computeFresado(null, feedAdj);
+  // apply rpmAdj by adjusting displayed rpm and power calculation optionally: we'll recompute with rpmOverride scaled
+  const rpmOverride = A.rpm * rpmAdjPct;
+  const A2 = modeT ? computeTorneado(rpmOverride, feedAdj) : computeFresado(rpmOverride, feedAdj);
+
+  // KPI cards
+  $('kpiTime').textContent = fmt(A2.time_min,2);
+  $('kpiPower').textContent = fmt(A2.power_kW,3);
+  $('kpiTool').textContent = fmt(A2.pieces_per_tool,0);
+  $('kpiVib').textContent = fmt(A2.vib.prob,2);
+
+  // results small details (not panelized) - we keep them minimal as cards above
+  renderChart(A2);
+  drawHeatmap(A2);
+  // set colors for vib card
+  const vibVal = A2.vib.prob;
+  const card = $('cardVib');
+  if(vibVal > (CUTTING_DATA.vibration?.risk_threshold || 0.8)) { card.style.borderColor = 'rgba(225,29,72,0.6)'; } 
+  else if(vibVal > 0.5) { card.style.borderColor = 'rgba(245,158,11,0.6)'; } 
+  else { card.style.borderColor = 'rgba(16,185,129,0.6)'; }
+}
+
+/* applyOperationDefaults */
+function applyOperationDefaults(){
+  const op = (CUTTING_DATA.operations||[]).find(x=>x.id==$('operationSelect').value);
+  if(!op) return;
+  const D = parseFloat($('diam')?.value)||12;
+  if(op.default_ae_pct && $('ae')) $('ae').value = Math.max(1, Math.round((op.default_ae_pct/100)*D*100)/100);
+  if(op.default_ap_per_d && $('ap')) $('ap').value = Math.max(0.01, Math.round((op.default_ap_per_d*D)*100)/100);
+  if(op.default_ap && $('apT')) $('apT').value = op.default_ap;
+}
+
+/* Wire events */
+document.getElementById('modeF').addEventListener('click', ()=>{
+  document.getElementById('modeF').classList.add('is-on'); document.getElementById('modeT').classList.remove('is-on');
+  $('modeFresadoFields').style.display='block'; $('modeTorneadoFields').style.display='none';
+  updateModeOptions('fresado'); render();
+});
+document.getElementById('modeT').addEventListener('click', ()=>{
+  document.getElementById('modeT').classList.add('is-on'); document.getElementById('modeF').classList.remove('is-on');
+  $('modeFresadoFields').style.display='none'; $('modeTorneadoFields').style.display='block';
+  updateModeOptions('torneado'); render();
+});
+
+// auto render on inputs
+['input','change'].forEach(ev=> document.querySelectorAll('input,select').forEach(i=> i.addEventListener(ev, ()=>{
+  // update slider labels
+  $('rpmAdjLabel').textContent = $('rpmAdj').value + '%';
+  $('feedAdjLabel').textContent = (parseFloat($('feedAdj').value)/100).toFixed(2) + 'x';
+  render();
+})));
+
+// export CSV
+$('btnExportCsv').addEventListener('click', ()=>{
+  const modeT = document.getElementById('modeT').classList.contains('is-on');
+  const A = modeT ? computeTorneado() : computeFresado();
+  const rows = [['metric','value'], ['RPM',A.rpm], ['MRR_cm3_min',A.mrr_cm3_min], ['time_min',A.time_min], ['cost_piece',A.cost_machine], ['vib_prob',A.vib.prob]];
+  const csv = rows.map(r=> r.join(',') ).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='calc_export.csv'; a.click(); URL.revokeObjectURL(url);
+});
+
+// export PDF
+$('btnExportPdf').addEventListener('click', async ()=>{
+  const element = document.body;
+  const canvas = await html2canvas(element, {scale:1.2});
+  const imgData = canvas.toDataURL('image/png');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:'portrait',unit:'px',format:[canvas.width, canvas.height]});
+  pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+  pdf.save('reporte_calculadora_rpm.pdf');
+});
+
+/* Machine select change - autopopulate fields */
+$('machineSelect')?.addEventListener('change', (e)=>{
+  const sel = e.target;
+  const opt = sel.options[sel.selectedIndex];
+  if(!opt) return;
+  $('machineRPMMax').value = opt.dataset.rpm || '';
+  $('machinePowerKW').value = opt.dataset.power || '';
+  $('machineTorqueNM').value = opt.dataset.torque || '';
+  $('machineFeedMax').value = opt.dataset.feed || '';
+  // if machine gives rpm_max, set vc accordingly approx: vc = rpm * pi * D /1000 -> back-calc vc from rpm_max * 0.6
+  const rpmMax = parseFloat(opt.dataset.rpm) || 0;
+  const D = parseFloat($('diam').value) || 12;
+  if(rpmMax){
+    const baseRPM = Math.round(rpmMax * 0.6);
+    const vcEst = (baseRPM * Math.PI * D)/1000;
+    if(!$('vc').dataset.userEdited) $('vc').value = Math.round(vcEst);
+  }
+  render();
+});
+
+/* mark vc as user-edited if changed manually */
+$('vc').addEventListener('input', ()=>{$('vc').dataset.userEdited = '1'});
+
+/* Init */
+(async function init(){
+  await loadCuttingData();
+  populateFromData('fresado');
+  updateModeOptions('fresado');
+  applyOperationDefaults();
+  // set sliders
+  $('rpmAdj').value = 100; $('feedAdj').value = 100;
+  // initial render
+  render();
+})();
+
 </script>
 </body>
 </html>
