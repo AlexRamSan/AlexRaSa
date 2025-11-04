@@ -281,53 +281,62 @@ async function loadCuttingData(){
     console.warn('No se encontró cutting-data.json externo. Usando embedded fallback.');
   }
 }
-/****** START - Patch: soporte holders/tool-types por modo (fresado/torneado) ******/
-/* Ejecutar después de loadCuttingData() para garantizar que CUTTING_DATA esté disponible */
+/****** PATCH: soporte torneado con porta-insertos (reemplaza el patch anterior) ******/
 function ensureTurningEntries(){
-  // Añadir tool types para torneado si no existen
-  const existsTurn = CUTTING_DATA.tool_types.some(t=>t.id === 'turn_insert' || t.id === 'turn_tool');
-  if(!existsTurn){
-    CUTTING_DATA.tool_types.push(
-      { id:'turn_insert', label:'Herramienta de torneado (insertos)', vc_factor:1.0, fz_factor:1.0, default_flutes:1 },
-      { id:'turn_boring', label:'Herrer. de mandrinado', vc_factor:0.9, fz_factor:1.0, default_flutes:1 },
-      { id:'turn_tool', label:'Herram. torneado genérica', vc_factor:1.0, fz_factor:1.0, default_flutes:1 }
-    );
-  }
+  // Añade tool types y holders específicos para torneado si no existen
+  const toolIds = ['turn_insert','boring_bar','external_turn_tool'];
+  const holderIds = ['PortaInsertos','PortaTorreta','PortaBarrenador'];
 
-  // Añadir holders específicos de torneado si no existen
-  const existsLathe = CUTTING_DATA.holders.some(h=>h.id === 'LatheChuck' || h.id === '3JawChuck');
-  if(!existsLathe){
-    CUTTING_DATA.holders.push(
-      { id:'LatheChuck', label:'Chuck (3 mandíbulas)', stiffness_factor:1.3 },
-      { id:'4JawChuck', label:'Chuck (4 mandíbulas)', stiffness_factor:1.35 },
-      { id:'ColletLathe', label:'Portapinzas tipo collet (torneado)', stiffness_factor:1.05 }
-    );
-  }
+  // tool types
+  toolIds.forEach(id=>{
+    if(!CUTTING_DATA.tool_types.some(t=>t.id===id)){
+      if(id==='turn_insert'){
+        CUTTING_DATA.tool_types.push({id:'turn_insert', label:'Herramienta de torneado (insertos)', vc_factor:1.0, fz_factor:1.0, default_flutes:1});
+      }
+      if(id==='boring_bar'){
+        CUTTING_DATA.tool_types.push({id:'boring_bar', label:'Barra de mandrinado', vc_factor:0.9, fz_factor:1.0, default_flutes:1});
+      }
+      if(id==='external_turn_tool'){
+        CUTTING_DATA.tool_types.push({id:'external_turn_tool', label:'Herram. externa (torneado)', vc_factor:1.0, fz_factor:1.0, default_flutes:1});
+      }
+    }
+  });
+
+  // holders (portainsertos / torreta)
+  holderIds.forEach(id=>{
+    if(!CUTTING_DATA.holders.some(h=>h.id===id)){
+      if(id==='PortaInsertos'){
+        CUTTING_DATA.holders.push({id:'PortaInsertos', label:'Porta-insertos para tornear', stiffness_factor:1.15});
+      }
+      if(id==='PortaTorreta'){
+        CUTTING_DATA.holders.push({id:'PortaTorreta', label:'Porta en torreta (indexable)', stiffness_factor:1.2});
+      }
+      if(id==='PortaBarrenador'){
+        CUTTING_DATA.holders.push({id:'PortaBarrenador', label:'Porta para barras/mandrinado', stiffness_factor:1.05});
+      }
+    }
+  });
 }
 
-/* Mapas para decidir qué opciones mostrar según modo */
+// Mapas ajustados: mostraremos porta-insertos en torneado
 const HOLDERS_BY_MODE = {
   fresado: [ 'ER Collet','Heavy ER','REGOFIX_powRgrip','Shrinkfit','MillingChuck' ],
-  torneado: [ 'LatheChuck','4JawChuck','ColletLathe','REGOFIX_powRgrip' ] // REGOFIX si aplica como adaptación
+  torneado: [ 'PortaInsertos','PortaTorreta','PortaBarrenador','REGOFIX_powRgrip' ]
 };
 const TOOLTYPES_BY_MODE = {
   fresado: [ 'endmill','ball' ],
-  torneado: [ 'turn_insert','turn_boring','turn_tool' ]
+  torneado: [ 'turn_insert','boring_bar','external_turn_tool' ]
 };
 
-/* Reponer selects holder/tooltype según modo */
 function updateModeOptions(mode){
-  // asegurar entries base
   ensureTurningEntries();
 
-  // holders
+  // actualizar holders
   const holderSel = $('holderSelect');
   holderSel.innerHTML = '';
   const idsH = (mode === 'torneado') ? HOLDERS_BY_MODE.torneado : HOLDERS_BY_MODE.fresado;
-  // si algún id no está en CUTTING_DATA.holders, incluir fallback (toma todos)
   const knownHolderIds = CUTTING_DATA.holders.map(h=>h.id);
   const finalHolderIds = idsH.filter(id=>knownHolderIds.includes(id));
-  // si no hay coincidencias, mostrar todo
   const holdersToShow = finalHolderIds.length ? finalHolderIds : CUTTING_DATA.holders.map(h=>h.id);
   holdersToShow.forEach(id=>{
     const h = CUTTING_DATA.holders.find(x=>x.id===id);
@@ -337,7 +346,7 @@ function updateModeOptions(mode){
     }
   });
 
-  // tool types
+  // actualizar tool types
   const toolSel = $('toolTypeSelect');
   toolSel.innerHTML = '';
   const idsT = (mode === 'torneado') ? TOOLTYPES_BY_MODE.torneado : TOOLTYPES_BY_MODE.fresado;
@@ -352,38 +361,13 @@ function updateModeOptions(mode){
     }
   });
 
-  // establecer primer valor por defecto visual
+  // seleccionar primer elemento si existe
   if(holderSel.options.length) holderSel.value = holderSel.options[0].value;
   if(toolSel.options.length) toolSel.value = toolSel.options[0].value;
 }
 
-/* Modifica populateFromData para usar updateModeOptions al final */
-const _old_populateFromData = populateFromData;
-populateFromData = function(){
-  // llamar a la versión antigua (si existe) para comportamiento existente
-  try{ if(typeof _old_populateFromData === 'function') _old_populateFromData(); }catch(e){ /*ignore*/ }
-  // y ahora aplicar el filtro según modo actual
-  const modeT = document.getElementById('modeT') && document.getElementById('modeT').classList.contains('active');
-  updateModeOptions(modeT ? 'torneado' : 'fresado');
-};
-
-/* Asegurar que al cambiar modo se repueblen selects */
-document.getElementById('modeF').addEventListener('click', ()=>{
-  document.getElementById('modeF').classList.add('active'); document.getElementById('modeT').classList.remove('active');
-  document.getElementById('modeFresadoFields').style.display='block'; document.getElementById('modeTorneadoFields').style.display='none';
-  document.getElementById('presetMode').textContent='Fresado';
-  updateModeOptions('fresado'); render();
-});
-document.getElementById('modeT').addEventListener('click', ()=>{
-  document.getElementById('modeT').classList.add('active'); document.getElementById('modeF').classList.remove('active');
-  document.getElementById('modeFresadoFields').style.display='none'; document.getElementById('modeTorneadoFields').style.display='block';
-  document.getElementById('presetMode').textContent='Torneado';
-  updateModeOptions('torneado'); render();
-});
-
-/* Llamar una vez después de cargar datos */
+// Llamada inicial para asegurar selects correctos tras carga
 (async ()=>{
-  // si CUTTING_DATA ya está cargado llama populateFromData, si no espera a loadCuttingData
   if(CUTTING_DATA){
     populateFromData();
     updateModeOptions('fresado');
@@ -393,7 +377,8 @@ document.getElementById('modeT').addEventListener('click', ()=>{
     updateModeOptions('fresado');
   }
 })();
-/****** END - Patch ******/
+/****** END PATCH ******/
+
 
 /* ------------------- Helpers ------------------- */
 const $ = id => document.getElementById(id);
