@@ -5,7 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora RPM & Avance — AlexRaSa (Extendida, integrada)</title>
   <meta name="description" content="Calculadora extendida integrada con cutting-data.json: materiales, holders, operaciones, análisis de vibración y comparador A vs P." />
+  <link rel="canonical" href="https://alexrasa.store/calculadora-rpm-avance" />
 
+  <!-- Open Graph -->
+  <meta property="og:title" content="Calculadora RPM & Avance — AlexRaSa" />
+  <meta property="og:description" content="Calculadora extendida integrada con cutting-data.json: materiales, holders, operaciones, análisis de vibración y comparador A vs P." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/hero-calculadora.png" />
+
+  <!-- Favicon placeholder -->
+  <link rel="icon" href="/favicon.ico" />
+
+  <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -26,16 +37,65 @@
     .toggle:before{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:999px;transition:all .18s}
     .toggle:checked:before{transform:translateX(20px)}
     .risk-dot{width:12px;height:12px;border-radius:999px;display:inline-block;margin-right:6px}
+    /* header / hero tweaks */
+    .site-header{border-bottom:1px solid rgba(255,255,255,0.03);padding:0.75rem 1rem;margin-bottom:1rem}
+    .logo {font-weight:800;letter-spacing:.4px}
+    .hero{background:linear-gradient(90deg, rgba(14,165,233,0.06), rgba(16,185,129,0.03));padding:1.25rem;border-radius:0.6rem;margin-bottom:1rem;border:1px solid rgba(255,255,255,0.02)}
+    .cta{background:linear-gradient(90deg,#10b981,#06b6d4);color:#041018;padding:.6rem .9rem;border-radius:0.5rem;font-weight:700}
   </style>
 </head>
 <body class="p-4">
+  <!-- HEADER -->
+  <header class="site-header flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="logo text-lg">AlexRaSa</div>
+      <nav class="hidden md:flex gap-4 muted small">
+        <a href="/#servicios" class="hover:underline">Servicios</a>
+        <a href="/blog" class="hover:underline">Blog</a>
+        <a href="/contacto" class="hover:underline">Contacto</a>
+        <a href="/portfolio" class="hover:underline">Casos</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="https://wa.me/524425992802" class="muted small">WhatsApp</a>
+      <a href="/agenda" class="cta">Agendar visita</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero flex flex-col md:flex-row items-start gap-6">
+    <div class="flex-1">
+      <h1 class="text-2xl font-bold">Calculadora RPM & Avance — Extendida</h1>
+      <p class="muted mt-2">Cálculos integrados: MRR, potencia, vida de herramienta, coste por pieza, deflexión, análisis de vibración y comparador A vs P. Usa presets por material, operación y holder.</p>
+      <div class="mt-4 flex gap-3">
+        <button id="heroStart" class="cta">Empezar</button>
+        <a href="#results" class="muted small self-center">Ir a resultados</a>
+      </div>
+      <div class="mt-3 muted small">Consejo: selecciona material y operación primero. Luego ajusta avance y profundidad.</div>
+    </div>
+    <div class="w-full md:w-72">
+      <!-- mini tarjeta con preset rápido -->
+      <div class="card small">
+        <div class="font-bold">Preset rápido</div>
+        <div class="mt-2 grid grid-cols-2 gap-1 muted small">
+          <div>Material</div><div>Acero 1045</div>
+          <div>Operación</div><div>Desbaste</div>
+          <div>Holder</div><div>Shrinkfit</div>
+          <div>Tool</div><div>Fresa 4 flutes</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN LAYOUT (hero + calculator) -->
   <div class="flex gap-4">
     <div class="main">
+      <!-- existing calculator UI copy/pasted under the hero -->
       <div class="card mb-4">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-xl font-bold">Calculadora RPM & Avance — Integrada</h1>
-            <div class="muted small">Ahora usa presets de cutting-data.json para Material, Operación y Sujeción.</div>
+            <h2 class="text-lg font-bold">Calculadora — entradas</h2>
+            <div class="muted small">Rellena o usa presets.</div>
           </div>
           <div class="text-right small muted">Archivo: <span class="font-mono">calculadora-rpm-extendida.html</span></div>
         </div>
@@ -195,7 +255,7 @@
   </div>
 
   <script>
-    // Embedded cutting-data.json (extracted from your upload)
+    /* ------------- CUTTING_DATA (short subset integrado) ------------- */
     const CUTTING_DATA = {
       "version": "3.0",
       "defaults": {"rpm_limit":12000,"prudence":0.9,"holder":"ER Collet","stickout_mm":25,"ae_percent":25,"ap_mm":5,"efficiency":0.8,"vibe_gauss":{"mu":0.75,"sigma":0.2},"units":"metric","default_flutes":4},
@@ -223,17 +283,15 @@
       ]
     };
 
-    // Helpers
+    /* ------------------- Helpers ------------------- */
     const $ = id => document.getElementById(id);
     function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
 
-    // Populate selects
     function populateFromData(){
       const mSel = $('materialSelect'); CUTTING_DATA.materials.forEach(m=>{ const opt=document.createElement('option'); opt.value=m.id; opt.textContent=m.name; mSel.appendChild(opt); });
       const oSel = $('operationSelect'); CUTTING_DATA.operations.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.label; oSel.appendChild(opt); });
       const hSel = $('holderSelect'); CUTTING_DATA.holders.forEach(h=>{ const opt=document.createElement('option'); opt.value=h.id; opt.textContent=h.label; hSel.appendChild(opt); });
       const tSel = $('toolTypeSelect'); CUTTING_DATA.tool_types.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.id; opt.textContent=t.label; tSel.appendChild(opt); });
-      // defaults
       mSel.value = CUTTING_DATA.materials[0].id;
       oSel.value = CUTTING_DATA.operations[0].id;
       hSel.value = CUTTING_DATA.holders[0].id;
@@ -251,59 +309,50 @@
       }
     }
 
-    // Vibration scoring function
     function vibrationRiskScore(params){
-      // params: stickout L, ae, ap, fz, rpm, toothHz, f_n
       const w = CUTTING_DATA.vibration.weights;
-      // normalize each indicator between 0 and 1 using simple heuristics
-      const Lnorm = Math.min(1, params.L/200); // 200 mm -> 1
-      const aenorm = Math.min(1, (params.ae / params.D)); // ae relative to D
+      const Lnorm = Math.min(1, params.L/200);
+      const aenorm = Math.min(1, (params.ae / params.D));
       const apnorm = Math.min(1, params.ap / (params.D*1.5));
       const fznorm = Math.min(1, params.fz / 0.5);
       const score = (w.ld*Lnorm + w.ae*aenorm + w.ap*apnorm + w.fz*fznorm);
-      // map through gaussian preference (mu/sigma) to a probability-like score
       const mu = CUTTING_DATA.defaults.vibe_gauss.mu; const sigma = CUTTING_DATA.defaults.vibe_gauss.sigma;
-      // simple transform
       const z = (score - mu)/sigma;
       const p = 1/(1+Math.exp(-z));
       return {raw:score,prob:p};
     }
 
+    /* ------------------- Cálculos ------------------- */
     function computeAll(useB=false){
-      // Read inputs A
-      const D = parseFloat($('diam').value) || 0.001; // mm
+      const D = parseFloat($('diam').value) || 0.001;
       const z = parseInt($('z').value) || 1;
-      let vc = parseFloat($('vc').value) || 0.1; // m/min
-      let fz = parseFloat($('fz').value) || 0.0001; // mm
-      let ae = parseFloat($('ae').value) || 0.1; // mm
-      let ap = parseFloat($('ap').value) || 0.1; // mm
+      let vc = parseFloat($('vc').value) || 0.1;
+      let fz = parseFloat($('fz').value) || 0.0001;
+      let ae = parseFloat($('ae').value) || 0.1;
+      let ap = parseFloat($('ap').value) || 0.1;
       const entryAngle = 90 * Math.PI/180;
 
       const machineCost = parseFloat($('machineCost').value) || 0;
       const toolCost = parseFloat($('toolCost').value) || 0;
-      const volumen = parseFloat($('volumen').value) || 0; // cm3
+      const volumen = parseFloat($('volumen').value) || 0;
 
       const mat = CUTTING_DATA.materials.find(m=>m.id==$('materialSelect').value) || CUTTING_DATA.materials[0];
       const holder = CUTTING_DATA.holders.find(h=>h.id==$('holderSelect').value) || CUTTING_DATA.holders[0];
       const toolType = CUTTING_DATA.tool_types.find(t=>t.id==$('toolTypeSelect').value) || CUTTING_DATA.tool_types[0];
       const op = CUTTING_DATA.operations.find(o=>o.id==$('operationSelect').value) || CUTTING_DATA.operations[0];
 
-      // apply tool/operation factors
       vc = vc * (toolType.vc_factor || 1.0);
       fz = fz * (toolType.fz_factor || 1.0);
 
-      // Kc & Taylor from material
       const Kc0 = mat.Kc_N_per_mm2 || parseFloat($('Kc0').value) || 2000;
       const C = mat.taylor?.C || parseFloat($('C').value) || 40000;
       const n = mat.taylor?.n || parseFloat($('n').value) || 0.25;
 
-      // Basic conversions
-      const rpm = (vc*1000)/(Math.PI*D); // rpm
-      const feed_mm_min = rpm * z * fz; // mm/min
-      const mrr_mm3_min = feed_mm_min * ae * ap; // mm3/min
-      const mrr_cm3_min = mrr_mm3_min / 1000; // cm3/min
+      const rpm = (vc*1000)/(Math.PI*D);
+      const feed_mm_min = rpm * z * fz;
+      const mrr_mm3_min = feed_mm_min * ae * ap;
+      const mrr_cm3_min = mrr_mm3_min / 1000;
 
-      // chip thickness approx: fz * sin(entryAngle)
       const chip_h = fz * Math.abs(Math.sin(entryAngle));
       const mexp = parseFloat($('mexp').value) || 0.2;
       const Kc_h = Kc0 * Math.pow(chip_h + 1e-6, -mexp);
@@ -311,32 +360,27 @@
       const eta = CUTTING_DATA.defaults.efficiency || 0.8;
       const power_kW = (Kc_h * mrr_mm3_min) / (60*1000) / eta;
 
-      // Time & costs
       const time_min = volumen / Math.max(mrr_cm3_min, 1e-9);
       const time_h = time_min/60;
       const cost_machine = time_h * machineCost;
 
-      // Tool life (Taylor) using Vc (m/min). T = C / Vc^n (min)
       const life_min = C / Math.pow(Math.max(vc,1e-6), n);
       const pieces_per_tool = Math.max(Math.floor(life_min / Math.max(time_min,1e-9)),1);
       const tool_cost_per_piece = toolCost / pieces_per_tool;
       const cost_per_piece = cost_machine + tool_cost_per_piece;
 
-      // Deflection approximate enhanced with holder stiffness
       const I = Math.PI * Math.pow(D,4) / 64;
       const F_radial = Kc_h * ae * ap * 0.001;
       const stiffness_factor = holder.stiffness_factor || 1.0;
-      const E = (parseFloat($('E').value)||210) * 1000; // GPa -> MPa as N/mm2
+      const E = (parseFloat($('E').value)||210) * 1000;
       const delta_mm = (F_radial * Math.pow(parseFloat($('stickout').value||60),3)) / (3 * E * I + 1e-9) / stiffness_factor;
 
-      // stiffness & natural freq approx
       const L = parseFloat($('stickout').value||60);
       const k_eff = (3 * E * I) / Math.pow(L,3) * stiffness_factor;
-      const m_eff = 0.02; // kg
+      const m_eff = 0.02;
       const f_n = (1/(2*Math.PI))*Math.sqrt(Math.abs(k_eff / (m_eff*1000)));
       const toothHz = rpm/60 * z;
 
-      // Vibration risk
       const vib = vibrationRiskScore({L, ae, ap, fz, D});
       const risk_flag = vib.prob > CUTTING_DATA.vibration.risk_threshold;
 
@@ -365,6 +409,7 @@
       return {A,B};
     }
 
+    /* ------------------- Render ------------------- */
     function render(){
       applyOperationDefaults();
       const enableCycle = $('enableCycle').checked;
@@ -451,62 +496,87 @@
       renderCompareTable(A, B);
     }
 
-    // Chart.js
+    /* ------------------- Chart & Compare (corregidos) ------------------- */
     let chartMRR = null;
     function renderChart(A){
       const ctx = $('chartMRR').getContext('2d');
       const D = parseFloat($('diam').value)||12; const z = parseInt($('z').value)||4; const fz = parseFloat($('fz').value)||0.06;
       const vc = parseFloat($('vc').value)||180;
-      const vcs = []; const labels=[]; const dataMRR=[];
-      for(let k=0;k<=10;k++){ const vcx = vc*(0.6 + 0.08*k); labels.push(Math.round(vcx)); const rpm = (vcx*1000)/(Math.PI*D); const feed = rpm*z*fz; const mrr = feed * parseFloat($('ae').value||10) * parseFloat($('ap').value||2)/1000; dataMRR.push(mrr); }
+      const labels=[]; const dataMRR=[];
+      for(let k=0;k<=10;k++){
+        const vcx = vc*(0.6 + 0.08*k);
+        labels.push(Math.round(vcx));
+        const rpm = (vcx*1000)/(Math.PI*D);
+        const feed = rpm*z*fz;
+        const mrr = feed * parseFloat($('ae').value||10) * parseFloat($('ap').value||2)/1000;
+        dataMRR.push(mrr);
+      }
       if(chartMRR) chartMRR.destroy();
       chartMRR = new Chart(ctx,{type:'line',data:{labels, datasets:[{label:'MRR (cm3/min)', data:dataMRR, fill:true, tension:0.25}]}, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
     }
 
     function renderCompareTable(A,B){
-  const tbody = $('tableCompare').querySelector('tbody');
-  tbody.innerHTML = '';
-  if(!B){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="muted">Comparador</td><td colspan="3" class="small muted">Activa "Comparador A vs P" y presiona Comparar</td>`;
-    tbody.appendChild(tr);
-    return;
-  }
+      const tbody = $('tableCompare').querySelector('tbody');
+      tbody.innerHTML = '';
+      if(!B){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="muted">Comparador</td><td colspan="3" class="small muted">Activa "Comparador A vs P" y presiona Comparar</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
 
-  // calcular vib B de forma separada para evitar paréntesis confusos
-  const vibB = vibrationRiskScore({
-    L: parseFloat($('stickout').value || 60),
-    ae: parseFloat($('aeB').value || 8),
-    ap: parseFloat($('apB').value || 1),
-    fz: parseFloat($('fzB').value || 0.04),
-    D: parseFloat($('diam').value || 12)
-  });
+      const vibB = vibrationRiskScore({
+        L: parseFloat($('stickout').value || 60),
+        ae: parseFloat($('aeB').value || 8),
+        ap: parseFloat($('apB').value || 1),
+        fz: parseFloat($('fzB').value || 0.04),
+        D: parseFloat($('diam').value || 12)
+      });
 
-  const rows = [
-    ['RPM', fmt(A.rpm,0), fmt(B.rpm,0), fmt(B.rpm - A.rpm,0)],
-    ['MRR (cm3/min)', fmt(A.mrr_cm3_min,3), fmt(B.mrr_cm3_min,3), fmt(B.mrr_cm3_min - A.mrr_cm3_min,3)],
-    ['Tiempo/pieza (min)', fmt(A.time_min,2), fmt(B.time_min,2), fmt(B.time_min - A.time_min,2)],
-    ['Costo/pieza (MXN)', fmt(A.cost_per_piece,2), fmt(B.cost_per_piece,2), fmt(B.cost_per_piece - A.cost_per_piece,2)],
-    ['Piezas por herramienta', fmt(A.pieces_per_tool,0), fmt(B.pieces_per_tool,0), fmt(B.pieces_per_tool - A.pieces_per_tool,0)],
-    ['Vib. prob', fmt(A.vib.prob,2), fmt(vibB.prob,2), fmt(vibB.prob - A.vib.prob,2)]
-  ];
+      const rows = [
+        ['RPM', fmt(A.rpm,0), fmt(B.rpm,0), fmt(B.rpm - A.rpm,0)],
+        ['MRR (cm3/min)', fmt(A.mrr_cm3_min,3), fmt(B.mrr_cm3_min,3), fmt(B.mrr_cm3_min - A.mrr_cm3_min,3)],
+        ['Tiempo/pieza (min)', fmt(A.time_min,2), fmt(B.time_min,2), fmt(B.time_min - A.time_min,2)],
+        ['Costo/pieza (MXN)', fmt(A.cost_per_piece,2), fmt(B.cost_per_piece,2), fmt(B.cost_per_piece - A.cost_per_piece,2)],
+        ['Piezas por herramienta', fmt(A.pieces_per_tool,0), fmt(B.pieces_per_tool,0), fmt(B.pieces_per_tool - A.pieces_per_tool,0)],
+        ['Vib. prob', fmt(A.vib.prob,2), fmt(vibB.prob,2), fmt(vibB.prob - A.vib.prob,2)]
+      ];
 
-  rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="muted small">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`;
-    tbody.appendChild(tr);
-  });
-}
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="muted small">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
 
-
-    // Exports
+    /* ------------------- Exports (corregido) ------------------- */
     $('btnExportCsv').addEventListener('click', ()=>{
       const {A,B} = computeAll($('enableCompare').checked);
-      const rows = [ ['metric','A','B'] , ['RPM',A.rpm,(B?B.rpm:'')], ['MRR_cm3_min',A.mrr_cm3_min,(B?B.mrr_cm3_min:'')], ['time_min',A.time_min,(B?B.time_min:'')], ['cost_piece',A.cost_per_piece,(B?B.cost_per_piece:'')], ['vib_prob',A.vib.prob,(B? vibrationRiskScore({L:parseFloat($('stickout').value||60),ae:parseFloat($('aeB').value||8),ap:parseFloat($('apB').value||1),fz:parseFloat($('fzB').value||0.04),D:parseFloat($('diam').value||12)}).prob:'')] ];
-      const csv = rows.map(r=> r.join(',') ).join('\\n');
+      const vibBprob = B ? vibrationRiskScore({
+        L: parseFloat($('stickout').value||60),
+        ae: parseFloat($('aeB').value||8),
+        ap: parseFloat($('apB').value||1),
+        fz: parseFloat($('fzB').value||0.04),
+        D: parseFloat($('diam').value||12)
+      }).prob : '';
+
+      const rows = [
+        ['metric','A','B'],
+        ['RPM', A.rpm, (B?B.rpm:'')],
+        ['MRR_cm3_min', A.mrr_cm3_min, (B?B.mrr_cm3_min:'')],
+        ['time_min', A.time_min, (B?B.time_min:'')],
+        ['cost_piece', A.cost_per_piece, (B?B.cost_per_piece:'')],
+        ['vib_prob', A.vib.prob, vibBprob]
+      ];
+
+      const csv = rows.map(r=> r.join(',') ).join('\n');
       const blob = new Blob([csv], {type:'text/csv'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='calculadora_rpm_export.csv'; a.click(); URL.revokeObjectURL(url);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'calculadora_rpm_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
     });
 
     $('btnExportPdf').addEventListener('click', async ()=>{
@@ -519,16 +589,12 @@
       pdf.save('reporte_calculadora_rpm.pdf');
     });
 
-    // Compare button
     $('btnCompare').addEventListener('click', ()=>{ render(); });
+    document.getElementById('heroStart').addEventListener('click', ()=>{ document.querySelector('#materialSelect').focus(); });
 
-    // Auto render on input changes
     ['input','change'].forEach(ev=> document.querySelectorAll('input,select').forEach(i=>i.addEventListener(ev, ()=>{ render(); })));
 
-    // Init
     populateFromData(); applyOperationDefaults(); render();
-
   </script>
-
 </body>
 </html>
