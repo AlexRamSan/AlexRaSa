@@ -340,20 +340,20 @@
       const z = parseInt($('z').value)|| (tt.default_flutes||4);
       const vc_base = mat.vc_base ?? 180;
       const fz_base = mat.fz_base ?? 0.05;
-      // escala de fz suave por diámetro
       const fz_d = fz_base * Math.pow(D/12, 0.25);
       let vc_rec = vc_base * (tt.vc_factor||1) * (op.vc_factor||1);
       let fz_rec = fz_d    * (tt.fz_factor||1) * (op.fz_factor||1);
 
-      // limita por rpm máx de la máquina
       const maxR = parseFloat($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
-      const rpm_rec = (vc_rec*1000)/(Math.PI*D);
-      if(rpm_rec > maxR) vc_rec = (maxR*Math.PI*D)/1000;
+      let rpm_rec = (vc_rec*1000)/(Math.PI*D);
+      if(rpm_rec > maxR){
+        rpm_rec = maxR;
+        vc_rec = (rpm_rec*Math.PI*D)/1000; // recálculo de Vc tras tope
+      }
 
       $('vcRecBadge').textContent = `rec: ${vc_rec.toFixed(0)} m/min`;
       $('fzRecBadge').textContent = `rec: ${fz_rec.toFixed(3)} mm/z`;
 
-      // aplica a los inputs si provienen de cambio de selección
       if(document.activeElement.tagName!=='INPUT'){
         $('vc').value = vc_rec.toFixed(1);
         $('fz').value = fz_rec.toFixed(3);
@@ -362,14 +362,16 @@
     } else {
       const D = parseFloat($('diamT').value)||60;
       const vc_base = mat.vc_base ?? 180;
-      // en torno usamos f (mm/rev) base aprox proporcional a fz_base
       const f_base = (mat.fz_base ?? 0.05) * 1.2;
       let vc_rec = vc_base * (op.vc_factor||1);
       let f_rec  = f_base  * (op.fz_factor||1);
 
       const maxR = parseFloat($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
-      const rpm_rec = (vc_rec*1000)/(Math.PI*D);
-      if(rpm_rec > maxR) vc_rec = (maxR*Math.PI*D)/1000;
+      let rpm_rec = (vc_rec*1000)/(Math.PI*D);
+      if(rpm_rec > maxR){
+        rpm_rec = maxR;
+        vc_rec = (rpm_rec*Math.PI*D)/1000; // recálculo tras tope
+      }
 
       $('vcRecBadgeT').textContent = `rec: ${vc_rec.toFixed(0)} m/min`;
       $('fRecBadgeT').textContent  = `rec: ${f_rec.toFixed(3)} mm/rev`;
@@ -412,13 +414,12 @@
     const holder = (CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value) || (CUTTING_DATA.holders||[])[0];
     const toolType = (CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value) || (CUTTING_DATA.tool_types||[])[0];
 
-    vc = vc * (toolType.vc_factor || 1.0);   // factor adicional por tipo
+    vc = vc * (toolType.vc_factor || 1.0);
     fz = fz * (toolType.fz_factor || 1.0);
 
     const Kc0 = mat?.Kc_N_per_mm2 || 2000;
     const mexp = 0.2;
     let rpm = (vc*1000)/(Math.PI*D);
-    // límite de máquina
     const maxR = parseFloat($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
     if(rpm > maxR){ rpm = maxR; vc = (rpm*Math.PI*D)/1000; }
 
@@ -437,9 +438,10 @@
     const toolLife_min = life_min / Math.pow(Math.max(vc,1e-6), n);
     const pieces_per_tool = Math.max(Math.floor(toolLife_min / Math.max(time_min,1e-9)),1);
     const tool_cost_per_piece = (parseFloat($('toolCost').value)||0) / pieces_per_tool;
-    const F_radial = Kc_h * ae * ap * 0.001;
-    const E = (parseFloat($('E')?.value)||210) * 1000;
-    const I = Math.PI * Math.pow(D,4) / 64;
+    // Fuerza radial correcta en N
+    const F_radial = Kc_h * ae * ap; // N
+    const E = (parseFloat($('E')?.value)||210) * 1000; // MPa -> N/mm²
+    const I = Math.PI * Math.pow(D,4) / 64; // mm⁴
     const L = parseFloat($('stickout').value||60);
     const stiffness_factor = holder?.stiffness_factor || 1.0;
     const delta_mm = (F_radial * Math.pow(L,3)) / (3 * E * I + 1e-9) / stiffness_factor;
@@ -482,7 +484,8 @@
     const toolLife_min = life_min / Math.pow(Math.max(vc,1e-6), n);
     const pieces_per_tool = Math.max(Math.floor(toolLife_min / Math.max(time_min,1e-9)),1);
     const tool_cost_per_piece = (parseFloat($('toolCost').value)||0) / pieces_per_tool;
-    const F_radial = Kc_h * ap * f * 0.001;
+    // Fuerza radial correcta en N
+    const F_radial = Kc_h * ap * f; // N (aprox.)
     const E = (parseFloat($('E')?.value)||210) * 1000;
     const I = Math.PI * Math.pow(D,4) / 64;
     const L = parseFloat($('stickout').value||60);
@@ -499,11 +502,18 @@
   // ======= Gráfica única Avance-RPM =======
   let chart=null;
   function computePointForGraph(mode, feed, rpm){
+    const r = Math.max(rpm, 1e-6); // guardia RPM
     if(mode==='torneado'){
-      return computeTorneado({ fT: feed/Math.max(rpm,1), vcT: (rpm*Math.PI*(parseFloat($('diamT').value)||60))/1000 });
+      const f_per_rev = feed / r;
+      const Dp = parseFloat($('diamT').value)||60;
+      const vc_from_rpm = (r*Math.PI*Dp)/1000;
+      return computeTorneado({ fT: f_per_rev, vcT: vc_from_rpm });
     } else {
       const Z = parseInt($('z').value)||4;
-      return computeFresado({ fz: feed/Math.max(rpm*Z,1), vc:(rpm*Math.PI*(parseFloat($('diam').value)||12))/1000 });
+      const D = parseFloat($('diam').value)||12;
+      const fz_from_feed = feed / (r*Z);
+      const vc_from_rpm  = (r*Math.PI*D)/1000;
+      return computeFresado({ fz: fz_from_feed, vc: vc_from_rpm });
     }
   }
   function currentPoint(){
@@ -587,10 +597,16 @@
       </div>`; out.appendChild(s);
 
     if($('enableCycle').checked){
-      const c=document.createElement('div'); c.className='card'; c.innerHTML=`<div style="font-weight:800">Tiempo & Coste</div>
+      const c=document.createElement('div'); c.className='card';
+      const cost_machine_piece = A.cost_machine;
+      const tool_piece = A.tool_cost_per_piece;
+      const total_piece = cost_machine_piece + tool_piece;
+      c.innerHTML=`<div style="font-weight:800">Tiempo & Coste</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
           <div class="muted">Tiempo/pieza (min)</div><div class="result-value">${fmt(A.time_min,2)}</div>
-          <div class="muted">Costo/herr. p/pieza (USD)</div><div class="result-value">${fmt(A.tool_cost_per_piece,2)}</div>
+          <div class="muted">Costo máquina p/pieza (USD)</div><div class="result-value">${fmt(cost_machine_piece,2)}</div>
+          <div class="muted">Costo herramienta p/pieza (USD)</div><div class="result-value">${fmt(tool_piece,2)}</div>
+          <div class="muted">Costo total p/pieza (USD)</div><div class="result-value">${fmt(total_piece,2)}</div>
         </div>`; out.appendChild(c);
     }
 
@@ -629,9 +645,9 @@
 
   // ======= Render maestro =======
   function render(){
-    applyOperationDefaults();
+    // No aplicar applyOperationDefaults() aquí. Evita pisar Ae/Ap mientras escribes.
     const modeT = document.getElementById('modeT').classList.contains('is-on');
-    recommendVcFz(modeT?'torneado':'fresado'); // recalcula Vc/fz óptimos al cambiar selecciones
+    recommendVcFz(modeT?'torneado':'fresado');
     const A = modeT ? computeTorneado() : computeFresado();
     renderResults(A);
     renderMachineDetails();
@@ -656,9 +672,17 @@
     render();
   });
 
-  // Mode toggle
-  $('modeF').addEventListener('click', ()=>{ $('modeF').classList.add('is-on'); $('modeT').classList.remove('is-on'); $('modeFresadoFields').style.display='block'; $('modeTorneadoFields').style.display='none'; updateModeOptions('fresado'); render(); });
-  $('modeT').addEventListener('click', ()=>{ $('modeT').classList.add('is-on'); $('modeF').classList.remove('is-on'); $('modeFresadoFields').style.display='none'; $('modeTorneadoFields').style.display='block'; updateModeOptions('torneado'); render(); });
+  // Mode toggle (aplicar defaults SOLO al cambiar de modo)
+  $('modeF').addEventListener('click', ()=>{
+    $('modeF').classList.add('is-on'); $('modeT').classList.remove('is-on');
+    $('modeFresadoFields').style.display='block'; $('modeTorneadoFields').style.display='none';
+    updateModeOptions('fresado'); applyOperationDefaults(); render();
+  });
+  $('modeT').addEventListener('click', ()=>{
+    $('modeT').classList.add('is-on'); $('modeF').classList.remove('is-on');
+    $('modeFresadoFields').style.display='none'; $('modeTorneadoFields').style.display='block';
+    updateModeOptions('torneado'); applyOperationDefaults(); render();
+  });
 
   // Rango/umbral inputs → re-graficar
   ['feedMin','feedMax','rpmMin','rpmMax','thSafe'].forEach(id=>$(id).addEventListener('input',()=>renderChart()));
@@ -673,8 +697,13 @@
   }
 
   // Disparadores de recálculo al cambiar selecciones principales
-  ['materialSelect','operationSelect','holderSelect','toolTypeSelect','diam','z','diamT'].forEach(id=>{
+  ['materialSelect','holderSelect','toolTypeSelect','diam','z','diamT'].forEach(id=>{
     $(id).addEventListener('change', ()=> render());
+  });
+  // Cuando cambia la operación, aplicar defaults y luego render
+  $('operationSelect').addEventListener('change', ()=>{
+    applyOperationDefaults();
+    render();
   });
 
   // Cambios en inputs numéricos → actualizar resultados y gráfica
