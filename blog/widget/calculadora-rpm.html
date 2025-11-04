@@ -313,40 +313,95 @@
     torneado: [ 'turn_insert','boring_bar','external_turn_tool' ]
   };
 
-  function populateFromData(){
-    const mSel = $('materialSelect'); mSel.innerHTML='';
-    CUTTING_DATA.materials.forEach(m=>{ const opt=document.createElement('option'); opt.value=m.id; opt.textContent=m.name; mSel.appendChild(opt); });
-    const oSel = $('operationSelect'); oSel.innerHTML='';
-    CUTTING_DATA.operations.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.label; oSel.appendChild(opt); });
-    // holders & tooltypes serán llenados por updateModeOptions
-    document.getElementById('presetMode')?.textContent = 'Fresado';
+  f// Reemplazar populateFromData y updateModeOptions por estas versiones:
+function populateFromData(defaultMode = 'fresado'){
+  if(!CUTTING_DATA) return;
+  // materiales
+  const mSel = $('materialSelect'); mSel.innerHTML = '';
+  CUTTING_DATA.materials.forEach(m=>{
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.name;
+    mSel.appendChild(opt);
+  });
+
+  // operaciones: si es torneado preferimos ops que contengan 'turn' / 'turn_'
+  const oSel = $('operationSelect'); oSel.innerHTML = '';
+  const opsToShow = (defaultMode === 'torneado')
+    ? CUTTING_DATA.operations.filter(op => /turn/i.test(op.id) || /turn/i.test(op.label))
+    : CUTTING_DATA.operations.filter(op => !/turn/i.test(op.id) && !/turn/i.test(op.label));
+  // si no hay filtrado útil, mostrar todo
+  const finalOps = opsToShow.length ? opsToShow : CUTTING_DATA.operations;
+  finalOps.forEach(o=>{
+    const opt = document.createElement('option');
+    opt.value = o.id;
+    opt.textContent = o.label;
+    oSel.appendChild(opt);
+  });
+
+  // Llenado dinámico de holders/tooltypes según modo
+  updateModeOptions(defaultMode);
+
+  // preset visual (si existe)
+  const presetEl = document.getElementById('presetMode');
+  if(presetEl) presetEl.textContent = (defaultMode === 'torneado') ? 'Torneado' : 'Fresado';
+}
+
+function updateModeOptions(mode){
+  // asegúrate de tener las entradas de torneado definidas
+  ensureTurningEntries();
+
+  // HOLDERS
+  const holderSel = $('holderSelect'); holderSel.innerHTML = '';
+  const idsH = (mode === 'torneado') ? (HOLDERS_BY_MODE.torneado || []) : (HOLDERS_BY_MODE.fresado || []);
+  const knownHolderIds = CUTTING_DATA.holders.map(h=>h.id);
+  // priorizar los ids por modo; si no hay coincidencias, mostrar todos
+  const finalHolderIds = idsH.filter(id=> knownHolderIds.includes(id) );
+  const holdersToShow = finalHolderIds.length ? finalHolderIds : CUTTING_DATA.holders.map(h=>h.id);
+  holdersToShow.forEach(id=>{
+    const h = CUTTING_DATA.holders.find(x=>x.id===id);
+    if(h){
+      const opt = document.createElement('option');
+      opt.value = h.id;
+      opt.textContent = h.label || h.id;
+      holderSel.appendChild(opt);
+    }
+  });
+
+  // TOOL TYPES
+  const toolSel = $('toolTypeSelect'); toolSel.innerHTML = '';
+  const idsT = (mode === 'torneado') ? (TOOLTYPES_BY_MODE.torneado || []) : (TOOLTYPES_BY_MODE.fresado || []);
+  const knownToolIds = CUTTING_DATA.tool_types.map(t=>t.id);
+  const finalToolIds = idsT.filter(id=> knownToolIds.includes(id) );
+  const toolsToShow = finalToolIds.length ? finalToolIds : CUTTING_DATA.tool_types.map(t=>t.id);
+  toolsToShow.forEach(id=>{
+    const t = CUTTING_DATA.tool_types.find(x=>x.id===id);
+    if(t){
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.label || t.id;
+      toolSel.appendChild(opt);
+    }
+  });
+
+  // select por defecto los primeros
+  if(holderSel.options.length) holderSel.value = holderSel.options[0].value;
+  if(toolSel.options.length) toolSel.value = toolSel.options[0].value;
+
+  // si cambiamos a torneado, filtrar operaciones a las de torneado si las hay
+  const opSel = $('operationSelect');
+  if(opSel){
+    const turnOps = CUTTING_DATA.operations.filter(op => /turn/i.test(op.id) || /turn/i.test(op.label));
+    if(mode === 'torneado' && turnOps.length){
+      opSel.innerHTML = '';
+      turnOps.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.label; opSel.appendChild(opt); });
+    } else {
+      // si venimos de torneado y no queremos operaciones de torneado, mantener/recargar default list
+      // (no hacemos nada para no sobrescribir una selección del usuario)
+    }
   }
+}
 
-  function updateModeOptions(mode){
-    ensureTurningEntries();
-    const holderSel = $('holderSelect'); holderSel.innerHTML = '';
-    const idsH = (mode === 'torneado') ? HOLDERS_BY_MODE.torneado : HOLDERS_BY_MODE.fresado;
-    const knownHolderIds = CUTTING_DATA.holders.map(h=>h.id);
-    const finalHolderIds = idsH.filter(id=>knownHolderIds.includes(id));
-    const holdersToShow = finalHolderIds.length ? finalHolderIds : CUTTING_DATA.holders.map(h=>h.id);
-    holdersToShow.forEach(id=>{
-      const h = CUTTING_DATA.holders.find(x=>x.id===id);
-      if(h){ const opt = document.createElement('option'); opt.value = h.id; opt.textContent = h.label || h.id; holderSel.appendChild(opt); }
-    });
-
-    const toolSel = $('toolTypeSelect'); toolSel.innerHTML = '';
-    const idsT = (mode === 'torneado') ? TOOLTYPES_BY_MODE.torneado : TOOLTYPES_BY_MODE.fresado;
-    const knownToolIds = CUTTING_DATA.tool_types.map(t=>t.id);
-    const finalToolIds = idsT.filter(id=>knownToolIds.includes(id));
-    const toolsToShow = finalToolIds.length ? finalToolIds : CUTTING_DATA.tool_types.map(t=>t.id);
-    toolsToShow.forEach(id=>{
-      const t = CUTTING_DATA.tool_types.find(x=>x.id===id);
-      if(t){ const opt = document.createElement('option'); opt.value = t.id; opt.textContent = t.label || t.id; toolSel.appendChild(opt); }
-    });
-
-    if(holderSel.options.length) holderSel.value = holderSel.options[0].value;
-    if(toolSel.options.length) toolSel.value = toolSel.options[0].value;
-  }
 
   // Vibration scoring
   function vibrationRiskScore(params){
