@@ -35,6 +35,15 @@
     input[type=number] { background: rgba(255,255,255,0.02); color:var(--ink); }
     .result-value{ font-weight:700; font-size:1.05rem; color:var(--ink) }
     .badge{display:inline-block;padding:.1rem .4rem;border-radius:6px;border:1px solid var(--border);font-size:.72rem;color:var(--muted)}
+  /* === Tooltips === */
+.has-tip{ position:relative; cursor:help }
+#_tt{ position:fixed; z-index:10000; max-width:320px; padding:10px 12px;
+  background:#0b1220; color:#e5eefb; border:1px solid #1f2a3a; border-radius:10px;
+  font-size:.85rem; line-height:1.25; box-shadow:0 8px 24px rgba(0,0,0,.35)
+}
+#_tt .tt-title{ font-weight:700; color:#0ea5e9; margin-bottom:4px }
+/* Tooltips: no capturar el mouse y sobre todo */
+#_tt{ pointer-events:none; z-index:99999 }
   </style>
 </head>
 <body>
@@ -192,7 +201,153 @@
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const lerp=(a,b,t)=>a+(b-a)*t;
   function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
+// === Diccionario de ayudas por ID ===
+const TIPS = {
+  materialSelect: {t:"Material", d:"Selecciona el material base. Afecta Kc, recomendación de Vc y vida de herramienta (Taylor)."},
+  operationSelect:{t:"Operación", d:"Tipo de operación. Ajusta factores de Vc/fz y valores por defecto de Ae/Ap."},
+  holderSelect:   {t:"Sujeción / Holder", d:"Aumenta o reduce rigidez (stiffness_factor). Impacta deflexión y riesgo de vibración."},
+  toolTypeSelect: {t:"Tipo de herramienta", d:"Define flautas por defecto y factores de Vc/fz según geometría."},
 
+  diam: {t:"D (mm)", d:"Diámetro efectivo. Afecta RPM, MRR, deflexión e interacción con banda 600–900 Hz."},
+  z:    {t:"Dientes (z)", d:"Número de filos activos. feed = rpm×z×fz y toothHz = rpm/60×z."},
+  vc:   {t:"Velocidad de corte Vc", d:"m/min. Limita RPM por tope de máquina. Base para recomendación."},
+  fz:   {t:"fz", d:"Avance por diente en mm/z. Sube chip thickness, potencia y vibración si te excedes."},
+  ae:   {t:"Ae", d:"Enganche radial en mm. Subirlo incrementa carga lateral y riesgo de chatter."},
+  ap:   {t:"Ap", d:"Profundidad axial en mm. Afecta MRR, potencia y estabilidad."},
+
+  diamT:{t:"Diámetro pieza (torneado)", d:"Diámetro actual de corte. Cambia RPM y MRR cilíndrico."},
+  apT:  {t:"ap (torneado)", d:"Profundidad radial de pasada en mm."},
+  vcT:  {t:"Vc (torneado)", d:"m/min en torneado. Limitada por RPM máx."},
+  fT:   {t:"Avance f (torneado)", d:"mm/rev. Afecta espesor de viruta y potencia."},
+
+  stickout:{t:"Stickout L", d:"Saliente de herramienta en mm. Eleva deflexión y baja frecuencia natural."},
+
+  machineCost:{t:"Costo hora máquina", d:"USD/h. Se usa para costo por pieza en función del tiempo calculado."},
+  toolCost:   {t:"Costo herramienta", d:"USD por herramienta/placa. Se prorratea por vida calculada (Taylor)."},
+  volumen:    {t:"Volumen a remover", d:"cm³ por pieza. Con MRR define tiempo/pieza."},
+  C:          {t:"Constante de Taylor C", d:"Vida de herramienta en min·Vc^n. Ajusta según material/herramienta."},
+  n:          {t:"Exponente de Taylor n", d:"Pendiente sensibilidad de vida vs Vc. Mayor n = más sensible."},
+  enableCycle:{t:"Tiempo", d:"Muestra tiempo/pieza y costo por máquina."},
+  enableKc:   {t:"Kc/Pot.", d:"Muestra chip thickness, Kc(h) y potencia estimada."},
+  enableStability:{t:"Vibración", d:"Muestra f_n, toothHz y probabilidad de riesgo."},
+
+  machineSelect:{t:"Máquina (preset)", d:"Carga potencia, RPM máx, stickout y husillo típicos."},
+  machineModel: {t:"Marca / Modelo", d:"Campo informativo editable."},
+  machinePower: {t:"Potencia husillo", d:"kW nominales. Se usa para referencia de carga."},
+  machineMaxRpm:{t:"RPM máx", d:"Límite superior de cálculo de RPM."},
+  spindleType:  {t:"Tipo de husillo", d:"HSK/BT/etc. Informativo."},
+  E:            {t:"Módulo E", d:"GPa. Para deflexión y rigidez efectiva."},
+  stickoutDefault:{t:"Stickout por defecto", d:"Preset de saliente típico de la máquina."},
+
+  feedMin:{t:"Rango avance — mínimo", d:"Límite inferior del eje X en la gráfica."},
+  feedMax:{t:"Rango avance — máximo", d:"Límite superior del eje X."},
+  rpmMin: {t:"Rango RPM — mínimo", d:"Límite inferior del eje Y."},
+  rpmMax: {t:"Rango RPM — máximo", d:"Límite superior del eje Y."},
+  thSafe: {t:"Umbral seguro", d:"Probabilidad máxima de vibración para pintar ‘Zona segura’."},
+
+  modeF:{t:"Fresado", d:"Activa cálculos para fresado (fz, z, Ae, Ap)."},
+  modeT:{t:"Torneado", d:"Activa cálculos para torneado (f mm/rev, ap radial)."}
+};
+
+// === Motor de tooltips ===
+let _ttEl=null;
+function ensureTipEl(){
+  if(!_ttEl){ _ttEl=document.createElement('div'); _ttEl.id='_tt'; _ttEl.style.display='none'; document.body.appendChild(_ttEl); }
+}
+function showTip(evt, tip){
+  ensureTipEl();
+  _ttEl.innerHTML = `<div class="tt-title">${tip.t||""}</div>${tip.d||""}`;
+  _ttEl.style.display='block';
+  const pad=12;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const rect = _ttEl.getBoundingClientRect();
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  if(x + rect.width  > vw) x = evt.clientX - rect.width - pad;
+  if(y + rect.height > vh) y = evt.clientY - rect.height - pad;
+  _ttEl.style.left = x+'px';
+  _ttEl.style.top  = y+'px';
+}
+function hideTip(){ if(_ttEl) _ttEl.style.display='none'; }
+
+function enableTooltips(){
+  // marca elementos con tips
+  Object.keys(TIPS).forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.add('has-tip');
+    el.addEventListener('mouseenter', e=>showTip(e, TIPS[id]));
+    el.addEventListener('mousemove', e=>showTip(e, TIPS[id]));
+    el.addEventListener('mouseleave', hideTip);
+    // si el input tiene label, también activa en el label
+    const label = el.closest('.field')?.querySelector('label');
+    if(label){
+      label.classList.add('has-tip');
+      label.addEventListener('mouseenter', e=>showTip(e, TIPS[id]));
+      label.addEventListener('mousemove', e=>showTip(e, TIPS[id]));
+      label.addEventListener('mouseleave', hideTip);
+    }
+  });
+  // secciones principales
+  const secTitles = [
+    {sel:'.section-title', t:'Sección', d:'Agrupa parámetros relacionados. Pasa el mouse sobre cada campo para su definición.'}
+  ];
+  secTitles.forEach(x=>{
+    document.querySelectorAll(x.sel).forEach(n=>{
+      n.classList.add('has-tip');
+      n.addEventListener('mouseenter', e=>showTip(e, x));
+      n.addEventListener('mousemove',  e=>showTip(e, x));
+      n.addEventListener('mouseleave', hideTip);
+    });
+  });
+  // oculta al hacer scroll
+  document.addEventListener('scroll', hideTip, {passive:true});
+}
+  // === Accesibilidad: teclado + táctil ===
+function enableKeyboardAndTouchTips(){
+  const bind = (el, tip) => {
+    if(!el) return;
+    el.setAttribute('tabindex','0');
+    el.setAttribute('aria-label', tip.t || 'Ayuda');
+
+    // Foco con teclado
+    el.addEventListener('focus', ()=>{
+      const r = el.getBoundingClientRect();
+      showTip({clientX:r.left+8, clientY:r.bottom+8}, tip);
+    });
+    el.addEventListener('blur', hideTip);
+
+    // Táctil: toque corto = 1.5s, largo = sticky hasta tocar fuera
+    let touchTimer=null, sticky=false;
+    const openAt = ()=>{
+      const r = el.getBoundingClientRect();
+      showTip({clientX:r.left+8, clientY:r.bottom+8}, tip);
+    };
+    el.addEventListener('touchstart', ()=>{
+      sticky=false;
+      if(touchTimer) clearTimeout(touchTimer);
+      touchTimer = setTimeout(()=>{ sticky=true; openAt(); }, 500);
+    }, {passive:true});
+
+    el.addEventListener('touchend', ()=>{
+      if(touchTimer) clearTimeout(touchTimer);
+      if(!sticky){ openAt(); setTimeout(hideTip, 1500); }
+      else {
+        const closeOnce = ()=>{ hideTip(); document.removeEventListener('touchstart', closeOnce); };
+        setTimeout(()=>document.addEventListener('touchstart', closeOnce, {passive:true}), 0);
+      }
+    }, {passive:true});
+  };
+
+  // Aplica a los IDs del diccionario y sus labels
+  Object.keys(TIPS).forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    bind(el, TIPS[id]);
+    const label = el.closest('.field')?.querySelector('label');
+    if(label) bind(label, TIPS[id]);
+  });
+}
+  
   // ======= DATOS EMBEBIDOS =======
   const CUTTING_DATA = {
     "version":"3.4",
@@ -712,7 +867,14 @@
   });
 
   // Init
-  (async ()=>{ populateFromData(); updateModeOptions('fresado'); applyOperationDefaults(); render(); })();
+  (async ()=>{
+  populateFromData();
+  updateModeOptions('fresado');
+  applyOperationDefaults();
+  render();
+  enableTooltips();              // tooltips por diccionario
+  enableKeyboardAndTouchTips();  // soporte teclado + táctil
+})();
 </script>
 </body>
 </html>
