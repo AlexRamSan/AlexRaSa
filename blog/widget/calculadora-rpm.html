@@ -873,14 +873,23 @@ function renderMachineDetails(){
 }
 
 /* ================== Lógica principal de render ================== */
-function applyOperationDefaults(){
+function applyOperationDefaults(force=false){
   const op = (CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value);
   const D = parseFloat($('diam')?.value)||12;
   if(!op) return;
-  if(op.default_ae_pct && $('ae')) $('ae').value = Math.max(1, Math.round((op.default_ae_pct/100)*D*100)/100);
-  if(op.default_ap_per_d && $('ap')) $('ap').value = Math.max(0.01, Math.round((op.default_ap_per_d*D)*100)/100);
-  if(op.default_ap && $('apT')) $('apT').value = op.default_ap;
+
+  // Solo pon defaults si el usuario NO tocó el campo o si force=true
+  if(op.default_ae_pct && $('ae') && (force || !$('ae').dataset.userSet)){
+    $('ae').value = Math.max(1, Math.round((op.default_ae_pct/100)*D*100)/100);
+  }
+  if(op.default_ap_per_d && $('ap') && (force || !$('ap').dataset.userSet)){
+    $('ap').value = Math.max(0.01, Math.round((op.default_ap_per_d*D)*100)/100);
+  }
+  if(op.default_ap && $('apT') && (force || !$('apT').dataset.userSet)){
+    $('apT').value = op.default_ap;
+  }
 }
+
 
 function render(){
   const modeT = $('modeT').classList.contains('is-on');
@@ -894,7 +903,6 @@ function render(){
   recommendVcFz(modeT?'torneado':'fresado');
 
   const A = modeT ? computeTorneado() : computeFresado();
-  applyOperationDefaults();
   adjustRangesToInclude(A);
   renderResults(A);
   renderMachineDetails();
@@ -905,17 +913,41 @@ function render(){
 function wireEvents(){
   // cambios que recalculan todo
   [
-    'materialSelect','operationSelect','holderSelect','toolTypeSelect',
-    'diam','z','vc','fz','ae','ap',
-    'diamT','apT','vcT','fT',
-    'stickout','machineMaxRpm',
-    'machineCost','toolCost','volumen','C','n',
-    'enableCycle','enableKc','enableStability'
-  ].forEach(id=>{
-    const el=$(id); if(!el) return;
-    el.addEventListener('input', render);
-    el.addEventListener('change', render);
+  'materialSelect','operationSelect','holderSelect','toolTypeSelect',
+  'diam','z','vc','fz','ae','ap',
+  'diamT','apT','vcT','fT',
+  'stickout','machineMaxRpm',
+  'machineCost','toolCost','volumen','C','n',
+  'enableCycle','enableKc','enableStability'
+].forEach(id=>{
+  const el=$(id); if(!el) return;
+
+  // Marcar campos tocados por el usuario
+  el.addEventListener('input', ()=>{
+    if(id==='ae' || id==='ap' || id==='apT'){ el.dataset.userSet = '1'; }
+    render();
   });
+
+  el.addEventListener('change', ()=>{
+    if(id==='ae' || id==='ap' || id==='apT'){ el.dataset.userSet = '1'; }
+    render();
+  });
+});
+  // Recalcular defaults SOLO cuando cambia operación o diámetro
+['operationSelect','diam'].forEach(id=>{
+  const el=$(id); if(!el) return;
+  el.addEventListener('change', ()=>{
+    // Limpia la marca para permitir proponer nuevos defaults
+    if($('ae'))  $('ae').dataset.userSet  = '';
+    if($('ap'))  $('ap').dataset.userSet  = '';
+    if($('apT')) $('apT').dataset.userSet = '';
+
+    applyOperationDefaults(true); // fuerza defaults de la operación/diámetro
+    render();
+  });
+});
+
+
 
   // selector de máquina
   $('machineSelect').addEventListener('change', ()=>{
