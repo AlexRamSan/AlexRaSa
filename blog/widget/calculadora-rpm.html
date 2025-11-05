@@ -18,6 +18,9 @@
       --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
       --accent:#0ea5e9; --rose:#e11d48; --emerald:#10b981; --indigo:#6366f1;
     }
+    .err { color:#fca5a5; font-size:.78rem; margin-top:4px }
+.err-hide { display:none }
+.input-err { border-color:#7f1d1d !important; box-shadow:0 0 0 2px rgba(127,29,29,.2) }
     html{scroll-behavior:smooth}
     body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu;margin:0}
     .container{max-width:1180px;margin:0 auto;padding:0 16px}
@@ -822,18 +825,25 @@ function enableKeyboardAndTouchTips(){
 
   // ======= Render maestro (con auto-rango) =======
   function render(){
-    applyOperationDefaults();
-    const modeT = document.getElementById('modeT').classList.contains('is-on');
-    recommendVcFz(modeT?'torneado':'fresado');
-    const A = modeT ? computeTorneado() : computeFresado();
+  applyOperationDefaults();
+  const modeT = document.getElementById('modeT').classList.contains('is-on');
 
-    // Auto-ajustar ejes para mantener el punto a la vista
-    adjustRangesToInclude(A);
-
-    renderResults(A);
+  // validar antes de recomendar y computar
+  if(!validateInputs()){
+    // limpiar resultados si hay
+    $('results').innerHTML = '<div class="card"><div style="font-weight:800">Revisa los campos marcados</div><div class="muted">Corrige errores para recalcular.</div></div>';
     renderMachineDetails();
-    renderChart();
+    return; // no continúa a cálculos ni gráfica
   }
+
+  recommendVcFz(modeT?'torneado':'fresado');
+  const A = modeT ? computeTorneado() : computeFresado();
+  adjustRangesToInclude(A);
+  renderResults(A);
+  renderMachineDetails();
+  renderChart();
+}
+
 
   // Machine selector presets
   $('machineSelect').addEventListener('change', ()=>{
@@ -850,6 +860,33 @@ function enableKeyboardAndTouchTips(){
     } else {
       $('machineModel').value='';
     }
+    // === Errores en línea ===
+const FIELDS_TO_VALIDATE = [
+  'diam','z','vc','fz','ae','ap',      // fresado
+  'diamT','apT','vcT','fT',            // torneado
+  'machineMaxRpm'                      // máquina
+];
+
+function ensureErrorSlots(){
+  FIELDS_TO_VALIDATE.forEach(id=>{
+    const el = $(id); if(!el) return;
+    const wrap = el.closest('.field');
+    if(wrap && !wrap.querySelector(`#err-${id}`)){
+      const d = document.createElement('div');
+      d.id = `err-${id}`; d.className = 'err err-hide';
+      wrap.appendChild(d);
+    }
+  });
+}
+function showError(id, msg){
+  const el=$(id), slot=$(`err-${id}`); if(!el||!slot) return;
+  slot.textContent = msg; slot.classList.remove('err-hide'); el.classList.add('input-err');
+}
+function clearError(id){
+  const el=$(id), slot=$(`err-${id}`); if(!el||!slot) return;
+  slot.textContent = ''; slot.classList.add('err-hide'); el.classList.remove('input-err');
+}
+
     render();
   });
 
@@ -876,16 +913,79 @@ function enableKeyboardAndTouchTips(){
   ['vc','fz','ae','ap','vcT','fT','apT','stickout','machineMaxRpm'].forEach(id=>{
     $(id).addEventListener('input', ()=> render());
   });
+  FIELDS_TO_VALIDATE.forEach(id=>{
+  const el=$(id); if(!el) return;
+  el.addEventListener('input', ()=>{ validateInputs(); render(); });
+  el.addEventListener('change', ()=>{ validateInputs(); render(); });
+});
 
   // Init
+  
   (async ()=>{
   populateFromData();
   updateModeOptions('fresado');
   applyOperationDefaults();
+  ensureErrorSlots();
+  validateInputs();
   render();
-  enableTooltips();              // tooltips por diccionario
-  enableKeyboardAndTouchTips();  // soporte teclado + táctil
+  enableTooltips();
+  enableKeyboardAndTouchTips();
 })();
+  function validateInputs(){
+  let ok = true;
+  const modeT = document.getElementById('modeT').classList.contains('is-on');
+
+  // limpiar
+  FIELDS_TO_VALIDATE.forEach(clearError);
+
+  // comunes
+  const rpmMax = +$('machineMaxRpm').value || 1;
+  if(rpmMax <= 0){ showError('machineMaxRpm','Debe ser > 0'); ok=false; }
+
+  if(!modeT){
+    const D   = +$('diam').value;
+    const z   = +$('z').value;
+    const vc  = +$('vc').value;
+    const fz  = +$('fz').value;
+    const ae  = +$('ae').value;
+    const ap  = +$('ap').value;
+
+    if(D <= 0) { showError('diam','D debe ser > 0'); ok=false; }
+    if(!Number.isInteger(z) || z < 1){ showError('z','z entero ≥ 1'); ok=false; }
+    if(vc <= 0){ showError('vc','Vc > 0'); ok=false; }
+    if(fz <= 0){ showError('fz','fz > 0'); ok=false; }
+    if(ae <= 0){ showError('ae','Ae > 0'); ok=false; }
+    if(ap <= 0){ showError('ap','Ap > 0'); ok=false; }
+
+    if(ae > D){ showError('ae','Ae no puede exceder D'); ok=false; }
+    if(ap > 1.5*D){ showError('ap','Ap recomendado ≤ 1.5·D'); ok=false; }
+
+    // chequeo de rpm teórica vs límite de máquina
+    const rpm_teo = (vc*1000)/(Math.PI*Math.max(D,1e-9));
+    if(rpm_teo > rpmMax*1.05){ // 5% tolerancia
+      showError('vc',`Vc pide ${Math.round(rpm_teo)} rpm > rpm máx ${rpmMax}`);
+      ok=false;
+    }
+  } else {
+    const D   = +$('diamT').value;
+    const apT = +$('apT').value;
+    const vcT = +$('vcT').value;
+    const fT  = +$('fT').value;
+
+    if(D <= 0)  { showError('diamT','D debe ser > 0'); ok=false; }
+    if(apT <= 0){ showError('apT','ap > 0'); ok=false; }
+    if(vcT <= 0){ showError('vcT','Vc > 0'); ok=false; }
+    if(fT <= 0) { showError('fT','f > 0'); ok=false; }
+
+    const rpm_teo = (vcT*1000)/(Math.PI*Math.max(D,1e-9));
+    if(rpm_teo > rpmMax*1.05){
+      showError('vcT',`Vc pide ${Math.round(rpm_teo)} rpm > rpm máx ${rpmMax}`);
+      ok=false;
+    }
+  }
+  return ok;
+}
+
 </script>
 </body>
 </html>
