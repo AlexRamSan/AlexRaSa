@@ -49,6 +49,11 @@
       font-size:.85rem; line-height:1.25; box-shadow:0 8px 24px rgba(0,0,0,.35); pointer-events:none;
     }
     #_tt .tt-title{ font-weight:700; color:#0ea5e9; margin-bottom:4px }
+
+    /* Badges por estado */
+    .badge-ok{ background:rgba(16,185,129,.12); border-color:#065f46; color:#d1fae5 }
+    .badge-warn{ background:rgba(245,158,11,.10); border-color:#92400e; color:#fde68a }
+    .badge-err{ background:rgba(225,29,72,.10); border-color:#7f1d1d; color:#fecaca }
   </style>
 </head>
 
@@ -275,6 +280,20 @@ function validateInputs(){
     const rpm_teo=(vct*1000)/(Math.PI*Math.max(D,1e-9));
     if(rpmMax>0 && rpm_teo>rpmMax*1.05){ showError('vcT',`Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok=false; }
   }
+
+  // Validación suave contra ventanas (no bloquea el cálculo)
+  const modeT = $('modeT').classList.contains('is-on');
+  const w = materialWindows(modeT?'torneado':'fresado');
+  if(!modeT){
+    const vcNow=+$('vc').value, fzNow=+$('fz').value;
+    if(gradeValue(vcNow,w.vc_min,w.vc_max)==='err') showError('vc',`Fuera de ventana ${w.vc_min.toFixed(0)}–${w.vc_max.toFixed(0)}`);
+    if(gradeValue(fzNow,w.chip_min,w.chip_max)==='err') showError('fz',`Fuera de ventana ${w.chip_min.toFixed(3)}–${w.chip_max.toFixed(3)}`);
+  } else {
+    const vcNow=+$('vcT').value, fNow=+$('fT').value;
+    if(gradeValue(vcNow,w.vc_min,w.vc_max)==='err') showError('vcT',`Fuera de ventana ${w.vc_min.toFixed(0)}–${w.vc_max.toFixed(0)}`);
+    if(gradeValue(fNow,w.chip_min,w.chip_max)==='err') showError('fT',`Fuera de ventana ${w.chip_min.toFixed(3)}–${w.chip_max.toFixed(3)}`);
+  }
+
   return ok;
 }
 
@@ -407,7 +426,13 @@ function enableKeyboardAndTouchTips(){
 /* ================== Datos embebidos ================== */
 const CUTTING_DATA = {
   "version":"3.4",
-  "defaults":{"rpm_limit":24000,"efficiency":0.8,"vibe_gauss":{"mu":0.7,"sigma":0.18},"default_flutes":4},
+  "defaults":{
+    "rpm_limit":24000,
+    "efficiency":0.8,
+    "vibe_gauss":{"mu":0.7,"sigma":0.18},
+    "default_flutes":4,
+    "windows": { "vc_factor":[0.70,1.30], "chip_factor":[0.70,1.30] }  /* ventanas por material */
+  },
   "vibration":{"avoid_band_hz":[600,900],"risk_threshold":0.8,"weights":{"ld":0.5,"ae":0.2,"ap":0.2,"fz":0.1}},
   "holders":[
     {"id":"ER_Collet","label":"Portapinzas ER","stiffness_factor":1.00},
@@ -441,7 +466,7 @@ const CUTTING_DATA = {
     { "id":"inox_316","name":"Inox 316","Kc_N_per_mm2":2400,"taylor":{"C":170,"n":0.18},"vc_base":95,"fz_base":0.032 },
     { "id":"ss_174ph","name":"Acero 17-4 PH","Kc_N_per_mm2":2600,"taylor":{"C":160,"n":0.17},"vc_base":120,"fz_base":0.033 },
     { "id":"ti_64","name":"Titanio Ti-6Al-4V","Kc_N_per_mm2":1200,"taylor":{"C":150,"n":0.18},"vc_base":80,"fz_base":0.030 },
-    { "id":"inconel_718","name":"Inconel 718","Kc_N_per_mm2":4500,"taylor":{"C":60,"n":0.12},"vc_base":45,"fz_base":0.020 },
+    { "id":"inconel_718","name":"Inconel 718","Kc_N_per_mm2":4500,"taylor":{"C":60,"n":0.12},"vc_base":45,"fz_base":0.020, "windows":{ "vc_factor":[0.60,1.20], "chip_factor":[0.60,1.10] } },
     { "id":"cast_iron","name":"Fundición gris","Kc_N_per_mm2":1800,"taylor":{"C":500,"n":0.15},"vc_base":180,"fz_base":0.045 },
     { "id":"copper","name":"Cobre / Latón","Kc_N_per_mm2":600,"taylor":{"C":2000,"n":0.12},"vc_base":220,"fz_base":0.060 },
     { "id":"peek","name":"PEEK (plástico)","Kc_N_per_mm2":150,"taylor":{"C":1200,"n":0.08},"vc_base":300,"fz_base":0.070 },
@@ -559,14 +584,21 @@ function recommendVcFz(mode='fresado'){
     const rpm_rec = (vc_rec*1000)/(Math.PI*D);
     if(rpm_rec > maxR) vc_rec = (maxR*Math.PI*D)/1000;
 
-    $('vcRecBadge').textContent = `rec: ${vc_rec.toFixed(0)} m/min`;
-    $('fzRecBadge').textContent = `rec: ${fz_rec.toFixed(3)} mm/z`;
+    // Ventanas y badges
+    const win = materialWindows('fresado');
+    const chip_curr = parseFloat($('fz').value)||fz_rec;
+    const vc_curr   = parseFloat($('vc').value)||vc_rec;
+    const g_vc   = gradeValue(vc_curr, win.vc_min, win.vc_max);
+    const g_chip = gradeValue(chip_curr, win.chip_min, win.chip_max);
+    const vc_txt   = `rec: ${vc_rec.toFixed(0)} · win ${win.vc_min.toFixed(0)}–${win.vc_max.toFixed(0)} m/min`;
+    const chip_txt = `rec: ${fz_rec.toFixed(3)} · win ${win.chip_min.toFixed(3)}–${win.chip_max.toFixed(3)} mm/z`;
+    setBadge('vcRecBadge', g_vc==='ok'?'badge-ok':g_vc==='warn'?'badge-warn':'badge-err', vc_txt);
+    setBadge('fzRecBadge', g_chip==='ok'?'badge-ok':g_chip==='warn'?'badge-warn':'badge-err', chip_txt);
 
-    if(document.activeElement.tagName!=='INPUT'){
-      $('vc').value = vc_rec.toFixed(1);
-      $('fz').value = fz_rec.toFixed(3);
-      if(!$('z').value) $('z').value = z;
-    }
+    if(!$('vc').dataset.userSet) $('vc').value = vc_rec.toFixed(1);
+    if(!$('fz').dataset.userSet) $('fz').value = fz_rec.toFixed(3);
+    if(!$('z').value) $('z').value = z;
+
   } else {
     const D = parseFloat($('diamT').value)||60;
     const vc_base = mat.vc_base ?? 180;
@@ -578,14 +610,51 @@ function recommendVcFz(mode='fresado'){
     const rpm_rec = (vc_rec*1000)/(Math.PI*D);
     if(rpm_rec > maxR) vc_rec = (maxR*Math.PI*D)/1000;
 
-    $('vcRecBadgeT').textContent = `rec: ${vc_rec.toFixed(0)} m/min`;
-    $('fRecBadgeT').textContent  = `rec: ${f_rec.toFixed(3)} mm/rev`;
+    // Ventanas y badges
+    const win = materialWindows('torneado');
+    const chip_curr = parseFloat($('fT').value)||f_rec;
+    const vc_curr   = parseFloat($('vcT').value)||vc_rec;
+    const g_vc   = gradeValue(vc_curr, win.vc_min, win.vc_max);
+    const g_chip = gradeValue(chip_curr, win.chip_min, win.chip_max);
+    const vc_txt = `rec: ${vc_rec.toFixed(0)} · win ${win.vc_min.toFixed(0)}–${win.vc_max.toFixed(0)} m/min`;
+    const f_txt  = `rec: ${f_rec.toFixed(3)} · win ${win.chip_min.toFixed(3)}–${win.chip_max.toFixed(3)} mm/rev`;
+    setBadge('vcRecBadgeT', g_vc==='ok'?'badge-ok':g_vc==='warn'?'badge-warn':'badge-err', vc_txt);
+    setBadge('fRecBadgeT',  g_chip==='ok'?'badge-ok':g_chip==='warn'?'badge-warn':'badge-err', f_txt);
 
-    if(document.activeElement.tagName!=='INPUT'){
-      $('vcT').value = vc_rec.toFixed(1);
-      $('fT').value  = f_rec.toFixed(3);
-    }
+    if(!$('vcT').dataset.userSet) $('vcT').value = vc_rec.toFixed(1);
+    if(!$('fT').dataset.userSet)  $('fT').value  = f_rec.toFixed(3);
   }
+}
+
+/* ===== Ventanas por material + badges helpers ===== */
+function materialWindows(mode){
+  const mat = (CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value) || {};
+  const baseW = (CUTTING_DATA.defaults?.windows)||{vc_factor:[0.7,1.3],chip_factor:[0.7,1.3]};
+  const mw = mat.windows || {};
+  const vcF = mw.vc_factor || baseW.vc_factor;
+  const chF = mw.chip_factor || baseW.chip_factor;
+
+  const op  = (CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value) || {vc_factor:1,fz_factor:1};
+  const tt  = (CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value) || {vc_factor:1,fz_factor:1};
+
+  const vc_base = (mat.vc_base ?? 180) * (op.vc_factor||1) * (tt.vc_factor||1);
+  const chip_base = ((mat.fz_base ?? 0.05) * (mode==='torneado' ? 1.2 : 1)) * (op.fz_factor||1) * (tt.fz_factor||1);
+
+  const vc_min = vc_base * vcF[0], vc_max = vc_base * vcF[1];
+  const chip_min = chip_base * chF[0], chip_max = chip_base * chF[1];
+
+  return { vc_min, vc_max, chip_min, chip_max, vc_base_adj:vc_base, chip_base_adj:chip_base };
+}
+function setBadge(id, level, text){
+  const el=$(id); if(!el) return;
+  el.classList.remove('badge-ok','badge-warn','badge-err');
+  el.classList.add(level);
+  el.textContent = text;
+}
+function gradeValue(v, lo, hi){
+  if(v<lo*0.97 || v>hi*1.03) return 'err';
+  if(v<lo || v>hi) return 'warn';
+  return 'ok';
 }
 
 /* ================== Modelo vibración y cálculos ================== */
@@ -652,8 +721,13 @@ function computeFresado(override={}) {
   const m_eff = 0.02;
   const f_n = (1/(2*Math.PI)) * Math.sqrt(Math.abs(k_eff / (m_eff*1000)));
   const toothHz = (rpm/60) * z;
+
+  // Ra teórico simple por marcas de avance: Ra ≈ fz^2/(32·Re), Re=0.02 mm
+  const edgeR = 0.02;
+  const ra_um = Math.max(0, (Math.pow(fz,2)/(32*edgeR))) * 1000;
+
   const vib = vibrationRiskScore({L, ae, ap, fz, D, toothHz});
-  return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'fresado'};
+  return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, ra_um, mode:'fresado'};
 }
 
 function computeTorneado(override={}) {
@@ -697,8 +771,13 @@ function computeTorneado(override={}) {
   const m_eff = 0.02;
   const f_n = (1/(2*Math.PI)) * Math.sqrt(Math.abs(k_eff / (m_eff*1000)));
   const toothHz = rpm/60;
+
+  // Ra teórico simple de torneado: Ra ≈ f^2/(32·r), r=0.4 mm
+  const noseR = 0.4;
+  const ra_um = Math.max(0, (Math.pow(f,2)/(32*noseR))) * 1000;
+
   const vib = vibrationRiskScore({L, ae:ap, ap, fz:f, D, toothHz});
-  return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, mode:'torneado'};
+  return {rpm, feed_mm_min, mrr_cm3_min, chip_h, Kc_h, power_kW, time_min, cost_machine, pieces_per_tool, tool_cost_per_piece, delta_mm, f_n, toothHz, F_radial, vib, ra_um, mode:'torneado'};
 }
 
 /* ================== Gráfica Avance-RPM ================== */
@@ -794,8 +873,8 @@ function adjustRangesToInclude(A){
   const fCenter = Math.max(1, A.feed_mm_min || 100);
   const rCenter = Math.max(1, A.rpm || 1000);
 
-  let fSpan = Math.max(minFeedWindow, fCenter*1.0);   // ±50%
-  let rSpan = Math.max(minRpmWindow,  rCenter*1.0);   // ±50%
+  let fSpan = Math.max(minFeedWindow, fCenter*1.0);
+  let rSpan = Math.max(minRpmWindow,  rCenter*1.0);
 
   let fMin = Math.floor(clamp(fCenter - fSpan*0.5, 1, Number.POSITIVE_INFINITY));
   let fMax = Math.ceil (clamp(fCenter + fSpan*0.5, fMin+50, Number.POSITIVE_INFINITY));
@@ -825,6 +904,7 @@ function renderResults(A){
       <div class="muted">Avance (mm/min)</div><div class="result-value">${fmt(A.feed_mm_min,2)}</div>
       <div class="muted">MRR (cm³/min)</div><div class="result-value">${fmt(A.mrr_cm3_min,3)}</div>
       <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)}</div>
+      <div class="muted">Ra estimado (µm)</div><div class="result-value">${fmt(A.ra_um,2)}</div>
     </div>`;
   out.appendChild(s);
 
@@ -878,7 +958,6 @@ function applyOperationDefaults(force=false){
   const D = parseFloat($('diam')?.value)||12;
   if(!op) return;
 
-  // Solo pon defaults si el usuario NO tocó el campo o si force=true
   if(op.default_ae_pct && $('ae') && (force || !$('ae').dataset.userSet)){
     $('ae').value = Math.max(1, Math.round((op.default_ae_pct/100)*D*100)/100);
   }
@@ -889,7 +968,6 @@ function applyOperationDefaults(force=false){
     $('apT').value = op.default_ap;
   }
 }
-
 
 function render(){
   const modeT = $('modeT').classList.contains('is-on');
@@ -903,6 +981,29 @@ function render(){
   recommendVcFz(modeT?'torneado':'fresado');
 
   const A = modeT ? computeTorneado() : computeFresado();
+
+  // Alertas suaves de ventana antes de resultados
+  (function showSoftAlerts(){
+    const modeT = $('modeT').classList.contains('is-on');
+    const win = materialWindows(modeT?'torneado':'fresado');
+    const vc_now = modeT ? parseFloat($('vcT').value)||0 : parseFloat($('vc').value)||0;
+    const chip_now = modeT ? parseFloat($('fT').value)||0 : parseFloat($('fz').value)||0;
+
+    const alerts = [];
+    if(gradeValue(vc_now, win.vc_min, win.vc_max)==='err') alerts.push(`Vc fuera de ventana (${vc_now.toFixed(1)} vs ${win.vc_min.toFixed(0)}–${win.vc_max.toFixed(0)} m/min)`);
+    if(gradeValue(chip_now, win.chip_min, win.chip_max)==='err') alerts.push(`Chip fuera de ventana (${chip_now.toFixed(3)} vs ${win.chip_min.toFixed(3)}–${win.chip_max.toFixed(3)})`);
+
+    const res = $('results');
+    const box = document.createElement('div');
+    box.className = 'card';
+    box.style.marginBottom='10px';
+    box.innerHTML = alerts.length
+      ? `<div style="font-weight:800;color:#fecaca">Alertas</div><div class="muted">${alerts.join(' · ')}</div>`
+      : `<div class="muted">Sin alertas de ventana.</div>`;
+    res.innerHTML = '';
+    res.appendChild(box);
+  })();
+
   adjustRangesToInclude(A);
   renderResults(A);
   renderMachineDetails();
@@ -924,12 +1025,12 @@ function wireEvents(){
 
   // Marcar campos tocados por el usuario
   el.addEventListener('input', ()=>{
-    if(id==='ae' || id==='ap' || id==='apT'){ el.dataset.userSet = '1'; }
+    if(id==='ae' || id==='ap' || id==='apT' || id==='vc' || id==='fz' || id==='vcT' || id==='fT'){ el.dataset.userSet = '1'; }
     render();
   });
 
   el.addEventListener('change', ()=>{
-    if(id==='ae' || id==='ap' || id==='apT'){ el.dataset.userSet = '1'; }
+    if(id==='ae' || id==='ap' || id==='apT' || id==='vc' || id==='fz' || id==='vcT' || id==='fT'){ el.dataset.userSet = '1'; }
     render();
   });
 });
@@ -937,17 +1038,14 @@ function wireEvents(){
 ['operationSelect','diam'].forEach(id=>{
   const el=$(id); if(!el) return;
   el.addEventListener('change', ()=>{
-    // Limpia la marca para permitir proponer nuevos defaults
     if($('ae'))  $('ae').dataset.userSet  = '';
     if($('ap'))  $('ap').dataset.userSet  = '';
     if($('apT')) $('apT').dataset.userSet = '';
 
-    applyOperationDefaults(true); // fuerza defaults de la operación/diámetro
+    applyOperationDefaults(true);
     render();
   });
 });
-
-
 
   // selector de máquina
   $('machineSelect').addEventListener('change', ()=>{
