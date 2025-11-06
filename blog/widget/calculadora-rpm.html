@@ -1,781 +1,68 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de Condiciones de Corte — AlexRaSa</title>
-  <meta name="description" content="Calcula RPM, avance, MRR, potencia y vibración con presets y gráfica Avance vs RPM. Recomendación automática de Vc y fz." />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b1220" />
-
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    :root{
-      --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
-      --accent:#0ea5e9; --rose:#e11d48; --emerald:#10b981; --indigo:#6366f1;
-    }
-    .err { color:#fca5a5; font-size:.78rem; margin-top:4px }
-    .err-hide { display:none }
-    .input-err { border-color:#7f1d1d !important; box-shadow:0 0 0 2px rgba(127,29,29,.2) }
-    html{scroll-behavior:smooth}
-    body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu;margin:0}
-    .container{max-width:1180px;margin:0 auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
-    .lead{color:var(--muted)}
-    .btn{border:1px solid var(--border);background:rgba(255,255,255,.04);padding:.5rem .8rem;border-radius:8px}
-    .btn-primary{background:var(--accent);border-color:var(--accent);color:#061018}
-    .tab{padding:.5rem .8rem;border-radius:8px;border:1px solid var(--border);background:rgba(148,163,184,.06)}
-    .tab.is-on{background:var(--accent);border-color:var(--accent);color:#061018}
-    .field>label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:.25rem}
-    .field>input,.field>select{width:100%;border-radius:8px;padding:.5rem .6rem;background:var(--card)!important;border:1px solid var(--border);color:var(--ink)!important}
-    .kpi-value{font-size:1.35rem;color:#eaf2ff}
-    .muted{color:var(--muted)}
-    .grid-2 { display:grid; grid-template-columns: 1fr 420px; gap:18px; align-items:start; }
-    .grid-forms { display:grid;grid-template-columns: repeat(3, 1fr); gap:12px; }
-    .section-title{ font-weight:700; color:var(--accent); margin-bottom:8px }
-    .sidebar { width:420px; min-width:320px }
-    @media(max-width:1100px){ .grid-2{grid-template-columns:1fr} .sidebar{width:100%} .grid-forms{grid-template-columns:1fr} }
-    input[type=number] { background: rgba(255,255,255,0.02); color:var(--ink); }
-    .result-value{ font-weight:700; font-size:1.05rem; color:var(--ink) }
-    .badge{display:inline-block;padding:.1rem .4rem;border-radius:6px;border:1px solid var(--border);font-size:.72rem;color:var(--muted)}
-    .has-tip{ position:relative; cursor:help }
-    #_tt{ position:fixed; z-index:99999; max-width:320px; padding:10px 12px;
-      background:#0b1220; color:#e5eefb; border:1px solid #1f2a3a; border-radius:10px;
-      font-size:.85rem; line-height:1.25; box-shadow:0 8px 24px rgba(0,0,0,.35); pointer-events:none;
-    }
-    #_tt .tt-title{ font-weight:700; color:#0ea5e9; margin-bottom:4px }
-    .badge-ok{ background:rgba(16,185,129,.12); border-color:#065f46; color:#d1fae5 }
-    .badge-warn{ background:rgba(245,158,11,.10); border-color:#92400e; color:#fde68a }
-    .badge-err{ background:rgba(225,29,72,.10); border-color:#7f1d1d; color:#fecaca }
-  </style>
-</head>
-
-<body>
-<header class="sticky top-0 z-50 bg-black/40 backdrop-blur border-b border-gray-800">
-  <div class="max-w-6xl mx-auto px-4">
-    <div class="h-16 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2"><img src="/assets/logo.png" alt="Logo" class="h-10" /></a>
-      <nav class="hidden lg:flex gap-6 text-sm">
-        <a href="/">Inicio</a><a href="/#soluciones">Soluciones</a><a href="/#recursos">Recursos</a>
-      </nav>
-    </div>
-  </div>
-</header>
-
-<section class="relative">
-  <div class="absolute inset-0 -z-10">
-    <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-60"></div>
-    <div class="absolute inset-0 bg-slate-900/60"></div>
-  </div>
-  <div class="max-w-6xl mx-auto px-4 py-10 md:py-20 text-white">
-    <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">
-      Calculadora de <span class="text-sky-400">Condiciones de Corte</span>
-    </h1>
-    <p class="mt-3 text-white/90 max-w-3xl">
-      Ajusta RPM y avance. Estima MRR, potencia y riesgo de vibración con una sola gráfica Avance vs RPM.
-    </p>
-  </div>
-</section>
-
-<main class="container">
-  <div class="grid-2">
-    <div>
-      <div class="card mb-4">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <h2 style="margin:0;font-weight:800">Entradas</h2>
-            <div class="lead">Presets y parámetros</div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button id="modeF" class="tab is-on">Fresado</button>
-            <button id="modeT" class="tab">Torneado</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid-forms">
-        <!-- Col 1 -->
-        <div class="card">
-          <div class="section-title">Parámetros principales</div>
-          <div style="display:grid;gap:10px">
-            <div class="field"><label>Material</label><select id="materialSelect"></select></div>
-            <div class="field"><label>Operación</label><select id="operationSelect"></select></div>
-
-            <!-- NUEVO: Nivel Conservador/Estándar/Agresivo -->
-            <div class="field"><label>Nivel (Vc/fz)</label>
-              <select id="levelSelect">
-                <option value="estandar">Estándar</option>
-                <option value="conservador">Conservador</option>
-                <option value="agresivo">Agresivo</option>
-              </select>
-            </div>
-
-            <div class="field"><label>Sujeción / Holder</label><select id="holderSelect"></select></div>
-            <div class="field"><label>Tipo herramienta</label><select id="toolTypeSelect"></select></div>
-
-            <div id="modeFresadoFields">
-  <div class="field"><label>Diámetro herramienta D (mm)</label><input id="diam" type="number" step="0.01" value="12" /></div>
-  <div class="field"><label>Dientes (z)</label><input id="z" type="number" step="1" value="4" /></div>
-
-  <div class="field"><label>Vel. corte Vc (m/min) <span class="badge" id="vcRecBadge">rec: —</span></label>
-    <input id="vc" type="number" step="0.1" value="180" />
-  </div>
-  <div class="field"><label>fz (mm/tooth) <span class="badge" id="fzRecBadge">rec: —</span></label>
-    <input id="fz" type="number" step="0.0001" value="0.06" />
-  </div>
-
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div class="field"><label>Ae (% de D)</label>
-      <input id="aePct" type="number" step="1" min="1" max="100" value="30" />
-    </div>
-    <div class="field"><label>Ap (mm)</label>
-      <input id="ap" type="number" step="0.01" value="2" />
-    </div>
-  </div>
-</div>
-            <div id="modeTorneadoFields" style="display:none">
-              <div class="field"><label>Diámetro pieza D (mm)</label><input id="diamT" type="number" step="0.01" value="60" /></div>
-              <div class="field"><label>Prof. corte ap (mm)</label><input id="apT" type="number" step="0.01" value="2" /></div>
-              <div class="field"><label>Vc (m/min) <span class="badge" id="vcRecBadgeT">rec: —</span></label><input id="vcT" type="number" step="0.1" value="120" /></div>
-              <div class="field"><label>Avance f (mm/rev) <span class="badge" id="fRecBadgeT">rec: —</span></label><input id="fT" type="number" step="0.001" value="0.15" /></div>
-            </div>
-
-            <div class="field"><label>Stickout L (mm)</label><input id="stickout" type="number" step="1" value="60" /></div>
-          </div>
-        </div>
-
-        <!-- Col 2 -->
-        <div class="card">
-          <div class="section-title">Costos & Opciones</div>
-          <div style="display:grid;gap:10px">
-            <div class="field"><label>Costo hora máquina (USD)</label><input id="machineCost" type="number" step="0.1" value="25" /></div>
-            <div class="field"><label>Costo herramienta (USD)</label><input id="toolCost" type="number" step="0.1" value="70" /></div>
-            <div class="field"><label>Volumen a remover (cm³)</label><input id="volumen" type="number" step="0.01" value="18" /></div>
-            <div class="field"><label>Constante Taylor C</label><input id="C" type="number" step="1" value="40000" /></div>
-            <div class="field"><label>Exponente n (Taylor)</label><input id="n" type="number" step="0.01" value="0.25" /></div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <label><input id="enableCycle" type="checkbox" class="toggle" checked /> <span class="muted">Tiempo</span></label>
-              <label><input id="enableKc" type="checkbox" class="toggle" checked /> <span class="muted">Kc/Pot.</span></label>
-              <label><input id="enableStability" type="checkbox" class="toggle" checked /> <span class="muted">Vibración</span></label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Col 3 -->
-        <div class="card">
-          <div class="section-title">Parámetros de máquina</div>
-          <div style="display:grid;gap:10px">
-            <div class="field"><label>Máquina (preset)</label>
-              <select id="machineSelect"><option value="custom">— Seleccionar máquina —</option></select>
-            </div>
-            <div class="field"><label>Marca / Modelo</label><input id="machineModel" type="text" value="" /></div>
-            <div class="field"><label>Potencia husillo (kW)</label><input id="machinePower" type="number" step="0.1" value="15" /></div>
-            <div class="field"><label>RPM máx</label><input id="machineMaxRpm" type="number" step="1" value="10000" /></div>
-            <div class="field"><label>Tipo de husillo</label><input id="spindleType" type="text" value="HSK63" /></div>
-            <div class="field"><label>E aproximado (GPa)</label><input id="E" type="number" step="1" value="210" /></div>
-            <div class="field"><label>Stickout por defecto (mm)</label><input id="stickoutDefault" type="number" step="1" value="60" /></div>
-            <div class="muted">Presets en <code>CUTTING_DATA.machines</code>.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <aside class="sidebar">
-      <div class="card">
-        <div class="section-title">Resultados</div>
-        <div id="results" style="margin-top:10px"></div>
-
-        <div style="margin-top:12px" class="card">
-          <div class="section-title">Detalles Máquina / Herramienta</div>
-          <div id="machineDetails" style="margin-top:8px"></div>
-        </div>
-      </div>
-    </aside>
-  </div>
-
-  <section style="margin-top:18px">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
-        <div>
-          <h3 style="margin:0;font-weight:800">Gráfica Avance vs RPM</h3>
-          <div class="muted">Curva óptima de mínima vibración, puntos seguros y franja 600–900 Hz. El punto blanco es tu condición actual.</div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-          <div class="field" style="min-width:220px">
-            <label>Rango avance (mm/min)</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <input id="feedMin" type="number" value="200"><input id="feedMax" type="number" value="2200">
-            </div>
-          </div>
-          <div class="field" style="min-width:220px">
-            <label>Rango RPM</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <input id="rpmMin" type="number" value="200"><input id="rpmMax" type="number" value="10000">
-            </div>
-          </div>
-          <div class="field" style="width:160px">
-            <label>Umbral seguro (prob)</label>
-            <input id="thSafe" type="number" step="0.05" value="0.4">
-          </div>
-        </div>
-      </div>
-      <div style="height:520px;margin-top:12px"><canvas id="chartRPMFeed"></canvas></div>
-    </div>
-  </section>
-</main>
-
-<script>
-const $ = id => document.getElementById(id);
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const lerp=(a,b,t)=>a+(b-a)*t;
-function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
-
-/* ----- Validación mínima (igual que antes) ----- */
-const FIELDS_TO_VALIDATE = ['diam','z','vc','fz','aePct','ap','diamT','apT','vcT','fT','machineMaxRpm'];
-function ensureErrorSlots(){FIELDS_TO_VALIDATE.forEach(id=>{const el=$(id);if(!el)return;const w=el.closest('.field');if(w&&!w.querySelector(`#err-${id}`)){const d=document.createElement('div');d.id=`err-${id}`;d.className='err err-hide';w.appendChild(d);}});}
-function showError(id,msg){const el=$(id),slot=$(`err-${id}`);if(!el||!slot)return;slot.textContent=msg;slot.classList.remove('err-hide');el.classList.add('input-err');}
-function clearError(id){const el=$(id),slot=$(`err-${id}`);if(!el||!slot)return;slot.textContent='';slot.classList.add('err-hide');el.classList.remove('input-err');}
-function validateInputs(){
-  let ok = true;
-  const isT = $('modeT').classList.contains('is-on');
-  FIELDS_TO_VALIDATE.forEach(clearError);
-
-  const rpmMax = +$('machineMaxRpm').value || 0;
-  if (rpmMax <= 0) { showError('machineMaxRpm','Debe ser > 0'); ok = false; }
-
-  if (!isT) {
-    // Fresado
-    const D     = +$('diam').value;
-    const z     = +$('z').value;
-    const vc    = +$('vc').value;
-    const fz    = +$('fz').value;
-    const aePct = +$('aePct').value;
-    const ap    = +$('ap').value;
-
-    if (D <= 0) { showError('diam','D > 0'); ok = false; }
-    if (!Number.isInteger(z) || z < 1) { showError('z','z entero ≥ 1'); ok = false; }
-    if (vc <= 0) { showError('vc','Vc > 0'); ok = false; }
-    if (fz <= 0) { showError('fz','fz > 0'); ok = false; }
-    if (aePct <= 0) { showError('aePct','Ae% > 0'); ok = false; }
-    if (aePct > 100) { showError('aePct','Ae% ≤ 100'); ok = false; }
-
-    const rpm_teo = (vc * 1000) / (Math.PI * Math.max(D, 1e-9));
-    if (rpmMax > 0 && rpm_teo > rpmMax * 1.05) {
-      showError('vc', `Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok = false;
-    }
-  } else {
-    // Torneado
-    const D   = +$('diamT').value;
-    const apv = +$('apT').value;
-    const vct = +$('vcT').value;
-    const f   = +$('fT').value;
-
-    if (D <= 0) { showError('diamT','D > 0'); ok = false; }
-    if (apv <= 0) { showError('apT','ap > 0'); ok = false; }
-    if (vct <= 0) { showError('vcT','Vc > 0'); ok = false; }
-    if (f <= 0) { showError('fT','f > 0'); ok = false; }
-
-    const rpm_teo = (vct * 1000) / (Math.PI * Math.max(D, 1e-9));
-    if (rpmMax > 0 && rpm_teo > rpmMax * 1.05) {
-      showError('vcT', `Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok = false;
-    }
-  }
-
-  // Soft checks contra ventana después
-  return ok;
-};
-
-/* ----- Tooltips (se agregan para levelSelect) ----- */
-const TIPS = {
-  materialSelect:{t:"Material", d:"Afecta Kc, recomendación de Vc y vida (Taylor)."},
-  operationSelect:{t:"Operación", d:"Ajusta factores de Vc/fz y Ae/Ap por defecto."},
-  levelSelect:{t:"Nivel de agresividad", d:"Conservador reduce Vc/fz. Agresivo los incrementa. Aplica a recomendación y ventanas."},
-  holderSelect:{t:"Sujeción / Holder", d:"Cambia rigidez efectiva."},
-  toolTypeSelect:{t:"Tipo de herramienta", d:"Ajusta factores Vc/fz."},
-  diam:{t:"D (mm)", d:"Afecta RPM, MRR y deflexión."},
-  z:{t:"Dientes (z)", d:"feed = rpm×z×fz."},
-  vc:{t:"Velocidad de corte Vc", d:"m/min. Limitada por RPM máx."},
-  fz:{t:"fz", d:"mm/z."},
-  aePct:{t:"Ae (%D)", d:"Enganche radial como porcentaje del diámetro."},
-  ap:{t:"Ap", d:"Profundidad axial."},
-  diamT:{t:"D pieza", d:"Torneado."},
-  apT:{t:"ap", d:"Torneado."},
-  vcT:{t:"Vc", d:"Torneado."},
-  fT:{t:"f", d:"mm/rev."},
-  stickout:{t:"Stickout", d:"Aumenta riesgo si es alto."},
-  machineCost:{t:"Costo hora", d:"USD/h."},
-  toolCost:{t:"Costo herramienta", d:"Por unidad."},
-  volumen:{t:"Volumen", d:"cm³ por pieza."},
-  C:{t:"C de Taylor", d:"Vida = C / Vc^n."},
-  n:{t:"n", d:"Exponente de Taylor."},
-  enableCycle:{t:"Tiempo", d:"Muestra tiempo y costo."},
-  enableKc:{t:"Kc/Pot.", d:"Muestra Kc(h) y potencia."},
-  enableStability:{t:"Vibración", d:"f_n y prob."},
-  machineSelect:{t:"Máquina", d:"Carga presets."},
-  machineModel:{t:"Modelo", d:"Editable."},
-  machinePower:{t:"Potencia", d:"kW."},
-  machineMaxRpm:{t:"RPM máx", d:"Límite."},
-  spindleType:{t:"Husillo", d:"BT/HSK/etc."},
-  E:{t:"Módulo E", d:"GPa."},
-  stickoutDefault:{t:"Stickout def.", d:"Preset."},
-  feedMin:{t:"Avance mín", d:"Eje X."},
-  feedMax:{t:"Avance máx", d:"Eje X."},
-  rpmMin:{t:"RPM mín", d:"Eje Y."},
-  rpmMax:{t:"RPM máx", d:"Eje Y."},
-  thSafe:{t:"Umbral seguro", d:"Probabilidad."},
-  modeF:{t:"Fresado", d:"Modo fresado."},
-  modeT:{t:"Torneado", d:"Modo torneado."}
-};
-let _ttEl=null;
-function ensureTipEl(){ if(!_ttEl){ _ttEl=document.createElement('div'); _ttEl.id='_tt'; _ttEl.style.display='none'; document.body.appendChild(_ttEl);} }
-function showTip(evt, tip){ ensureTipEl(); _ttEl.innerHTML=`<div class="tt-title">${tip.t||""}</div>${tip.d||""}`; _ttEl.style.display='block';
-  const pad=12,vw=innerWidth,vh=innerHeight,rect=_ttEl.getBoundingClientRect(); let x=evt.clientX+pad,y=evt.clientY+pad;
-  if(x+rect.width>vw) x=evt.clientX-rect.width-pad; if(y+rect.height>vh) y=evt.clientY-rect.height-pad; _ttEl.style.left=x+'px'; _ttEl.style.top=y+'px';}
-function hideTip(){ if(_ttEl) _ttEl.style.display='none'; }
-function enableTooltips(){
-  Object.keys(TIPS).forEach(id=>{
-    const el=$(id); if(!el) return;
-    el.classList.add('has-tip');
-    el.addEventListener('mouseenter', e=>showTip(e,TIPS[id]));
-    el.addEventListener('mousemove', e=>showTip(e,TIPS[id]));
-    el.addEventListener('mouseleave', hideTip);
-    const label = el.closest('.field')?.querySelector('label');
-    if(label){ label.classList.add('has-tip');
-      label.addEventListener('mouseenter', e=>showTip(e,TIPS[id]));
-      label.addEventListener('mousemove', e=>showTip(e,TIPS[id]));
-      label.addEventListener('mouseleave', hideTip);
-    }
-  });
-  document.addEventListener('scroll', hideTip, {passive:true});
-}
-function enableKeyboardAndTouchTips(){
-  const bind=(el,tip)=>{ if(!el) return; el.setAttribute('tabindex','0'); el.setAttribute('aria-label',tip.t||'Ayuda');
-    el.addEventListener('focus',()=>{const r=el.getBoundingClientRect();showTip({clientX:r.left+8,clientY:r.bottom+8},tip);});
-    el.addEventListener('blur',hideTip); let touchTimer=null,sticky=false;
-    const openAt=()=>{const r=el.getBoundingClientRect();showTip({clientX:r.left+8,clientY:r.bottom+8},tip);};
-    el.addEventListener('touchstart',()=>{sticky=false; if(touchTimer)clearTimeout(touchTimer); touchTimer=setTimeout(()=>{sticky=true;openAt();},500);},{passive:true});
-    el.addEventListener('touchend',()=>{if(touchTimer)clearTimeout(touchTimer); if(!sticky){openAt();setTimeout(hideTip,1500);} else {const closeOnce=()=>{hideTip();document.removeEventListener('touchstart',closeOnce);}; setTimeout(()=>document.addEventListener('touchstart',closeOnce,{passive:true}),0);}},{passive:true});
-  };
-  Object.keys(TIPS).forEach(id=>{const el=$(id); if(!el)return; bind(el,TIPS[id]); const label=el.closest('.field')?.querySelector('label'); if(label) bind(label,TIPS[id]);});
-}
-
-/* ----- Datos embebidos (sin cambios funcionales) ----- */
-const CUTTING_DATA = {
-  "version":"3.4",
-  "defaults":{
-    "rpm_limit":24000,
-    "efficiency":0.8,
-    "vibe_gauss":{"mu":0.7,"sigma":0.18},
-    "default_flutes":4,
-    "windows": { "vc_factor":[0.70,1.30], "chip_factor":[0.70,1.30] }
-  },
-  "vibration":{"avoid_band_hz":[600,900],"risk_threshold":0.8,"weights":{"ld":0.5,"ae":0.2,"ap":0.2,"fz":0.1}},
-  "holders":[
-    {"id":"ER_Collet","label":"Portapinzas ER","stiffness_factor":1.00},
-    {"id":"REGOFIX_powRgrip","label":"REGO-FIX powRgrip","stiffness_factor":1.45},
-    {"id":"ShrinkFit","label":"Shrink-fit","stiffness_factor":1.60},
-    {"id":"HydraulicChuck","label":"Mandril hidráulico","stiffness_factor":1.50},
-    {"id":"MillingChuck","label":"Milling Chuck","stiffness_factor":1.35},
-    {"id":"SideLock","label":"Side-Lock","stiffness_factor":1.20},
-    {"id":"HeatShrink","label":"Heat-Shrink","stiffness_factor":1.60},
-    {"id":"PowerChuck","label":"Power chuck","stiffness_factor":1.30},
-    {"id":"SteadyRest","label":"Steady rest / soporte","stiffness_factor":0.90},
-    {"id":"PortaInsertos","label":"Porta-insertos","stiffness_factor":1.15},
-    {"id":"ColletChuck","label":"Collet chuck","stiffness_factor":1.05},
-    {"id":"FaceMillAdapter","label":"Adaptador face mill","stiffness_factor":1.10},
-    {"id":"ModularHolder","label":"Portaherramientas modular","stiffness_factor":1.00},
-    {"id":"BoringBarHolder","label":"Porta barra / boring bar","stiffness_factor":1.08},
-    {"id":"LiveToolHolder","label":"Porta rotativa","stiffness_factor":1.20},
-    {"id":"TurretToolHolder","label":"Porta torreta","stiffness_factor":1.15}
-  ],
-  "materials":[
-    { "id":"alu_1100","name":"Aluminio 1100","Kc_N_per_mm2":300, "taylor":{"C":2000,"n":0.12}, "vc_base":250, "fz_base":0.06 },
-    { "id":"alu_6061","name":"Aluminio 6061","Kc_N_per_mm2":800, "taylor":{"C":1000,"n":0.12}, "vc_base":220, "fz_base":0.06 },
-    { "id":"alu_7075","name":"Aluminio 7075","Kc_N_per_mm2":950, "taylor":{"C":900,"n":0.12}, "vc_base":200, "fz_base":0.055 },
-    { "id":"steel_1018","name":"Acero 1018","Kc_N_per_mm2":1200,"taylor":{"C":5000,"n":0.18},"vc_base":180,"fz_base":0.045 },
-    { "id":"steel_1045","name":"Acero 1045","Kc_N_per_mm2":2000,"taylor":{"C":300,"n":0.20},"vc_base":140,"fz_base":0.040 },
-    { "id":"steel_4140","name":"Acero 4140","Kc_N_per_mm2":3200,"taylor":{"C":120,"n":0.12},"vc_base":120,"fz_base":0.035 },
-    { "id":"steel_4340","name":"Acero 4340","Kc_N_per_mm2":3500,"taylor":{"C":110,"n":0.12},"vc_base":110,"fz_base":0.032 },
-    { "id":"steel_8620","name":"Acero 8620","Kc_N_per_mm2":2600,"taylor":{"C":200,"n":0.16},"vc_base":150,"fz_base":0.040 },
-    { "id":"tool_H13","name":"Acero herramienta H13","Kc_N_per_mm2":3800,"taylor":{"C":90,"n":0.10},"vc_base":90,"fz_base":0.030 },
-    { "id":"inox_304","name":"Inox 304","Kc_N_per_mm2":2200,"taylor":{"C":200,"n":0.18},"vc_base":110,"fz_base":0.035 },
-    { "id":"inox_316","name":"Inox 316","Kc_N_per_mm2":2400,"taylor":{"C":170,"n":0.18},"vc_base":95,"fz_base":0.032 },
-    { "id":"ss_174ph","name":"Acero 17-4 PH","Kc_N_per_mm2":2600,"taylor":{"C":160,"n":0.17},"vc_base":120,"fz_base":0.033 },
-    { "id":"ti_64","name":"Titanio Ti-6Al-4V","Kc_N_per_mm2":1200,"taylor":{"C":150,"n":0.18},"vc_base":80,"fz_base":0.030 },
-    { "id":"inconel_718","name":"Inconel 718","Kc_N_per_mm2":4500,"taylor":{"C":60,"n":0.12},"vc_base":45,"fz_base":0.020, "windows":{ "vc_factor":[0.60,1.20], "chip_factor":[0.60,1.10] } },
-    { "id":"cast_iron","name":"Fundición gris","Kc_N_per_mm2":1800,"taylor":{"C":500,"n":0.15},"vc_base":180,"fz_base":0.045 },
-    { "id":"copper","name":"Cobre / Latón","Kc_N_per_mm2":600,"taylor":{"C":2000,"n":0.12},"vc_base":220,"fz_base":0.060 },
-    { "id":"peek","name":"PEEK (plástico)","Kc_N_per_mm2":150,"taylor":{"C":1200,"n":0.08},"vc_base":300,"fz_base":0.070 },
-    { "id":"cfrp","name":"CFRP (compuesto)","Kc_N_per_mm2":100,"taylor":{"C":900,"n":0.05},"vc_base":250,"fz_base":0.020 }
-  ],
-  "operations":[
-    { "id":"rough","label":"Desbaste","default_ae_pct":30,"default_ap_per_d":0.5,"vc_factor":1.00,"fz_factor":1.10 },
-    { "id":"semi","label":"Semidesbaste","default_ae_pct":18,"default_ap_per_d":0.4,"vc_factor":1.05,"fz_factor":1.00 },
-    { "id":"finish","label":"Acabado","default_ae_pct":12,"default_ap_per_d":0.2,"vc_factor":1.15,"fz_factor":0.75 },
-    { "id":"adaptive","label":"Trocoidal / Adaptativo","default_ae_pct":25,"default_ap_per_d":1.0,"vc_factor":1.10,"fz_factor":1.00 },
-    { "id":"face","label":"Fresado de cara","vc_factor":1.10,"fz_factor":1.20 },
-    { "id":"pocket","label":"Pocketing","vc_factor":1.00,"fz_factor":1.00 },
-    { "id":"profiling","label":"Perfilado / Contorneado","vc_factor":1.05,"fz_factor":0.95 },
-    { "id":"plunge","label":"Plunge milling","vc_factor":0.70,"fz_factor":0.80 },
-    { "id":"slotting","label":"Slotting / Ranurado","vc_factor":0.85,"fz_factor":0.90 },
-    { "id":"drilling","label":"Taladrado","vc_factor":0.80,"fz_factor":1.00 },
-    { "id":"reaming","label":"Escariado","vc_factor":0.85,"fz_factor":0.70 },
-    { "id":"boring","label":"Mandrinado","vc_factor":0.90,"fz_factor":0.80 },
-    { "id":"threading","label":"Roscar","vc_factor":0.70,"fz_factor":0.50 },
-    { "id":"turn_rough","label":"Torneado - Desbaste","default_ap":2,"vc_factor":1.00,"fz_factor":1.00 },
-    { "id":"turn_finish","label":"Torneado - Acabado","vc_factor":1.10,"fz_factor":0.80 }
-  ],
-  "tool_types":[
-    {"id":"endmill","label":"Fresa (Endmill)","vc_factor":1.00,"fz_factor":1.00,"default_flutes":4},
-    {"id":"ballnose","label":"Fresa hemisférica","vc_factor":0.90,"fz_factor":0.90,"default_flutes":4},
-    {"id":"facemill","label":"Fresa frontal","vc_factor":1.05,"fz_factor":1.20,"default_flutes":6},
-    {"id":"indexable","label":"Fresa indexable","vc_factor":1.15,"fz_factor":1.30,"default_flutes":2},
-    {"id":"highfeed","label":"Fresa high-feed","vc_factor":1.20,"fz_factor":1.40,"default_flutes":2},
-    {"id":"drill","label":"Broca","vc_factor":0.80,"fz_factor":1.00,"default_flutes":2},
-    {"id":"reamer","label":"Escariador","vc_factor":0.85,"fz_factor":1.00,"default_flutes":2},
-    {"id":"lollipop","label":"Lollipop","vc_factor":0.85,"fz_factor":0.85,"default_flutes":4},
-    {"id":"slotmill","label":"Fresa ranura estrecha","vc_factor":0.95,"fz_factor":1.00,"default_flutes":2},
-    {"id":"shellmill","label":"Shell mill","vc_factor":1.00,"fz_factor":1.10,"default_flutes":8},
-    {"id":"threadmill","label":"Herram. roscado (mill)","vc_factor":0.70,"fz_factor":0.60,"default_flutes":1},
-    {"id":"boring_bar","label":"Barra de mandrinado","vc_factor":0.90,"fz_factor":1.00,"default_flutes":1},
-    {"id":"turn_insert","label":"Herram. torneado (insertos)","vc_factor":1.00,"fz_factor":1.00,"default_flutes":1},
-    {"id":"groove","label":"Herram. ranurado","vc_factor":0.95,"fz_factor":0.90,"default_flutes":1},
-    {"id":"threading","label":"Herram. roscado (torno)","vc_factor":0.70,"fz_factor":0.50,"default_flutes":1},
-    {"id":"tap","label":"Macho (tap)","vc_factor":0.60,"fz_factor":0.40,"default_flutes":1}
-  ],
-  "machines":[
-    { "id":"doosan_vmc","brand":"Doosan","model":"DNM4500 VMC","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"HSK63" },
-    { "id":"doosan_puma","brand":"Doosan","model":"PUMA 2600","type":"Lathe","power_kW":22,"max_rpm":3500,"stickout_default":120,"spindle":"A2-8" },
-    { "id":"okk_cmh","brand":"OKK","model":"CMH-800V","type":"CMH","power_kW":18,"max_rpm":9000,"stickout_default":50,"spindle":"BT40" },
-    { "id":"haas_vf2","brand":"Haas","model":"VF-2","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":70,"spindle":"BT40" },
-    { "id":"mazak_vcn","brand":"Mazak","model":"VCN-530C","type":"VMC","power_kW":18.5,"max_rpm":12000,"stickout_default":60,"spindle":"HSK63" },
-    { "id":"dmgmori_dmu","brand":"DMG MORI","model":"DMU 50","type":"VMC","power_kW":15,"max_rpm":15000,"stickout_default":50,"spindle":"HSK63" },
-    { "id":"fanuc_robodrill","brand":"Fanuc","model":"α-DiB Robodrill","type":"Robodrill","power_kW":3.7,"max_rpm":24000,"stickout_default":40,"spindle":"BT30" },
-    { "id":"brother_s","brand":"Brother","model":"Speedio S700X1","type":"Robodrill","power_kW":4,"max_rpm":24000,"stickout_default":40,"spindle":"BT30" },
-    { "id":"makino_a55","brand":"Makino","model":"A55 VMC","type":"VMC","power_kW":22,"max_rpm":10000,"stickout_default":65,"spindle":"HSK63" },
-    { "id":"okuma_genos_lathe","brand":"Okuma","model":"Genos L250","type":"Lathe","power_kW":11,"max_rpm":4000,"stickout_default":110,"spindle":"A2-6" },
-    { "id":"nakamura_tome","brand":"Nakamura-Tome","model":"NTY3","type":"Lathe","power_kW":15,"max_rpm":4000,"stickout_default":100,"spindle":"A2-8" },
-    { "id":"hurco_vmx","brand":"Hurco","model":"VMX42","type":"VMC","power_kW":11,"max_rpm":8000,"stickout_default":70,"spindle":"BT40" },
-    { "id":"hyundai_wia","brand":"Hyundai WIA","model":"KF-1600","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"BT40" },
-    { "id":"mazak_hmc","brand":"Mazak","model":"HMX-630","type":"HMC","power_kW":30,"max_rpm":8000,"stickout_default":80,"spindle":"HSK100" },
-    { "id":"okuma_mb","brand":"Okuma","model":"MB-46V","type":"MillTurn","power_kW":37,"max_rpm":8000,"stickout_default":80,"spindle":"HSK63" }
-  ]
-};
-
-/* ===== NUEVO: niveles ===== */
-const LEVELS = {
-  conservador: { vc: 0.90, chip: 0.90 },
-  estandar:    { vc: 1.00, chip: 1.00 },
-  agresivo:    { vc: 1.15, chip: 1.10 }
-};
-function getLevel(){ const k=$('levelSelect')?.value||'estandar'; return LEVELS[k]||LEVELS.estandar; }
-
-/* ----- Helpers de modo/UI ----- */
-function ensureTurningEntries(){
-  if(!CUTTING_DATA.tool_types) CUTTING_DATA.tool_types = [];
-  if(!CUTTING_DATA.holders) CUTTING_DATA.holders = [];
-  if(!CUTTING_DATA.tool_types.some(t=>t.id==='turn_insert')) CUTTING_DATA.tool_types.push({id:'turn_insert',label:'Herram. torneado',vc_factor:1,fz_factor:1,default_flutes:1});
-  if(!CUTTING_DATA.holders.some(h=>h.id==='PortaInsertos')) CUTTING_DATA.holders.push({id:'PortaInsertos',label:'Porta-insertos',stiffness_factor:1.15});
-}
-const HOLDERS_BY_MODE={fresado:['ER_Collet','REGOFIX_powRgrip','ShrinkFit','HydraulicChuck','MillingChuck','SideLock','HeatShrink','SteadyRest'],torneado:['PortaInsertos','PowerChuck','SteadyRest','TurretToolHolder','BoringBarHolder']};
-const TOOLTYPES_BY_MODE={fresado:['endmill','ballnose','facemill','indexable','highfeed','drill','reamer','slotmill','shellmill','lollipop','threadmill','boring_bar'],torneado:['turn_insert','groove','threading','tap']};
-function populateFromData(defaultMode='fresado'){
-  const mSel=$('materialSelect'); mSel.innerHTML=''; (CUTTING_DATA.materials||[]).forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name;mSel.appendChild(o);});
-  const oSel=$('operationSelect'); oSel.innerHTML=''; (CUTTING_DATA.operations||[]).forEach(op=>{const o=document.createElement('option');o.value=op.id;o.textContent=op.label;oSel.appendChild(o);});
-  const mPres=$('machineSelect'); mPres.innerHTML='<option value="custom">— Seleccionar máquina —</option>';
-  (CUTTING_DATA.machines||[]).forEach(m=>{const opt=document.createElement('option');opt.value=m.id;opt.textContent=`${m.brand} · ${m.model} · ${m.type}`;mPres.appendChild(opt);});
-  updateModeOptions(defaultMode);
-}
-function updateModeOptions(mode){
-  ensureTurningEntries();
-  const holderSel=$('holderSelect'); holderSel.innerHTML='';
-  const idsH=(mode==='torneado')?HOLDERS_BY_MODE.torneado:HOLDERS_BY_MODE.fresado;
-  const knownH=(CUTTING_DATA.holders||[]).map(h=>h.id);
-  const finalH=idsH.filter(id=>knownH.includes(id));
-  (finalH.length?finalH:(CUTTING_DATA.holders||[]).map(h=>h.id))
-    .forEach(id=>{const h=(CUTTING_DATA.holders||[]).find(x=>x.id===id); if(h){const o=document.createElement('option');o.value=h.id;o.textContent=h.label||h.id;holderSel.appendChild(o);}});
-  const toolSel=$('toolTypeSelect'); toolSel.innerHTML='';
-  const idsT=(mode==='torneado')?TOOLTYPES_BY_MODE.torneado:TOOLTYPES_BY_MODE.fresado;
-  const knownT=(CUTTING_DATA.tool_types||[]).map(t=>t.id);
-  const finalT=idsT.filter(id=>knownT.includes(id));
-  (finalT.length?finalT:(CUTTING_DATA.tool_types||[]).map(t=>t.id))
-    .forEach(id=>{const t=(CUTTING_DATA.tool_types||[]).find(x=>x.id===id); if(t){const o=document.createElement('option');o.value=t.id;o.textContent=t.label||t.id;toolSel.appendChild(o);}});
-  if(holderSel.options.length) holderSel.value=holderSel.options[0].value;
-  if(toolSel.options.length) toolSel.value=toolSel.options[0].value;
-}
-
-/* ----- Recomendación Vc/fz con nivel ----- */
-function recommendVcFz(mode='fresado'){
-  const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||CUTTING_DATA.materials[0];
-  const op =(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value)||{vc_factor:1,fz_factor:1};
-  const tt =(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||{vc_factor:1,fz_factor:1,default_flutes:4};
-  const lvl=getLevel();
-
-  if(mode==='fresado'){
-    const D=parseFloat($('diam').value)||12;
-    const z=parseInt($('z').value)||(tt.default_flutes||4);
-    const vc_base=mat.vc_base??180;
-    const fz_base=mat.fz_base??0.05;
-    const fz_d=fz_base*Math.pow(D/12,0.25);
-
-    let vc_rec=vc_base*(tt.vc_factor||1)*(op.vc_factor||1)*lvl.vc;
-    let fz_rec=fz_d   *(tt.fz_factor||1)*(op.fz_factor||1)*lvl.chip;
-
-    const maxR=parseFloat($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
-    const rpm_rec=(vc_rec*1000)/(Math.PI*D);
-    if(rpm_rec>maxR) vc_rec=(maxR*Math.PI*D)/1000;
-
-    const win=materialWindows('fresado');
-    const chip_curr=parseFloat($('fz').value)||fz_rec;
-    const vc_curr=parseFloat($('vc').value)||vc_rec;
-    const g_vc=gradeValue(vc_curr,win.vc_min,win.vc_max);
-    const g_chip=gradeValue(chip_curr,win.chip_min,win.chip_max);
-    const vc_txt=`rec: ${vc_rec.toFixed(0)} · win ${win.vc_min.toFixed(0)}–${win.vc_max.toFixed(0)} m/min`;
-    const chip_txt=`rec: ${fz_rec.toFixed(3)} · win ${win.chip_min.toFixed(3)}–${win.chip_max.toFixed(3)} mm/z`;
-    setBadge('vcRecBadge', g_vc==='ok'?'badge-ok':g_vc==='warn'?'badge-warn':'badge-err', vc_txt);
-    setBadge('fzRecBadge', g_chip==='ok'?'badge-ok':g_chip==='warn'?'badge-warn':'badge-err', chip_txt);
-
-    if(!$('vc').dataset.userSet) $('vc').value=vc_rec.toFixed(1);
-    if(!$('fz').dataset.userSet) $('fz').value=fz_rec.toFixed(3);
-    if(!$('z').value) $('z').value=z;
-
-  } else {
-    const D=parseFloat($('diamT').value)||60;
-    const vc_base=mat.vc_base??180;
-    const f_base=(mat.fz_base??0.05)*1.2;
-
-    let vc_rec=vc_base*(op.vc_factor||1)*lvl.vc;
-    let f_rec =f_base *(op.fz_factor||1)*lvl.chip;
-
-    const maxR=parseFloat($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
-    const rpm_rec=(vc_rec*1000)/(Math.PI*D);
-    if(rpm_rec>maxR) vc_rec=(maxR*Math.PI*D)/1000;
-
-    const win=materialWindows('torneado');
-    const chip_curr=parseFloat($('fT').value)||f_rec;
-    const vc_curr=parseFloat($('vcT').value)||vc_rec;
-    const g_vc=gradeValue(vc_curr,win.vc_min,win.vc_max);
-    const g_chip=gradeValue(chip_curr,win.chip_min,win.chip_max);
-    const vc_txt=`rec: ${vc_rec.toFixed(0)} · win ${win.vc_min.toFixed(0)}–${win.vc_max.toFixed(0)} m/min`;
-    const f_txt =`rec: ${f_rec.toFixed(3)} · win ${win.chip_min.toFixed(3)}–${win.chip_max.toFixed(3)} mm/rev`;
-    setBadge('vcRecBadgeT', g_vc==='ok'?'badge-ok':g_vc==='warn'?'badge-warn':'badge-err', vc_txt);
-    setBadge('fRecBadgeT',  g_chip==='ok'?'badge-ok':g_chip==='warn'?'badge-warn':'badge-err', f_txt);
-
-    if(!$('vcT').dataset.userSet) $('vcT').value=vc_rec.toFixed(1);
-    if(!$('fT').dataset.userSet)  $('fT').value =f_rec.toFixed(3);
-  }
-}
-
-/* ----- Ventanas por material con nivel aplicado ----- */
-function materialWindows(mode){
-  const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||{};
-  const baseW=(CUTTING_DATA.defaults?.windows)||{vc_factor:[0.7,1.3],chip_factor:[0.7,1.3]};
-  const mw=mat.windows||{};
-  const vcF=mw.vc_factor||baseW.vc_factor;
-  const chF=mw.chip_factor||baseW.chip_factor;
-  const op =(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value)||{vc_factor:1,fz_factor:1};
-  const tt =(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||{vc_factor:1,fz_factor:1};
-  const lvl=getLevel();
-
-  const vc_base=(mat.vc_base??180)*(op.vc_factor||1)*(tt.vc_factor||1)*lvl.vc;
-  const chip_base=((mat.fz_base??0.05)*(mode==='torneado'?1.2:1))*(op.fz_factor||1)*(tt.fz_factor||1)*lvl.chip;
-
-  const vc_min=vc_base*vcF[0], vc_max=vc_base*vcF[1];
-  const chip_min=chip_base*chF[0], chip_max=chip_base*chF[1];
-  return { vc_min, vc_max, chip_min, chip_max, vc_base_adj:vc_base, chip_base_adj:chip_base };
-}
-function setBadge(id,level,text){const el=$(id); if(!el)return; el.classList.remove('badge-ok','badge-warn','badge-err'); el.classList.add(level); el.textContent=text;}
-function gradeValue(v,lo,hi){ if(v<lo*0.97||v>hi*1.03) return 'err'; if(v<lo||v>hi) return 'warn'; return 'ok'; }
-
-/* ----- Vibración y cálculos (incluye Ra ya implementado) ----- */
-function vibrationRiskScore(params){
-  const w=CUTTING_DATA.vibration.weights;
-  const Lnorm=Math.min(1,(params.L||0)/200);
-  const aenorm=Math.min(1,((params.ae||0)/(params.D||1)));
-  const apnorm=Math.min(1,((params.ap||0)/((params.D||1)*1.5)));
-  const fznorm=Math.min(1,((params.fz||0)/0.5));
-  const score=((w.ld||0.5)*Lnorm+(w.ae||0.2)*aenorm+(w.ap||0.2)*apnorm+(w.fz||0.1)*fznorm);
-  const mu=CUTTING_DATA.defaults.vibe_gauss.mu||0.7, sigma=CUTTING_DATA.defaults.vibe_gauss.sigma||0.18;
-  const z=(score-mu)/sigma; let p=1/(1+Math.exp(-z));
-  const band=CUTTING_DATA.vibration.avoid_band_hz||[600,900]; const c=(band[0]+band[1])/2, s=(band[1]-band[0])/2;
-  const pen=Math.exp(-Math.pow((params.toothHz-c)/(s*0.8),2)/2); p=clamp(p+0.55*pen,0,1);
-  return {raw:score,prob:p};
-}
-function computeFresado(override={}){
-  const D=parseFloat(override.diam ?? $('diam').value)||0.001;
-  const z=parseInt(override.z ?? $('z').value)||1;
-  let vc=parseFloat(override.vc ?? $('vc').value)||0.1;
-  let fz=parseFloat(override.fz ?? $('fz').value)||0.0001;
-  const aePct = parseFloat(override.aePct ?? $('aePct').value) || 30;
-const ae = (aePct/100) * D; // mm
-  const ap=parseFloat(override.ap ?? $('ap').value)||0.1;
-  const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||(CUTTING_DATA.materials||[])[0];
-  const holder=(CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value)||(CUTTING_DATA.holders||[])[0];
-  const toolType=(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||(CUTTING_DATA.tool_types||[])[0];
-
-  // Respeta entradas del usuario. Los factores del nivel se aplican en recomendación y ventanas, no aquí.
-  vc = vc * (toolType.vc_factor||1.0);
-  fz = fz * (toolType.fz_factor||1.0);
-
-  const Kc0=mat?.Kc_N_per_mm2||2000, mexp=0.2;
-  let rpm=(vc*1000)/(Math.PI*D);
-  const maxR=parseFloat($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
-  if(rpm>maxR){ rpm=maxR; vc=(rpm*Math.PI*D)/1000; }
-  const feed_mm_min=rpm*z*fz;
-  const mrr_mm3_min=feed_mm_min*ae*ap, mrr_cm3_min=mrr_mm3_min/1000;
-  const chip_h=fz;
-  const Kc_h=Kc0*Math.pow(chip_h+1e-6,-mexp);
-  const eta=CUTTING_DATA.defaults.efficiency||0.8;
-  const power_kW=(Kc_h*mrr_mm3_min)/(60*1000)/eta;
-  const volumen=parseFloat($('volumen').value)||0.001;
-  const time_min=volumen/Math.max(mrr_cm3_min,1e-9);
-  const cost_machine=(time_min/60)*(parseFloat($('machineCost').value)||0);
-  const life_min=(mat?.taylor?.C)||parseFloat($('C').value)||40000;
-  const n=(mat?.taylor?.n)||parseFloat($('n').value)||0.25;
-  const toolLife_min=life_min/Math.pow(Math.max(vc,1e-6),n);
-  const pieces_per_tool=Math.max(Math.floor(toolLife_min/Math.max(time_min,1e-9)),1);
-  const tool_cost_per_piece=(parseFloat($('toolCost').value)||0)/pieces_per_tool;
-  const F_radial=Kc_h*ae*ap*0.001;
-  const E=(parseFloat($('E')?.value)||210)*1000;
-  const I=Math.PI*Math.pow(D,4)/64;
-  const L=parseFloat($('stickout').value||60);
-  const stiffness_factor=holder?.stiffness_factor||1.0;
-  const delta_mm=(F_radial*Math.pow(L,3))/(3*E*I+1e-9)/stiffness_factor;
-  const k_eff=(3*E*I)/Math.pow(L,3)*stiffness_factor;
-  const m_eff=0.02;
-  const f_n=(1/(2*Math.PI))*Math.sqrt(Math.abs(k_eff/(m_eff*1000)));
-  const toothHz=(rpm/60)*z;
-
-  // Ra fresado: Ra ≈ fz²/(32·Re), Re=0.02 mm
-  const edgeR=0.02;
-  const ra_um=Math.max(0,(Math.pow(fz,2)/(32*edgeR)))*1000;
-
-  const vib=vibrationRiskScore({L,ae,ap,fz,D,toothHz});
-  return {rpm,feed_mm_min,mrr_cm3_min,chip_h,Kc_h,power_kW,time_min,cost_machine,pieces_per_tool,tool_cost_per_piece,delta_mm,f_n,toothHz,F_radial,vib,ra_um,mode:'fresado'};
-}
-function computeTorneado(override={}){
-  const D=parseFloat(override.diamT ?? $('diamT').value)||0.001;
-  const ap=parseFloat(override.apT ?? $('apT').value)||0.5;
-  let vc=parseFloat(override.vcT ?? $('vcT').value)||0.1;
-  const f=parseFloat(override.fT ?? $('fT').value)||0.1;
-  const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||(CUTTING_DATA.materials||[])[0];
-  const holder=(CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value)||(CUTTING_DATA.holders||[])[0];
-  const op=(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value)||{vc_factor:1,fz_factor:1};
-
-  vc = vc * (op.vc_factor||1);
-  let rpm=(vc*1000)/(Math.PI*D);
-  const maxR=parseFloat($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
-  if(rpm>maxR){ rpm=maxR; vc=(rpm*Math.PI*D)/1000; }
-
-  const feed_mm_min=rpm*f;
-  const mrr_mm3_min=Math.PI*D*ap*f*rpm/4, mrr_cm3_min=mrr_mm3_min/1000;
-  const chip_h=f, mexp=0.2, Kc0=mat?.Kc_N_per_mm2||2000;
-  const Kc_h=Kc0*Math.pow(chip_h+1e-6,-mexp);
-  const eta=CUTTING_DATA.defaults.efficiency||0.8;
-  const power_kW=(Kc_h*mrr_mm3_min)/(60*1000)/eta;
-  const volumen=parseFloat($('volumen').value)||0.001;
-  const time_min=volumen/Math.max(mrr_cm3_min,1e-9);
-  const cost_machine=(time_min/60)*(parseFloat($('machineCost').value)||0);
-  const life_min=(mat?.taylor?.C)||parseFloat($('C').value)||40000;
-  const n=(mat?.taylor?.n)||parseFloat($('n').value)||0.25;
-  const toolLife_min=life_min/Math.pow(Math.max(vc,1e-6),n);
-  const pieces_per_tool=Math.max(Math.floor(toolLife_min/Math.max(time_min,1e-9)),1);
-  const tool_cost_per_piece=(parseFloat($('toolCost').value)||0)/pieces_per_tool;
-  const F_radial=Kc_h*ap*f*0.001;
-  const E=(parseFloat($('E')?.value)||210)*1000;
-  const I=Math.PI*Math.pow(D,4)/64;
-  const L=parseFloat($('stickout').value||60);
-  const stiffness_factor=(holder?.stiffness_factor||1.0);
-  const delta_mm=(F_radial*Math.pow(L,3))/(3*E*I+1e-9)/stiffness_factor;
-  const k_eff=(3*E*I)/Math.pow(L,3)*stiffness_factor;
-  const m_eff=0.02;
-  const f_n=(1/(2*Math.PI))*Math.sqrt(Math.abs(k_eff/(m_eff*1000)));
-  const toothHz=rpm/60;
-
-  // Ra torneado: Ra ≈ f²/(32·r), r=0.4 mm
-  const noseR=0.4;
-  const ra_um=Math.max(0,(Math.pow(f,2)/(32*noseR)))*1000;
-
-  const vib=vibrationRiskScore({L,ae:ap,ap,fz:f,D,toothHz});
-  return {rpm,feed_mm_min,mrr_cm3_min,chip_h,Kc_h,power_kW,time_min,cost_machine,pieces_per_tool,tool_cost_per_piece,delta_mm,f_n,toothHz,F_radial,vib,ra_um,mode:'torneado'};
-}
-/* ===== Marcadores de lóbulos (líneas RPM sospechosas) ===== */
-function calcLobeRpmLines(mode, f_n, z, rpmMin, rpmMax){
-  const lines=[];
-  if(!isFinite(f_n) || f_n<=0) return lines;
-  const kMax=12; // suficientes armónicos sin saturar la vista
-  for(let k=1;k<=kMax;k++){
-    const rpm = mode==='fresado' ? (60 * k * f_n) / Math.max(z,1) : (60 * k * f_n);
-    if(rpm>=rpmMin && rpm<=rpmMax) lines.push({rpm, k});
-  }
-  return lines;
-}
-function makeLobePlugin(lobeRpms){
-  return {
-    id:'lobes',
-    afterDraw(chart){
-      const y=chart.scales.y, x=chart.scales.x;
-      const g=chart.ctx;
-      g.save();
-      g.setLineDash([6,6]);
-      g.lineWidth=1;
-      g.strokeStyle='rgba(99,102,241,0.45)';
-      g.fillStyle='rgba(148,163,184,0.9)';
-      g.font='11px system-ui, sans-serif';
-      lobeRpms.forEach(({rpm,k})=>{
-        const yPix=y.getPixelForValue(rpm);
-        g.beginPath();
-        g.moveTo(x.left, yPix);
-        g.lineTo(x.right, yPix);
-        g.stroke();
-        const label=`${k}·fₙ`;
-        g.fillText(label, x.right - 42, yPix - 4);
-      });
-      g.restore();
-    }
-  };
-}
-
-/* ----- Gráfica ----- */
-let chart=null;
-function computePointForGraph(mode,feed,rpm){
-  if(mode==='torneado'){
-    return computeTorneado({ fT: feed/Math.max(rpm,1), vcT:(rpm*Math.PI*(parseFloat($('diamT').value)||60))/1000 });
-  } else {
-    const Z=parseInt($('z').value)||4;
-    return computeFresado({ fz: feed/Math.max(rpm*Z,1), vc:(rpm*Math.PI*(parseFloat($('diam').value)||12))/1000 });
-  }
-}
-function currentPoint(){ return $('modeT').classList.contains('is-on') ? computeTorneado() : computeFresado(); }
-function buildOptimalCurve(mode,feedMin,feedMax,rpmMin,rpmMax){
-  const stepsR=48,stepsF=64; const curve=[],safe=[];
-  for(let i=0;i<stepsR;i++){
-    const rpm=lerp(rpmMin,rpmMax,i/(stepsR-1));
-    let best={prob:1,feed:null};
-    for(let j=0;j<stepsF;j++){
-      const feed=lerp(feedMin,feedMax,j/(stepsF-1));
-      const {vib}=computePointForGraph(mode,feed,rpm); const p=vib.prob;
-      if(p<+$('thSafe').value) safe.push({x:feed,y:rpm});
-      if(p<best.prob){best={prob:p,feed};}
-    }
-    curve.push({x:best.feed||feedMin,y:rpm});
-  }
-  return {curve,safe};
-}
 function renderChart(){
   const mode=$('modeT').classList.contains('is-on')?'torneado':'fresado';
   const feedMin=+$('feedMin').value||200, feedMax=+$('feedMax').value||2200;
-  const rpmMin=+$('rpmMin').value||200, rpmMax=+$('rpmMax').value||10000;
-  const {curve,safe}=buildOptimalCurve(mode,feedMin,feedMax,rpmMin,rpmMax);
+  const rpmMin=+$('rpmMin').value||200,   rpmMax=+$('rpmMax').value||10000;
+
   const cur=currentPoint();
+
+  // Curva óptima y puntos seguros como antes
+  const {curve,safe}=buildOptimalCurve(mode,feedMin,feedMax,rpmMin,rpmMax);
+
+  // ===== Isocurvas MRR: verticales
+  const ae = (mode==='fresado') ? ((+$('aePct').value||30)/100)*(+$('diam').value||12) : (Math.PI*(+$('diamT').value||60)/4)*(+$('apT').value||2); // factor simple
+  const ap = (mode==='fresado') ? (+$('ap').value||2) : 1; // ya incluido arriba en torno
+  const mrrNow = cur.mrr_cm3_min;
+  const mrrLvls = [0.5,1,2,3,4].map(k=>k*mrrNow).filter(x=>x>0);
+  const mrrLines = mrrLvls.map(L=>{
+    // feed = MRR*1000/(ae*ap)  [mm/min]
+    const feed = (L*1000)/Math.max(((mode==='fresado')?( ( ( (+$('aePct').value||30)/100 )*(+$('diam').value||12) )*(+$('ap').value||2) ): 1),1e-6);
+    return {feed, L};
+  }).filter(s=>isFinite(s.feed));
+
+  // ===== Isocurvas de par disponible (rectas feed = k * rpm)
+  // power_kW = c * feed  => feed = power_kW/c; con par objetivo τ, power = τ*2π*rpm/60
+  // => feed = (τ*2π*rpm/60)/c = slope(τ)*rpm
+  function slopeFromTorque(A){
+    // c = ae*ap*Kc_h/(60*1000*eta)  (milling)  — usamos valores del punto actual para coherencia
+    const eta=CUTTING_DATA.defaults.efficiency||0.8;
+    const Kc_h = A.Kc_h||2000;
+    const ae_loc = (mode==='fresado') ? ((+$('aePct').value||30)/100)*(+$('diam').value||12) : ((Math.PI*(+$('diamT').value||60)/4));
+    const ap_loc = (mode==='fresado') ? (+$('ap').value||2) : (+$('apT').value||2);
+    const c = (Kc_h*ae_loc*ap_loc)/(60*1000*eta);
+    return (tau)=> ( (tau*2*Math.PI/60) / Math.max(c,1e-9) ); // mm/min por rpm
+  }
+  const slopeTau = slopeFromTorque(cur);
+  const tauLvls = [0.5,1,1.5,2].map(k=>k*(cur.torque_av_Nm||50)); // fracciones del par disponible
+  const torqueLines = tauLvls.map(tau=>{
+    const m = slopeTau(tau);
+    return Array.from({length:16},(_,i)=>{
+      const rpm = lerp(rpmMin,rpmMax,i/15);
+      return {x: m*rpm, y: rpm};
+    });
+  });
+
+  // ===== Zona evitada: potencia/par/accel
+  const forbidden=[];
+  const gridX=36, gridY=28;
+  for(let i=0;i<gridX;i++){
+    for(let j=0;j<gridY;j++){
+      const feed=lerp(feedMin,feedMax,i/(gridX-1));
+      const rpm = lerp(rpmMin ,rpmMax ,j/(gridY-1));
+      const P = computePointForGraph(mode,feed,rpm);
+      const overPower = P.power_kW > P.power_av_kW*1.01;
+      const overTorque= P.torque_req_Nm > P.torque_av_Nm*1.01;
+      const overRpm   = rpm > (+$('machineMaxRpm').value||CUTTING_DATA.defaults.rpm_limit);
+      const overAccel = !accelLimitsOk(rpm,feed);
+      if(overPower||overTorque||overRpm||overAccel){
+        forbidden.push({x:feed,y:rpm});
+      }
+    }
+  }
+
   if(chart) chart.destroy();
   const ctx=$('chartRPMFeed').getContext('2d');
 
-  // Banda 600–900 Hz
-  const bandPlugin={
+  const bandPlugin={ // igual que antes
     id:'band',
     afterDraw(c){
       const y=c.scales.y,x=c.scales.x; const Z=(mode==='fresado')?(parseInt($('z').value)||4):1;
@@ -788,189 +75,46 @@ function renderChart(){
     }
   };
 
-  // Líneas de lóbulos
   const Z = (mode==='fresado') ? (parseInt($('z').value)||4) : 1;
   const lobeRpms = calcLobeRpmLines(mode, cur.f_n, Z, rpmMin, rpmMax);
   const lobesPlugin = makeLobePlugin(lobeRpms);
 
+  // Datasets
+  const ds=[
+    {type:'scatter',label:'No factible',data:forbidden,pointRadius:2,pointBackgroundColor:'rgba(225,29,72,0.6)'},
+    {type:'scatter',label:'Zona segura',data:safe,pointRadius:2,pointBackgroundColor:'rgba(16,185,129,.75)'},
+    {type:'line',label:'Óptimo',data:curve,borderColor:'#60a5fa',borderWidth:2,tension:0.3,pointRadius:0},
+    {type:'scatter',label:'Actual',data:[{x:cur.feed_mm_min,y:cur.rpm}],pointBackgroundColor:'#fff',pointBorderColor:'#000',pointBorderWidth:2,pointRadius:6},
+  ];
+
+  // Añade isocurvas MRR como líneas verticales finas
+  mrrLines.forEach((m,i)=>{
+    if(m.feed>=feedMin && m.feed<=feedMax){
+      ds.push({type:'line',label:`MRR ${m.L.toFixed(1)} cm³/min`,
+        data:[{x:m.feed,y:rpmMin},{x:m.feed,y:rpmMax}],
+        borderColor:'rgba(148,163,184,0.35)',borderWidth:1,pointRadius:0
+      });
+    }
+  });
+
+  // Añade isocurvas de par
+  torqueLines.forEach((seg,i)=>{
+    ds.push({type:'line',label:`τ≈${(tauLvls[i]).toFixed(0)} N·m`,
+      data:seg,borderColor:'rgba(99,102,241,0.45)',borderWidth:1,pointRadius:0,tension:0
+    });
+  });
+
   chart = new Chart(ctx,{
-    data:{datasets:[
-      {type:'scatter',label:'Zona segura',data:safe,pointRadius:2,pointBackgroundColor:'rgba(16,185,129,.75)'},
-      {type:'line',label:'Óptimo',data:curve,borderColor:'#60a5fa',borderWidth:2,tension:0.3,pointRadius:0},
-      {type:'scatter',label:'Actual',data:[{x:cur.feed_mm_min,y:cur.rpm}],pointBackgroundColor:'#fff',pointBorderColor:'#000',pointBorderWidth:2,pointRadius:6}
-    ]},
+    data:{datasets:ds},
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Av ${Math.round(ctx.raw.x)} mm/min · RPM ${Math.round(ctx.raw.y)}`}}},
-      scales:{x:{type:'linear',title:{display:true,text:'Avance (mm/min)'},min:feedMin,max:feedMax},
-              y:{type:'linear',title:{display:true,text:'RPM'},min:rpmMin,max:rpmMax}}
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:(ctx)=>`Av ${Math.round(ctx.raw.x)} mm/min · RPM ${Math.round(ctx.raw.y)}`}}},
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Avance (mm/min)'},min:feedMin,max:feedMax},
+        y:{type:'linear',title:{display:true,text:'RPM'},min:rpmMin,max:rpmMax}
+      }
     },
     plugins:[bandPlugin, lobesPlugin]
   });
 }
-
-/* ----- Auto-rango ----- */
-function adjustRangesToInclude(A){
-  const maxR=+$('machineMaxRpm').value||CUTTING_DATA.defaults.rpm_limit;
-  const minFeedWindow=400, minRpmWindow=600;
-  const fCenter=Math.max(1,A.feed_mm_min||100), rCenter=Math.max(1,A.rpm||1000);
-  let fSpan=Math.max(minFeedWindow,fCenter*1.0), rSpan=Math.max(minRpmWindow,rCenter*1.0);
-  let fMin=Math.floor(clamp(fCenter-fSpan*0.5,1,Infinity)); let fMax=Math.ceil(clamp(fCenter+fSpan*0.5,fMin+50,Infinity));
-  let rMin=Math.floor(clamp(rCenter-rSpan*0.5,1,maxR));     let rMax=Math.ceil (clamp(rCenter+rSpan*0.5,rMin+50,maxR));
-  const near=(v,mi,ma)=> (v-mi)/(ma-mi)<0.2 || (ma-v)/(ma-mi)<0.2;
-  if(near(fCenter,fMin,fMax)){ fMin=Math.floor(clamp(fCenter-fSpan*0.6,1,Infinity)); fMax=Math.ceil(clamp(fCenter+fSpan*0.6,fMin+50,Infinity)); }
-  if(near(rCenter,rMin,rMax)){ rMin=Math.floor(clamp(rCenter-rSpan*0.6,1,maxR));     rMax=Math.ceil (clamp(rCenter+rSpan*0.6,rMin+50,maxR)); }
-  $('feedMin').value=fMin; $('feedMax').value=fMax; $('rpmMin').value=rMin; $('rpmMax').value=rMax;
-}
-
-/* ----- Resultados ----- */
-function renderResults(A){
-  const out=$('results'); out.innerHTML='';
-  const s=document.createElement('div'); s.className='card';
-  s.innerHTML=`<div style="font-weight:800">Resumen — ${A.mode}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-      <div class="muted">RPM</div><div class="result-value">${fmt(A.rpm,0)}</div>
-      <div class="muted">Avance (mm/min)</div><div class="result-value">${fmt(A.feed_mm_min,2)}</div>
-      <div class="muted">MRR (cm³/min)</div><div class="result-value">${fmt(A.mrr_cm3_min,3)}</div>
-      <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)}</div>
-      <div class="muted">Ra estimado (µm)</div><div class="result-value">${fmt(A.ra_um,2)}</div>
-    </div>`;
-  out.appendChild(s);
-
-  if($('enableCycle').checked){
-    const c=document.createElement('div'); c.className='card'; c.innerHTML=`<div style="font-weight:800">Tiempo & Coste</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-        <div class="muted">Tiempo/pieza (min)</div><div class="result-value">${fmt(A.time_min,2)}</div>
-        <div class="muted">Costo/herr. p/pieza (USD)</div><div class="result-value">${fmt(A.tool_cost_per_piece,2)}</div>
-      </div>`;
-    out.appendChild(c);
-  }
-  if($('enableKc').checked){
-    const k=document.createElement('div'); k.className='card'; k.innerHTML=`<div style="font-weight:800">Kc & Potencia</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-        <div class="muted">Chip thickness (mm)</div><div class="result-value">${fmt(A.chip_h,4)}</div>
-        <div class="muted">Kc(h) (N/mm²)</div><div class="result-value">${fmt(A.Kc_h,1)}</div>
-        <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)}</div>
-      </div>`;
-    out.appendChild(k);
-  }
-  if($('enableStability').checked){
-    const st=document.createElement('div'); st.className='card';
-    const riskColor=A.vib.prob > CUTTING_DATA.vibration.risk_threshold ? '#e11d48' : (A.vib.prob>0.5 ? '#f59e0b' : '#10b981');
-    st.innerHTML=`<div style="font-weight:800">Vibración</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-        <div class="muted">f_n (Hz)</div><div class="result-value">${fmt(A.f_n,1)}</div>
-        <div class="muted">Excitación (Hz)</div><div class="result-value">${fmt(A.toothHz,1)}</div>
-        <div class="muted">Score</div><div class="result-value">${fmt(A.vib.raw,3)}</div>
-        <div class="muted">Prob. riesgo</div><div class="result-value"><span style="display:inline-block;background:${riskColor};width:10px;height:10px;border-radius:999px;margin-right:6px"></span>${fmt(A.vib.prob,2)}</div>
-      </div>`;
-    out.appendChild(st);
-  }
-}
-function renderMachineDetails(){
-  const id=$('machineSelect').value; const m=(CUTTING_DATA.machines||[]).find(x=>x.id===id);
-  const out=$('machineDetails'); out.innerHTML=''; if(!m){out.innerHTML=`<div class="muted">Sin preset. Ajusta manual.</div>`;return;}
-  out.innerHTML=`<div><strong>${m.brand} ${m.model}</strong></div>
-    <div class="muted">Tipo: ${m.type}</div>
-    <div class="muted">Potencia: ${m.power_kW} kW · RPM máx: ${m.max_rpm}</div>
-    <div class="muted">Stickout def.: ${m.stickout_default} mm · Husillo: ${m.spindle}</div>`;
-}
-
-/* ----- Defaults de operación ----- */
-function applyOperationDefaults(force=false){
-  const op=(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value);
-  const D=parseFloat($('diam')?.value)||12; if(!op) return;
-  if(op.default_ae_pct && $('aePct') && (force || !$('aePct').dataset.userSet)){
-  $('aePct').value = Math.max(1, Math.round(op.default_ae_pct));
-}
-  if(op.default_ap_per_d && $('ap') && (force || !$('ap').dataset.userSet)){ $('ap').value=Math.max(0.01,Math.round((op.default_ap_per_d*D)*100)/100); }
-  if(op.default_ap && $('apT') && (force || !$('apT').dataset.userSet)){ $('apT').value=op.default_ap; }
-}
-
-/* ----- Render principal ----- */
-function render(){
-  const modeT=$('modeT').classList.contains('is-on');
-  if(!validateInputs()){
-    $('results').innerHTML='<div class="card"><div style="font-weight:800">Revisa los campos marcados</div><div class="muted">Corrige errores para recalcular.</div></div>';
-    renderMachineDetails(); return;
-  }
-  recommendVcFz(modeT?'torneado':'fresado');
-
-  const A=modeT?computeTorneado():computeFresado();
-
-  // Alertas suaves contra ventana
-  (function(){
-    const win=materialWindows(modeT?'torneado':'fresado');
-    const vc_now=modeT?(+$('vcT').value||0):(+$('vc').value||0);
-    const chip_now=modeT?(+$('fT').value||0):(+$('fz').value||0);
-    const alerts=[];
-    if(gradeValue(vc_now,win.vc_min,win.vc_max)==='err') alerts.push(`Vc fuera de ventana (${vc_now.toFixed(1)} vs ${win.vc_min.toFixed(0)}–${win.vc_max.toFixed(0)} m/min)`);
-    if(gradeValue(chip_now,win.chip_min,win.chip_max)==='err') alerts.push(`Chip fuera de ventana (${chip_now.toFixed(3)} vs ${win.chip_min.toFixed(3)}–${win.chip_max.toFixed(3)})`);
-    const res=$('results'); const box=document.createElement('div'); box.className='card'; box.style.marginBottom='10px';
-    box.innerHTML=alerts.length?`<div style="font-weight:800;color:#fecaca">Alertas</div><div class="muted">${alerts.join(' · ')}</div>`:`<div class="muted">Sin alertas de ventana.</div>`;
-    res.innerHTML=''; res.appendChild(box);
-  })();
-
-  adjustRangesToInclude(A);
-  renderResults(A);
-  renderMachineDetails();
-  renderChart();
-}
-
-/* ----- Eventos ----- */
-function wireEvents(){
-  [
-    'materialSelect','operationSelect','holderSelect','toolTypeSelect','levelSelect',
-    'diam','z','vc','fz','aePct','ap','diamT','apT','vcT','fT','stickout','machineMaxRpm',
-    'machineCost','toolCost','volumen','C','n','enableCycle','enableKc','enableStability'
-  ].forEach(id=>{
-    const el=$(id); if(!el)return;
-    el.addEventListener('input', ()=>{ if(['aePct','ap','apT','vc','fz','vcT','fT'].includes(id)) el.dataset.userSet='1'; render(); });
-    el.addEventListener('change',()=>{ if(['aePct','ap','apT','vc','fz','vcT','fT'].includes(id)) el.dataset.userSet='1'; render(); });
-  });
-
-  ['operationSelect','diam'].forEach(id=>{
-    const el=$(id); if(!el)return;
-    el.addEventListener('change', ()=>{
-      if($('aePct')) $('aePct').dataset.userSet='';
-      if($('ap'))  $('ap').dataset.userSet='';
-      if($('apT')) $('apT').dataset.userSet='';
-      applyOperationDefaults(true); render();
-    });
-  });
-
-  $('machineSelect').addEventListener('change', ()=>{
-    const id=$('machineSelect').value; const m=(CUTTING_DATA.machines||[]).find(x=>x.id===id);
-    if(m){ $('machineModel').value=`${m.brand} ${m.model}`; $('machinePower').value=m.power_kW; $('machineMaxRpm').value=m.max_rpm; $('spindleType').value=m.spindle; $('stickout').value=m.stickout_default; $('stickoutDefault').value=m.stickout_default; $('machineCost').value=Math.max(10,Math.round(m.power_kW*1.8)); }
-    else { $('machineModel').value=''; }
-    render();
-  });
-
-  $('modeF').addEventListener('click', ()=>{
-    $('modeF').classList.add('is-on'); $('modeT').classList.remove('is-on');
-    $('modeFresadoFields').style.display='block'; $('modeTorneadoFields').style.display='none';
-    updateModeOptions('fresado'); render();
-  });
-  $('modeT').addEventListener('click', ()=>{
-    $('modeT').classList.add('is-on'); $('modeF').classList.remove('is-on');
-    $('modeFresadoFields').style.display='none'; $('modeTorneadoFields').style.display='block';
-    updateModeOptions('torneado'); render();
-  });
-
-  ['feedMin','feedMax','rpmMin','rpmMax','thSafe'].forEach(id=>$(id).addEventListener('input',renderChart));
-}
-
-/* ----- Init ----- */
-(function init(){
-  ensureErrorSlots();
-  populateFromData();
-  updateModeOptions('fresado');
-  applyOperationDefaults();
-  enableTooltips();
-  enableKeyboardAndTouchTips();
-  wireEvents();
-  render();
-})();
-</script>
-</body>
-</html>
