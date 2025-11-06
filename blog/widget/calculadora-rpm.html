@@ -249,13 +249,13 @@
 </main>
 
 <script>
-/* ========== Utilidades ========== */
+/* Utilidades base */
 const $ = id => document.getElementById(id);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const lerp=(a,b,t)=>a+(b-a)*t;
 function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
 
-/* ========== Validación mínima (sin tocar tu UX) ========== */
+/* ----- Validación mínima (igual que antes) ----- */
 const FIELDS_TO_VALIDATE = ['diam','z','vc','fz','aePct','ap','diamT','apT','vcT','fT','machineMaxRpm'];
 function ensureErrorSlots(){FIELDS_TO_VALIDATE.forEach(id=>{const el=$(id);if(!el)return;const w=el.closest('.field');if(w&&!w.querySelector(`#err-${id}`)){const d=document.createElement('div');d.id=`err-${id}`;d.className='err err-hide';w.appendChild(d);}});}
 function showError(id,msg){const el=$(id),slot=$(`err-${id}`);if(!el||!slot)return;slot.textContent=msg;slot.classList.remove('err-hide');el.classList.add('input-err');}
@@ -276,97 +276,251 @@ function validateInputs(){
     if (fz <= 0) { showError('fz','fz > 0'); ok = false; }
     if (aePct <= 0) { showError('aePct','Ae% > 0'); ok = false; }
     if (aePct > 100) { showError('aePct','Ae% ≤ 100'); ok = false; }
-    const rpm_teo=(vc*1000)/(Math.PI*Math.max(D,1e-9));
-    if (rpmMax>0 && rpm_teo>rpmMax*1.05) { showError('vc',`Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok=false; }
+    const rpm_teo = (vc * 1000) / (Math.PI * Math.max(D, 1e-9));
+    if (rpmMax > 0 && rpm_teo > rpmMax * 1.05) { showError('vc', `Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok = false; }
   } else {
     const D=+$('diamT').value, apv=+$('apT').value, vct=+$('vcT').value, f=+$('fT').value;
     if (D <= 0) { showError('diamT','D > 0'); ok = false; }
     if (apv <= 0) { showError('apT','ap > 0'); ok = false; }
     if (vct <= 0) { showError('vcT','Vc > 0'); ok = false; }
     if (f <= 0) { showError('fT','f > 0'); ok = false; }
-    const rpm_teo=(vct*1000)/(Math.PI*Math.max(D,1e-9));
-    if (rpmMax>0 && rpm_teo>rpmMax*1.05) { showError('vcT',`Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok=false; }
+    const rpm_teo = (vct * 1000) / (Math.PI * Math.max(D, 1e-9));
+    if (rpmMax > 0 && rpm_teo > rpmMax * 1.05) { showError('vcT', `Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok = false; }
   }
   return ok;
-}
+};
 
-/* ========== Tooltips: reusa los tuyos si ya están ========== */
-const TIPS = window.TIPS || {};
+/* ----- Tooltips existentes ----- */
+const TIPS = {
+  materialSelect:{t:"Material", d:"Afecta Kc, Kte, recomendación de Vc y vida (Taylor)."},
+  operationSelect:{t:"Operación", d:"Ajusta factores de Vc/fz y Ae/Ap por defecto."},
+  levelSelect:{t:"Nivel de agresividad", d:"Conservador reduce Vc/fz. Agresivo los incrementa."},
+  holderSelect:{t:"Sujeción / Holder", d:"Cambia rigidez efectiva."},
+  toolTypeSelect:{t:"Tipo de herramienta", d:"Ajusta factores Vc/fz."},
+  diam:{t:"D (mm)", d:"Afecta RPM, MRR y deflexión."},
+  z:{t:"Dientes (z)", d:"feed = rpm×z×fz."},
+  vc:{t:"Velocidad de corte Vc", d:"m/min. Limitada por RPM máx."},
+  fz:{t:"fz", d:"mm/z."},
+  aePct:{t:"Ae (%D)", d:"Enganche radial."},
+  ap:{t:"Ap", d:"Profundidad axial."},
+  diamT:{t:"D pieza", d:"Torneado."},
+  apT:{t:"ap", d:"Torneado."},
+  vcT:{t:"Vc", d:"Torneado."},
+  fT:{t:"f", d:"mm/rev."},
+  stickout:{t:"Stickout", d:"Aumenta riesgo si es alto."},
+  machineCost:{t:"Costo hora", d:"USD/h."},
+  toolCost:{t:"Costo herramienta", d:"Por unidad."},
+  volumen:{t:"Volumen", d:"cm³ por pieza."},
+  C:{t:"C de Taylor", d:"Vida = C / Vc^n."},
+  n:{t:"n", d:"Exponente de Taylor."},
+  enableCycle:{t:"Tiempo", d:"Muestra tiempo y costo."},
+  enableKc:{t:"Kc/Pot.", d:"Muestra Kc(h) y potencia."},
+  enableStability:{t:"Vibración", d:"f_n y prob."},
+  machineSelect:{t:"Máquina", d:"Carga presets."},
+  machineModel:{t:"Modelo", d:"Editable."},
+  machinePower:{t:"Potencia", d:"kW."},
+  machineMaxRpm:{t:"RPM máx", d:"Límite."},
+  spindleType:{t:"Husillo", d:"BT/HSK/etc."},
+  E:{t:"Módulo E", d:"GPa."},
+  stickoutDefault:{t:"Stickout def.", d:"Preset."},
+  feedMin:{t:"Avance mín", d:"Eje X."},
+  feedMax:{t:"Avance máx", d:"Eje X."},
+  rpmMin:{t:"RPM mín", d:"Eje Y."},
+  rpmMax:{t:"RPM máx", d:"Eje Y."},
+  thSafe:{t:"Umbral seguro", d:"Probabilidad."},
+  modeF:{t:"Fresado", d:"Modo fresado."},
+  modeT:{t:"Torneado", d:"Modo torneado."}
+};
 let _ttEl=null;
 function ensureTipEl(){ if(!_ttEl){ _ttEl=document.createElement('div'); _ttEl.id='_tt'; _ttEl.style.display='none'; document.body.appendChild(_ttEl);} }
-function showTip(evt, tip){ if(!tip) return; ensureTipEl(); _ttEl.innerHTML=`<div class="tt-title">${tip.t||""}</div>${tip.d||""}`; _ttEl.style.display='block';
+function showTip(evt, tip){ ensureTipEl(); _ttEl.innerHTML=`<div class="tt-title">${tip.t||""}</div>${tip.d||""}`; _ttEl.style.display='block';
   const pad=12,vw=innerWidth,vh=innerHeight,rect=_ttEl.getBoundingClientRect(); let x=evt.clientX+pad,y=evt.clientY+pad;
   if(x+rect.width>vw) x=evt.clientX-rect.width-pad; if(y+rect.height>vh) y=evt.clientY-rect.height-pad; _ttEl.style.left=x+'px'; _ttEl.style.top=y+'px';}
 function hideTip(){ if(_ttEl) _ttEl.style.display='none'; }
+function enableTooltips(){
+  Object.keys(TIPS).forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.classList.add('has-tip');
+    el.addEventListener('mouseenter', e=>showTip(e,TIPS[id]));
+    el.addEventListener('mousemove', e=>showTip(e,TIPS[id]));
+    el.addEventListener('mouseleave', hideTip);
+    const label = el.closest('.field')?.querySelector('label');
+    if(label){ label.classList.add('has-tip');
+      label.addEventListener('mouseenter', e=>showTip(e,TIPS[id]));
+      label.addEventListener('mousemove', e=>showTip(e,TIPS[id]));
+      label.addEventListener('mouseleave', hideTip);
+    }
+  });
+  document.addEventListener('scroll', hideTip, {passive:true});
+}
+function enableKeyboardAndTouchTips(){
+  const bind=(el,tip)=>{ if(!el) return; el.setAttribute('tabindex','0'); el.setAttribute('aria-label',tip.t||'Ayuda');
+    el.addEventListener('focus',()=>{const r=el.getBoundingClientRect();showTip({clientX:r.left+8,clientY:r.bottom+8},tip);});
+    el.addEventListener('blur',hideTip); let touchTimer=null,sticky=false;
+    const openAt=()=>{const r=el.getBoundingClientRect();showTip({clientX:r.left+8,clientY:r.bottom+8},tip);};
+    el.addEventListener('touchstart',()=>{sticky=false; if(touchTimer)clearTimeout(touchTimer); touchTimer=setTimeout(()=>{sticky=true;openAt();},500);},{passive:true});
+    el.addEventListener('touchend',()=>{if(touchTimer)clearTimeout(touchTimer); if(!sticky){openAt();setTimeout(hideTip,1500);} else {const closeOnce=()=>{hideTip();document.removeEventListener('touchstart',closeOnce);}; setTimeout(()=>document.addEventListener('touchstart',closeOnce,{passive:true}),0);}},{passive:true});
+  };
+  Object.keys(TIPS).forEach(id=>{const el=$(id); if(!el)return; bind(el,TIPS[id]); const label=el.closest('.field')?.querySelector('label'); if(label) bind(label,TIPS[id]);});
+}
 
-/* ========== Datos embebidos: se respetan. Añadimos Kte opcional y mexp por material ========== */
-const CUTTING_DATA = window.CUTTING_DATA || {
-  version:"3.4",
-  defaults:{ rpm_limit:24000, efficiency:0.8, vibe_gauss:{mu:0.7,sigma:0.18}, default_flutes:4, windows:{vc_factor:[0.70,1.30], chip_factor:[0.70,1.30]} },
-  vibration:{ avoid_band_hz:[600,900], risk_threshold:0.8, weights:{ld:0.5,ae:0.2,ap:0.2,fz:0.1} },
-  holders:[], materials:[], operations:[], tool_types:[], machines:[]
+/* ----- Datos embebidos (LOS TUYOS, intactos) ----- */
+const CUTTING_DATA = {
+  "version":"3.4",
+  "defaults":{"rpm_limit":24000,"efficiency":0.8,"vibe_gauss":{"mu":0.7,"sigma":0.18},"default_flutes":4,
+    "windows": { "vc_factor":[0.70,1.30], "chip_factor":[0.70,1.30] },
+    "Kte_N_per_mm_default":5
+  },
+  "vibration":{"avoid_band_hz":[600,900],"risk_threshold":0.8,"weights":{"ld":0.5,"ae":0.2,"ap":0.2,"fz":0.1}},
+  "holders":[
+    {"id":"ER_Collet","label":"Portapinzas ER","stiffness_factor":1.00},
+    {"id":"REGOFIX_powRgrip","label":"REGO-FIX powRgrip","stiffness_factor":1.45},
+    {"id":"ShrinkFit","label":"Shrink-fit","stiffness_factor":1.60},
+    {"id":"HydraulicChuck","label":"Mandril hidráulico","stiffness_factor":1.50},
+    {"id":"MillingChuck","label":"Milling Chuck","stiffness_factor":1.35},
+    {"id":"SideLock","label":"Side-Lock","stiffness_factor":1.20},
+    {"id":"HeatShrink","label":"Heat-Shrink","stiffness_factor":1.60},
+    {"id":"PowerChuck","label":"Power chuck","stiffness_factor":1.30},
+    {"id":"SteadyRest","label":"Steady rest / soporte","stiffness_factor":0.90},
+    {"id":"PortaInsertos","label":"Porta-insertos","stiffness_factor":1.15},
+    {"id":"ColletChuck","label":"Collet chuck","stiffness_factor":1.05},
+    {"id":"FaceMillAdapter","label":"Adaptador face mill","stiffness_factor":1.10},
+    {"id":"ModularHolder","label":"Portaherramientas modular","stiffness_factor":1.00},
+    {"id":"BoringBarHolder","label":"Porta barra / boring bar","stiffness_factor":1.08},
+    {"id":"LiveToolHolder","label":"Porta rotativa","stiffness_factor":1.20},
+    {"id":"TurretToolHolder","label":"Porta torreta","stiffness_factor":1.15}
+  ],
+  "materials":[
+    { "id":"alu_1100","name":"Aluminio 1100","Kc_N_per_mm2":300, "taylor":{"C":2000,"n":0.12}, "vc_base":250, "fz_base":0.06 },
+    { "id":"alu_6061","name":"Aluminio 6061","Kc_N_per_mm2":800, "taylor":{"C":1000,"n":0.12}, "vc_base":220, "fz_base":0.06 },
+    { "id":"alu_7075","name":"Aluminio 7075","Kc_N_per_mm2":950, "taylor":{"C":900,"n":0.12}, "vc_base":200, "fz_base":0.055 },
+    { "id":"steel_1018","name":"Acero 1018","Kc_N_per_mm2":1200,"taylor":{"C":5000,"n":0.18},"vc_base":180,"fz_base":0.045 },
+    { "id":"steel_1045","name":"Acero 1045","Kc_N_per_mm2":2000,"taylor":{"C":300,"n":0.20},"vc_base":140,"fz_base":0.040 },
+    { "id":"steel_4140","name":"Acero 4140","Kc_N_per_mm2":3200,"taylor":{"C":120,"n":0.12},"vc_base":120,"fz_base":0.035 },
+    { "id":"steel_4340","name":"Acero 4340","Kc_N_per_mm2":3500,"taylor":{"C":110,"n":0.12},"vc_base":110,"fz_base":0.032 },
+    { "id":"steel_8620","name":"Acero 8620","Kc_N_per_mm2":2600,"taylor":{"C":200,"n":0.16},"vc_base":150,"fz_base":0.040 },
+    { "id":"tool_H13","name":"Acero herramienta H13","Kc_N_per_mm2":3800,"taylor":{"C":90,"n":0.10},"vc_base":90,"fz_base":0.030 },
+    { "id":"inox_304","name":"Inox 304","Kc_N_per_mm2":2200,"taylor":{"C":200,"n":0.18},"vc_base":110,"fz_base":0.035 },
+    { "id":"inox_316","name":"Inox 316","Kc_N_per_mm2":2400,"taylor":{"C":170,"n":0.18},"vc_base":95,"fz_base":0.032 },
+    { "id":"ss_174ph","name":"Acero 17-4 PH","Kc_N_per_mm2":2600,"taylor":{"C":160,"n":0.17},"vc_base":120,"fz_base":0.033 },
+    { "id":"ti_64","name":"Titanio Ti-6Al-4V","Kc_N_per_mm2":1200,"taylor":{"C":150,"n":0.18},"vc_base":80,"fz_base":0.030 },
+    { "id":"inconel_718","name":"Inconel 718","Kc_N_per_mm2":4500,"taylor":{"C":60,"n":0.12},"vc_base":45,"fz_base":0.020, "windows":{ "vc_factor":[0.60,1.20], "chip_factor":[0.60,1.10] } },
+    { "id":"cast_iron","name":"Fundición gris","Kc_N_per_mm2":1800,"taylor":{"C":500,"n":0.15},"vc_base":180,"fz_base":0.045 },
+    { "id":"copper","name":"Cobre / Latón","Kc_N_per_mm2":600,"taylor":{"C":2000,"n":0.12},"vc_base":220,"fz_base":0.060 },
+    { "id":"peek","name":"PEEK (plástico)","Kc_N_per_mm2":150,"taylor":{"C":1200,"n":0.08},"vc_base":300,"fz_base":0.070 },
+    { "id":"cfrp","name":"CFRP (compuesto)","Kc_N_per_mm2":100,"taylor":{"C":900,"n":0.05},"vc_base":250,"fz_base":0.020 }
+  ],
+  "operations":[
+    { "id":"rough","label":"Desbaste","default_ae_pct":30,"default_ap_per_d":0.5,"vc_factor":1.00,"fz_factor":1.10 },
+    { "id":"semi","label":"Semidesbaste","default_ae_pct":18,"default_ap_per_d":0.4,"vc_factor":1.05,"fz_factor":1.00 },
+    { "id":"finish","label":"Acabado","default_ae_pct":12,"default_ap_per_d":0.2,"vc_factor":1.15,"fz_factor":0.75 },
+    { "id":"adaptive","label":"Trocoidal / Adaptativo","default_ae_pct":25,"default_ap_per_d":1.0,"vc_factor":1.10,"fz_factor":1.00 },
+    { "id":"face","label":"Fresado de cara","vc_factor":1.10,"fz_factor":1.20 },
+    { "id":"pocket","label":"Pocketing","vc_factor":1.00,"fz_factor":1.00 },
+    { "id":"profiling","label":"Perfilado / Contorneado","vc_factor":1.05,"fz_factor":0.95 },
+    { "id":"plunge","label":"Plunge milling","vc_factor":0.70,"fz_factor":0.80 },
+    { "id":"slotting","label":"Slotting / Ranurado","vc_factor":0.85,"fz_factor":0.90 },
+    { "id":"drilling","label":"Taladrado","vc_factor":0.80,"fz_factor":1.00 },
+    { "id":"reaming","label":"Escariado","vc_factor":0.85,"fz_factor":0.70 },
+    { "id":"boring","label":"Mandrinado","vc_factor":0.90,"fz_factor":0.80 },
+    { "id":"threading","label":"Roscar","vc_factor":0.70,"fz_factor":0.50 },
+    { "id":"turn_rough","label":"Torneado - Desbaste","default_ap":2,"vc_factor":1.00,"fz_factor":1.00 },
+    { "id":"turn_finish","label":"Torneado - Acabado","vc_factor":1.10,"fz_factor":0.80 }
+  ],
+  "tool_types":[
+    {"id":"endmill","label":"Fresa (Endmill)","vc_factor":1.00,"fz_factor":1.00,"default_flutes":4},
+    {"id":"ballnose","label":"Fresa hemisférica","vc_factor":0.90,"fz_factor":0.90,"default_flutes":4},
+    {"id":"facemill","label":"Fresa frontal","vc_factor":1.05,"fz_factor":1.20,"default_flutes":6},
+    {"id":"indexable","label":"Fresa indexable","vc_factor":1.15,"fz_factor":1.30,"default_flutes":2},
+    {"id":"highfeed","label":"Fresa high-feed","vc_factor":1.20,"fz_factor":1.40,"default_flutes":2},
+    {"id":"drill","label":"Broca","vc_factor":0.80,"fz_factor":1.00,"default_flutes":2},
+    {"id":"reamer","label":"Escariador","vc_factor":0.85,"fz_factor":1.00,"default_flutes":2},
+    {"id":"lollipop","label":"Lollipop","vc_factor":0.85,"fz_factor":0.85,"default_flutes":4},
+    {"id":"slotmill","label":"Fresa ranura estrecha","vc_factor":0.95,"fz_factor":1.00,"default_flutes":2},
+    {"id":"shellmill","label":"Shell mill","vc_factor":1.00,"fz_factor":1.10,"default_flutes":8},
+    {"id":"threadmill","label":"Herram. roscado (mill)","vc_factor":0.70,"fz_factor":0.60,"default_flutes":1},
+    {"id":"boring_bar","label":"Barra de mandrinado","vc_factor":0.90,"fz_factor":1.00,"default_flutes":1},
+    {"id":"turn_insert","label":"Herram. torneado (insertos)","vc_factor":1.00,"fz_factor":1.00,"default_flutes":1},
+    {"id":"groove","label":"Herram. ranurado","vc_factor":0.95,"fz_factor":0.90,"default_flutes":1},
+    {"id":"threading","label":"Herram. roscado (torno)","vc_factor":0.70,"fz_factor":0.50,"default_flutes":1},
+    {"id":"tap","label":"Macho (tap)","vc_factor":0.60,"fz_factor":0.40,"default_flutes":1}
+  ],
+  "machines":[
+    { "id":"doosan_vmc","brand":"Doosan","model":"DNM4500 VMC","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"HSK63" },
+    { "id":"doosan_puma","brand":"Doosan","model":"PUMA 2600","type":"Lathe","power_kW":22,"max_rpm":3500,"stickout_default":120,"spindle":"A2-8" },
+    { "id":"okk_cmh","brand":"OKK","model":"CMH-800V","type":"CMH","power_kW":18,"max_rpm":9000,"stickout_default":50,"spindle":"BT40" },
+    { "id":"haas_vf2","brand":"Haas","model":"VF-2","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":70,"spindle":"BT40" },
+    { "id":"mazak_vcn","brand":"Mazak","model":"VCN-530C","type":"VMC","power_kW":18.5,"max_rpm":12000,"stickout_default":60,"spindle":"HSK63" },
+    { "id":"dmgmori_dmu","brand":"DMG MORI","model":"DMU 50","type":"VMC","power_kW":15,"max_rpm":15000,"stickout_default":50,"spindle":"HSK63" },
+    { "id":"fanuc_robodrill","brand":"Fanuc","model":"α-DiB Robodrill","type":"Robodrill","power_kW":3.7,"max_rpm":24000,"stickout_default":40,"spindle":"BT30" },
+    { "id":"brother_s","brand":"Brother","model":"Speedio S700X1","type":"Robodrill","power_kW":4,"max_rpm":24000,"stickout_default":40,"spindle":"BT30" },
+    { "id":"makino_a55","brand":"Makino","model":"A55 VMC","type":"VMC","power_kW":22,"max_rpm":10000,"stickout_default":65,"spindle":"HSK63" },
+    { "id":"okuma_genos_lathe","brand":"Okuma","model":"Genos L250","type":"Lathe","power_kW":11,"max_rpm":4000,"stickout_default":110,"spindle":"A2-6" },
+    { "id":"nakamura_tome","brand":"Nakamura-Tome","model":"NTY3","type":"Lathe","power_kW":15,"max_rpm":4000,"stickout_default":100,"spindle":"A2-8" },
+    { "id":"hurco_vmx","brand":"Hurco","model":"VMX42","type":"VMC","power_kW":11,"max_rpm":8000,"stickout_default":70,"spindle":"BT40" },
+    { "id":"hyundai_wia","brand":"Hyundai WIA","model":"KF-1600","type":"VMC","power_kW":15,"max_rpm":10000,"stickout_default":60,"spindle":"BT40" },
+    { "id":"mazak_hmc","brand":"Mazak","model":"HMX-630","type":"HMC","power_kW":30,"max_rpm":8000,"stickout_default":80,"spindle":"HSK100" },
+    { "id":"okuma_mb","brand":"Okuma","model":"MB-46V","type":"MillTurn","power_kW":37,"max_rpm":8000,"stickout_default":80,"spindle":"HSK63" }
+  ]
 };
 
-/* ========== Niveles de agresividad (como ya usabas) ========== */
+/* ===== Niveles ===== */
 const LEVELS = { conservador:{vc:0.90, chip:0.90}, estandar:{vc:1.00, chip:1.00}, agresivo:{vc:1.15, chip:1.10} };
 function getLevel(){ const k=$('levelSelect')?.value||'estandar'; return LEVELS[k]||LEVELS.estandar; }
 
-/* ========== Poblado de selects existentes ========== */
-const HOLDERS_BY_MODE={fresado:['ER_Collet','REGOFIX_powRgrip','ShrinkFit','HydraulicChuck','MillingChuck','SideLock','HeatShrink','SteadyRest'],torneado:['PortaInsertos','PowerChuck','SteadyRest','TurretToolHolder','BoringBarHolder']};
-const TOOLTYPES_BY_MODE={fresado:['endmill','ballnose','facemill','indexable','highfeed','drill','reamer','slotmill','shellmill','lollipop','threadmill','boring_bar'],torneado:['turn_insert','groove','threading','tap']};
-
+/* ===== Helpers modo/UI ===== */
 function ensureTurningEntries(){
-  if(!CUTTING_DATA.tool_types) CUTTING_DATA.tool_types=[];
-  if(!CUTTING_DATA.holders) CUTTING_DATA.holders=[];
+  if(!CUTTING_DATA.tool_types) CUTTING_DATA.tool_types = [];
+  if(!CUTTING_DATA.holders) CUTTING_DATA.holders = [];
   if(!CUTTING_DATA.tool_types.some(t=>t.id==='turn_insert')) CUTTING_DATA.tool_types.push({id:'turn_insert',label:'Herram. torneado',vc_factor:1,fz_factor:1,default_flutes:1});
   if(!CUTTING_DATA.holders.some(h=>h.id==='PortaInsertos')) CUTTING_DATA.holders.push({id:'PortaInsertos',label:'Porta-insertos',stiffness_factor:1.15});
 }
+const HOLDERS_BY_MODE={fresado:['ER_Collet','REGOFIX_powRgrip','ShrinkFit','HydraulicChuck','MillingChuck','SideLock','HeatShrink','SteadyRest'],torneado:['PortaInsertos','PowerChuck','SteadyRest','TurretToolHolder','BoringBarHolder']};
+const TOOLTYPES_BY_MODE={fresado:['endmill','ballnose','facemill','indexable','highfeed','drill','reamer','slotmill','shellmill','lollipop','threadmill','boring_bar'],torneado:['turn_insert','groove','threading','tap']};
+
+/* ---- Fallback seguro SIN modificar tus listas ---- */
+const FALLBACK_MAT = { id:'generic_steel', name:'Acero genérico', Kc_N_per_mm2:2000, taylor:{C:40000,n:0.25}, vc_base:180, fz_base:0.05, Kte_N_per_mm:5 };
+function getMaterialsForUI(){ const arr=CUTTING_DATA?.materials; return (Array.isArray(arr)&&arr.length)?arr:[FALLBACK_MAT]; }
+function getMatSafe(){
+  const arr=CUTTING_DATA?.materials;
+  const id=$('materialSelect')?.value;
+  const found=(Array.isArray(arr)&&arr.length)?(arr.find(m=>m.id===id)||arr[0]):FALLBACK_MAT;
+  return found||FALLBACK_MAT;
+}
+
 function populateFromData(defaultMode='fresado'){
-  const mSel=$('materialSelect'); if(mSel){ mSel.innerHTML=''; (CUTTING_DATA.materials||[]).forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name;mSel.appendChild(o);}); }
-  const oSel=$('operationSelect'); if(oSel){ oSel.innerHTML=''; (CUTTING_DATA.operations||[]).forEach(op=>{const o=document.createElement('option');o.value=op.id;o.textContent=op.label;oSel.appendChild(o);}); }
-  const mPres=$('machineSelect'); if(mPres){ mPres.innerHTML='<option value="custom">— Seleccionar máquina —</option>'; (CUTTING_DATA.machines||[]).forEach(m=>{const opt=document.createElement('option');opt.value=m.id;opt.textContent=`${m.brand} · ${m.model} · ${m.type}`;mPres.appendChild(opt);}); }
+  const mSel=$('materialSelect'); mSel.innerHTML='';
+  getMaterialsForUI().forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name;mSel.appendChild(o);});
+  if(!mSel.value && mSel.options.length) mSel.value=mSel.options[0].value;
+
+  const oSel=$('operationSelect'); oSel.innerHTML=''; (CUTTING_DATA.operations||[]).forEach(op=>{const o=document.createElement('option');o.value=op.id;o.textContent=op.label;oSel.appendChild(o);});
+  if(!oSel.value && oSel.options.length) oSel.value=oSel.options[0].value;
+
+  const mPres=$('machineSelect'); mPres.innerHTML='<option value="custom">— Seleccionar máquina —</option>';
+  (CUTTING_DATA.machines||[]).forEach(m=>{const opt=document.createElement('option');opt.value=m.id;opt.textContent=`${m.brand} · ${m.model} · ${m.type}`;mPres.appendChild(opt);});
   updateModeOptions(defaultMode);
 }
 function updateModeOptions(mode){
   ensureTurningEntries();
-  const holderSel=$('holderSelect'); if(holderSel){ holderSel.innerHTML='';
-    const idsH=(mode==='torneado')?HOLDERS_BY_MODE.torneado:HOLDERS_BY_MODE.fresado;
-    const knownH=(CUTTING_DATA.holders||[]).map(h=>h.id);
-    const finalH=idsH.filter(id=>knownH.includes(id));
-    (finalH.length?finalH:(CUTTING_DATA.holders||[]).map(h=>h.id))
-      .forEach(id=>{const h=(CUTTING_DATA.holders||[]).find(x=>x.id===id); if(h){const o=document.createElement('option');o.value=h.id;o.textContent=h.label||h.id;holderSel.appendChild(o);}}); }
-  const toolSel=$('toolTypeSelect'); if(toolSel){ toolSel.innerHTML='';
-    const idsT=(mode==='torneado')?TOOLTYPES_BY_MODE.torneado:TOOLTYPES_BY_MODE.fresado;
-    const knownT=(CUTTING_DATA.tool_types||[]).map(t=>t.id);
-    const finalT=idsT.filter(id=>knownT.includes(id));
-    (finalT.length?finalT:(CUTTING_DATA.tool_types||[]).map(t=>t.id))
-      .forEach(id=>{const t=(CUTTING_DATA.tool_types||[]).find(x=>x.id===id); if(t){const o=document.createElement('option');o.value=t.id;o.textContent=t.label||t.id;toolSel.appendChild(o);}}); }
-  if(holderSel?.options.length) holderSel.value=holderSel.options[0].value;
-  if(toolSel?.options.length) toolSel.value=toolSel.options[0].value;
+  const holderSel=$('holderSelect'); holderSel.innerHTML='';
+  const idsH=(mode==='torneado')?HOLDERS_BY_MODE.torneado:HOLDERS_BY_MODE.fresado;
+  const knownH=(CUTTING_DATA.holders||[]).map(h=>h.id);
+  const finalH=idsH.filter(id=>knownH.includes(id));
+  (finalH.length?finalH:(CUTTING_DATA.holders||[]).map(h=>h.id))
+    .forEach(id=>{const h=(CUTTING_DATA.holders||[]).find(x=>x.id===id); if(h){const o=document.createElement('option');o.value=h.id;o.textContent=h.label||h.id;holderSel.appendChild(o);}});
+  const toolSel=$('toolTypeSelect'); toolSel.innerHTML='';
+  const idsT=(mode==='torneado')?TOOLTYPES_BY_MODE.torneado:TOOLTYPES_BY_MODE.fresado;
+  const knownT=(CUTTING_DATA.tool_types||[]).map(t=>t.id);
+  const finalT=idsT.filter(id=>knownT.includes(id));
+  (finalT.length?finalT:(CUTTING_DATA.tool_types||[]).map(t=>t.id))
+    .forEach(id=>{const t=(CUTTING_DATA.tool_types||[]).find(x=>x.id===id); if(t){const o=document.createElement('option');o.value=t.id;o.textContent=t.label||t.id;toolSel.appendChild(o);}});
+  if(holderSel.options.length) holderSel.value=holderSel.options[0].value;
+  if(toolSel.options.length) toolSel.value=toolSel.options[0].value;
 }
 
-/* ========== Ventanas por material (respetando tu lógica) ========== */
-function materialWindows(mode){
-  const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||{};
-  const baseW=(CUTTING_DATA.defaults?.windows)||{vc_factor:[0.7,1.3],chip_factor:[0.7,1.3]};
-  const mw=mat.windows||{};
-  const vcF=mw.vc_factor||baseW.vc_factor;
-  const chF=mw.chip_factor||baseW.chip_factor;
-  const op=(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value)||{vc_factor:1,fz_factor:1};
-  const tt=(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||{vc_factor:1,fz_factor:1};
-  const lvl=getLevel();
-  const vc_base=(mat.vc_base??180)*(op.vc_factor||1)*(tt.vc_factor||1)*lvl.vc;
-  const chip_base=((mat.fz_base??0.05)*(mode==='torneado'?1.2:1))*(op.fz_factor||1)*(tt.fz_factor||1)*lvl.chip;
-  const vc_min=vc_base*vcF[0], vc_max=vc_base*vcF[1];
-  const chip_min=chip_base*chF[0], chip_max=chip_base*chF[1];
-  return { vc_min, vc_max, chip_min, chip_max, vc_base_adj:vc_base, chip_base_adj:chip_base };
-}
-function setBadge(id,level,text){const el=$(id); if(!el)return; el.classList.remove('badge-ok','badge-warn','badge-err'); el.classList.add(level); el.textContent=text;}
-function gradeValue(v,lo,hi){ if(v<lo*0.97||v>hi*1.03) return 'err'; if(v<lo||v>hi) return 'warn'; return 'ok'; }
-
-/* ========== Recomendación Vc/fz ========== */
+/* ----- Recomendación Vc/fz con nivel ----- */
 function recommendVcFz(mode='fresado'){
-  const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||CUTTING_DATA.materials[0];
+  const mat=getMatSafe();
   const op =(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value)||{vc_factor:1,fz_factor:1};
   const tt =(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||{vc_factor:1,fz_factor:1,default_flutes:4};
   const lvl=getLevel();
@@ -426,24 +580,28 @@ function recommendVcFz(mode='fresado'){
   }
 }
 
-/* ========== Modelo de potencia/par del husillo + límites “imposibles” ========== */
-/* Supuesto estándar: par constante hasta base_rpm, luego potencia constante. */
-function spindleLimits(){
-  const PkW = +($('machinePower').value||15);
-  const rpmMax = +($('machineMaxRpm').value||10000);
-  const base = +($('machineBaseRpm')?.value||1500);
-  const feedMax = +($('machineFeedMax')?.value||30000); // mm/min
-  const T_const = 9550*PkW/Math.max(base,1); // N·m
-  return {PkW,rpmMax,base,T_const,feedMax};
-}
-function availPowerTorque(rpm){
-  const {PkW,base,T_const} = spindleLimits();
-  if(rpm<=0) return {P_kW:0,T_Nm:T_const};
-  if(rpm<=base){ const T=T_const; const P=T*rpm/9550; return {P_kW:P,T_Nm:T}; }
-  return {P_kW:PkW, T_Nm:(9550*PkW)/rpm};
-}
+/* ----- Ventanas por material ----- */
+function materialWindows(mode){
+  const mat=getMatSafe();
+  const baseW=(CUTTING_DATA.defaults?.windows)||{vc_factor:[0.7,1.3],chip_factor:[0.7,1.3]};
+  const mw=mat.windows||{};
+  const vcF=mw.vc_factor||baseW.vc_factor;
+  const chF=mw.chip_factor||baseW.chip_factor;
+  const op =(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value)||{vc_factor:1,fz_factor:1};
+  const tt =(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||{vc_factor:1,fz_factor:1};
+  const lvl=getLevel();
 
-/* ========== Vibración y cálculos principales (añadimos Kte y par) ========== */
+  const vc_base=(mat.vc_base??180)*(op.vc_factor||1)*(tt.vc_factor||1)*lvl.vc;
+  const chip_base=((mat.fz_base??0.05)*(mode==='torneado'?1.2:1))*(op.fz_factor||1)*(tt.fz_factor||1)*lvl.chip;
+
+  const vc_min=vc_base*vcF[0], vc_max=vc_base*vcF[1];
+  const chip_min=chip_base*chF[0], chip_max=chip_base*chF[1];
+  return { vc_min, vc_max, chip_min, chip_max, vc_base_adj:vc_base, chip_base_adj:chip_base };
+}
+function setBadge(id,level,text){const el=$(id); if(!el)return; el.classList.remove('badge-ok','badge-warn','badge-err'); el.classList.add(level); el.textContent=text;}
+function gradeValue(v,lo,hi){ if(v<lo*0.97||v>hi*1.03) return 'err'; if(v<lo||v>hi) return 'warn'; return 'ok'; }
+
+/* ----- Física: Kc/Kte, potencia, torque, vibración ----- */
 function vibrationRiskScore(params){
   const w=CUTTING_DATA.vibration.weights;
   const Lnorm=Math.min(1,(params.L||0)/200);
@@ -457,17 +615,19 @@ function vibrationRiskScore(params){
   const pen=Math.exp(-Math.pow((params.toothHz-c)/(s*0.8),2)/2); p=clamp(p+0.55*pen,0,1);
   return {raw:score,prob:p};
 }
-function matParams(){
-  const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||(CUTTING_DATA.materials||[])[0]||{};
-  const Kc0=mat.Kc_N_per_mm2 ?? 2000;
-  const Kte=mat.Kte_N_per_mm ?? 0;         // opcional
-  const mexp=mat.mexp ?? 0.20;             // opcional
-  const lifeC=(mat.taylor?.C) ?? (+$('C').value||40000);
-  const lifen=(mat.taylor?.n) ?? (+$('n').value||0.25);
-  return {Kc0,Kte,mexp,lifeC,lifen};
+
+/* Torque límite de máquina: asumimos potencia constante -> T_lim(rpm)=9550*P/rpm */
+function torqueMachineLimit_Nm(rpm){
+  const PkW=+($('machinePower').value)||0;
+  const r=clamp(rpm,1,1e9);
+  return (9550*PkW)/r;
 }
 
-/* — FRESADO — */
+/* Kte robusto */
+function getKte_N_per_mm(mat){
+  return (mat.Kte_N_per_mm ?? CUTTING_DATA.defaults.Kte_N_per_mm_default ?? 5);
+}
+
 function computeFresado(override={}){
   const D=parseFloat(override.diam ?? $('diam').value)||0.001;
   const z=parseInt(override.z ?? $('z').value)||1;
@@ -476,94 +636,117 @@ function computeFresado(override={}){
   const aePct=parseFloat(override.aePct ?? $('aePct').value)||30;
   const ae=(aePct/100)*D;
   const ap=parseFloat(override.ap ?? $('ap').value)||0.1;
-  const {Kc0,Kte,mexp,lifeC,lifen}=matParams();
 
-  // Factores de herramienta (igual que antes)
-  const toolType=(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||(CUTTING_DATA.tool_types||[])[0]||{vc_factor:1,fz_factor:1};
-  vc*=toolType.vc_factor||1;
-  fz*=toolType.fz_factor||1;
+  const mat=getMatSafe();
+  const holder=(CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value)||(CUTTING_DATA.holders||[])[0];
+  const toolType=(CUTTING_DATA.tool_types||[]).find(t=>t.id===$('toolTypeSelect').value)||(CUTTING_DATA.tool_types||[])[0];
 
-  // RPM y límites
+  vc = vc * (toolType.vc_factor||1.0);
+  fz = fz * (toolType.fz_factor||1.0);
+
+  const Kc0=mat?.Kc_N_per_mm2||2000, mexp=0.2;
+  const Kte=getKte_N_per_mm(mat);
+
   let rpm=(vc*1000)/(Math.PI*D);
   const maxR=+($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
   if(rpm>maxR){ rpm=maxR; vc=(rpm*Math.PI*D)/1000; }
 
-  // Cálculos base
   const feed_mm_min=rpm*z*fz;
   const mrr_mm3_min=feed_mm_min*ae*ap;
   const mrr_cm3_min=mrr_mm3_min/1000;
+
   const chip_h=fz;
+  const Kc_h=Kc0*Math.pow(chip_h+1e-6,-mexp);
 
-  const Kc_h = Kc0 * Math.pow(chip_h+1e-6, -(mexp||0.2));
-  const Fc_N = (Kc_h*ae*ap) + (Kte*(ap + ae)); // N, aprox. bordes + sección
+  // Fuerza tangencial ≈ Kc*A + Kte*L. Aproximamos L≈2*ap (corte lateral)
+  const A_chip = ae*ap;                   // mm²
+  const L_edge = 2*ap;                    // mm
+  const Ft_N = Kc_h*A_chip + Kte*L_edge; // N
+  const T_req_Nm = (Ft_N*(D/2))/1000;    // Nm
+
   const eta=CUTTING_DATA.defaults.efficiency||0.8;
-  const power_kW=(Kc_h*mrr_mm3_min)/(60*1000)/eta; // estándar
-  const torque_Nm = rpm>0 ? (9550*power_kW)/rpm : Infinity;
+  const power_kW=(Kc_h*mrr_mm3_min + Kte*L_edge*feed_mm_min)/(60*1000)/eta;
 
-  // Vida y costos
-  const volumen=+($('volumen').value)||0.001;
+  const volumen=parseFloat($('volumen').value)||0.001;
   const time_min=volumen/Math.max(mrr_cm3_min,1e-9);
   const cost_machine=(time_min/60)*(+($('machineCost').value)||0);
-  const toolLife_min=lifeC/Math.pow(Math.max(vc,1e-6),lifen);
+
+  const life_min=(mat?.taylor?.C)||+($('C').value)||40000;
+  const n=(mat?.taylor?.n)||+($('n').value)||0.25;
+  const toolLife_min=life_min/Math.pow(Math.max(vc,1e-6),n);
   const pieces_per_tool=Math.max(Math.floor(toolLife_min/Math.max(time_min,1e-9)),1);
   const tool_cost_per_piece=(+($('toolCost').value)||0)/pieces_per_tool;
 
-  // Rigidez y vibración
-  const holder=(CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value)||(CUTTING_DATA.holders||[])[0]||{stiffness_factor:1};
   const E=(+($('E')?.value)||210)*1000;
   const I=Math.PI*Math.pow(D,4)/64;
-  const L=+($('stickout').value||60);
-  const stiffness_factor=holder.stiffness_factor||1.0;
-  const delta_mm=(Fc_N*Math.pow(L,3))/(3*E*I+1e-9)/stiffness_factor;
+  const L=parseFloat($('stickout').value||60);
+  const stiffness_factor=holder?.stiffness_factor||1.0;
+  const delta_mm=(Ft_N*Math.pow(L,3))/(3*E*I+1e-9)/stiffness_factor;
   const k_eff=(3*E*I)/Math.pow(L,3)*stiffness_factor;
   const m_eff=0.02;
   const f_n=(1/(2*Math.PI))*Math.sqrt(Math.abs(k_eff/(m_eff*1000)));
-
   const toothHz=(rpm/60)*z;
-  const edgeR=0.02; // mm
+
+  const edgeR=0.02;
   const ra_um=Math.max(0,(Math.pow(fz,2)/(32*edgeR)))*1000;
+
   const vib=vibrationRiskScore({L,ae,ap,fz,D,toothHz});
 
-  return {mode:'fresado',rpm,feed_mm_min,mrr_cm3_min,chip_h,Kc_h,power_kW,torque_Nm,time_min,cost_machine,pieces_per_tool,tool_cost_per_piece,delta_mm,f_n,toothHz,Fc_N,vib,ra_um,ae,ap,D,z};
+  const T_lim = torqueMachineLimit_Nm(rpm);
+  const P_lim_kW=(+($('machinePower').value)||0);
+  const impossible = (power_kW>P_lim_kW*1.02) || (T_req_Nm>T_lim*1.02);
+
+  return {rpm,feed_mm_min,mrr_cm3_min,chip_h,Kc_h,power_kW,time_min,cost_machine,pieces_per_tool,tool_cost_per_piece,delta_mm,f_n,toothHz,F_radial:Ft_N,vib,ra_um,mode:'fresado', torque_Nm:T_req_Nm, torque_lim_Nm:T_lim, power_lim_kW:P_lim_kW, impossible};
 }
 
-/* — TORNEADO — */
 function computeTorneado(override={}){
   const D=parseFloat(override.diamT ?? $('diamT').value)||0.001;
   const ap=parseFloat(override.apT ?? $('apT').value)||0.5;
   let vc=parseFloat(override.vcT ?? $('vcT').value)||0.1;
   const f=parseFloat(override.fT ?? $('fT').value)||0.1;
-  const {Kc0,Kte,mexp,lifeC,lifen}=matParams();
+
+  const mat=getMatSafe();
+  const holder=(CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value)||(CUTTING_DATA.holders||[])[0];
   const op=(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value)||{vc_factor:1,fz_factor:1};
 
-  vc*=op.vc_factor||1;
+  vc = vc * (op.vc_factor||1);
   let rpm=(vc*1000)/(Math.PI*D);
   const maxR=+($('machineMaxRpm').value)||CUTTING_DATA.defaults.rpm_limit;
   if(rpm>maxR){ rpm=maxR; vc=(rpm*Math.PI*D)/1000; }
 
   const feed_mm_min=rpm*f;
+
+  const chip_h=f, mexp=0.2, Kc0=mat?.Kc_N_per_mm2||2000;
+  const Kte=getKte_N_per_mm(mat);
+  const Kc_h=Kc0*Math.pow(chip_h+1e-6,-mexp);
+
   const mrr_mm3_min=Math.PI*D*ap*f*rpm/4;
   const mrr_cm3_min=mrr_mm3_min/1000;
-  const chip_h=f;
-  const Kc_h=Kc0*Math.pow(chip_h+1e-6, -(mexp||0.2));
-  const Fc_N=(Kc_h*ap*f) + (Kte*(ap + f)); // simplificación
+
+  // Aproxima Ft como Kc*A + Kte*L con A≈ap*f por revolución y L≈2*ap
+  const A_chip = ap*f;    // mm²/rev
+  const L_edge = 2*ap;    // mm
+  const Ft_N = Kc_h*A_chip*rpm + Kte*L_edge*feed_mm_min/60; // razonable para orden de magnitud
+  const T_req_Nm = (Ft_N*(D/2))/1000;
+
   const eta=CUTTING_DATA.defaults.efficiency||0.8;
-  const power_kW=(Kc_h*mrr_mm3_min)/(60*1000)/eta;
-  const torque_Nm = rpm>0 ? (9550*power_kW)/rpm : Infinity;
+  const power_kW=(Kc_h*mrr_mm3_min + Kte*L_edge*feed_mm_min)/(60*1000)/eta;
 
   const volumen=+($('volumen').value)||0.001;
   const time_min=volumen/Math.max(mrr_cm3_min,1e-9);
   const cost_machine=(time_min/60)*(+($('machineCost').value)||0);
-  const toolLife_min=lifeC/Math.pow(Math.max(vc,1e-6),lifen);
+
+  const life_min=(mat?.taylor?.C)||+($('C').value)||40000;
+  const n=(mat?.taylor?.n)||+($('n').value)||0.25;
+  const toolLife_min=life_min/Math.pow(Math.max(vc,1e-6),n);
   const pieces_per_tool=Math.max(Math.floor(toolLife_min/Math.max(time_min,1e-9)),1);
   const tool_cost_per_piece=(+($('toolCost').value)||0)/pieces_per_tool;
 
-  const holder=(CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value)||(CUTTING_DATA.holders||[])[0]||{stiffness_factor:1};
   const E=(+($('E')?.value)||210)*1000;
   const I=Math.PI*Math.pow(D,4)/64;
-  const L=+($('stickout').value||60);
-  const stiffness_factor=holder.stiffness_factor||1.0;
-  const delta_mm=(Fc_N*Math.pow(L,3))/(3*E*I+1e-9)/stiffness_factor;
+  const L=parseFloat($('stickout').value||60);
+  const stiffness_factor=(holder?.stiffness_factor||1.0);
+  const delta_mm=(Ft_N*Math.pow(L,3))/(3*E*I+1e-9)/stiffness_factor;
   const k_eff=(3*E*I)/Math.pow(L,3)*stiffness_factor;
   const m_eff=0.02;
   const f_n=(1/(2*Math.PI))*Math.sqrt(Math.abs(k_eff/(m_eff*1000)));
@@ -571,103 +754,105 @@ function computeTorneado(override={}){
 
   const noseR=0.4;
   const ra_um=Math.max(0,(Math.pow(f,2)/(32*noseR)))*1000;
+
   const vib=vibrationRiskScore({L,ae:ap,ap,fz:f,D,toothHz});
 
-  return {mode:'torneado',rpm,feed_mm_min,mrr_cm3_min,chip_h,Kc_h,power_kW,torque_Nm,time_min,cost_machine,pieces_per_tool,tool_cost_per_piece,delta_mm,f_n,toothHz,Fc_N,vib,ra_um,ae:ap,ap,D,z:1};
+  const T_lim = torqueMachineLimit_Nm(rpm);
+  const P_lim_kW=(+($('machinePower').value)||0);
+  const impossible = (power_kW>P_lim_kW*1.02) || (T_req_Nm>T_lim*1.02);
+
+  return {rpm,feed_mm_min,mrr_cm3_min,chip_h,Kc_h,power_kW,time_min,cost_machine,pieces_per_tool,tool_cost_per_piece,delta_mm,f_n,toothHz,F_radial:Ft_N,vib,ra_um,mode:'torneado', torque_Nm:T_req_Nm, torque_lim_Nm:T_lim, power_lim_kW:P_lim_kW, impossible};
 }
 
-/* ========== Lóbulos ========== */
+/* ===== Marcadores de lóbulos (líneas RPM sospechosas) ===== */
 function calcLobeRpmLines(mode, f_n, z, rpmMin, rpmMax){
-  const lines=[]; if(!isFinite(f_n)||f_n<=0) return lines;
-  for(let k=1;k<=12;k++){ const rpm = mode==='fresado' ? (60*k*f_n)/Math.max(z,1) : (60*k*f_n); if(rpm>=rpmMin&&rpm<=rpmMax) lines.push({rpm,k}); }
+  const lines=[]; if(!isFinite(f_n) || f_n<=0) return lines;
+  for(let k=1;k<=12;k++){ const rpm = mode==='fresado' ? (60 * k * f_n) / Math.max(z,1) : (60 * k * f_n); if(rpm>=rpmMin && rpm<=rpmMax) lines.push({rpm, k}); }
   return lines;
 }
 function makeLobePlugin(lobeRpms){
-  return { id:'lobes', afterDraw(chart){ const y=chart.scales.y, x=chart.scales.x, g=chart.ctx;
-    g.save(); g.setLineDash([6,6]); g.lineWidth=1; g.strokeStyle='rgba(99,102,241,0.45)'; g.fillStyle='rgba(148,163,184,0.9)'; g.font='11px system-ui, sans-serif';
-    lobeRpms.forEach(({rpm,k})=>{ const yPix=y.getPixelForValue(rpm); g.beginPath(); g.moveTo(x.left,yPix); g.lineTo(x.right,yPix); g.stroke(); g.fillText(`${k}·fₙ`, x.right-42, yPix-4); });
+  return { id:'lobes', afterDraw(chart){ const y=chart.scales.y, x=chart.scales.x, g=chart.ctx; g.save(); g.setLineDash([6,6]); g.lineWidth=1; g.strokeStyle='rgba(99,102,241,0.45)'; g.fillStyle='rgba(148,163,184,0.9)'; g.font='11px system-ui,sans-serif';
+    lobeRpms.forEach(({rpm,k})=>{ const yPix=y.getPixelForValue(rpm); g.beginPath(); g.moveTo(x.left, yPix); g.lineTo(x.right, yPix); g.stroke(); g.fillText(`${k}·fₙ`, x.right-42, yPix-4); });
     g.restore(); } };
 }
 
-/* ========== Gráfica con isocurvas de MRR y par + zona evitada ========== */
+/* ----- Gráfica con isocurvas y zona evitada ----- */
 let chart=null;
+
 function computePointForGraph(mode,feed,rpm){
   if(mode==='torneado'){
-    const D=parseFloat($('diamT').value)||60;
-    return computeTorneado({ fT: feed/Math.max(rpm,1), vcT:(rpm*Math.PI*D)/1000 });
+    return computeTorneado({ fT: feed/Math.max(rpm,1), vcT:(rpm*Math.PI*(+($('diamT').value)||60))/1000 });
   } else {
     const Z=parseInt($('z').value)||4;
-    const D=parseFloat($('diam').value)||12;
-    return computeFresado({ fz: feed/Math.max(rpm*Z,1), vc:(rpm*Math.PI*D)/1000 });
+    return computeFresado({ fz: feed/Math.max(rpm*Z,1), vc:(rpm*Math.PI*(+($('diam').value)||12))/1000 });
   }
 }
 function currentPoint(){ return $('modeT').classList.contains('is-on') ? computeTorneado() : computeFresado(); }
 
-/* — Isocurvas auxiliares — */
-function buildIsoMRR(mode, feedMin, feedMax, rpmMin, rpmMax, targets){
-  // MRR = feed*ae*ap (mm3/min). Usamos ae/ap actuales.
-  const base = currentPoint();
-  const iso = [];
-  const A = Math.max(base.ae*base.ap, 1e-9); // mm^2
-  targets.forEach(val_cm3=>{ // objetivo en cm3/min
-    const val = val_cm3*1000; // a mm3/min
-    const pts=[];
-    for(let i=0;i<32;i++){
-      const rpm=lerp(rpmMin,rpmMax,i/31);
-      const feed = clamp(val/A, feedMin, feedMax);
-      pts.push({x:feed, y:rpm});
-    }
-    iso.push({label:`MRR ${val_cm3} cm³/min`, data:pts});
-  });
-  return iso;
-}
-function buildIsoTorque(mode, feedMin, feedMax, rpmMin, rpmMax, targets){
-  // Aproximación: usa Kc(h) con fz NOMINAL actual -> par ≈ (9550/rpm)*P(feed,rpm)
-  const base=currentPoint();
-  const Z = base.z||1;
-  const {Kc0,mexp}=matParams();
-  const fz_nom = (mode==='fresado') ? ( (base.feed_mm_min/Math.max(base.rpm*Z,1)) ) : (base.chip_h);
-  const Kc_nom = Kc0*Math.pow(fz_nom+1e-6, -(mexp||0.2));
-  const ae=base.ae, ap=base.ap;
-  const eta=CUTTING_DATA.defaults.efficiency||0.8;
-
-  const iso=[];
-  targets.forEach(tNm=>{
-    const pts=[];
-    for(let i=0;i<48;i++){
-      const rpm=lerp(rpmMin,rpmMax,i/47);
-      if(rpm<=0){ pts.push({x:feedMin,y:rpm}); continue; }
-      // torque = 9550/rpm * P;  P = (Kc_nom * feed * ae * ap)/(60*1000*eta)
-      // => feed = torque * rpm * 60*1000*eta / (9550 * Kc_nom * ae * ap)
-      const feed = (tNm * rpm * 60000 * eta) / (9550 * Math.max(Kc_nom*ae*ap,1e-9));
-      pts.push({x:clamp(feed,feedMin,feedMax), y:rpm});
-    }
-    iso.push({label:`τ ${tNm} N·m`, data:pts});
-  });
-  return iso;
-}
-
-/* — Zona evitada por límites de máquina — */
-function buildAvoided(mode, feedMin, feedMax, rpmMin, rpmMax){
-  const avoided=[];
-  const {feedMax:feedCap}=spindleLimits();
-  const stepsR=36, stepsF=64;
-  for(let i=0;i<stepsR;i++){
-    const rpm=lerp(rpmMin,rpmMax,i/(stepsR-1));
-    const avail=availPowerTorque(rpm);
-    for(let j=0;j<stepsF;j++){
-      const feed=lerp(feedMin,feedMax,j/(stepsF-1));
-      const pt=computePointForGraph(mode,feed,rpm);
-      const overPower = pt.power_kW > (avail.P_kW+1e-6);
-      const overTorque = pt.torque_Nm > (avail.T_Nm+1e-6);
-      const overFeed = feed > feedCap;
-      if(overPower || overTorque || overFeed) avoided.push({x:feed,y:rpm});
+/* Isocurvas MRR: MRR = feed*ae*ap/1000  => feed = MRR*1000/(ae*ap) (fresado); torneado se usa computePoint inverso */
+function buildIsoMRR(mode, mrrList, rpmMin, rpmMax){
+  const ae = (+$('aePct').value/100)*(+$('diam').value||12);
+  const ap = +$('ap').value||2;
+  const dataSets=[];
+  if(mode==='fresado' && ae>0 && ap>0){
+    mrrList.forEach(val=>{
+      const pts=[];
+      for(let i=0;i<48;i++){ const rpm=lerp(rpmMin,rpmMax,i/47); const feed=Math.max(1,(val*1000)/(ae*ap)); pts.push({x:feed,y:rpm}); }
+      dataSets.push({type:'line',label:`MRR ${val} cm³/min`,data:pts,borderColor:'rgba(148,163,184,0.35)',borderDash:[4,4],tension:0,pointRadius:0});
+    });
+  } else if(mode==='torneado'){
+    // Aproximación: usa relación MRR ≈ π D ap f rpm /4 y D, ap fijos -> feed = 4*MRR/(π D ap rpm)
+    const D=+$('diamT').value||60, apT=+$('apT').value||2;
+    if(D>0 && apT>0){
+      mrrList.forEach(val=>{
+        const pts=[];
+        for(let i=0;i<48;i++){ const rpm=lerp(rpmMin,rpmMax,i/47); const feed=Math.max(0.01,(val*4)/(Math.PI*D*apT*rpm)); const fmm=feed*rpm; pts.push({x:fmm,y:rpm}); }
+        dataSets.push({type:'line',label:`MRR ${val} cm³/min`,data:pts,borderColor:'rgba(148,163,184,0.35)',borderDash:[4,4],tension:0,pointRadius:0});
+      });
     }
   }
-  return avoided;
+  return dataSets;
 }
 
-/* — Curva óptima, zona segura y render — */
+/* Isocurvas de torque: resolver feed tal que torque requerido ≈ T0 */
+function buildIsoTorque(mode, torqueList, feedMin, feedMax, rpmMin, rpmMax){
+  const dataSets=[];
+  const stepsR=24;
+  function solveFeedForTorque(T0, rpm){
+    // bisección en [feedMin, feedMax]
+    let lo=feedMin, hi=feedMax;
+    for(let it=0; it<24; it++){
+      const mid=(lo+hi)/2;
+      const P=computePointForGraph(mode,mid,rpm);
+      const T=P.torque_Nm;
+      if(!isFinite(T)) break;
+      if(T>T0) hi=mid; else lo=mid;
+    }
+    return (lo+hi)/2;
+  }
+  torqueList.forEach(T0=>{
+    const pts=[];
+    for(let i=0;i<stepsR;i++){ const rpm=lerp(rpmMin,rpmMax,i/(stepsR-1)); const feed=solveFeedForTorque(T0,rpm); pts.push({x:feed,y:rpm}); }
+    dataSets.push({type:'line',label:`T=${T0} Nm`,data:pts,borderColor:'rgba(99,102,241,0.45)',borderDash:[8,4],tension:0,pointRadius:0});
+  });
+  return dataSets;
+}
+
+/* Zona evitada: puntos que exceden potencia o torque */
+function buildForbiddenPoints(mode, feedMin, feedMax, rpmMin, rpmMax){
+  const pts=[];
+  const sR=28, sF=36;
+  for(let i=0;i<sR;i++){
+    const rpm=lerp(rpmMin,rpmMax,i/(sR-1));
+    for(let j=0;j<sF;j++){
+      const feed=lerp(feedMin,feedMax,j/(sF-1));
+      const P=computePointForGraph(mode,feed,rpm);
+      if(P.impossible){ pts.push({x:feed,y:rpm}); }
+    }
+  }
+  return pts;
+}
+
 function buildOptimalCurve(mode,feedMin,feedMax,rpmMin,rpmMax){
   const stepsR=48,stepsF=64; const curve=[],safe=[];
   for(let i=0;i<stepsR;i++){
@@ -675,12 +860,11 @@ function buildOptimalCurve(mode,feedMin,feedMax,rpmMin,rpmMax){
     let best={prob:1,feed:null};
     for(let j=0;j<stepsF;j++){
       const feed=lerp(feedMin,feedMax,j/(stepsF-1));
-      const {vib}=computePointForGraph(mode,feed,rpm);
-      const p=vib.prob;
+      const {vib}=computePointForGraph(mode,feed,rpm); const p=vib.prob;
       if(p<+$('thSafe').value) safe.push({x:feed,y:rpm});
       if(p<best.prob){best={prob:p,feed};}
     }
-    curve.push({x:best.feed??feedMin,y:rpm});
+    curve.push({x:best.feed||feedMin,y:rpm});
   }
   return {curve,safe};
 }
@@ -690,50 +874,40 @@ function renderChart(){
   const feedMin=+$('feedMin').value||200, feedMax=+$('feedMax').value||2200;
   const rpmMin=+$('rpmMin').value||200, rpmMax=+$('rpmMax').value||10000;
 
-  const cur=currentPoint();
   const {curve,safe}=buildOptimalCurve(mode,feedMin,feedMax,rpmMin,rpmMax);
-  const avoided=buildAvoided(mode,feedMin,feedMax,rpmMin,rpmMax);
-
-  // Isocurvas dinámicas
-  const mrr0 = Math.max(cur.mrr_cm3_min, 1e-4);
-  const isoMRR = buildIsoMRR(mode,feedMin,feedMax,rpmMin,rpmMax,[ (mrr0*0.5).toFixed(2)*1, (mrr0*1.0).toFixed(2)*1, (mrr0*2.0).toFixed(2)*1 ]);
-  const {T_const,PkW,base}=spindleLimits();
-  const isoTau = buildIsoTorque(mode,feedMin,feedMax,rpmMin,rpmMax,[ Math.max(5,Math.round(T_const*0.5)), Math.round(T_const), Math.round(T_const*1.5) ]);
+  const cur=currentPoint();
 
   if(chart) chart.destroy();
   const ctx=$('chartRPMFeed').getContext('2d');
 
   const bandPlugin={ id:'band', afterDraw(c){
-    const y=c.scales.y,x=c.scales.x; const Z=(mode==='fresado')?(parseInt($('z').value)||4):1;
-    const [h0,h1]=CUTTING_DATA.vibration.avoid_band_hz||[600,900];
-    const rpm0=h0*60/Math.max(Z,1), rpm1=h1*60/Math.max(Z,1);
-    const yTop=y.getPixelForValue(Math.min(y.max,rpm1)), yBot=y.getPixelForValue(Math.max(y.min,rpm0));
-    const g=c.ctx; g.save(); g.fillStyle='rgba(225,29,72,0.08)'; g.fillRect(x.left,yTop,x.right-x.left,yBot-yTop);
-    g.strokeStyle='rgba(225,29,72,0.18)'; g.beginPath(); g.moveTo(x.left,yTop); g.lineTo(x.right,yTop); g.moveTo(x.left,yBot); g.lineTo(x.right,yBot); g.stroke();
-    g.fillStyle='rgba(225,29,72,.7)'; g.font='12px sans-serif'; g.fillText('Banda 600–900 Hz', x.right-140, yTop+14); g.restore();
-  }};
+      const y=c.scales.y,x=c.scales.x; const Z=(mode==='fresado')?(parseInt($('z').value)||4):1;
+      const [h0,h1]=CUTTING_DATA.vibration.avoid_band_hz||[600,900];
+      const rpm0=h0*60/Math.max(Z,1), rpm1=h1*60/Math.max(Z,1);
+      const yTop=y.getPixelForValue(Math.min(y.max,rpm1)), yBot=y.getPixelForValue(Math.max(y.min,rpm0));
+      const g=c.ctx; g.save(); g.fillStyle='rgba(225,29,72,0.08)'; g.fillRect(x.left,yTop,x.right-x.left,yBot-yTop);
+      g.strokeStyle='rgba(225,29,72,0.18)'; g.beginPath(); g.moveTo(x.left,yTop); g.lineTo(x.right,yTop); g.moveTo(x.left,yBot); g.lineTo(x.right,yBot); g.stroke();
+      g.fillStyle='rgba(225,29,72,.7)'; g.font='12px sans-serif'; g.fillText('Banda 600–900 Hz', x.right-140, yTop+14); g.restore();
+    } };
 
-  const lobeRpms = calcLobeRpmLines(mode, cur.f_n, cur.z||1, rpmMin, rpmMax);
+  const Z = (mode==='fresado') ? (parseInt($('z').value)||4) : 1;
+  const lobeRpms = calcLobeRpmLines(mode, cur.f_n, Z, rpmMin, rpmMax);
   const lobesPlugin = makeLobePlugin(lobeRpms);
 
-  const datasets = [
-    {type:'scatter',label:'Evitar (pot/par/avance)',data:avoided,pointRadius:2,pointBackgroundColor:'rgba(225,29,72,.30)'},
-    {type:'scatter',label:'Zona segura',data:safe,pointRadius:2,pointBackgroundColor:'rgba(16,185,129,.75)'},
-    {type:'line',label:'Óptimo',data:curve,borderColor:'#60a5fa',borderWidth:2,tension:0.3,pointRadius:0},
-    {type:'scatter',label:'Actual',data:[{x:cur.feed_mm_min,y:cur.rpm}],pointBackgroundColor:'#fff',pointBorderColor:'#000',pointBorderWidth:2,pointRadius:6}
-  ];
-
-  // Añadimos isocurvas MRR
-  isoMRR.forEach((serie,i)=>datasets.push({
-    type:'line', label:serie.label, data:serie.data, borderColor:'rgba(14,165,233,.45)', borderWidth:1, pointRadius:0, borderDash:[4,4], tension:0
-  }));
-  // Añadimos isocurvas de par
-  isoTau.forEach((serie,i)=>datasets.push({
-    type:'line', label:serie.label, data:serie.data, borderColor:'rgba(99,102,241,.45)', borderWidth:1, pointRadius:0, borderDash:[6,6], tension:0
-  }));
+  // Isocurvas
+  const mrrSets = buildIsoMRR(mode,[2,5,10,20],rpmMin,rpmMax);
+  const torqueSets = buildIsoTorque(mode,[10,20,40],feedMin,feedMax,rpmMin,rpmMax);
+  const forbiddenPts = buildForbiddenPoints(mode,feedMin,feedMax,rpmMin,rpmMax);
 
   chart = new Chart(ctx,{
-    data:{datasets},
+    data:{datasets:[
+      {type:'scatter',label:'Zona segura',data:safe,pointRadius:2,pointBackgroundColor:'rgba(16,185,129,.75)'},
+      ...mrrSets,
+      ...torqueSets,
+      {type:'line',label:'Óptimo',data:curve,borderColor:'#60a5fa',borderWidth:2,tension:0.3,pointRadius:0},
+      {type:'scatter',label:'Zona evitada P/T',data:forbiddenPts,pointRadius:2,pointBackgroundColor:'rgba(225,29,72,.35)'},
+      {type:'scatter',label:'Actual',data:[{x:cur.feed_mm_min,y:cur.rpm}],pointBackgroundColor:'#fff',pointBorderColor:'#000',pointBorderWidth:2,pointRadius:6}
+    ]},
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Av ${Math.round(ctx.raw.x)} mm/min · RPM ${Math.round(ctx.raw.y)}`}}},
@@ -744,7 +918,7 @@ function renderChart(){
   });
 }
 
-/* ========== Auto-rango ========== */
+/* ----- Auto-rango ----- */
 function adjustRangesToInclude(A){
   const maxR=+$('machineMaxRpm').value||CUTTING_DATA.defaults.rpm_limit;
   const minFeedWindow=400, minRpmWindow=600;
@@ -758,17 +932,21 @@ function adjustRangesToInclude(A){
   $('feedMin').value=fMin; $('feedMax').value=fMax; $('rpmMin').value=rMin; $('rpmMax').value=rMax;
 }
 
-/* ========== Resultados ========== */
+/* ----- Resultados ----- */
 function renderResults(A){
   const out=$('results'); out.innerHTML='';
   const s=document.createElement('div'); s.className='card';
-  s.innerHTML=`<div style="font-weight:800">Resumen — ${A.mode}</div>
+  const overP = A.power_kW>(A.power_lim_kW||0);
+  const overT = A.torque_Nm>(A.torque_lim_Nm||0);
+  const impossibleBadge = (overP||overT) ? `<span class="badge badge-err">Límite máquina (${overP?'P':''}${overP&&overT?'/':''}${overT?'T':''})</span>` : `<span class="badge badge-ok">Dentro de límites</span>`;
+
+  s.innerHTML=`<div style="font-weight:800">Resumen — ${A.mode} ${impossibleBadge}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
       <div class="muted">RPM</div><div class="result-value">${fmt(A.rpm,0)}</div>
       <div class="muted">Avance (mm/min)</div><div class="result-value">${fmt(A.feed_mm_min,2)}</div>
       <div class="muted">MRR (cm³/min)</div><div class="result-value">${fmt(A.mrr_cm3_min,3)}</div>
-      <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)}</div>
-      <div class="muted">Par (N·m)</div><div class="result-value">${fmt(A.torque_Nm,2)}</div>
+      <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)} / lim ${fmt(A.power_lim_kW,2)}</div>
+      <div class="muted">Torque (Nm)</div><div class="result-value">${fmt(A.torque_Nm,2)} / lim ${fmt(A.torque_lim_Nm,1)}</div>
       <div class="muted">Ra estimado (µm)</div><div class="result-value">${fmt(A.ra_um,2)}</div>
     </div>`;
   out.appendChild(s);
@@ -778,15 +956,17 @@ function renderResults(A){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
         <div class="muted">Tiempo/pieza (min)</div><div class="result-value">${fmt(A.time_min,2)}</div>
         <div class="muted">Costo/herr. p/pieza (USD)</div><div class="result-value">${fmt(A.tool_cost_per_piece,2)}</div>
-      </div>`; out.appendChild(c);
+      </div>`;
+    out.appendChild(c);
   }
   if($('enableKc').checked){
-    const k=document.createElement('div'); k.className='card'; k.innerHTML=`<div style="font-weight:800">Kc/Kte & Esfuerzo</div>
+    const k=document.createElement('div'); k.className='card'; k.innerHTML=`<div style="font-weight:800">Kc & Potencia</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
         <div class="muted">Chip thickness (mm)</div><div class="result-value">${fmt(A.chip_h,4)}</div>
         <div class="muted">Kc(h) (N/mm²)</div><div class="result-value">${fmt(A.Kc_h,1)}</div>
-        <div class="muted">F corte aprox (N)</div><div class="result-value">${fmt(A.Fc_N,0)}</div>
-      </div>`; out.appendChild(k);
+        <div class="muted">Potencia (kW)</div><div class="result-value">${fmt(A.power_kW,3)}</div>
+      </div>`;
+    out.appendChild(k);
   }
   if($('enableStability').checked){
     const st=document.createElement('div'); st.className='card';
@@ -795,18 +975,11 @@ function renderResults(A){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
         <div class="muted">f_n (Hz)</div><div class="result-value">${fmt(A.f_n,1)}</div>
         <div class="muted">Excitación (Hz)</div><div class="result-value">${fmt(A.toothHz,1)}</div>
+        <div class="muted">Score</div><div class="result-value">${fmt(A.vib.raw,3)}</div>
         <div class="muted">Prob. riesgo</div><div class="result-value"><span style="display:inline-block;background:${riskColor};width:10px;height:10px;border-radius:999px;margin-right:6px"></span>${fmt(A.vib.prob,2)}</div>
-      </div>`; out.appendChild(st);
+      </div>`;
+    out.appendChild(st);
   }
-
-  // Indicador de límites disponibles a la condición actual
-  const lim=availPowerTorque(A.rpm); const lims=document.createElement('div'); lims.className='card';
-  const feedCap=spindleLimits().feedMax;
-  const overP=A.power_kW>(lim.P_kW+1e-6), overT=A.torque_Nm>(lim.T_Nm+1e-6), overF=A.feed_mm_min>feedCap;
-  lims.innerHTML=`<div style="font-weight:800">Límites máquina</div>
-    <div class="muted">Max P: ${fmt(lim.P_kW,2)} kW · Max τ: ${fmt(lim.T_Nm,1)} N·m · Max feed: ${fmt(feedCap,0)} mm/min</div>
-    <div class="muted" style="margin-top:6px">${overP||overT||overF ? 'Condición excede algún límite' : 'Condición dentro de límites'}</div>`;
-  out.appendChild(lims);
 }
 function renderMachineDetails(){
   const id=$('machineSelect').value; const m=(CUTTING_DATA.machines||[]).find(x=>x.id===id);
@@ -817,16 +990,16 @@ function renderMachineDetails(){
     <div class="muted">Stickout def.: ${m.stickout_default} mm · Husillo: ${m.spindle}</div>`;
 }
 
-/* ========== Defaults de operación ========== */
+/* ----- Defaults de operación ----- */
 function applyOperationDefaults(force=false){
   const op=(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value);
   const D=parseFloat($('diam')?.value)||12; if(!op) return;
-  if(op.default_ae_pct && $('aePct') && (force || !$('aePct').dataset.userSet)){ $('aePct').value=Math.max(1,Math.round(op.default_ae_pct)); }
+  if(op.default_ae_pct && $('aePct') && (force || !$('aePct').dataset.userSet)){ $('aePct').value = Math.max(1, Math.round(op.default_ae_pct)); }
   if(op.default_ap_per_d && $('ap') && (force || !$('ap').dataset.userSet)){ $('ap').value=Math.max(0.01,Math.round((op.default_ap_per_d*D)*100)/100); }
   if(op.default_ap && $('apT') && (force || !$('apT').dataset.userSet)){ $('apT').value=op.default_ap; }
 }
 
-/* ========== Render principal ========== */
+/* ----- Render principal ----- */
 function render(){
   const modeT=$('modeT').classList.contains('is-on');
   if(!validateInputs()){
@@ -837,7 +1010,7 @@ function render(){
 
   const A=modeT?computeTorneado():computeFresado();
 
-  // Alertas suaves contra ventana
+  // Alertas de ventana
   (function(){
     const win=materialWindows(modeT?'torneado':'fresado');
     const vc_now=modeT?(+$('vcT').value||0):(+$('vc').value||0);
@@ -845,8 +1018,9 @@ function render(){
     const alerts=[];
     if(gradeValue(vc_now,win.vc_min,win.vc_max)==='err') alerts.push(`Vc fuera de ventana (${vc_now.toFixed(1)} vs ${win.vc_min.toFixed(0)}–${win.vc_max.toFixed(0)} m/min)`);
     if(gradeValue(chip_now,win.chip_min,win.chip_max)==='err') alerts.push(`Chip fuera de ventana (${chip_now.toFixed(3)} vs ${win.chip_min.toFixed(3)}–${win.chip_max.toFixed(3)})`);
+    if(A.impossible) alerts.push('Condición excede potencia/torque de máquina');
     const res=$('results'); const box=document.createElement('div'); box.className='card'; box.style.marginBottom='10px';
-    box.innerHTML=alerts.length?`<div style="font-weight:800;color:#fecaca">Alertas</div><div class="muted">${alerts.join(' · ')}</div>`:`<div class="muted">Sin alertas de ventana.</div>`;
+    box.innerHTML=alerts.length?`<div style="font-weight:800;color:#fecaca">Alertas</div><div class="muted">${alerts.join(' · ')}</div>`:`<div class="muted">Sin alertas.</div>`;
     res.innerHTML=''; res.appendChild(box);
   })();
 
@@ -856,13 +1030,12 @@ function render(){
   renderChart();
 }
 
-/* ========== Eventos ========== */
+/* ----- Eventos ----- */
 function wireEvents(){
   [
     'materialSelect','operationSelect','holderSelect','toolTypeSelect','levelSelect',
     'diam','z','vc','fz','aePct','ap','diamT','apT','vcT','fT','stickout','machineMaxRpm',
-    'machineCost','toolCost','volumen','C','n','enableCycle','enableKc','enableStability',
-    'machinePower','machineBaseRpm','machineFeedMax'
+    'machineCost','toolCost','volumen','C','n','enableCycle','enableKc','enableStability'
   ].forEach(id=>{
     const el=$(id); if(!el)return;
     el.addEventListener('input', ()=>{ if(['aePct','ap','apT','vc','fz','vcT','fT'].includes(id)) el.dataset.userSet='1'; render(); });
@@ -871,53 +1044,34 @@ function wireEvents(){
 
   ['operationSelect','diam'].forEach(id=>{
     const el=$(id); if(!el)return;
-    el.addEventListener('change', ()=>{
-      if($('aePct')) $('aePct').dataset.userSet='';
-      if($('ap'))  $('ap').dataset.userSet='';
-      if($('apT')) $('apT').dataset.userSet='';
-      applyOperationDefaults(true); render();
-    });
+    el.addEventListener('change', ()=>{ if($('aePct')) $('aePct').dataset.userSet=''; if($('ap')) $('ap').dataset.userSet=''; if($('apT')) $('apT').dataset.userSet=''; applyOperationDefaults(true); render(); });
   });
 
   $('machineSelect').addEventListener('change', ()=>{
     const id=$('machineSelect').value; const m=(CUTTING_DATA.machines||[]).find(x=>x.id===id);
-    if(m){
-      $('machineModel').value=`${m.brand} ${m.model}`;
-      $('machinePower').value=m.power_kW;
-      $('machineMaxRpm').value=m.max_rpm;
-      $('spindleType').value=m.spindle;
-      $('stickout').value=m.stickout_default;
-      $('stickoutDefault').value=m.stickout_default;
-      $('machineCost').value=Math.max(10,Math.round(m.power_kW*1.8));
-      // heurística para base_rpm
-      if($('machineBaseRpm')) $('machineBaseRpm').value = Math.round(Math.min(m.max_rpm*0.15, 2500));
-    } else { $('machineModel').value=''; }
+    if(m){ $('machineModel').value=`${m.brand} ${m.model}`; $('machinePower').value=m.power_kW; $('machineMaxRpm').value=m.max_rpm; $('spindleType').value=m.spindle; $('stickout').value=m.stickout_default; $('stickoutDefault').value=m.stickout_default; $('machineCost').value=Math.max(10,Math.round(m.power_kW*1.8)); }
+    else { $('machineModel').value=''; }
     render();
   });
 
-  $('modeF').addEventListener('click', ()=>{
-    $('modeF').classList.add('is-on'); $('modeT').classList.remove('is-on');
-    $('modeFresadoFields').style.display='block'; $('modeTorneadoFields').style.display='none';
-    updateModeOptions('fresado'); render();
-  });
-  $('modeT').addEventListener('click', ()=>{
-    $('modeT').classList.add('is-on'); $('modeF').classList.remove('is-on');
-    $('modeFresadoFields').style.display='none'; $('modeTorneadoFields').style.display='block';
-    updateModeOptions('torneado'); render();
-  });
+  $('modeF').addEventListener('click', ()=>{ $('modeF').classList.add('is-on'); $('modeT').classList.remove('is-on'); $('modeFresadoFields').style.display='block'; $('modeTorneadoFields').style.display='none'; updateModeOptions('fresado'); render(); });
+  $('modeT').addEventListener('click', ()=>{ $('modeT').classList.add('is-on'); $('modeF').classList.remove('is-on'); $('modeFresadoFields').style.display='none'; $('modeTorneadoFields').style.display='block'; updateModeOptions('torneado'); render(); });
 
   ['feedMin','feedMax','rpmMin','rpmMax','thSafe'].forEach(id=>$(id).addEventListener('input',renderChart));
 }
 
-/* ========== Init ========== */
+/* ----- Init ----- */
 (function init(){
   ensureErrorSlots();
   populateFromData();
   updateModeOptions('fresado');
   applyOperationDefaults();
+  enableTooltips();
+  enableKeyboardAndTouchTips();
   wireEvents();
   render();
 })();
 </script>
+
 </body>
 </html>
