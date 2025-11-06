@@ -117,25 +117,25 @@
             <div class="field"><label>Tipo herramienta</label><select id="toolTypeSelect"></select></div>
 
             <div id="modeFresadoFields">
-              <div class="field"><label>Diámetro herramienta D (mm)</label><input id="diam" type="number" step="0.01" value="12" /></div>
-              <div class="field"><label>Dientes (z)</label><input id="z" type="number" step="1" value="4" /></div>
+  <div class="field"><label>Diámetro herramienta D (mm)</label><input id="diam" type="number" step="0.01" value="12" /></div>
+  <div class="field"><label>Dientes (z)</label><input id="z" type="number" step="1" value="4" /></div>
 
-              <div class="field"><label>Vel. corte Vc (m/min) <span class="badge" id="vcRecBadge">rec: —</span></label>
-                <input id="vc" type="number" step="0.1" value="180" />
-              </div>
-              <div class="field"><label>fz (mm/tooth) <span class="badge" id="fzRecBadge">rec: —</span></label>
-                <input id="fz" type="number" step="0.0001" value="0.06" />
-              </div>
-
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-  <div class="field"><label>Ae (% de D)</label>
-    <input id="aePct" type="number" step="1" min="1" max="100" value="30" />
+  <div class="field"><label>Vel. corte Vc (m/min) <span class="badge" id="vcRecBadge">rec: —</span></label>
+    <input id="vc" type="number" step="0.1" value="180" />
   </div>
-  <div class="field"><label>Ap (mm)</label>
-    <input id="ap" type="number" step="0.01" value="2" />
+  <div class="field"><label>fz (mm/tooth) <span class="badge" id="fzRecBadge">rec: —</span></label>
+    <input id="fz" type="number" step="0.0001" value="0.06" />
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="field"><label>Ae (% de D)</label>
+      <input id="aePct" type="number" step="1" min="1" max="100" value="30" />
+    </div>
+    <div class="field"><label>Ap (mm)</label>
+      <input id="ap" type="number" step="0.01" value="2" />
+    </div>
   </div>
 </div>
-
             <div id="modeTorneadoFields" style="display:none">
               <div class="field"><label>Diámetro pieza D (mm)</label><input id="diamT" type="number" step="0.01" value="60" /></div>
               <div class="field"><label>Prof. corte ap (mm)</label><input id="apT" type="number" step="0.01" value="2" /></div>
@@ -239,24 +239,54 @@ function ensureErrorSlots(){FIELDS_TO_VALIDATE.forEach(id=>{const el=$(id);if(!e
 function showError(id,msg){const el=$(id),slot=$(`err-${id}`);if(!el||!slot)return;slot.textContent=msg;slot.classList.remove('err-hide');el.classList.add('input-err');}
 function clearError(id){const el=$(id),slot=$(`err-${id}`);if(!el||!slot)return;slot.textContent='';slot.classList.add('err-hide');el.classList.remove('input-err');}
 function validateInputs(){
-  let ok=true; const isT=$('modeT').classList.contains('is-on'); FIELDS_TO_VALIDATE.forEach(clearError);
-  const rpmMax=+$('machineMaxRpm').value||0; if(rpmMax<=0){showError('machineMaxRpm','Debe ser > 0'); ok=false;}
-  if(!isT){
-    const D=+$('diam').value,z=+$('z').value,vc=+$('vc').value,fz=+$('fz').value,ae=+$('ae').value,ap=+$('ap').value;
-    if(D<=0){showError('diam','D > 0');ok=false;} if(!Number.isInteger(z)||z<1){showError('z','z entero ≥ 1');ok=false;}
-    if(vc<=0){showError('vc','Vc > 0');ok=false;} if(fz<=0){showError('fz','fz > 0');ok=false;}
+  let ok = true;
+  const isT = $('modeT').classList.contains('is-on');
+  FIELDS_TO_VALIDATE.forEach(clearError);
+
+  const rpmMax = +$('machineMaxRpm').value || 0;
+  if (rpmMax <= 0) { showError('machineMaxRpm','Debe ser > 0'); ok = false; }
+
+  if (!isT) {
+    // Fresado
+    const D     = +$('diam').value;
+    const z     = +$('z').value;
+    const vc    = +$('vc').value;
+    const fz    = +$('fz').value;
     const aePct = +$('aePct').value;
-if(aePct<=0){showError('aePct','Ae% > 0'); ok=false;}
-if(aePct>100){showError('aePct','Ae% ≤ 100'); ok=false;}
-    const rpm_teo=(vc*1000)/(Math.PI*Math.max(D,1e-9)); if(rpmMax>0&&rpm_teo>rpmMax*1.05){showError('vc',`Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`);ok=false;}
+    const ap    = +$('ap').value;
+
+    if (D <= 0) { showError('diam','D > 0'); ok = false; }
+    if (!Number.isInteger(z) || z < 1) { showError('z','z entero ≥ 1'); ok = false; }
+    if (vc <= 0) { showError('vc','Vc > 0'); ok = false; }
+    if (fz <= 0) { showError('fz','fz > 0'); ok = false; }
+    if (aePct <= 0) { showError('aePct','Ae% > 0'); ok = false; }
+    if (aePct > 100) { showError('aePct','Ae% ≤ 100'); ok = false; }
+
+    const rpm_teo = (vc * 1000) / (Math.PI * Math.max(D, 1e-9));
+    if (rpmMax > 0 && rpm_teo > rpmMax * 1.05) {
+      showError('vc', `Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok = false;
+    }
   } else {
-    const D=+$('diamT').value,apv=+$('apT').value,vct=+$('vcT').value,f=+$('fT').value;
-    if(D<=0){showError('diamT','D > 0');ok=false;} if(apv<=0){showError('apT','ap > 0');ok=false;}
-    if(vct<=0){showError('vcT','Vc > 0');ok=false;} if(f<=0){showError('fT','f > 0');ok=false;}
-    const rpm_teo=(vct*1000)/(Math.PI*Math.max(D,1e-9)); if(rpmMax>0&&rpm_teo>rpmMax*1.05){showError('vcT',`Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`);ok=false;}
+    // Torneado
+    const D   = +$('diamT').value;
+    const apv = +$('apT').value;
+    const vct = +$('vcT').value;
+    const f   = +$('fT').value;
+
+    if (D <= 0) { showError('diamT','D > 0'); ok = false; }
+    if (apv <= 0) { showError('apT','ap > 0'); ok = false; }
+    if (vct <= 0) { showError('vcT','Vc > 0'); ok = false; }
+    if (f <= 0) { showError('fT','f > 0'); ok = false; }
+
+    const rpm_teo = (vct * 1000) / (Math.PI * Math.max(D, 1e-9));
+    if (rpmMax > 0 && rpm_teo > rpmMax * 1.05) {
+      showError('vcT', `Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`); ok = false;
+    }
   }
+
   // Soft checks contra ventana después
   return ok;
+}
 }
 
 /* ----- Tooltips (se agregan para levelSelect) ----- */
