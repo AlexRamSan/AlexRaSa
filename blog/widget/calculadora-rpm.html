@@ -128,10 +128,13 @@
               </div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <div class="field"><label>Ae (mm)</label><input id="ae" type="number" step="0.01" value="10" /></div>
-                <div class="field"><label>Ap (mm)</label><input id="ap" type="number" step="0.01" value="2" /></div>
-              </div>
-            </div>
+  <div class="field"><label>Ae (% de D)</label>
+    <input id="aePct" type="number" step="1" min="1" max="100" value="30" />
+  </div>
+  <div class="field"><label>Ap (mm)</label>
+    <input id="ap" type="number" step="0.01" value="2" />
+  </div>
+</div>
 
             <div id="modeTorneadoFields" style="display:none">
               <div class="field"><label>Diámetro pieza D (mm)</label><input id="diamT" type="number" step="0.01" value="60" /></div>
@@ -231,7 +234,7 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 function fmt(n,dec=2){ if(!isFinite(n)) return '-'; return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec}); }
 
 /* ----- Validación mínima (igual que antes) ----- */
-const FIELDS_TO_VALIDATE = ['diam','z','vc','fz','ae','ap','diamT','apT','vcT','fT','machineMaxRpm'];
+const FIELDS_TO_VALIDATE = ['diam','z','vc','fz','aePct','ap','diamT','apT','vcT','fT','machineMaxRpm'];
 function ensureErrorSlots(){FIELDS_TO_VALIDATE.forEach(id=>{const el=$(id);if(!el)return;const w=el.closest('.field');if(w&&!w.querySelector(`#err-${id}`)){const d=document.createElement('div');d.id=`err-${id}`;d.className='err err-hide';w.appendChild(d);}});}
 function showError(id,msg){const el=$(id),slot=$(`err-${id}`);if(!el||!slot)return;slot.textContent=msg;slot.classList.remove('err-hide');el.classList.add('input-err');}
 function clearError(id){const el=$(id),slot=$(`err-${id}`);if(!el||!slot)return;slot.textContent='';slot.classList.add('err-hide');el.classList.remove('input-err');}
@@ -242,8 +245,9 @@ function validateInputs(){
     const D=+$('diam').value,z=+$('z').value,vc=+$('vc').value,fz=+$('fz').value,ae=+$('ae').value,ap=+$('ap').value;
     if(D<=0){showError('diam','D > 0');ok=false;} if(!Number.isInteger(z)||z<1){showError('z','z entero ≥ 1');ok=false;}
     if(vc<=0){showError('vc','Vc > 0');ok=false;} if(fz<=0){showError('fz','fz > 0');ok=false;}
-    if(ae<=0){showError('ae','Ae > 0');ok=false;} if(ap<=0){showError('ap','Ap > 0');ok=false;}
-    if(ae>D){showError('ae','Ae ≤ D'); ok=false;} if(ap>1.5*D){showError('ap','Ap ≤ 1.5·D'); ok=false;}
+    const aePct = +$('aePct').value;
+if(aePct<=0){showError('aePct','Ae% > 0'); ok=false;}
+if(aePct>100){showError('aePct','Ae% ≤ 100'); ok=false;}
     const rpm_teo=(vc*1000)/(Math.PI*Math.max(D,1e-9)); if(rpmMax>0&&rpm_teo>rpmMax*1.05){showError('vc',`Pide ${Math.round(rpm_teo)} rpm > ${rpmMax}`);ok=false;}
   } else {
     const D=+$('diamT').value,apv=+$('apT').value,vct=+$('vcT').value,f=+$('fT').value;
@@ -266,7 +270,7 @@ const TIPS = {
   z:{t:"Dientes (z)", d:"feed = rpm×z×fz."},
   vc:{t:"Velocidad de corte Vc", d:"m/min. Limitada por RPM máx."},
   fz:{t:"fz", d:"mm/z."},
-  ae:{t:"Ae", d:"Enganche radial."},
+  aePct:{t:"Ae (%D)", d:"Enganche radial como porcentaje del diámetro."},
   ap:{t:"Ap", d:"Profundidad axial."},
   diamT:{t:"D pieza", d:"Torneado."},
   apT:{t:"ap", d:"Torneado."},
@@ -576,7 +580,8 @@ function computeFresado(override={}){
   const z=parseInt(override.z ?? $('z').value)||1;
   let vc=parseFloat(override.vc ?? $('vc').value)||0.1;
   let fz=parseFloat(override.fz ?? $('fz').value)||0.0001;
-  const ae=parseFloat(override.ae ?? $('ae').value)||0.1;
+  const aePct = parseFloat(override.aePct ?? $('aePct').value) || 30;
+const ae = (aePct/100) * D; // mm
   const ap=parseFloat(override.ap ?? $('ap').value)||0.1;
   const mat=(CUTTING_DATA.materials||[]).find(m=>m.id===$('materialSelect').value)||(CUTTING_DATA.materials||[])[0];
   const holder=(CUTTING_DATA.holders||[]).find(h=>h.id===$('holderSelect').value)||(CUTTING_DATA.holders||[])[0];
@@ -846,7 +851,9 @@ function renderMachineDetails(){
 function applyOperationDefaults(force=false){
   const op=(CUTTING_DATA.operations||[]).find(x=>x.id===$('operationSelect').value);
   const D=parseFloat($('diam')?.value)||12; if(!op) return;
-  if(op.default_ae_pct && $('ae') && (force || !$('ae').dataset.userSet)){ $('ae').value=Math.max(1,Math.round((op.default_ae_pct/100)*D*100)/100); }
+  if(op.default_ae_pct && $('aePct') && (force || !$('aePct').dataset.userSet)){
+  $('aePct').value = Math.max(1, Math.round(op.default_ae_pct));
+}
   if(op.default_ap_per_d && $('ap') && (force || !$('ap').dataset.userSet)){ $('ap').value=Math.max(0.01,Math.round((op.default_ap_per_d*D)*100)/100); }
   if(op.default_ap && $('apT') && (force || !$('apT').dataset.userSet)){ $('apT').value=op.default_ap; }
 }
@@ -885,18 +892,18 @@ function render(){
 function wireEvents(){
   [
     'materialSelect','operationSelect','holderSelect','toolTypeSelect','levelSelect',
-    'diam','z','vc','fz','ae','ap','diamT','apT','vcT','fT','stickout','machineMaxRpm',
+    'diam','z','vc','fz','aePct','ap','diamT','apT','vcT','fT','stickout','machineMaxRpm',
     'machineCost','toolCost','volumen','C','n','enableCycle','enableKc','enableStability'
   ].forEach(id=>{
     const el=$(id); if(!el)return;
-    el.addEventListener('input', ()=>{ if(['ae','ap','apT','vc','fz','vcT','fT'].includes(id)) el.dataset.userSet='1'; render(); });
-    el.addEventListener('change',()=>{ if(['ae','ap','apT','vc','fz','vcT','fT'].includes(id)) el.dataset.userSet='1'; render(); });
+    el.addEventListener('input', ()=>{ if(['aePct','ap','apT','vc','fz','vcT','fT'].includes(id)) el.dataset.userSet='1'; render(); });
+    el.addEventListener('change',()=>{ if(['aePct','ap','apT','vc','fz','vcT','fT'].includes(id)) el.dataset.userSet='1'; render(); });
   });
 
   ['operationSelect','diam'].forEach(id=>{
     const el=$(id); if(!el)return;
     el.addEventListener('change', ()=>{
-      if($('ae'))  $('ae').dataset.userSet='';
+      if($('aePct')) $('aePct').dataset.userSet='';
       if($('ap'))  $('ap').dataset.userSet='';
       if($('apT')) $('apT').dataset.userSet='';
       applyOperationDefaults(true); render();
