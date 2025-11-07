@@ -47,3 +47,4 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke){
 }
 function matColor(id){ const m={carbide:'#87f7ff',hss:'#a7b7ff',pcd:'#ffe38f',cbn:'#ffb3c1'}; return m[id]||'#bfe7ff'; }
 function hexWithAlpha(hex, a){ const c=parseInt(hex.slice(1),16); const r=(c>>16)&255,g=(c>>8)&255,b=c&255; return `rgba(${r},${g},${b},${a})`; }
+ 
