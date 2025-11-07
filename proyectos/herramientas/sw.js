@@ -42,3 +42,4 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
   }
 });
+ 
