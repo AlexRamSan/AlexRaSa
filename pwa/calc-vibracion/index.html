@@ -4,33 +4,61 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora RPM/Avance + Umbral de Vibración</title>
-  <meta name="theme-color" content="#0b1220">
+
+  <!-- PWA -->
   <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <meta name="theme-color" content="#0b1220">
+
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="RPM+Vib">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="./icons/icon-167.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="./icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="./icons/icon-120.png">
+
   <style>
-    :root{ --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a; --accent:#0ea5e9; }
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial}
-    .wrap{max-width:840px;margin:auto;padding:24px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
-    h1{margin:0 0 8px;font-size:1.4rem} p{margin:6px 0;color:var(--muted)}
+    :root{
+      --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
+      --accent-teal:#0996BE; --accent-blue:#1D4ED8;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial}
+    .hdr{max-width:960px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:12px}
+    .brand{width:40px;height:40px;border-radius:12px}
+    .title{font-size:1.1rem;margin:0}
+    .wrap{max-width:960px;margin:auto;padding:0 24px 24px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+    h2{font-size:1rem;margin:0 0 8px}
+    p{margin:6px 0;color:var(--muted)}
     .grid{display:grid;gap:12px}
-    @media(min-width:720px){ .grid2{grid-template-columns:1fr 1fr} .grid3{grid-template-columns:repeat(3,1fr)} }
+    @media(min-width:780px){ .grid2{grid-template-columns:1fr 1fr} .grid3{grid-template-columns:repeat(3,1fr)} }
     label{display:block;font-size:.9rem;color:var(--muted);margin:6px 0 4px}
     input{width:100%;padding:.65rem;border-radius:12px;border:1px solid var(--border);background:#0b1220;color:var(--ink)}
     .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .btn{background:var(--accent);color:#061521;border:none;border-radius:12px;padding:.65rem 1rem;font-weight:600;cursor:pointer}
+    .btn{
+      background:linear-gradient(135deg,var(--accent-teal),var(--accent-blue));
+      color:#061521;border:none;border-radius:12px;padding:.65rem 1rem;font-weight:700;cursor:pointer
+    }
+    .btn:disabled{opacity:.6;cursor:not-allowed}
     .out{border:1px dashed var(--border);border-radius:12px;padding:12px;margin-top:12px}
-    b{color:#e8f2ff}
-    .tag{display:inline-block;background:#0b1220;border:1px solid var(--border);border-radius:999px;padding:.25rem .6rem;margin:.15rem 0}
+    .tag{display:inline-block;background:#0b1220;border:1px solid var(--border);border-radius:999px;padding:.25rem .6rem;margin:.15rem .25rem .15rem 0}
     .ok{color:#7dd3fc}.warn{color:#fde68a}.bad{color:#fca5a5}
     small{color:var(--muted)}
+    footer{max-width:960px;margin:16px auto 24px;padding:0 24px;color:var(--muted);font-size:.85rem}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>RPM/Avance + Umbral de Vibración (TPF)</h1>
-      <p>Modelo simple basado en <b>frecuencia de paso de diente</b> TPF = RPM·z/60. Ajusta la banda “estable” en Hz según tu máquina/holder.</p>
+  <header class="hdr">
+    <!-- Logo: usa icon-192 generado; si prefieres el logo horizontal, cambia src por tu archivo -->
+    <img src="./icons/icon-192.png" alt="Prestige Tools" class="brand" width="40" height="40">
+    <h1 class="title">Calculadora RPM/Avance + Umbral de Vibración</h1>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <p>Modelo rápido basado en <b>frecuencia de paso de diente</b> (TPF = RPM·z/60). Ajusta tu banda “estable” en Hz.</p>
 
       <div class="grid grid3">
         <div>
@@ -55,7 +83,7 @@
           <input id="ap" type="number" step="0.01" value="2">
         </div>
         <div>
-          <label>RPM actual (para evaluar riesgo)</label>
+          <label>RPM actual</label>
           <input id="rpm" type="number" step="1" value="6000">
         </div>
 
@@ -73,81 +101,71 @@
         </div>
       </div>
 
-      <div class="row" style="margin-top:8px">
-        <button class="btn" id="btnMid">Sugerir RPM en medio de la banda</button>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btnMid">Sugerir RPM banda media</button>
         <button class="btn" id="btnSave">Guardar preset</button>
+        <button class="btn" id="shareBtn">Compartir resultados</button>
         <small id="msg"></small>
       </div>
 
       <div class="out" id="out"></div>
-      <small>Nota: Esto NO reemplaza un diagrama de lóbulos de estabilidad. Es una guía rápida para evitar TPF fuera de tu ventana “estable”.</small>
-    </div>
-  </div>
+      <small>Nota: no sustituye un diagrama de lóbulos. Es guía rápida para evitar TPF fuera de tu ventana estable.</small>
+    </section>
+  </main>
+
+  <footer>© Prestige Tools — Paleta basada en tu logo (teal → azul) sobre tema oscuro.</footer>
 
   <script>
+    // === Utilidades base ===
     const $=id=>document.getElementById(id);
     const ids=["d","z","fz","ae","ap","rpm","hzMin","hzMax","rpmMax"];
-    ids.forEach(id=> $(id).addEventListener("input", render));
-    $("btnMid").addEventListener("click", ()=>{
-      const z=+$("z").value, hzMin=+$("hzMin").value, hzMax=+$("hzMax").value, rpmMax=+$("rpmMax").value||1e9;
-      if(z<=0||hzMin<=0||hzMax<=0||hzMax<=hzMin){return;}
-      const hzMid=(hzMin+hzMax)/2;
-      let rpm= Math.floor(60*hzMid/ z);
-      rpm = Math.min(rpm, rpmMax);
-      $("rpm").value = rpm;
-      render();
-    });
-    $("btnSave").addEventListener("click", ()=>{
-      const o={}; ids.forEach(k=>o[k]=$(k).value);
-      localStorage.setItem("calc_vib", JSON.stringify(o));
-      $("msg").textContent="Preset guardado";
-      setTimeout(()=>$("msg").textContent="",1500);
-    });
-
     function fmt(n,d=2){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:d}); }
 
+    // === Lógica de cálculo/render ===
     function render(){
-      // load basic
       const d=+$("d").value, z=+$("z").value, fz=+$("fz").value, ae=+$("ae").value, ap=+$("ap").value;
       const rpm=+$("rpm").value, hzMin=+$("hzMin").value, hzMax=+$("hzMax").value, rpmMax=+$("rpmMax").value||Infinity;
 
-      if(d<=0||z<=0||fz<=0||ae<0||ap<0||hzMin<=0||hzMax<=hzMin){$("out").textContent="Completa datos válidos.";return;}
+      if(d<=0||z<=0||fz<=0||ae<0||ap<0||hzMin<=0||hzMax<=hzMin||rpm<=0){
+        $("out").textContent="Completa datos válidos.";
+        return;
+      }
 
-      // Bandas recomendadas por TPF
+      // Rango por TPF
       const rpmMin = Math.floor(60*hzMin / z);
       const rpmMaxBand = Math.floor(60*hzMax / z);
-      const vcMin = (Math.PI * d * rpmMin)/1000; // m/min
-      const vcMax = (Math.PI * d * rpmMaxBand)/1000; // m/min
+      const vcMin = (Math.PI * d * rpmMin)/1000;      // m/min
+      const vcMax = (Math.PI * d * rpmMaxBand)/1000;  // m/min
 
       // Condiciones con RPM actual
-      const vf = rpm * z * fz;                  // mm/min
-      const mrr = (ae * ap * vf)/1000;          // cm3/min
-      const tpf = (rpm * z) / 60;               // Hz
+      const vf = rpm * z * fz;                        // mm/min
+      const mrr = (ae * ap * vf)/1000;                // cm³/min
+      const tpf = (rpm * z) / 60;                     // Hz
 
-      // Riesgo simple según distancia a banda
+      // Riesgo por distancia a banda
       let riskClass="bad", riskText="Alto";
       if(tpf>=hzMin && tpf<=hzMax){ riskClass="ok"; riskText="Bajo"; }
       else{
-        // margen del 10% alrededor
         const low=(1-0.10)*hzMin, high=(1+0.10)*hzMax;
         if(tpf>=low && tpf<=high){ riskClass="warn"; riskText="Medio"; }
       }
 
-      const withinSpindle = rpmMin<=rpmMax && rpmMin<=rpmMaxBand && rpmMaxBand>0
-        ? `Rango sugerido dentro de tu límite de husillo.` : `Atención: tu límite de husillo puede recortar el rango.`
+      const spindleNote = (rpmMin<=rpmMax && rpmMin<=rpmMaxBand && rpmMaxBand>0)
+        ? "Rango sugerido dentro de tu límite de husillo."
+        : "Atención: tu límite de husillo puede recortar el rango.";
 
       $("out").innerHTML = `
         <div class="grid grid2">
           <div>
-            <b>Rango por banda TPF</b><br>
+            <h2>Rango por banda TPF</h2>
             <span class="tag">RPM min: ${rpmMin}</span>
             <span class="tag">RPM max: ${rpmMaxBand}</span><br>
             <span class="tag">Vc min: ${fmt(vcMin)} m/min</span>
             <span class="tag">Vc max: ${fmt(vcMax)} m/min</span><br>
-            <small>${withinSpindle}</small>
+            <small>${spindleNote}</small>
           </div>
           <div>
-            <b>Condiciones actuales</b><br>
+            <h2>Condiciones actuales</h2>
             <span class="tag">RPM: ${rpm}</span>
             <span class="tag">Vf: ${fmt(vf,1)} mm/min</span>
             <span class="tag">MRR: ${fmt(mrr,2)} cm³/min</span><br>
@@ -157,19 +175,55 @@
         </div>
       `;
 
-      // Persistencia rápida
+      // Persistencia
       const o={}; ids.forEach(k=>o[k]=$(k).value);
       localStorage.setItem("calc_vib", JSON.stringify(o));
     }
 
-    (function init(){
+    // === Botones ===
+    function suggestMidRPM(){
+      const z=+$("z").value, hzMin=+$("hzMin").value, hzMax=+$("hzMax").value, rpmMax=+$("rpmMax").value||1e9;
+      if(z<=0||hzMin<=0||hzMax<=0||hzMax<=hzMin){return;}
+      const hzMid=(hzMin+hzMax)/2;
+      let rpm = Math.floor(60*hzMid/ z);
+      rpm = Math.min(rpm, rpmMax);
+      $("rpm").value = rpm;
+      render();
+    }
+
+    async function shareResults(){
+      const t = document.getElementById('out')?.innerText || 'Resultados RPM+Vib';
+      if (navigator.share){
+        try{ await navigator.share({title:'RPM+Vib', text:t}); }catch(_){}
+      } else {
+        try{
+          await navigator.clipboard.writeText(t);
+          $("msg").textContent="Resultados copiados";
+          setTimeout(()=>{$("msg").textContent="";},1500);
+        }catch(_){}
+      }
+    }
+
+    // === Init ===
+    window.addEventListener("DOMContentLoaded", ()=>{
       try{
         const s = JSON.parse(localStorage.getItem("calc_vib")||"{}");
         Object.entries(s).forEach(([k,v])=> { if($(k)) $(k).value=v; });
       }catch(_){}
+      ids.forEach(id=> $(id).addEventListener("input", render));
+      $("btnMid").addEventListener("click", suggestMidRPM);
+      $("btnSave").addEventListener("click", ()=>{
+        const o={}; ids.forEach(k=>o[k]=$(k).value);
+        localStorage.setItem("calc_vib", JSON.stringify(o));
+        $("msg").textContent="Preset guardado";
+        setTimeout(()=>{$("msg").textContent="";},1500);
+      });
+      $("shareBtn").addEventListener("click", shareResults);
       render();
-      if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-    })();
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+      }
+    });
   </script>
 </body>
 </html>
