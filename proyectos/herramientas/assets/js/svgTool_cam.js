@@ -1,6 +1,7 @@
 // Escalones CL con chaflán DxLxAxC. Validación: C = Δradio / tan(A).
 // Hélices siguen cada tramo con Ø local. Inician 1×Ø izq y terminan 2×Ø der.
 // Nº de filos = round(Z*1.5). Cotas: der (CL, SL, OHL), izq (TL), D arriba, AD abajo.
+// Punta (flat/ball/chamfer) se dibuja al final para quedar por encima del cuerpo.
 
 export function renderSVG(svg, s){
   const W = 1100, H = 520, margin = 28;
@@ -9,14 +10,64 @@ export function renderSVG(svg, s){
 
   // utils
   const mk = n => document.createElementNS('http://www.w3.org/2000/svg', n);
-  const line = (x1,y1,x2,y2,st='#6ee7ff',w=2)=>{const e=mk('line');e.setAttribute('x1',x1);e.setAttribute('y1',y1);e.setAttribute('x2',x2);e.setAttribute('y2',y2);e.setAttribute('stroke',st);e.setAttribute('stroke-width',w);e.setAttribute('stroke-linecap','round');e.setAttribute('pointer-events','none');svg.appendChild(e);return e;};
-  const rect = (x,y,w,h,fill,st='#2a4f7a')=>{const e=mk('rect');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('width',w);e.setAttribute('height',h);e.setAttribute('rx',8);e.setAttribute('fill',fill);if(st)e.setAttribute('stroke',st);e.setAttribute('pointer-events','none');svg.appendChild(e);return e;};
-  const path = (d, st='#2a4f7a', fill='none', w=2)=>{const p=mk('path');p.setAttribute('d',d);if(fill&&fill!=='none')p.setAttribute('fill',fill);if(st){p.setAttribute('stroke',st);p.setAttribute('stroke-width',w);if(fill==='none')p.setAttribute('fill','none');}p.setAttribute('pointer-events','none');svg.appendChild(p);return p;};
-  const text = (x,y,t,fill='#9fb3c8',fs=12,anchor='start')=>{const e=mk('text');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('fill',fill);e.setAttribute('font-size',fs);e.setAttribute('text-anchor',anchor);e.setAttribute('dominant-baseline','middle');e.setAttribute('pointer-events','none');e.textContent=t;svg.appendChild(e);return e;};
-  const arrow = (x1,y1,x2,y2,st='#6ee7ff',w=2)=>{const l=line(x1,y1,x2,y2,st,w);const ang=Math.atan2(y2-y1,x2-x1),sz=6;const tip=(x,y,a)=>{const p=mk('path');const xA=x-sz*Math.cos(a)+(sz*0.6)*Math.cos(a+Math.PI/2);const yA=y-sz*Math.sin(a)+(sz*0.6)*Math.sin(a+Math.PI/2);const xB=x-sz*Math.cos(a)-(sz*0.6)*Math.cos(a+Math.PI/2);const yB=y-sz*Math.sin(a)-(sz*0.6)*Math.sin(a+Math.PI/2);p.setAttribute('d',`M ${x} ${y} L ${xA} ${yA} L ${xB} ${yB} Z`);p.setAttribute('fill',st);p.setAttribute('pointer-events','none');svg.appendChild(p);};tip(x1,y1,ang+Math.PI);tip(x2,y2,ang);return l;};
-  const dimVRight=(x,y0,y1,label)=>{const yA=Math.min(y0,y1),yB=Math.max(y0,y1);arrow(x,yA,x,yB);line(x,yA,x-8,yA);line(x,yB,x-8,yB);text(x+6,yA+(yB-yA)/2,label);};
-  const dimVLeft=(x,y0,y1,label)=>{const yA=Math.min(y0,y1),yB=Math.max(y0,y1);arrow(x,yA,x,yB);line(x,yA,x+8,yA);line(x,yB,x+8,yB);text(x-6,yA+(yB-yA)/2,label,'#9fb3c8',12,'end');};
-  const dimH=(y,x0,x1,label)=>{const xA=Math.min(x0,x1),xB=Math.max(x0,x1);arrow(xA,y,xB,y);line(xA,y,xA,y-8);line(xB,y,xB,y-8);text((xA+xB)/2,y-6,label,'#9fb3c8',12,'middle');};
+  const line = (x1,y1,x2,y2,st='#6ee7ff',w=2)=>{
+    const e=mk('line'); e.setAttribute('x1',x1); e.setAttribute('y1',y1);
+    e.setAttribute('x2',x2); e.setAttribute('y2',y2);
+    e.setAttribute('stroke',st); e.setAttribute('stroke-width',w);
+    e.setAttribute('stroke-linecap','round'); e.setAttribute('pointer-events','none');
+    svg.appendChild(e); return e;
+  };
+  const rect = (x,y,w,h,fill,st='#2a4f7a')=>{
+    const e=mk('rect'); e.setAttribute('x',x); e.setAttribute('y',y);
+    e.setAttribute('width',w); e.setAttribute('height',h);
+    e.setAttribute('rx',8); e.setAttribute('fill',fill);
+    if(st) e.setAttribute('stroke',st);
+    e.setAttribute('pointer-events','none'); svg.appendChild(e); return e;
+  };
+  const path = (d, st='#2a4f7a', fill='none', w=2)=>{
+    const p=mk('path'); p.setAttribute('d',d);
+    if(fill && fill!=='none') p.setAttribute('fill',fill);
+    if(st){ p.setAttribute('stroke',st); p.setAttribute('stroke-width',w); if(fill==='none') p.setAttribute('fill','none'); }
+    p.setAttribute('pointer-events','none'); svg.appendChild(p); return p;
+  };
+  const text = (x,y,t,fill='#9fb3c8',fs=12,anchor='start')=>{
+    const e=mk('text');
+    e.setAttribute('x',x); e.setAttribute('y',y);
+    e.setAttribute('fill',fill); e.setAttribute('font-size',fs);
+    e.setAttribute('text-anchor',anchor);
+    e.setAttribute('dominant-baseline','middle');
+    e.setAttribute('pointer-events','none');
+    e.textContent=t; svg.appendChild(e); return e;
+  };
+  const arrow = (x1,y1,x2,y2,st='#6ee7ff',w=2)=>{
+    const l = line(x1,y1,x2,y2,st,w);
+    const ang = Math.atan2(y2-y1, x2-x1), sz = 6;
+    const tip = (x,y,a)=>{
+      const p = mk('path');
+      const xA = x - sz*Math.cos(a) + (sz*0.6)*Math.cos(a+Math.PI/2);
+      const yA = y - sz*Math.sin(a) + (sz*0.6)*Math.sin(a+Math.PI/2);
+      const xB = x - sz*Math.cos(a) - (sz*0.6)*Math.cos(a+Math.PI/2);
+      const yB = y - sz*Math.sin(a) - (sz*0.6)*Math.sin(a+Math.PI/2);
+      p.setAttribute('d',`M ${x} ${y} L ${xA} ${yA} L ${xB} ${yB} Z`);
+      p.setAttribute('fill',st); p.setAttribute('pointer-events','none'); svg.appendChild(p);
+    };
+    tip(x1,y1,ang+Math.PI); tip(x2,y2,ang); return l;
+  };
+  const dimVRight = (x, y0, y1, label)=>{
+    const yA = Math.min(y0,y1), yB = Math.max(y0,y1);
+    arrow(x, yA, x, yB); line(x, yA, x-8, yA); line(x, yB, x-8, yB);
+    text(x+6, yA + (yB-yA)/2, label, '#9fb3c8', 12, 'start');
+  };
+  const dimVLeft = (x, y0, y1, label)=>{
+    const yA = Math.min(y0,y1), yB = Math.max(y0,y1);
+    arrow(x, yA, x, yB); line(x, yA, x+8, yA); line(x, yB, x+8, yB);
+    text(x-6, yA + (yB-yA)/2, label, '#9fb3c8', 12, 'end');
+  };
+  const dimH = (y, x0, x1, label)=>{
+    const xA = Math.min(x0,x1), xB = Math.max(x0,x1);
+    arrow(xA, y, xB, y); line(xA, y, xA, y-8); line(xB, y, xB, y-8);
+    text((xA+xB)/2, y-6, label, '#9fb3c8', 12, 'middle');
+  };
   const fmt = (v,u)=> u==='inch' ? (v/25.4).toFixed(3)+' in' : v.toFixed(2)+' mm';
 
   // fondo
@@ -38,40 +89,32 @@ export function renderSVG(svg, s){
   const strokeAll = '#2a4f7a';
   const fillCL='#17314d', fillSL='#132a45', fillOHL='#0f2238';
 
-  // punta según primer tramo
-  const firstD = (Array.isArray(s.steps) && s.steps[0]?.d) ? s.steps[0].d : s.D;
-  const firstW = firstD * scale;
-  const left0 = cx - firstW/2;
-  if(s.tip==='flat'){ line(left0, top, left0 + firstW, top, '#86e7ff', 3); }
-  else if(s.tip==='ball'){ const r=firstW/2; const p=mk('path'); p.setAttribute('d',`M ${cx - r} ${top + r} A ${r} ${r} 0 0 1 ${cx + r} ${top + r}`); p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p); }
-  else if(s.tip==='chamfer'){ const off=Math.tan((90 - s.chamferAngle)*Math.PI/180)*(firstW/2); const hTip=Math.min(s.CL*scale, firstW*0.25); const p=mk('path'); p.setAttribute('d',`M ${left0} ${top} L ${left0+off} ${top+hTip} L ${left0+firstW-off} ${top+hTip} L ${left0+firstW} ${top}`); p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p); }
-
-  // CL con escalones + chaflán validado
+  // === CL con escalones y chaflán validado ===
   let y = top;
   const steps = Array.isArray(s.steps) ? s.steps : [];
+  const firstD = (steps[0]?.d ?? s.D);
   let lastD = firstD;
 
   for(let idx=0; idx<steps.length; idx++){
     const st = steps[idx];
-    let dThis = Math.max(0.01, st.d || lastD);
-    let Lseg  = Math.max(0, st.l || 0);
+    let dThis = Math.max(0.01, st.d ?? lastD);
+    let Lseg  = Math.max(0, st.l ?? 0);
     const hasNext = (idx < steps.length - 1);
-    const nextD = hasNext ? Math.max(0.01, steps[idx+1].d || dThis) : dThis;
+    const nextD = hasNext ? Math.max(0.01, steps[idx+1].d ?? dThis) : dThis;
 
-    // chaflán deseado por ángulo
+    // Validación C = Δr / tan(A)
     let cLenDesired = 0;
     if (hasNext && st.a != null && st.a > 0){
       const aRad = (st.a*Math.PI/180);
       const tanA = Math.tan(aRad);
       if (tanA > 1e-6){
-        const deltaR = Math.abs(nextD - dThis)/2; // en mm
-        cLenDesired = deltaR / tanA;             // mm
+        const deltaR = Math.abs(nextD - dThis)/2;
+        cLenDesired = deltaR / tanA;
       }
     }
-    // C final = min(deseado, Lseg). Si a<=0, sin chaflán.
     let cLen = Math.min(Lseg, cLenDesired || 0);
 
-    // parte recta del tramo
+    // parte recta
     const straightL = Math.max(0, Lseg - cLen);
     if (straightL > 0){
       const w = dThis * scale;
@@ -79,11 +122,11 @@ export function renderSVG(svg, s){
       const hpx = straightL * scale;
       rect(left, y, w, hpx, fillCL, strokeAll);
       text(left + w + 10, y + hpx/2, `${dThis}×${straightL}`, '#bcd7f5', 12, 'start');
-      drawFlutesSegment(y, hpx, dThis); // hélices rectas
+      drawFlutesSegment(y, hpx, dThis);
       y += hpx;
     }
 
-    // chaflán como trapecio, si cLen>0
+    // chaflán como trapecio
     if (cLen > 0){
       const w1 = dThis * scale;
       const w2 = nextD * scale;
@@ -99,11 +142,8 @@ export function renderSVG(svg, s){
         'Z'
       ].join(' ');
       path(dPath, '#2a4f7a', fillCL, 2);
-
-      // etiqueta del chaflán con A validado y C ajustado
       text(Math.max(left1+w1, left2+w2) + 10, y + hpx/2, `${nextD} (∠${(st.a||0)}°)×${cLen.toFixed(2)}`, '#bcd7f5', 12, 'start');
 
-      // hélices tramo chaflán (clip trapezoidal, Ø medio)
       const dMid = (dThis + nextD)/2;
       drawFlutesSegment(y, hpx, dMid, {left1,w1,left2,w2,hpx});
       y += hpx;
@@ -126,12 +166,13 @@ export function renderSVG(svg, s){
     y += hpx;
   }
 
-  // SL
-  { const w = s.D * scale; const left = cx - w/2; rect(left, y, w, s.SL*scale, '#132a45', strokeAll); y += s.SL*scale; }
-  // OHL
-  { const w = s.AD * scale; const left = cx - w/2; rect(left, y, w, s.OHL*scale, '#0f2238', strokeAll); }
+  // === SL: bloque Ø=D ===
+  { const w = s.D * scale; const left = cx - w/2; rect(left, y, w, s.SL * scale, fillSL, strokeAll); y += s.SL * scale; }
 
-  // cotas
+  // === OHL: bloque Ø=AD ===
+  { const w = s.AD * scale; const left = cx - w/2; rect(left, y, w, s.OHL * scale, fillOHL, strokeAll); }
+
+  // === COTAS ===
   const maxDiaSteps = Math.max(s.D, ...(steps.map(st=>Math.max(0.01, st.d||s.D))));
   const maxW = Math.max(maxDiaSteps, s.AD) * scale;
   const leftGeom  = cx - maxW/2;
@@ -164,6 +205,40 @@ export function renderSVG(svg, s){
   dimH(yD,  cx - (s.D*scale)/2,  cx + (s.D*scale)/2,  `D ${fmt(s.D, s.unit)}`);
   const yAD = top + (s.CL + s.SL + s.OHL)*scale + 18;
   dimH(yAD, cx - (s.AD*scale)/2, cx + (s.AD*scale)/2, `AD ${fmt(s.AD, s.unit)}`);
+
+  // === PUNTA ENCIMA DEL CUERPO (AL FINAL) ===
+  {
+    const firstW = firstD * scale;
+    const left0  = cx - firstW/2;
+    const yTop   = top;
+
+    if (s.tip === 'flat') {
+      const L = mk('line');
+      L.setAttribute('x1', left0); L.setAttribute('y1', yTop);
+      L.setAttribute('x2', left0 + firstW); L.setAttribute('y2', yTop);
+      L.setAttribute('stroke', '#86e7ff'); L.setAttribute('stroke-width', 3);
+      L.setAttribute('stroke-linecap', 'round');
+      L.setAttribute('pointer-events','none');
+      svg.appendChild(L);
+    } else if (s.tip === 'ball') {
+      const r = firstW/2;
+      const P = mk('path');
+      P.setAttribute('d', `M ${cx - r} ${yTop + r} A ${r} ${r} 0 0 1 ${cx + r} ${yTop + r}`);
+      P.setAttribute('stroke', '#86e7ff'); P.setAttribute('fill','none');
+      P.setAttribute('stroke-width', 2.5); P.setAttribute('stroke-linejoin','round');
+      P.setAttribute('pointer-events','none');
+      svg.appendChild(P);
+    } else if (s.tip === 'chamfer') {
+      const off  = Math.tan((90 - s.chamferAngle)*Math.PI/180)*(firstW/2);
+      const hTip = Math.min(s.CL*scale, firstW*0.25);
+      const P = mk('path');
+      P.setAttribute('d', `M ${left0} ${yTop} L ${left0+off} ${yTop+hTip} L ${left0+firstW-off} ${yTop+hTip} L ${left0+firstW} ${yTop}`);
+      P.setAttribute('stroke', '#86e7ff'); P.setAttribute('fill','none');
+      P.setAttribute('stroke-width', 2.5); P.setAttribute('stroke-linejoin','round');
+      P.setAttribute('pointer-events','none');
+      svg.appendChild(P);
+    }
+  }
 
   // ---- flautas por tramo ----
   function drawFlutesSegment(yTop, hpx, dLocal, clipTrap){
