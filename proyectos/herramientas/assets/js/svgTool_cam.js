@@ -1,9 +1,8 @@
-// /proyectos/herramientas/assets/js/svgTool_cam.js
-// Dibujo tipo “tabla de herramienta”.
+// Dibujo tipo “tabla de herramienta” sin H.
 // - Ancho del cuerpo depende de D; ancho del zanco depende de AD.
-// - Hélice = líneas diagonales únicas: ángulo = helix, cantidad = Z.
-// - D y AD con cotas horizontales; TL, OHL, SL, CL, H con cotas verticales.
-// - Top extra cuando la punta es bola/chaflán para que no se recorte.
+// - TL = CL + SL + OHL (viene calculado).
+// - Hélice única: ángulo = helix, cantidad = Z.
+// - D/AD horizontales; TL/OHL/SL/CL verticales; todo centrado.
 
 import { materialColor } from './svgTool.js';
 
@@ -12,7 +11,7 @@ export function renderSVG(svg, s){
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.innerHTML = '';
 
-  // ---------- utils ----------
+  // -------- utils --------
   const mk = n => document.createElementNS('http://www.w3.org/2000/svg', n);
   const line = (x1,y1,x2,y2,st='#6ee7ff',w=2)=>{
     const e=mk('line'); e.setAttribute('x1',x1); e.setAttribute('y1',y1);
@@ -60,61 +59,69 @@ export function renderSVG(svg, s){
   const fmtUnit = (v, unit)=> unit==='inch' ? (v/25.4).toFixed(3)+' in' : v.toFixed(2)+' mm';
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 
-  // ---------- grid ----------
+  // -------- grid --------
   for(let y=margin; y<=H-margin; y+=10){
     const g=mk('line'); g.setAttribute('x1','0'); g.setAttribute('x2',String(W));
     g.setAttribute('y1',String(y)); g.setAttribute('y2',String(y));
     g.setAttribute('stroke','#1f2a3a'); g.setAttribute('opacity','0.15'); svg.appendChild(g);
   }
 
-  // ---------- layout y escala ----------
-  // aire extra arriba si punta es bola/chaflán
+  // -------- layout/escala --------
   const topExtra = s.tip==='ball' ? Math.max(16, s.D*0.15) : (s.tip==='chamfer' ? 8 : 0);
   const availableH = H - margin*2 - topExtra;
   const scale = availableH / s.TL;
 
-  // ancho dinámico por zona
+  // Anchos por zona, centrados
   const WIDTH_BASE = 700, DIAM_REF = 12;
   const widthFromDia = diaMm => clamp(WIDTH_BASE * (diaMm / DIAM_REF), 320, 900);
-  const WIDTH_BODY  = widthFromDia(s.D);   // CL, SL, H
+  const WIDTH_BODY  = widthFromDia(s.D);   // CL, SL
   const WIDTH_SHANK = widthFromDia(s.AD);  // OHL
 
-  const cx = 150;                       // borde izquierdo
-  const top = margin + topExtra;
-  const centerX_body  = cx + WIDTH_BODY/2;
-  const centerX_shank = cx + WIDTH_SHANK/2;
-  const xRight = cx + Math.max(WIDTH_BODY, WIDTH_SHANK) + 20;
+  const stageLeft  = margin;
+  const stageRight = W - margin;
+  const centerX_canvas = (stageLeft + stageRight) / 2;
 
-  // ---------- colores ----------
+  const leftBody   = centerX_canvas - WIDTH_BODY  / 2;
+  const leftShank  = centerX_canvas - WIDTH_SHANK / 2;
+  const top = margin + topExtra;
+
+  const centerX_body  = centerX_canvas;
+  const centerX_shank = centerX_canvas;
+
+  const maxRight = Math.max(leftBody + WIDTH_BODY, leftShank + WIDTH_SHANK);
+  const xRight   = Math.min(W - 10, maxRight + 20);
+
+  // -------- colores --------
   const fillBody   = '#0f2238';
   const fillShank  = '#0e2034';
   const strokeBody = '#2a4f7a';
   const accent     = materialColor(s.material)+'14';
 
-  // ---------- CL (cuerpo) ----------
+  // -------- dibujo: CL --------
   let y = top;
-  rect(cx, y, WIDTH_BODY, s.D*scale, fillBody, strokeBody);
+  rect(leftBody, y, WIDTH_BODY, s.D*scale, fillBody, strokeBody);
 
   // punta
-  if(s.tip==='flat'){ line(cx, y, cx+WIDTH_BODY, y, '#86e7ff', 3); }
-  else if(s.tip==='ball'){
+  if(s.tip==='flat'){
+    line(leftBody, y, leftBody+WIDTH_BODY, y, '#86e7ff', 3);
+  }else if(s.tip==='ball'){
     const r=(s.D*scale)/2; const p=mk('path');
-    p.setAttribute('d',`M ${cx} ${y+r} A ${r} ${r} 0 0 1 ${cx+WIDTH_BODY} ${y+r}`);
+    p.setAttribute('d',`M ${leftBody} ${y+r} A ${r} ${r} 0 0 1 ${leftBody+WIDTH_BODY} ${y+r}`);
     p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p);
   }else if(s.tip==='chamfer'){
     const off=Math.tan((90-s.chamferAngle)*Math.PI/180)*(s.D*scale/2);
     const hTip=Math.min(s.CL*scale, s.D*scale*0.25);
     const p=mk('path');
-    p.setAttribute('d',`M ${cx} ${y} L ${cx+off} ${y+hTip} L ${cx+WIDTH_BODY-off} ${y+hTip} L ${cx+WIDTH_BODY} ${y}`);
+    p.setAttribute('d',`M ${leftBody} ${y} L ${leftBody+off} ${y+hTip} L ${leftBody+WIDTH_BODY-off} ${y+hTip} L ${leftBody+WIDTH_BODY} ${y}`);
     p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p);
   }
 
-  // HÉLICE = líneas diagonales únicas (ángulo=helix, cantidad=Z), recortadas al alto D
+  // hélice: Z líneas a ángulo "helix", recortadas
   {
     const defs = mk('defs');
     const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
     const clipRect = mk('rect');
-    clipRect.setAttribute('x', cx);
+    clipRect.setAttribute('x', leftBody);
     clipRect.setAttribute('y', y);
     clipRect.setAttribute('width', WIDTH_BODY);
     clipRect.setAttribute('height', s.D * scale);
@@ -126,9 +133,8 @@ export function renderSVG(svg, s){
     const bandH = s.D * scale;
     const k = Math.tan(s.helix * Math.PI / 180); // pendiente
 
-    // posiciones iniciales distribuidas a lo ancho del cuerpo
     for(let i=0; i<Math.max(1,s.Z); i++){
-      const x0 = cx + ( (i + 0.5) * (WIDTH_BODY / s.Z) );
+      const x0 = leftBody + ( (i + 0.5) * (WIDTH_BODY / s.Z) );
       const x1 = x0 + k * bandH;
 
       const l = mk('line');
@@ -140,34 +146,29 @@ export function renderSVG(svg, s){
     }
   }
 
-  // avanza CL
+  // avanzar CL
   y += s.CL*scale;
 
-  // ---------- SL ----------
-  rect(cx, y, WIDTH_BODY, s.D*scale, fillBody, strokeBody);
+  // -------- SL --------
+  rect(leftBody, y, WIDTH_BODY, s.D*scale, fillBody, strokeBody);
   y += s.SL*scale;
 
-  // ---------- H (cuello) ----------
-  rect(cx, y, WIDTH_BODY, s.D*scale, fillBody, strokeBody);
-  y += s.H*scale;
-
-  // ---------- OHL (zanco) ----------
-  rect(cx, y, WIDTH_SHANK, s.AD*scale, fillShank, '#1f2a3a');
+  // -------- OHL (zanco) --------
+  rect(leftShank, y, WIDTH_SHANK, s.AD*scale, fillShank, '#1f2a3a');
 
   // overlay material
-  const ov=rect(cx, top, Math.max(WIDTH_BODY, WIDTH_SHANK), s.TL*scale, accent, 'none');
+  const leftMin = Math.min(leftBody, leftShank);
+  const ov=rect(leftMin, top, maxRight - leftMin, s.TL*scale, accent, 'none');
   ov.setAttribute('stroke','none');
 
-  // ---------- COTAS ----------
+  // -------- COTAS --------
   // Verticales
   dimV(xRight,         top, top + s.TL*scale,           `TL ${fmtUnit(s.TL, s.unit)}`);
-  const yOHL0 = top + (s.CL + s.SL + s.H)*scale;
+  const yOHL0 = top + (s.CL + s.SL)*scale;
   dimV(xRight - 40,    yOHL0, yOHL0 + s.OHL*scale,      `OHL ${fmtUnit(s.OHL, s.unit)}`);
   const ySL0  = top + s.CL*scale;
   dimV(xRight - 80,    ySL0,  ySL0 + s.SL*scale,        `SL ${fmtUnit(s.SL, s.unit)}`);
   dimV(xRight - 120,   top,   top + s.CL*scale,         `CL ${fmtUnit(s.CL, s.unit)}`);
-  const yH0   = top + (s.CL)*scale;
-  dimV(xRight - 160,   yH0,   yH0 + s.H*scale,          `H ${fmtUnit(s.H, s.unit)}`);
 
   // Horizontales (centradas en cada ancho)
   const halfD  = (s.D  * scale) / 2;
