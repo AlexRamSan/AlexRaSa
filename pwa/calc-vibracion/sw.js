@@ -1,21 +1,17 @@
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/pwa/calc-vibracion/sw.js');
-}
-// Simple app-shell cache
-const CACHE = "rpm-vib-v2";
+// App-shell cache con rutas absolutas
+const CACHE = "rpm-vib-v3";
 const ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./sw.js",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/icon-180.png",
-  "./icons/icon-167.png",
-  "./icons/icon-152.png",
-  "./icons/icon-120.png",
-  "./icons/maskable-512.png"
+  "/pwa/calc-vibracion/",
+  "/pwa/calc-vibracion/index.html",
+  "/pwa/calc-vibracion/manifest.json",
+  "/pwa/calc-vibracion/sw.js",
+  "/pwa/calc-vibracion/icons/icon-192.png",
+  "/pwa/calc-vibracion/icons/icon-512.png",
+  "/pwa/calc-vibracion/icons/icon-180.png",
+  "/pwa/calc-vibracion/icons/icon-167.png",
+  "/pwa/calc-vibracion/icons/icon-152.png",
+  "/pwa/calc-vibracion/icons/icon-120.png",
+  "/pwa/calc-vibracion/icons/maskable-512.png"
 ];
 
 self.addEventListener("install", e=>{
