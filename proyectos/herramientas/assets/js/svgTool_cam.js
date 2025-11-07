@@ -1,8 +1,9 @@
-// Vista alzada, sin callouts. Escalones en CL.
-// CL: escalonado por steps [{d,l}], sobrante con último d.
-// SL: bloque único con ancho D. OHL: bloque con ancho AD.
-// Hélices: Z exacto, largo = CL, inician D/2 izq y terminan D/2 der (inclinación contraria).
-// Cotas: derecha (CL, SL, OHL), izquierda (TL con texto a la izquierda), D arriba, AD abajo.
+// Vista alzada. Escalones en CL con etiquetas "D×L".
+// Hélices: siguen los escalones. Cada tramo usa su Ø para span:
+//   start = 1×Ø a la IZQ del tramo, end = 2×Ø a la DER del tramo.
+//   Cantidad de filos = round(Z * 1.5).
+// SL = bloque único con Ø = D. OHL = bloque único con Ø = AD.
+// Cotas: derecha (CL, SL, OHL), izquierda (TL), D arriba, AD abajo.
 
 export function renderSVG(svg, s){
   const W = 1100, H = 520, margin = 28;
@@ -56,7 +57,7 @@ export function renderSVG(svg, s){
   const dimVLeft = (x, y0, y1, label)=>{
     const yA = Math.min(y0,y1), yB = Math.max(y0,y1);
     arrow(x, yA, x, yB); line(x, yA, x+8, yA); line(x, yB, x+8, yB);
-    text(x-6, yA + (yB-yA)/2, label, '#9fb3c8', 12, 'end');
+    text(x-6, yA + (yB-yA)/2, label, '#9fb3c8', 12, 'end'); // texto a la izquierda
   };
   const dimH = (y, x0, x1, label)=>{
     const xA = Math.min(x0,x1), xB = Math.max(x0,x1);
@@ -93,82 +94,122 @@ export function renderSVG(svg, s){
     let curY = y;
     let lastD = s.D;
 
+    // Dibujar tramos CL
     for(const st of steps){
       if(rem <= 0) break;
       const segL = Math.max(0, Math.min(st.l || 0, rem));
       if(segL <= 0) continue;
-      const w = (st.d || lastD) * scale;
+
+      const dThis = Math.max(0.01, st.d || lastD);
+      const w = dThis * scale;
       const left = cx - w/2;
-      rect(left, curY, w, segL*scale, fillCL, strokeAll);
-      curY += segL*scale;
+      const hpx = segL * scale;
+
+      // tramo
+      rect(left, curY, w, hpx, fillCL, strokeAll);
+
+      // etiqueta D×L
+      text(left + w + 10, curY + hpx/2, `${dThis}×${st.l}`, '#bcd7f5', 12, 'start');
+
+      // --- HÉLICES para este tramo ---
+      {
+        const defs = mk('defs');
+        const clip = mk('clipPath'); clip.setAttribute('id', `clipCL_${curY}`);
+        const r = mk('rect'); r.setAttribute('x', left); r.setAttribute('y', curY);
+        r.setAttribute('width', w); r.setAttribute('height', hpx);
+        clip.appendChild(r); defs.appendChild(clip); svg.appendChild(defs);
+
+        const g = mk('g'); g.setAttribute('clip-path', `url(#clipCL_${curY})`); svg.appendChild(g);
+
+        const k = -Math.tan(s.helix*Math.PI/180);
+        const Zdraw = Math.max(1, Math.round(s.Z * 1.5)); // Z * 1.5
+        const spanStart = left - w;            // 1×Ø a la IZQ
+        const spanEnd   = left + w + 2*w;      // 2×Ø a la DER
+        const stepX     = (spanEnd - spanStart) / Zdraw;
+        const strokeW   = Math.max(1, Math.min(6, (dThis*scale)*0.08));
+
+        for(let i=0;i<Zdraw;i++){
+          const x0 = spanStart + (i+0.5)*stepX;
+          const x1 = x0 + k*hpx;
+          const l = mk('line');
+          l.setAttribute('x1',x0); l.setAttribute('y1',curY);
+          l.setAttribute('x2',x1); l.setAttribute('y2',curY + hpx);
+          l.setAttribute('stroke','#2aaae2'); l.setAttribute('stroke-width',strokeW);
+          l.setAttribute('stroke-linecap','round'); l.setAttribute('pointer-events','none');
+          g.appendChild(l);
+        }
+      }
+      // --- fin hélices tramo ---
+
+      curY += hpx;
       rem  -= segL;
-      lastD = st.d || lastD;
+      lastD = dThis;
     }
 
+    // sobrante de CL con último diámetro
     if(rem > 0){
-      const w = (lastD) * scale;
+      const dThis = lastD;
+      const w = dThis * scale;
       const left = cx - w/2;
-      rect(left, curY, w, rem*scale, fillCL, strokeAll);
-      curY += rem*scale;
+      const hpx = rem * scale;
+
+      rect(left, curY, w, hpx, fillCL, strokeAll);
+      text(left + w + 10, curY + hpx/2, `${dThis}×${rem}`, '#bcd7f5', 12, 'start');
+
+      // hélices tramo sobrante
+      {
+        const defs = mk('defs');
+        const clip = mk('clipPath'); clip.setAttribute('id', `clipCL_${curY}`);
+        const r = mk('rect'); r.setAttribute('x', left); r.setAttribute('y', curY);
+        r.setAttribute('width', w); r.setAttribute('height', hpx);
+        clip.appendChild(r); defs.appendChild(clip); svg.appendChild(defs);
+
+        const g = mk('g'); g.setAttribute('clip-path', `url(#clipCL_${curY})`); svg.appendChild(g);
+
+        const k = -Math.tan(s.helix*Math.PI/180);
+        const Zdraw = Math.max(1, Math.round(s.Z * 1.5));
+        const spanStart = left - w;           // 1×Ø izq
+        const spanEnd   = left + w + 2*w;     // 2×Ø der
+        const stepX     = (spanEnd - spanStart) / Zdraw;
+        const strokeW   = Math.max(1, Math.min(6, (dThis*scale)*0.08));
+
+        for(let i=0;i<Zdraw;i++){
+          const x0 = spanStart + (i+0.5)*stepX;
+          const x1 = x0 + k*hpx;
+          const l = mk('line');
+          l.setAttribute('x1',x0); l.setAttribute('y1',curY);
+          l.setAttribute('x2',x1); l.setAttribute('y2',curY + hpx);
+          l.setAttribute('stroke','#2aaae2'); l.setAttribute('stroke-width',strokeW);
+          l.setAttribute('stroke-linecap','round'); l.setAttribute('pointer-events','none');
+          g.appendChild(l);
+        }
+      }
+
+      curY += hpx;
       rem = 0;
     }
 
-    // Punta al inicio del CL
-    if(s.tip==='flat'){
-      // usa el primer tramo para ancho de línea superior
-      const firstW = (steps[0]?.d ?? s.D) * scale;
+    // Punta según primer tramo
+    if(s.tip){
+      const firstD = (Array.isArray(s.steps) && s.steps[0]?.d) ? s.steps[0].d : s.D;
+      const firstW = (firstD * scale);
       const left0 = cx - firstW/2;
-      line(left0, y, left0 + firstW, y, '#86e7ff', 3);
-    }else if(s.tip==='ball'){
-      const firstW = (steps[0]?.d ?? s.D) * scale;
-      const r = firstW/2; const p=mk('path');
-      p.setAttribute('d',`M ${cx - r} ${y + r} A ${r} ${r} 0 0 1 ${cx + r} ${y + r}`);
-      p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); p.setAttribute('pointer-events','none'); svg.appendChild(p);
-    }else if(s.tip==='chamfer'){
-      const firstD = (steps[0]?.d ?? s.D);
-      const firstW = firstD * scale;
-      const left0 = cx - firstW/2;
-      const off=Math.tan((90 - s.chamferAngle)*Math.PI/180)*(firstW/2);
-      const hTip=Math.min(s.CL*scale, firstW*0.25);
-      const p=mk('path');
-      p.setAttribute('d',`M ${left0} ${y} L ${left0+off} ${y+hTip} L ${left0+firstW-off} ${y+hTip} L ${left0+firstW} ${y}`);
-      p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); p.setAttribute('pointer-events','none'); svg.appendChild(p);
-    }
-
-    // Hélices sobre todo CL, distribuidas D/2 izq a D/2 der usando D base
-    {
-      const baseW = s.D * scale;
-      const leftBody = cx - baseW/2;
-      const defs = mk('defs');
-      const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
-      const r = mk('rect'); r.setAttribute('x', leftBody); r.setAttribute('y', y);
-      r.setAttribute('width', baseW); r.setAttribute('height', s.CL*scale);
-      clip.appendChild(r); defs.appendChild(clip); svg.appendChild(defs);
-
-      const g = mk('g'); g.setAttribute('clip-path','url(#clipCL)'); svg.appendChild(g);
-
-      const bandH = s.CL*scale;
-      const k = -Math.tan(s.helix*Math.PI/180);
-      const Z = Math.max(1, Math.round(s.Z));
-      const halfD = baseW/2;
-      const spanStart = leftBody - halfD;
-      const spanEnd   = leftBody + baseW + halfD;
-      const stepX     = (spanEnd - spanStart) / Z;
-      const strokeW   = Math.max(1, Math.min(6, (s.D*scale)*0.08));
-
-      for(let i=0;i<Z;i++){
-        const x0 = spanStart + (i+0.5)*stepX;
-        const x1 = x0 + k*bandH;
-        const l = mk('line');
-        l.setAttribute('x1',x0); l.setAttribute('y1',y);
-        l.setAttribute('x2',x1); l.setAttribute('y2',y+bandH);
-        l.setAttribute('stroke','#2aaae2'); l.setAttribute('stroke-width',strokeW);
-        l.setAttribute('stroke-linecap','round'); l.setAttribute('pointer-events','none');
-        g.appendChild(l);
+      if(s.tip==='flat'){
+        line(left0, y, left0 + firstW, y, '#86e7ff', 3);
+      }else if(s.tip==='ball'){
+        const r = firstW/2; const p=mk('path');
+        p.setAttribute('d',`M ${cx - r} ${y + r} A ${r} ${r} 0 0 1 ${cx + r} ${y + r}`);
+        p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); p.setAttribute('pointer-events','none'); svg.appendChild(p);
+      }else if(s.tip==='chamfer'){
+        const off=Math.tan((90 - s.chamferAngle)*Math.PI/180)*(firstW/2);
+        const hTip=Math.min(s.CL*scale, firstW*0.25);
+        const p=mk('path');
+        p.setAttribute('d',`M ${left0} ${y} L ${left0+off} ${y+hTip} L ${left0+firstW-off} ${y+hTip} L ${left0+firstW} ${y}`);
+        p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); p.setAttribute('pointer-events','none'); svg.appendChild(p);
       }
     }
 
-    y = curY; // fin de CL
+    y = top + s.CL*scale; // fin CL
   }
 
   // === SL: bloque único con ancho D ===
@@ -181,13 +222,14 @@ export function renderSVG(svg, s){
 
   // === OHL: bloque con ancho AD ===
   {
-    const w = s.AD * scale;
+    const w = s.OHL > 0 ? (s.AD * scale) : (s.AD * scale);
     const left = cx - w/2;
     rect(left, y, w, s.OHL * scale, fillOHL, strokeAll);
   }
 
   // === COTAS ===
-  const maxW = Math.max(s.D, s.AD) * scale;
+  const maxDiaSteps = Math.max(s.D, ...(Array.isArray(s.steps)?s.steps.map(st=>Math.max(0.01, st.d||s.D)):[]));
+  const maxW = Math.max(maxDiaSteps, s.AD) * scale;
   const leftGeom  = cx - maxW/2;
   const rightGeom = cx + maxW/2;
   const xRight = Math.min(W-10, rightGeom + 28);
@@ -200,7 +242,6 @@ export function renderSVG(svg, s){
   const topOHL = botSL;
   const botOHL = botSL + s.OHL*scale;
 
-  // guías a derecha
   line(rightGeom, topCL, xRight, topCL, '#6ee7ff', 1.5);
   line(rightGeom, botCL, xRight, botCL, '#6ee7ff', 1.5);
   dimVRight(xRight, topCL, botCL, `CL ${fmt(s.CL, s.unit)}`);
@@ -213,10 +254,8 @@ export function renderSVG(svg, s){
   line(rightGeom, botOHL, xRight, botOHL, '#6ee7ff', 1.5);
   dimVRight(xRight, topOHL, botOHL, `OHL ${fmt(s.OHL, s.unit)}`);
 
-  // TL izquierda con texto a la izquierda
   dimVLeft(xLeft, top, top + (s.CL + s.SL + s.OHL)*scale, `TL ${fmt(s.CL + s.SL + s.OHL, s.unit)}`);
 
-  // Horizontales D arriba y AD abajo
   const yD  = top - 12;
   dimH(yD,  cx - (s.D*scale)/2,  cx + (s.D*scale)/2,  `D ${fmt(s.D, s.unit)}`);
   const yAD = top + (s.CL + s.SL + s.OHL)*scale + 18;
