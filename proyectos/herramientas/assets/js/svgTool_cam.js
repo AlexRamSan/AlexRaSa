@@ -2,6 +2,7 @@
 // Hélices siguen cada tramo con Ø local. Inician 1×Ø izq y terminan 2×Ø der.
 // Nº de filos = round(Z*1.5). Cotas: der (CL, SL, OHL), izq (TL), D arriba, AD abajo.
 // Punta (flat/ball/chamfer) se dibuja al final para quedar por encima del cuerpo.
+// Cotas derechas se empujan dinámicamente según el ancho de las etiquetas de escalones.
 
 export function renderSVG(svg, s){
   const W = 1100, H = 520, margin = 28;
@@ -172,12 +173,35 @@ export function renderSVG(svg, s){
   // === OHL: bloque Ø=AD ===
   { const w = s.AD * scale; const left = cx - w/2; rect(left, y, w, s.OHL * scale, fillOHL, strokeAll); }
 
-  // === COTAS ===
+  // === COTAS (con padding dinámico a la derecha) ===
   const maxDiaSteps = Math.max(s.D, ...(steps.map(st=>Math.max(0.01, st.d||s.D))));
   const maxW = Math.max(maxDiaSteps, s.AD) * scale;
   const leftGeom  = cx - maxW/2;
   const rightGeom = cx + maxW/2;
-  const xRight = Math.min(W-10, rightGeom + 28);
+
+  // Estimar ancho de etiquetas de escalones y reservar gutter
+  function estCLen(st, nextD){
+    if (!(st && st.a > 0 && nextD != null)) return 0;
+    const aRad = st.a * Math.PI/180;
+    const tanA = Math.tan(aRad);
+    if (tanA <= 1e-6) return 0;
+    const deltaR = Math.abs((nextD - (st.d ?? s.D)))/2;
+    return Math.min(st.l || 0, deltaR / tanA);
+  }
+  const stepLabelStrs = steps.map((st, i) => {
+    const d = (st?.d ?? s.D);
+    const l = (st?.l ?? 0);
+    const nextD = (i < steps.length-1) ? (steps[i+1]?.d ?? d) : d;
+    const c = estCLen(st, nextD);
+    const base = `${d}×${l}`;
+    if (c > 0) return `${base}  (∠${(st.a||0)}°)×${c.toFixed(2)}`;
+    return base;
+  });
+  const maxChars = Math.max(0, ...stepLabelStrs.map(t => String(t).length));
+  const labelPadPx = maxChars * 7 + 20;   // ≈7px por carácter + 20px margen
+
+  const basePad = 28;
+  const xRight = Math.min(W - 10, rightGeom + basePad + labelPadPx);
   const xLeft  = Math.max(10, leftGeom  - 28);
 
   const topCL  = top;
