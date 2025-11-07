@@ -1,5 +1,5 @@
-// App shell cache con rutas absolutas
-const CACHE = "rpm-vib-v4"; // sube versión al actualizar
+// Cache básico para app-shell
+const CACHE = "rpm-vib-v1";
 const ASSETS = [
   "/pwa/calc-vibracion/",
   "/pwa/calc-vibracion/index.html",
@@ -7,10 +7,6 @@ const ASSETS = [
   "/pwa/calc-vibracion/sw.js",
   "/pwa/calc-vibracion/icons/icon-192.png",
   "/pwa/calc-vibracion/icons/icon-512.png",
-  "/pwa/calc-vibracion/icons/icon-180.png",
-  "/pwa/calc-vibracion/icons/icon-167.png",
-  "/pwa/calc-vibracion/icons/icon-152.png",
-  "/pwa/calc-vibracion/icons/icon-120.png",
   "/pwa/calc-vibracion/icons/maskable-512.png"
 ];
 
@@ -25,7 +21,5 @@ self.addEventListener("activate", e=>{
 });
 
 self.addEventListener("fetch", e=>{
-  e.respondWith(
-    caches.match(e.request).then(r=> r || fetch(e.request))
-  );
+  e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request)));
 });
