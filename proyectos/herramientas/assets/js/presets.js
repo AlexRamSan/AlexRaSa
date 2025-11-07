@@ -3,7 +3,7 @@ export const MATERIALS = [
   { id:'carbide', name:'Carburo', color:'#87f7ff' },
   { id:'hss',     name:'HSS',     color:'#a7b7ff' },
   { id:'pcd',     name:'PCD',     color:'#ffe38f' },
-  { id:'cbn',     name:'CBN',     color:'#ffb3c1' },
+  { id:'cbn',     name:'CBN',     color:'#ffb3c1' }
 ];
 
 export const PRESETS = {
