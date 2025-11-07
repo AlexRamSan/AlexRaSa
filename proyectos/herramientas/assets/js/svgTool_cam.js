@@ -125,8 +125,8 @@ export function renderSVG(svg, s){
   const halfD = (s.D * scale) / 2;
 
   // rango completo: desde D/2 a la IZQ hasta D/2 a la DER del cuerpo
-  const spanStart = leftBody - 2D;
-  const spanEnd   = leftBody + WIDTH_BODY + 2D;
+  const spanStart = leftBody - WIDTH_BODY;
+  const spanEnd   = leftBody + WIDTH_BODY + WIDTH_BODY;
   const stepX     = (spanEnd - spanStart) / Z;      // separación uniforme
 
   const strokeW = Math.max(1, Math.min(6, (s.D * scale) * 0.08));
