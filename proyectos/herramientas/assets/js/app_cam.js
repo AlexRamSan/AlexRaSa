@@ -1,6 +1,5 @@
-// app_cam.js — inicializa UI, parsea escalones (en CL) y renderiza
+// app_cam.js — inicializa UI, parsea escalones (en CL) con chaflán opcional y renderiza
 import { renderSVG } from './svgTool_cam.js';
-import { materialColor } from './svgTool.js';
 
 export function initApp(){
   const $ = s => document.querySelector(s);
@@ -18,7 +17,7 @@ export function initApp(){
     helix: $('#helix'),
     tip:   $('#tip'),
     cham:  $('#chamferAngle'),
-    steps: $('#steps'),
+    steps: $('#steps'),         // formato: DxL[,DxLxAxC,...]
     material: $('#material'),
     btnJson: $('#btnJson'),
     btnSvg:  $('#btnSvg'),
@@ -26,14 +25,17 @@ export function initApp(){
     btnShare:$('#btnShare'),
   };
 
+  // Materiales mínimos para no romper selects
   const MATERIALS = [
     { id:'carbide', label:'Carbide' },
     { id:'hss',     label:'HSS' },
     { id:'pcd',     label:'PCD' },
     { id:'cbn',     label:'CBN' },
   ];
-  el.material.innerHTML = MATERIALS.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
-  el.material.value = 'carbide';
+  if (el.material) {
+    el.material.innerHTML = MATERIALS.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
+    el.material.value = 'carbide';
+  }
 
   const s = {
     unit: 'mm',
@@ -41,13 +43,12 @@ export function initApp(){
     TL: 100, OHL: 60, SL: 10, CL: 30,
     Z: 4, helix: 35, tip: 'flat', chamferAngle: 45,
     material: 'carbide',
-    steps: [], // [{d,l}] en CL
-    // Opcionales para “filos” si quieres usarlos:
-    // flutePhase: 0, fluteMarginPx: 6, fluteWidthPx: 3, occludeBack: true,
+    steps: [], // [{d,l,a?,c?}] en CL; a=ángulo°, c=largo chaflán
   };
 
   const toNum = v => Number.isFinite(+v) ? +v : 0;
 
+  // "20x15" -> {d:20,l:15},  "20x15x30x4" -> {d:20,l:15,a:30,c:4}
   function parseSteps(str){
     if(!str) return [];
     return str
@@ -55,13 +56,19 @@ export function initApp(){
       .map(t => t.trim())
       .filter(Boolean)
       .map(pair => {
-        const [d,l] = pair.toLowerCase().split('x').map(x=>toNum(x));
-        return { d: Math.max(0.01,d), l: Math.max(0,l) };
+        const parts = pair.toLowerCase().split('x').map(x=>toNum(x));
+        const [d,l,a,c] = parts;
+        const obj = { d: Math.max(0.01, d||0), l: Math.max(0, l||0) };
+        if (parts.length >= 4) {
+          obj.a = Math.max(0, a||0);
+          obj.c = Math.max(0, c||0);
+        }
+        return obj;
       });
   }
 
   function clampGeometry(){
-    // TL siempre = CL + SL + OHL
+    // TL = CL + SL + OHL
     s.CL  = Math.max(0, s.CL);
     s.SL  = Math.max(0, s.SL);
     s.OHL = Math.max(0, s.OHL);
@@ -72,9 +79,18 @@ export function initApp(){
     if(Array.isArray(s.steps) && s.steps.length){
       let rem = s.CL;
       s.steps = s.steps.map(st => {
-        const l = Math.min(st.l, Math.max(0, rem));
-        rem = Math.max(0, rem - l);
-        return { d: Math.max(0.01, st.d), l };
+        const segL = Math.min(st.l, Math.max(0, rem));
+        rem = Math.max(0, rem - segL);
+        const out = {
+          d: Math.max(0.01, st.d || s.D),
+          l: segL
+        };
+        if (st.a != null && st.c != null) {
+          out.a = Math.max(0, st.a);
+          // chaflán no puede exceder el tramo
+          out.c = Math.max(0, Math.min(st.c, segL));
+        }
+        return out;
       });
     }
 
@@ -93,8 +109,9 @@ export function initApp(){
     s.helix = toNum(el.helix.value);
     s.tip   = el.tip.value;
     s.chamferAngle = toNum(el.cham.value);
-    s.material = el.material.value;
-    s.steps = parseSteps(el.steps.value); // EN CL
+    if (el.material) s.material = el.material.value;
+
+    s.steps = parseSteps(el.steps.value); // en CL
     clampGeometry();
   }
 
@@ -108,7 +125,7 @@ export function initApp(){
     el.helix.value = s.helix;
     el.tip.value   = s.tip;
     el.cham.value  = s.chamferAngle;
-    el.material.value = s.material;
+    if (el.material) el.material.value = s.material;
     el.TL.value = s.TL.toFixed(2);
   }
 
@@ -126,8 +143,7 @@ export function initApp(){
       tip: s.tip,
       chamferAngle: s.chamferAngle,
       material: s.material,
-      steps: s.steps, // pasos en CL
-      // flutePhase: 0, fluteMarginPx: 6, fluteWidthPx: 3, occludeBack: true,
+      steps: s.steps, // [{d,l,a?,c?}] en CL
     });
   }
 
@@ -135,16 +151,16 @@ export function initApp(){
 
   el.unit.forEach(r => r.addEventListener('change', update));
   [el.D, el.AD, el.OHL, el.SL, el.CL, el.Z, el.helix, el.tip, el.cham, el.steps, el.material]
-    .forEach(inp => inp.addEventListener('input', update));
+    .forEach(inp => inp && inp.addEventListener('input', update));
 
-  el.btnJson.addEventListener('click', ()=>{
+  el.btnJson?.addEventListener('click', ()=>{
     readUI();
     const payload = JSON.stringify(s, null, 2);
     navigator.clipboard?.writeText(payload).catch(()=>{});
     alert('Copiado JSON al portapapeles.');
   });
 
-  el.btnSvg.addEventListener('click', ()=>{
+  el.btnSvg?.addEventListener('click', ()=>{
     const blob = new Blob([view.outerHTML], {type:'image/svg+xml'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -153,7 +169,7 @@ export function initApp(){
     URL.revokeObjectURL(a.href);
   });
 
-  el.btnShare.addEventListener('click', ()=>{
+  el.btnShare?.addEventListener('click', ()=>{
     readUI();
     const q = new URLSearchParams({
       unit: s.unit,
@@ -167,10 +183,6 @@ export function initApp(){
     const url = `${location.origin}/proyectos/herramientas/?${q}`;
     navigator.clipboard?.writeText(url).catch(()=>{});
     alert('URL copiada.');
-  });
-
-  el.btnDxf.addEventListener('click', ()=>{
-    alert('DXF pendiente. Definir exportador de perfil 2D.');
   });
 
   (function loadFromQuery(){
@@ -187,8 +199,8 @@ export function initApp(){
     if(p.has('chamfer')) s.chamferAngle = toNum(p.get('chamfer'));
     if(p.has('mat')) s.material = p.get('mat');
     if(p.has('steps')){
-      el.steps.value = p.get('steps');
-      s.steps = parseSteps(el.steps.value); // en CL
+      el.steps.value = p.get('steps'); // mantiene el texto original
+      s.steps = parseSteps(el.steps.value);
     }
     clampGeometry();
     writeUI();
