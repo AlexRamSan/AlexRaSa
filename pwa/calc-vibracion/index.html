@@ -12,14 +12,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-<!-- iOS usa estos para el webclip -->
+<!-- iOS webclip -->
 <link rel="apple-touch-icon" sizes="120x120" href="/pwa/calc-vibracion/icons/icon-120.png">
 <link rel="apple-touch-icon" sizes="152x152" href="/pwa/calc-vibracion/icons/icon-152.png">
 <link rel="apple-touch-icon" sizes="167x167" href="/pwa/calc-vibracion/icons/icon-167.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/pwa/calc-vibracion/icons/icon-180.png">
 <meta name="apple-mobile-web-app-title" content="RPM & Avance">
 
-<!-- Favicon de pestaña (opcional) -->
+<!-- Favicon pestaña -->
 <link rel="icon" type="image/png" sizes="192x192" href="/pwa/calc-vibracion/icons/icon-192.png">
 
 <style>
@@ -35,18 +35,33 @@
       radial-gradient(900px 500px at 110% 0%, #7c3aed1a, transparent 60%),
       linear-gradient(180deg,var(--bg),var(--bg2));
     min-height:100dvh;
+    position:relative;
+    overflow-x:hidden;
   }
-  .hdr{max-width:960px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:12px}
+  /* Marca de agua difuminada del logo */
+  body::after{
+    content:"";
+    position:fixed; inset:auto -120px -120px auto; /* esquina inferior derecha */
+    width:min(42vw,520px); aspect-ratio:1/1;
+    background:url("/pwa/calc-vibracion/icons/icon-512.png") center/contain no-repeat;
+    filter:blur(28px);
+    opacity:.18;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .hdr{max-width:960px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:12px;position:relative;z-index:1}
   .brand{
-    width:44px;height:44px;border-radius:14px;
+    width:64px;height:64px;border-radius:18px;
     background:linear-gradient(135deg,var(--accent-teal),var(--accent-blue));
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 6px 20px #0ea5e940, inset 0 0 12px #ffffff10;
+    box-shadow:0 10px 26px #0ea5e940, inset 0 0 12px #ffffff10;
     overflow:hidden;
   }
-  .brand img{width:28px;height:28px;display:block}
-  .title{font-size:1.1rem;margin:0}
-  .wrap{max-width:960px;margin:auto;padding:0 24px 24px}
+  .brand img{width:56px;height:56px;display:block}
+
+  .title{font-size:1.2rem;margin:0}
+  .wrap{max-width:960px;margin:auto;padding:0 24px 24px;position:relative;z-index:1}
   .card{
     background:linear-gradient(180deg,#0f172a,#0e1728);
     border:1px solid var(--border);border-radius:16px;padding:18px;
@@ -110,15 +125,15 @@
 <body>
 <header class="hdr">
   <div class="brand" aria-hidden="true">
-    <!-- Logo visible en la UI -->
-    <img src="/pwa/calc-vibracion/icons/icon-180.png"="Logo">
+    <!-- Logo visible -->
+    <img src="/pwa/calc-vibracion/icons/icon-180.png" alt="Logo">
   </div>
   <h1 class="title">Calculadora RPM & Avance</h1>
 </header>
 
 <main class="wrap">
   <section class="card">
-    <p>Selecciona material → ingresa herramienta → fija <b>ae%</b> → obtén <b>RPM</b>/<b>Vf</b> mínimos, máximos y óptimos según <b>Vc</b>, <b>fz</b> y banda <b>TPF</b>.</p>
+    <p>Selecciona material → ingresa herramienta → fija <b>ae%</b> → obtén <b>RPM</b> y <b>Vf</b> mínimos, máximos y óptimos, considerando <b>Vc</b>, <b>fz</b> y banda <b>TPF</b>.</p>
 
     <div class="grid grid3">
       <div>
@@ -291,7 +306,6 @@
       </div>
     `;
 
-    // Resultados
     $("rpmMin").textContent = res.rpm_min_vc;
     $("rpmMaxOut").textContent = res.rpm_max_vc;
     $("rpmOpt").textContent = res.rpm_opt;
@@ -299,7 +313,6 @@
     $("vfMax").textContent = `${fmt(res.Vf_max,1)} mm/min`;
     $("vfOpt").textContent = `${fmt(res.Vf_opt,1)} mm/min`;
 
-    // Vibración
     $("tpfVal").textContent = `${fmt(res.TPF,1)} Hz`;
     $("bandVal").textContent = `${res.m.hz_min}–${res.m.hz_max} Hz`;
     const chip = $("riskChip");
