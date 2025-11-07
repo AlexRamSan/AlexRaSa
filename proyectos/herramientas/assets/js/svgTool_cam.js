@@ -1,10 +1,10 @@
 // Vista alzada.
-// Implementa:
-// - Z hélices = exactamente lo pedido, largo = CL.
-// - Inclinación contraria. Inician D/2 a la izquierda y TERMINAN D/2 a la derecha.
-// - Zonas: CL, SL, OHL (rectángulos en tonos distintos). Anchos: CL usa D; SL/OHL usan AD.
+// - Hélices = Z exacto, largo = CL, inclinación contraria.
+// - Hélices inician D/2 a la izquierda y terminan D/2 a la derecha.
+// - Zonas del modelo: CL, SL, OHL (solo para el cuerpo; NO hay callouts sobre el modelo).
+// - Callouts AZULES SOLO en la columna izquierda: alto = CL/SL/OHL; ancho = D (CL) y AD (SL/OHL);
+//   centrados y apilados (sin encimar).
 // - Cotas: derecha (CL, SL, OHL) alineadas; izquierda (TL); arriba (D); abajo (AD).
-// - Callouts azules a la izquierda: alturas = CL/SL/OHL; anchos: CL = D, SL/OHL = AD; centrados y apilados.
 
 import { materialColor } from './svgTool.js';
 
@@ -21,6 +21,7 @@ export function renderSVG(svg, s){
     e.setAttribute('x2',x2); e.setAttribute('y2',y2);
     e.setAttribute('stroke',st); e.setAttribute('stroke-width',w);
     e.setAttribute('stroke-linecap','round');
+    e.setAttribute('pointer-events','none');
     svg.appendChild(e); return e;
   };
   const rect = (x,y,w,h,fill,st='#2a4f7a')=>{
@@ -29,12 +30,14 @@ export function renderSVG(svg, s){
     e.setAttribute('width',w); e.setAttribute('height',h);
     e.setAttribute('rx',8); e.setAttribute('fill',fill);
     if(st) e.setAttribute('stroke',st);
+    e.setAttribute('pointer-events','none');
     svg.appendChild(e); return e;
   };
   const text = (x,y,t,fill='#9fb3c8',fs=12)=>{
     const e=mk('text');
     e.setAttribute('x',x); e.setAttribute('y',y);
     e.setAttribute('fill',fill); e.setAttribute('font-size',fs);
+    e.setAttribute('pointer-events','none');
     e.textContent=t; svg.appendChild(e); return e;
   };
   const arrow = (x1,y1,x2,y2,st='#6ee7ff',w=2)=>{
@@ -47,7 +50,8 @@ export function renderSVG(svg, s){
       const xB = x - sz*Math.cos(a) - (sz*0.6)*Math.cos(a+Math.PI/2);
       const yB = y - sz*Math.sin(a) - (sz*0.6)*Math.sin(a+Math.PI/2);
       p.setAttribute('d',`M ${x} ${y} L ${xA} ${yA} L ${xB} ${yB} Z`);
-      p.setAttribute('fill',st); svg.appendChild(p);
+      p.setAttribute('fill',st); p.setAttribute('pointer-events','none');
+      svg.appendChild(p);
     };
     tip(x1,y1,ang+Math.PI); tip(x2,y2,ang); return l;
   };
@@ -66,7 +70,7 @@ export function renderSVG(svg, s){
   const fmtUnit = (v, unit)=> unit==='inch' ? (v/25.4).toFixed(3)+' in' : v.toFixed(2)+' mm';
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 
-  // ---------- grid suave ----------
+  // ---------- fondo/grid ----------
   for(let gy=margin; gy<=H-margin; gy+=10){
     const g=mk('line');
     g.setAttribute('x1','0'); g.setAttribute('x2',String(W));
@@ -75,16 +79,14 @@ export function renderSVG(svg, s){
     svg.appendChild(g);
   }
 
-  // ---------- layout / escala ----------
+  // ---------- escala y layout ----------
   const topExtra = s.tip==='ball' ? Math.max(16, s.D*0.15) : (s.tip==='chamfer' ? 8 : 0);
   const availableH = H - margin*2 - topExtra;
   const scale = availableH / s.TL;
 
-  // Anchos exactos (coinciden con D/AD)
-  const WIDTH_BODY  = s.D  * scale;      // CL y SL
-  const WIDTH_SHANK = s.AD * scale;      // OHL
+  const WIDTH_BODY  = s.D  * scale;      // cuerpo CL/SL
+  const WIDTH_SHANK = s.AD * scale;      // zanco OHL
 
-  // Centrados
   const cxCanvas = (margin + (W - margin)) / 2;
   const leftBody  = cxCanvas - WIDTH_BODY  / 2;
   const leftShank = cxCanvas - WIDTH_SHANK / 2;
@@ -93,11 +95,10 @@ export function renderSVG(svg, s){
   const centerX_body  = cxCanvas;
   const centerX_shank = cxCanvas;
 
-  // límites para cotas fuera
   const rightGeom = Math.max(leftBody + WIDTH_BODY, leftShank + WIDTH_SHANK);
   const leftGeom  = Math.min(leftBody, leftShank);
-  const xRight    = Math.min(W - 10, rightGeom + 28); // columna derecha de cotas
-  const xLeft     = Math.max(10, leftGeom  - 28);     // cota TL izquierda
+  const xRight    = Math.min(W - 10, rightGeom + 28);
+  const xLeft     = Math.max(10, leftGeom  - 28);
 
   // ---------- colores ----------
   const fillCL  = '#17314d';
@@ -105,7 +106,7 @@ export function renderSVG(svg, s){
   const fillOHL = '#0f2238';
   const strokeAll = '#2a4f7a';
 
-  // ---------- CL ----------
+  // ---------- modelo: CL ----------
   let y = top;
   rect(leftBody, y, WIDTH_BODY, s.D*scale, fillCL, strokeAll);
 
@@ -115,16 +116,18 @@ export function renderSVG(svg, s){
   }else if(s.tip==='ball'){
     const r=(s.D*scale)/2; const p=mk('path');
     p.setAttribute('d',`M ${leftBody} ${y+r} A ${r} ${r} 0 0 1 ${leftBody+WIDTH_BODY} ${y+r}`);
-    p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p);
+    p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
   }else if(s.tip==='chamfer'){
     const off=Math.tan((90-s.chamferAngle)*Math.PI/180)*(s.D*scale/2);
     const hTip=Math.min(s.CL*scale, s.D*scale*0.25);
     const p=mk('path');
     p.setAttribute('d',`M ${leftBody} ${y} L ${leftBody+off} ${y+hTip} L ${leftBody+WIDTH_BODY-off} ${y+hTip} L ${leftBody+WIDTH_BODY} ${y}`);
-    p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p);
+    p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); p.setAttribute('pointer-events','none');
+    svg.appendChild(p);
   }
 
-  // ---------- HÉLICE / FILOS ----------
+  // ---------- hélices sobre CL ----------
   {
     const defs = mk('defs');
     const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
@@ -132,28 +135,25 @@ export function renderSVG(svg, s){
     clipRect.setAttribute('x', leftBody);
     clipRect.setAttribute('y', y);
     clipRect.setAttribute('width', WIDTH_BODY);
-    clipRect.setAttribute('height', s.CL * scale); // solo sobre CL
+    clipRect.setAttribute('height', s.CL * scale);
     clip.appendChild(clipRect); defs.appendChild(clip); svg.appendChild(defs);
 
     const g = mk('g'); g.setAttribute('clip-path','url(#clipCL)'); svg.appendChild(g);
 
     const sw      = clamp((s.D * scale) * 0.08, 1, 6);
     const bandH   = s.CL * scale;
-    const k       = -Math.tan(s.helix * Math.PI / 180); // inclinación contraria
-    const Zvis    = Math.max(1, Math.round(s.Z));       // TODAS
+    const k       = -Math.tan(s.helix * Math.PI / 180); // sentido contrario
+    const Zvis    = Math.max(1, Math.round(s.Z));
     const halfDpx = (s.D * scale) / 2;
 
     for (let i = 0; i < Zvis; i++) {
-      // arranque D/2 a la izquierda del cuerpo
-      const x0 = (leftBody - halfDpx) + ((i + 0.5) * (WIDTH_BODY / Zvis));
-      // término D/2 a la derecha del cuerpo
-      const x1 = x0 + k * bandH + halfDpx;
-
+      const x0 = (leftBody - halfDpx) + ((i + 0.5) * (WIDTH_BODY / Zvis)); // inicia D/2 a la izq
+      const x1 = x0 + k * bandH + halfDpx;                                  // termina D/2 a la der
       const l = mk('line');
       l.setAttribute('x1', x0); l.setAttribute('y1', y);
       l.setAttribute('x2', x1); l.setAttribute('y2', y + bandH);
       l.setAttribute('stroke', '#2aaae2'); l.setAttribute('stroke-width', sw);
-      l.setAttribute('stroke-linecap', 'round');
+      l.setAttribute('stroke-linecap', 'round'); l.setAttribute('pointer-events','none');
       g.appendChild(l);
     }
   }
@@ -168,7 +168,7 @@ export function renderSVG(svg, s){
   // ---------- OHL ----------
   rect(leftShank, y, WIDTH_SHANK, s.AD*scale, fillOHL, strokeAll);
 
-  // ---------- CALLOUTS IZQUIERDA (alturas ligadas a CL/SL/OHL; anchos por D/AD) ----------
+  // ---------- CALLOUTS IZQUIERDA (únicos que quedan) ----------
   {
     const leftMost   = Math.min(leftBody, leftShank);
     const colLeft    = xLeft + 6;
@@ -176,38 +176,34 @@ export function renderSVG(svg, s){
     const colCenter  = (colLeft + colRight) / 2;
     const colAvail   = Math.max(24, colRight - colLeft);
 
-    const wCL_req  = s.D  * scale;                  // CL sigue D
-    const wADS_req = s.AD * scale;                  // SL/OHL siguen AD
-    const wCL  = Math.min(wCL_req,  colAvail);
-    const wADS = Math.min(wADS_req, colAvail);
+    const wCL  = Math.min(s.D  * scale, colAvail); // CL -> D
+    const wADS = Math.min(s.AD * scale, colAvail); // SL/OHL -> AD
 
     const yCL  = top;
     const ySL0 = top + s.CL * scale;
     const yOHL0= top + (s.CL + s.SL) * scale;
 
-    const callStroke = '#2a4f7a';
-    rect(colCenter - wCL/2,  yCL,   wCL,  s.CL  * scale, '#18324e', callStroke);
-    rect(colCenter - wADS/2, ySL0,  wADS, s.SL  * scale, '#142b46', callStroke);
-    rect(colCenter - wADS/2, yOHL0, wADS, s.OHL * scale, '#10223a', callStroke);
+    const sStroke = '#2a4f7a';
+    // Solo estos tres callouts (columna izquierda)
+    rect(colCenter - wCL/2,  yCL,   wCL,  s.CL  * scale, '#18324e', sStroke); // CL
+    rect(colCenter - wADS/2, ySL0,  wADS, s.SL  * scale, '#142b46', sStroke); // SL
+    rect(colCenter - wADS/2, yOHL0, wADS, s.OHL * scale, '#10223a', sStroke); // OHL
   }
 
   // ---------- COTAS ----------
-  // Derecha: CL, SL, OHL con guías desde el modelo
-  const rightBody = leftBody + WIDTH_BODY;
+  const rightBody  = leftBody  + WIDTH_BODY;
   const rightShank = leftShank + WIDTH_SHANK;
 
-  // CL
+  // Derecha: CL, SL, OHL
   line(rightBody, top, xRight, top, '#6ee7ff', 1.5);
   line(rightBody, top + s.CL*scale, xRight, top + s.CL*scale, '#6ee7ff', 1.5);
   dimV(xRight, top, top + s.CL*scale, `CL ${fmtUnit(s.CL, s.unit)}`);
 
-  // SL
   const ySL0 = top + s.CL*scale;
   line(rightBody, ySL0, xRight, ySL0, '#6ee7ff', 1.5);
   line(rightBody, ySL0 + s.SL*scale, xRight, ySL0 + s.SL*scale, '#6ee7ff', 1.5);
   dimV(xRight, ySL0, ySL0 + s.SL*scale, `SL ${fmtUnit(s.SL, s.unit)}`);
 
-  // OHL
   const yOHL0 = ySL0 + s.SL*scale;
   line(rightShank, yOHL0, xRight, yOHL0, '#6ee7ff', 1.5);
   line(rightShank, yOHL0 + s.OHL*scale, xRight, yOHL0 + s.OHL*scale, '#6ee7ff', 1.5);
@@ -219,11 +215,11 @@ export function renderSVG(svg, s){
   line(xLeft, top + s.TL*scale, leftMost, top + s.TL*scale, '#6ee7ff', 1.5);
   dimV(xLeft, top, top + s.TL*scale, `TL ${fmtUnit(s.TL, s.unit)}`);
 
-  // Horizontales: D arriba y AD abajo
+  // Horizontales D y AD
   const halfD  = (s.D  * scale) / 2;
   const halfAD = (s.AD * scale) / 2;
-  const yD  = top - 12;                      // arriba del modelo
+  const yD  = top - 12;
   dimH(yD,  centerX_body  - halfD,  centerX_body  + halfD,  `D ${fmtUnit(s.D, s.unit)}`);
-  const yAD = top + s.TL*scale + 18;         // abajo del modelo
+  const yAD = top + s.TL*scale + 18;
   dimH(yAD, centerX_shank - halfAD, centerX_shank + halfAD, `AD ${fmtUnit(s.AD, s.unit)}`);
 }
