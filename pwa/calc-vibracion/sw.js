@@ -1,10 +1,14 @@
-// Cache básico para app-shell
-const CACHE = "rpm-vib-v3";
+// Cache básico para app-shell (sube versión para forzar recarga)
+const CACHE = "rpm-vib-v5";
 const ASSETS = [
   "/pwa/calc-vibracion/",
   "/pwa/calc-vibracion/index.html",
   "/pwa/calc-vibracion/manifest.json",
   "/pwa/calc-vibracion/sw.js",
+  "/pwa/calc-vibracion/icons/icon-120.png",
+  "/pwa/calc-vibracion/icons/icon-152.png",
+  "/pwa/calc-vibracion/icons/icon-167.png",
+  "/pwa/calc-vibracion/icons/icon-180.png",
   "/pwa/calc-vibracion/icons/icon-192.png",
   "/pwa/calc-vibracion/icons/icon-512.png",
   "/pwa/calc-vibracion/icons/maskable-512.png"
