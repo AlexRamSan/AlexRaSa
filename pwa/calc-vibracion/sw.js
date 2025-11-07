@@ -1,3 +1,7 @@
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/pwa/calc-vibracion/sw.js');
+}
 // Simple app-shell cache
 const CACHE = "rpm-vib-v2";
 const ASSETS = [
