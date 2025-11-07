@@ -19,7 +19,7 @@ export function exportDXF(state){
   // Cuello
   if(rem>0){ y += rem; pts.push([half(curD), y]); }
 
-  // Bajar a eje, cerrar al origen
+  // Cerrar a eje
   pts.push([0, y]);
   pts.push([0, 0]);
 
