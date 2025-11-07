@@ -3,23 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora RPM/Avance + Material + ae%</title>
+  <title>Calculadora RPM/Avance — Material + ae%</title>
 
   <!-- PWA -->
   <link rel="manifest" href="/pwa/calc-vibracion/manifest.json">
   <meta name="theme-color" content="#0b1220">
-
-  <!-- iOS + Android -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="RPM+Vib">
-
-  <!-- Iconos iOS -->
-  <link rel="apple-touch-icon" href="/pwa/calc-vibracion/icons/icon-180.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="/pwa/calc-vibracion/icons/icon-167.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="/pwa/calc-vibracion/icons/icon-152.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="/pwa/calc-vibracion/icons/icon-120.png">
 
   <style>
     :root{
@@ -29,7 +20,8 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial}
     .hdr{max-width:960px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:12px}
-    .brand{width:40px;height:40px;border-radius:12px}
+    .brand{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent-teal),var(--accent-blue));display:flex;align-items:center;justify-content:center}
+    .brand svg{width:26px;height:26px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
     .title{font-size:1.1rem;margin:0}
     .wrap{max-width:960px;margin:auto;padding:0 24px 24px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
@@ -52,13 +44,17 @@
 </head>
 <body>
   <header class="hdr">
-    <img src="/pwa/calc-vibracion/icons/icon-192.png" alt="Prestige Tools" class="brand" width="40" height="40">
-    <h1 class="title">Calculadora RPM/Avance + Material + ae%</h1>
+    <div class="brand" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="#e5eefb" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.88L18.18 22 12 18.77 5.82 22 7 14.15l-5-4.88 6.91-1.01L12 2z"/>
+      </svg>
+    </div>
+    <h1 class="title">Calculadora RPM/Avance — Material + ae%</h1>
   </header>
 
   <main class="wrap">
     <section class="card">
-      <p>Selecciona material. Se calculan **RPM y Avance** automáticamente con rango de **Vc** recomendado. <span class="subtle">TPF para riesgo de vibración.</span></p>
+      <p>Elige material. Calcula <b>RPM</b> y <b>avance</b> min/máx y sugeridos. <b>Vc</b> y <b>TPF</b> automáticos por material. <b>ae</b> en % del diámetro.</p>
 
       <div class="grid grid3">
         <div>
@@ -75,7 +71,7 @@
         </div>
 
         <div>
-          <label>f<sub>z</sub> sugerido (mm/diente)</label>
+          <label>f<sub>z</sub> (mm/diente)</label>
           <input id="fz" type="number" step="0.001">
           <small id="fzHint"></small>
         </div>
@@ -90,65 +86,63 @@
         </div>
 
         <div>
-          <label>Banda estable min (Hz)</label>
-          <input id="hzMin" type="number" step="1" value="600">
-        </div>
-        <div>
-          <label>Banda estable max (Hz)</label>
-          <input id="hzMax" type="number" step="1" value="900">
-        </div>
-        <div>
           <label>Límite máx. husillo (RPM)</label>
           <input id="rpmMax" type="number" step="1" value="12000">
         </div>
       </div>
 
       <div class="row" style="margin-top:10px">
-        <button class="btn" id="btnCalc">Calcular automático</button>
+        <button class="btn" id="btnCalc">Calcular</button>
+        <button class="btn" id="btnOpt">Condiciones óptimas</button>
         <button class="btn" id="shareBtn">Compartir</button>
         <small id="msg"></small>
       </div>
 
       <div class="out" id="out"></div>
-      <small>Notas: Vc y fz son orientativos; ajusta por máquina/holder/herramienta. ae en % se convierte automáticamente a mm.</small>
+      <small>Instalable y offline con este mismo folder.</small>
     </section>
   </main>
 
-  <footer>© Prestige Tools — Paleta turquesa-azul sobre tema oscuro.</footer>
+  <footer>© Prestige Tools</footer>
 
   <script>
-    // ===== Presets de materiales (puedes ajustar valores a tu librería) =====
+    // ===== Presets de materiales y bandas TPF (todo dentro del HTML) =====
     const MATERIALS = {
-      "Acero al carbono (P)": { vc_min:120, vc_max:200, fz_min:0.03, fz_max:0.08 },
-      "Acero aleado (P duro)": { vc_min:80, vc_max:160, fz_min:0.02, fz_max:0.06 },
-      "Acero inoxidable (M)": { vc_min:80, vc_max:160, fz_min:0.02, fz_max:0.06 },
-      "Aluminio (N)": { vc_min:300, vc_max:800, fz_min:0.05, fz_max:0.15 },
-      "Fundición gris (K)": { vc_min:120, vc_max:220, fz_min:0.03, fz_max:0.10 },
-      "Titanio (S)": { vc_min:40, vc_max:90, fz_min:0.02, fz_max:0.06 },
-      "Superaleaciones Ni/Co (S)": { vc_min:25, vc_max:60, fz_min:0.01, fz_max:0.04 }
+      "Acero al carbono (P)": { vc_min:120, vc_max:200, fz_min:0.03, fz_max:0.08, hz_min:600, hz_max:900 },
+      "Acero aleado (P duro)": { vc_min:80,  vc_max:160, fz_min:0.02, fz_max:0.06, hz_min:550, hz_max:850 },
+      "Acero inoxidable (M)": { vc_min:80,  vc_max:160, fz_min:0.02, fz_max:0.06, hz_min:550, hz_max:850 },
+      "Aluminio (N)":        { vc_min:300, vc_max:800, fz_min:0.05, fz_max:0.15, hz_min:800, hz_max:1200 },
+      "Fundición gris (K)":  { vc_min:120, vc_max:220, fz_min:0.03, fz_max:0.10, hz_min:600, hz_max:900 },
+      "Titanio (S)":         { vc_min:40,  vc_max:90,  fz_min:0.02, fz_max:0.06, hz_min:450, hz_max:750 },
+      "Superaleaciones Ni/Co (S)": { vc_min:25, vc_max:60, fz_min:0.01, fz_max:0.04, hz_min:450, hz_max:700 }
     };
 
-    // ===== Utilidades =====
+    // ===== Utils =====
     const $ = id => document.getElementById(id);
     const fmt = (n,d=2)=>Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
     const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
+    const LSKEY = "calc_vib_threefiles_v1";
 
-    // ===== Inicialización de UI =====
-    (function initMaterials(){
+    // ===== UI =====
+    function populateMaterials(){
       const sel = $("material");
+      sel.innerHTML = "";
       Object.keys(MATERIALS).forEach(k=>{
         const o = document.createElement("option");
         o.value = k; o.textContent = k;
         sel.appendChild(o);
       });
-      sel.value = "Acero al carbono (P)";
-    })();
+      const s = JSON.parse(localStorage.getItem(LSKEY)||"{}");
+      if(s.material && MATERIALS[s.material]) sel.value = s.material;
+      else sel.selectedIndex = 0;
+    }
 
     function updateHints(){
       const d = +$("d").value || 0;
       const aePct = +$("aePct").value || 0;
       const ae_mm = d>0 ? d * aePct / 100 : 0;
       $("aeMmHint").textContent = d>0 ? `≈ ${fmt(ae_mm,2)} mm` : "";
+
       const m = MATERIALS[$("material").value];
       if(m){
         $("fzHint").textContent = `Sugerencia fz: ${m.fz_min}–${m.fz_max} mm/diente`;
@@ -160,41 +154,53 @@
       }
     }
 
-    // ===== Cálculo principal =====
-    function calcular(){
-      const mat = MATERIALS[$("material").value];
-      const d = +$("d").value, z = +$("z").value;
-      const fz = +$("fz").value, ap = +$("ap").value;
-      const aePct = +$("aePct").value;
-      const ae = d>0 ? d * aePct / 100 : 0;                 // mm a partir de %
-      const rpmMax = +$("rpmMax").value || Infinity;
-      const hzMin = +$("hzMin").value, hzMax = +$("hzMax").value;
+    function readModel(){
+      return {
+        material: $("material").value,
+        d:+$("d").value, z:+$("z").value, fz:+$("fz").value,
+        ap:+$("ap").value, aePct:+$("aePct").value,
+        rpmMax:+$("rpmMax").value || Infinity
+      };
+    }
 
-      if(!mat || d<=0 || z<=0 || fz<=0 || ap<0 || aePct<0 || hzMin<=0 || hzMax<=hzMin){
-        $("out").textContent = "Completa datos válidos."; return;
-      }
+    function compute(model){
+      const { material, d, z, fz, ap, aePct, rpmMax } = model;
+      const m = MATERIALS[material];
+      if(!m || d<=0 || z<=0 || fz<=0 || ap<0 || aePct<0) return {error:"Completa datos válidos."};
 
-      // Rango de Vc según material
-      const Vc_min = mat.vc_min, Vc_max = mat.vc_max;
+      const ae = d * aePct / 100;        // mm
+      const Vc_min = m.vc_min, Vc_max = m.vc_max;
 
       // RPM por Vc
       let rpm_min_vc = Math.floor((1000 * Vc_min) / (Math.PI * d));
       let rpm_max_vc = Math.floor((1000 * Vc_max) / (Math.PI * d));
       rpm_min_vc = clamp(rpm_min_vc, 1, rpmMax);
       rpm_max_vc = clamp(rpm_max_vc, 1, rpmMax);
-      if(rpm_max_vc < rpm_min_vc){ // si el husillo recorta
-        rpm_max_vc = rpm_min_vc;
-      }
-      const rpm_sugerida = Math.floor((rpm_min_vc + rpm_max_vc)/2);
+      if(rpm_max_vc < rpm_min_vc){ rpm_max_vc = rpm_min_vc; }
 
-      // Avance automático
-      const Vf = rpm_sugerida * z * fz;                 // mm/min
+      // Banda TPF automática por material
+      const hzMin = m.hz_min, hzMax = m.hz_max;
+      const rpm_min_tpf = Math.floor(60*hzMin / z);
+      const rpm_max_tpf = Math.floor(60*hzMax / z);
 
-      // MRR usando ae(ap desde % ya convertido)
-      const MRR = (ae * ap * Vf)/1000;                  // cm³/min
+      // Solape Vc ∩ TPF
+      const rpm_overlap_min = Math.max(rpm_min_vc, rpm_min_tpf);
+      const rpm_overlap_max = Math.min(rpm_max_vc, rpm_max_tpf);
+      const hasOverlap = rpm_overlap_max >= rpm_overlap_min;
 
-      // TPF y riesgo vs banda
-      const TPF = (rpm_sugerida * z) / 60;              // Hz
+      // RPM sugerida
+      const rpm_sugerida = hasOverlap
+        ? Math.floor((rpm_overlap_min + rpm_overlap_max)/2)
+        : Math.floor((rpm_min_vc + rpm_max_vc)/2);
+
+      // Avances min/máx y sugerido
+      const Vf_min = rpm_min_vc * z * m.fz_min;
+      const Vf_max = rpm_max_vc * z * m.fz_max;
+      const fz_mid = (m.fz_min + m.fz_max)/2;
+      const Vf_sugerido = rpm_sugerida * z * fz_mid;
+
+      const MRR = (ae * ap * Vf_sugerido)/1000; // cm³/min
+      const TPF = (rpm_sugerida * z) / 60;      // Hz
       let riskClass="bad", riskText="Alto";
       if(TPF>=hzMin && TPF<=hzMax){ riskClass="ok"; riskText="Bajo"; }
       else{
@@ -202,54 +208,93 @@
         if(TPF>=low && TPF<=high){ riskClass="warn"; riskText="Medio"; }
       }
 
-      // Mostrar
+      return {
+        Vc_min, Vc_max,
+        rpm_min_vc, rpm_max_vc,
+        rpm_min_tpf, rpm_max_tpf,
+        rpm_overlap_min, rpm_overlap_max, hasOverlap,
+        rpm_sugerida,
+        fz_mid,
+        Vf_min, Vf_max, Vf_sugerido,
+        ae, MRR, TPF, hzMin, hzMax, riskClass, riskText
+      };
+    }
+
+    function render(result, model){
+      if(result.error){ $("out").textContent = result.error; return; }
+      const mat = model.material;
       $("out").innerHTML = `
         <div class="grid grid2">
           <div>
             <h2>Material</h2>
-            <span class="tag">${$("material").value}</span><br>
-            <span class="tag">Vc min: ${Vc_min} m/min</span>
-            <span class="tag">Vc max: ${Vc_max} m/min</span>
+            <span class="tag">${mat}</span><br>
+            <span class="tag">Vc min: ${result.Vc_min} m/min</span>
+            <span class="tag">Vc max: ${result.Vc_max} m/min</span><br>
+            <span class="tag">TPF aut.: ${result.hzMin}–${result.hzMax} Hz</span>
           </div>
           <div>
-            <h2>RPM por Vc</h2>
-            <span class="tag">RPM min: ${rpm_min_vc}</span>
-            <span class="tag">RPM max: ${rpm_max_vc}</span><br>
-            <span class="tag"><b>RPM sugerida: ${rpm_sugerida}</b></span>
+            <h2>RPM</h2>
+            <span class="tag">por Vc: ${result.rpm_min_vc}–${result.rpm_max_vc}</span><br>
+            <span class="tag">por TPF: ${result.rpm_min_tpf}–${result.rpm_max_tpf}</span><br>
+            <span class="tag"><b>RPM sugerida: ${result.rpm_sugerida}</b></span>
           </div>
           <div>
-            <h2>Condiciones</h2>
-            <span class="tag">fz: ${fz} mm/diente</span>
-            <span class="tag">z: ${z}</span>
-            <span class="tag">Vf: ${fmt(Vf,1)} mm/min</span>
+            <h2>Avance</h2>
+            <span class="tag">fz actual: ${model.fz} mm/diente</span>
+            <span class="tag">fz óptimo: ${result.fz_mid.toFixed(3)}</span><br>
+            <span class="tag">Vf min: ${fmt(result.Vf_min,1)} mm/min</span>
+            <span class="tag">Vf max: ${fmt(result.Vf_max,1)} mm/min</span><br>
+            <span class="tag"><b>Vf sugerido: ${fmt(result.Vf_sugerido,1)} mm/min</b></span>
           </div>
           <div>
             <h2>Carga</h2>
-            <span class="tag">ae: ${fmt(ae,2)} mm (${fmt(aePct,1)}%)</span>
-            <span class="tag">ap: ${fmt(ap,2)} mm</span>
-            <span class="tag">MRR: ${fmt(MRR,2)} cm³/min</span>
+            <span class="tag">ae: ${fmt(result.ae,2)} mm (${fmt(model.aePct,1)}%)</span>
+            <span class="tag">ap: ${fmt(model.ap,2)} mm</span>
+            <span class="tag">MRR: ${fmt(result.MRR,2)} cm³/min</span>
           </div>
           <div>
             <h2>Vibración</h2>
-            <span class="tag">Banda: ${hzMin}–${hzMax} Hz</span>
-            <span class="tag">TPF: ${fmt(TPF,1)} Hz</span>
-            <span class="tag ${riskClass}">Riesgo: ${riskText}</span>
+            <span class="tag">TPF: ${fmt(result.TPF,1)} Hz</span>
+            <span class="tag ${result.riskClass}">Riesgo: ${result.riskText}</span>
+            ${result.hasOverlap ? '' : '<br><small class="subtle">Sin solape Vc–TPF: usando centro del rango por Vc.</small>'}
           </div>
         </div>
       `;
-
-      // Persistir
-      const state = {
-        material:$("material").value, d, z, fz, ap, aePct, rpmMax, hzMin, hzMax
-      };
-      localStorage.setItem("calc_vib_v2", JSON.stringify(state));
     }
 
-    // ===== Compartir =====
+    function saveState(){
+      const s = {
+        material:$("material").value,
+        d:+$("d").value, z:+$("z").value, fz:+$("fz").value,
+        ap:+$("ap").value, aePct:+$("aePct").value, rpmMax:+$("rpmMax").value
+      };
+      localStorage.setItem(LSKEY, JSON.stringify(s));
+    }
+
+    function calcAndRender(){
+      const model = {
+        material:$("material").value,
+        d:+$("d").value, z:+$("z").value, fz:+$("fz").value,
+        ap:+$("ap").value, aePct:+$("aePct").value, rpmMax:+$("rpmMax").value || Infinity
+      };
+      const res = compute(model);
+      render(res, model);
+      saveState();
+    }
+
+    function setOptimas(){
+      const m = MATERIALS[$("material").value];
+      if(!m) return;
+      $("fz").value = ((m.fz_min + m.fz_max)/2).toFixed(3);
+      calcAndRender();
+      $("msg").textContent = "Condiciones óptimas aplicadas";
+      setTimeout(()=>{$("msg").textContent="";},1500);
+    }
+
     async function shareResults(){
       const t = document.getElementById('out')?.innerText || 'Resultados';
       if (navigator.share){
-        try{ await navigator.share({title:'RPM+Vib', text:t}); }catch(_){}
+        try{ await navigator.share({title:'RPM+Avance', text:t}); }catch(_){}
       } else {
         try{
           await navigator.clipboard.writeText(t);
@@ -259,26 +304,25 @@
       }
     }
 
-    // ===== Init / Eventos =====
+    // ===== Init =====
     window.addEventListener("DOMContentLoaded", ()=>{
-      // Cargar estado si existe
+      populateMaterials();
+
       try{
-        const s = JSON.parse(localStorage.getItem("calc_vib_v2")||"{}");
+        const s = JSON.parse(localStorage.getItem(LSKEY)||"{}");
+        ["d","z","fz","ap","aePct","rpmMax"].forEach(k=>{ if(s[k]!=null && $(k)) $(k).value = s[k]; });
         if(s.material && MATERIALS[s.material]) $("material").value = s.material;
-        ["d","z","fz","ap","aePct","rpmMax","hzMin","hzMax"].forEach(k=>{
-          if(s[k]!=null && $(k)) $(k).value = s[k];
-        });
       }catch(_){}
+
       updateHints();
-      ["material","d","aePct","fz"].forEach(id=> $(id).addEventListener("input", updateHints));
-      ["material","d","z","fz","ap","aePct","rpmMax","hzMin","hzMax"].forEach(id=> $(id).addEventListener("input", ()=>{}));
-      $("btnCalc").addEventListener("click", calcular);
+      ["material","d","z","fz","ap","aePct","rpmMax"].forEach(id=> $(id).addEventListener("input", ()=>{ updateHints(); }));
+      $("btnCalc").addEventListener("click", calcAndRender);
+      $("btnOpt").addEventListener("click", setOptimas);
       $("shareBtn").addEventListener("click", shareResults);
 
-      // Primer cálculo
-      calcular();
+      calcAndRender();
 
-      // SW
+      // Registrar SW para offline (archivo aparte obligatorio en iOS)
       if('serviceWorker' in navigator){
         navigator.serviceWorker.register('/pwa/calc-vibracion/sw.js').catch(()=>{});
       }
