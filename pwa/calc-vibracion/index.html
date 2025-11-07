@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora RPM/Avance — Material + ae%</title>
+  <title>Calculadora RPM y Avance</title>
 
   <!-- PWA básico -->
   <link rel="manifest" href="/pwa/calc-vibracion/manifest.json">
@@ -14,40 +14,88 @@
 
   <style>
     :root{
-      --bg:#0b1220; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
-      --accent-teal:#0996BE; --accent-blue:#1D4ED8;
+      --bg:#0b1220; --bg2:#0c1426; --card:#0f172a; --ink:#e5eefb; --muted:#9fb3c8; --border:#1f2a3a;
+      --accent-teal:#00bcd4; --accent-blue:#3b82f6; --accent-violet:#7c3aed;
+      --green:#10b981; --amber:#f59e0b; --red:#ef4444; --cyan:#06b6d4;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial}
+    body{
+      margin:0;color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #0ea5e91f, transparent 60%),
+        radial-gradient(900px 500px at 110% 0%, #7c3aed1a, transparent 60%),
+        linear-gradient(180deg,var(--bg),var(--bg2));
+      min-height:100dvh;
+    }
     .hdr{max-width:960px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:12px}
-    .brand{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent-teal),var(--accent-blue));display:flex;align-items:center;justify-content:center}
+    .brand{
+      width:44px;height:44px;border-radius:14px;
+      background:linear-gradient(135deg,var(--accent-teal),var(--accent-blue));
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 6px 20px #0ea5e940, inset 0 0 12px #ffffff10;
+    }
     .brand svg{width:26px;height:26px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
     .title{font-size:1.1rem;margin:0}
     .wrap{max-width:960px;margin:auto;padding:0 24px 24px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+    .card{
+      background:linear-gradient(180deg,#0f172a,#0e1728);
+      border:1px solid var(--border);border-radius:16px;padding:18px;
+      box-shadow:0 10px 30px #00000033;
+    }
     h2{font-size:1rem;margin:0 0 8px}
     p{margin:6px 0;color:var(--muted)}
     .grid{display:grid;gap:12px}
     @media(min-width:780px){ .grid2{grid-template-columns:1fr 1fr} .grid3{grid-template-columns:repeat(3,1fr)} }
     label{display:block;font-size:.9rem;color:var(--muted);margin:6px 0 4px}
-    input,select{width:100%;padding:.65rem;border-radius:12px;border:1px solid var(--border);background:#0b1220;color:var(--ink)}
+    input,select{
+      width:100%;padding:.65rem;border-radius:12px;border:1px solid var(--border);
+      background:#0b1220;color:var(--ink);outline:0;
+      box-shadow:inset 0 0 0 9999px #06102160;
+    }
+    input:focus,select:focus{border-color:#2dd4bf; box-shadow:0 0 0 3px #22d3ee33 inset}
     .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .btn{background:linear-gradient(135deg,var(--accent-teal),var(--accent-blue));color:#061521;border:none;border-radius:12px;padding:.65rem 1rem;font-weight:700;cursor:pointer}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .out{border:1px dashed var(--border);border-radius:12px;padding:12px;margin-top:12px}
-    .tag{display:inline-block;background:#0b1220;border:1px solid var(--border);border-radius:999px;padding:.25rem .6rem;margin:.15rem .25rem .15rem 0}
+    .btn{
+      background:linear-gradient(135deg,var(--accent-teal),var(--accent-blue));
+      color:#07121e;border:none;border-radius:12px;padding:.65rem 1rem;font-weight:700;cursor:pointer;
+      box-shadow:0 10px 22px #22d3ee33;
+      transition:transform .06s ease, filter .06s ease;
+    }
+    .btn:hover{transform:translateY(-1px); filter:saturate(1.1)}
+    .btn:active{transform:translateY(0)}
+    .out{
+      border:1px dashed var(--border);border-radius:12px;padding:12px;margin-top:12px;
+      background:linear-gradient(180deg,#0c1628,#0b1322);
+    }
+    .tag{
+      display:inline-block;background:#0b1220;border:1px solid var(--border);border-radius:999px;
+      padding:.25rem .6rem;margin:.15rem .25rem .15rem 0
+    }
     .ok{color:#7dd3fc}.warn{color:#fde68a}.bad{color:#fca5a5}
     small{color:var(--muted)}
     footer{max-width:960px;margin:16px auto 24px;padding:0 24px;color:var(--muted);font-size:.85rem}
     .subtle{opacity:.85}
 
-    /* Cuadro de resultados */
-    .results{display:grid;gap:8px;margin-top:12px}
+    /* Cuadro de resultados con color */
+    .results{display:grid;gap:12px;margin-top:12px}
     @media(min-width:780px){ .results{grid-template-columns:1fr 1fr} }
-    .resbox{background:#0b1220;border:1px solid var(--border);border-radius:12px;padding:12px}
-    .resbox h3{margin:0 0 8px;font-size:.95rem;color:#cfe6ff}
-    .kv{display:grid;grid-template-columns:1fr auto;gap:6px;font-variant-numeric:tabular-nums}
-    .kv b{color:#eaf4ff}
+    .resbox{
+      border-radius:14px;padding:12px;border:1px solid var(--border);
+      background:
+        linear-gradient(180deg,#0b1a2f,#0a1526) padding-box,
+        linear-gradient(135deg,#22d3ee55,#7c3aed55) border-box;
+    }
+    .resbox h3{margin:0 0 8px;font-size:.95rem;color:#d8ecff}
+    .kv{display:grid;grid-template-columns:1fr auto;gap:8px;font-variant-numeric:tabular-nums;align-items:center}
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;padding:.2rem .55rem;border-radius:999px;border:1px solid var(--border);
+      background:#061021;border-color:#1f2a3a;color:#cfe6ff;font-weight:700
+    }
+    .chip.min{background:#022412; border-color:#065f4611; color:#86efac}      /* verde suave */
+    .chip.max{background:#261a05; border-color:#b4530911; color:#fcd34d}      /* ámbar */
+    .chip.opt{
+      background:linear-gradient(135deg,#22d3ee22,#7c3aed22);
+      border-color:#22d3ee55; color:#93c5fd
+    }
   </style>
 </head>
 <body>
@@ -57,7 +105,7 @@
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.88L18.18 22 12 18.77 5.82 22 7 14.15l-5-4.88 6.91-1.01L12 2z"/>
       </svg>
     </div>
-    <h1 class="title">Calculadora RPM/Avance — Material + ae%</h1>
+    <h1 class="title">Calculadora RPM y Avance</h1>
   </header>
 
   <main class="wrap">
@@ -112,26 +160,26 @@
       <div class="results">
         <div class="resbox">
           <h3>RPM</h3>
-          <div class="kv"><span>Mínimo</span><b id="rpmMin">—</b></div>
-          <div class="kv"><span>Máximo</span><b id="rpmMaxOut">—</b></div>
-          <div class="kv"><span>Óptimo</span><b id="rpmOpt">—</b></div>
+          <div class="kv"><span>Mínimo</span><span id="rpmMin" class="chip min">—</span></div>
+          <div class="kv"><span>Máximo</span><span id="rpmMaxOut" class="chip max">—</span></div>
+          <div class="kv"><span>Óptimo</span><span id="rpmOpt" class="chip opt">—</span></div>
         </div>
         <div class="resbox">
           <h3>Avance (Vf)</h3>
-          <div class="kv"><span>Mínimo</span><b id="vfMin">—</b></div>
-          <div class="kv"><span>Máximo</span><b id="vfMax">—</b></div>
-          <div class="kv"><span>Óptimo</span><b id="vfOpt">—</b></div>
+          <div class="kv"><span>Mínimo</span><span id="vfMin" class="chip min">—</span></div>
+          <div class="kv"><span>Máximo</span><span id="vfMax" class="chip max">—</span></div>
+          <div class="kv"><span>Óptimo</span><span id="vfOpt" class="chip opt">—</span></div>
         </div>
       </div>
 
-      <small>Para que el ícono se vea: coloca tus PNG en <code>/pwa/calc-vibracion/icons/</code> con los nombres del manifest.</small>
+      <small>Íconos: coloca <code>icon-192.png</code>, <code>icon-512.png</code> y <code>maskable-512.png</code> en <code>/pwa/calc-vibracion/icons/</code>.</small>
     </section>
   </main>
 
   <footer>© Prestige Tools</footer>
 
   <script>
-    // ===== Presets de materiales y bandas TPF =====
+    // ===== Presets =====
     const MATERIALS = {
       "Acero al carbono (P)": { vc_min:120, vc_max:200, fz_min:0.03, fz_max:0.08, hz_min:600, hz_max:900 },
       "Acero aleado (P duro)": { vc_min:80,  vc_max:160, fz_min:0.02, fz_max:0.06, hz_min:550, hz_max:850 },
@@ -146,16 +194,12 @@
     const $ = id => document.getElementById(id);
     const fmt = (n,d=2)=>Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
     const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
-    const LSKEY = "calc_vib_threefiles_v2";
+    const LSKEY = "calc_vib_colors_v1";
 
-    // ===== UI =====
     function populateMaterials(){
-      const sel = $("material");
-      sel.innerHTML = "";
+      const sel = $("material"); sel.innerHTML = "";
       Object.keys(MATERIALS).forEach(k=>{
-        const o = document.createElement("option");
-        o.value = k; o.textContent = k;
-        sel.appendChild(o);
+        const o = document.createElement("option"); o.value=k; o.textContent=k; sel.appendChild(o);
       });
       const s = JSON.parse(localStorage.getItem(LSKEY)||"{}");
       if(s.material && MATERIALS[s.material]) sel.value = s.material; else sel.selectedIndex = 0;
@@ -164,14 +208,11 @@
     function updateHints(){
       const d = +$("d").value || 0;
       const aePct = +$("aePct").value || 0;
-      const ae_mm = d>0 ? d * aePct / 100 : 0;
-      $("aeMmHint").textContent = d>0 ? `≈ ${fmt(ae_mm,2)} mm` : "";
-
+      $("aeMmHint").textContent = d>0 ? `≈ ${fmt(d*aePct/100,2)} mm` : "";
       const m = MATERIALS[$("material").value];
       if(m){
         $("fzHint").textContent = `Sugerencia fz: ${m.fz_min}–${m.fz_max} mm/diente`;
-        const fzVal = +$("fz").value || 0;
-        if(fzVal===0){ $("fz").value = ((m.fz_min + m.fz_max)/2).toFixed(3); }
+        if(!(+$("fz").value)) $("fz").value = ((m.fz_min+m.fz_max)/2).toFixed(3);
       }
     }
 
@@ -179,145 +220,101 @@
       return {
         material:$("material").value,
         d:+$("d").value, z:+$("z").value, fz:+$("fz").value,
-        ap:+$("ap").value, aePct:+$("aePct").value,
-        rpmMax:+$("rpmMax").value || Infinity
+        ap:+$("ap").value, aePct:+$("aePct").value, rpmMax:+$("rpmMax").value || Infinity
       };
     }
 
-    function compute(model){
-      const { material, d, z, fz, ap, aePct, rpmMax } = model;
-      const m = MATERIALS[material];
-      if(!m || d<=0 || z<=0 || fz<=0 || ap<0 || aePct<0) return {error:"Completa datos válidos."};
+    function compute(mdl){
+      const m = MATERIALS[mdl.material];
+      if(!m) return {error:"Material inválido"};
+      const {d,z,fz,ap,aePct,rpmMax} = mdl;
+      if(d<=0||z<=0||fz<=0||ap<0||aePct<0) return {error:"Completa datos válidos."};
 
-      const ae = d * aePct / 100; // mm
-      const Vc_min = m.vc_min, Vc_max = m.vc_max;
+      const ae = d*aePct/100;
+      let rpm_min_vc = Math.floor((1000*m.vc_min)/(Math.PI*d));
+      let rpm_max_vc = Math.floor((1000*m.vc_max)/(Math.PI*d));
+      rpm_min_vc = clamp(rpm_min_vc,1,rpmMax);
+      rpm_max_vc = clamp(rpm_max_vc,1,rpmMax);
+      if(rpm_max_vc<rpm_min_vc) rpm_max_vc=rpm_min_vc;
 
-      // RPM por Vc
-      let rpm_min_vc = Math.floor((1000 * Vc_min) / (Math.PI * d));
-      let rpm_max_vc = Math.floor((1000 * Vc_max) / (Math.PI * d));
-      rpm_min_vc = clamp(rpm_min_vc, 1, rpmMax);
-      rpm_max_vc = clamp(rpm_max_vc, 1, rpmMax);
-      if(rpm_max_vc < rpm_min_vc) rpm_max_vc = rpm_min_vc;
+      const rpm_min_tpf = Math.floor(60*m.hz_min/z);
+      const rpm_max_tpf = Math.floor(60*m.hz_max/z);
+      const overlap_min = Math.max(rpm_min_vc, rpm_min_tpf);
+      const overlap_max = Math.min(rpm_max_vc, rpm_max_tpf);
+      const hasOverlap = overlap_max>=overlap_min;
+      const rpm_opt = hasOverlap? Math.floor((overlap_min+overlap_max)/2) : Math.floor((rpm_min_vc+rpm_max_vc)/2);
 
-      // TPF auto
-      const hzMin = m.hz_min, hzMax = m.hz_max;
-      const rpm_min_tpf = Math.floor(60*hzMin / z);
-      const rpm_max_tpf = Math.floor(60*hzMax / z);
+      const fz_mid = (m.fz_min+m.fz_max)/2;
+      const Vf_min = rpm_min_vc*z*m.fz_min;
+      const Vf_max = rpm_max_vc*z*m.fz_max;
+      const Vf_opt = rpm_opt*z*fz_mid;
 
-      // Solape Vc ∩ TPF
-      const rpm_overlap_min = Math.max(rpm_min_vc, rpm_min_tpf);
-      const rpm_overlap_max = Math.min(rpm_max_vc, rpm_max_tpf);
-      const hasOverlap = rpm_overlap_max >= rpm_overlap_min;
-
-      // RPM óptima
-      const rpm_opt = hasOverlap
-        ? Math.floor((rpm_overlap_min + rpm_overlap_max)/2)
-        : Math.floor((rpm_min_vc + rpm_max_vc)/2);
-
-      // Avances min/máx/óptimo
-      const Vf_min = rpm_min_vc * z * m.fz_min;
-      const Vf_max = rpm_max_vc * z * m.fz_max;
-      const fz_mid = (m.fz_min + m.fz_max)/2;
-      const Vf_opt = rpm_opt * z * fz_mid;
-
-      const MRR = (ae * ap * Vf_opt)/1000; // cm³/min
-      const TPF = (rpm_opt * z) / 60;      // Hz
+      const MRR = (ae*ap*Vf_opt)/1000;
+      const TPF = (rpm_opt*z)/60;
       let riskClass="bad", riskText="Alto";
-      if(TPF>=hzMin && TPF<=hzMax){ riskClass="ok"; riskText="Bajo"; }
-      else{
-        const low=(1-0.10)*hzMin, high=(1+0.10)*hzMax;
-        if(TPF>=low && TPF<=high){ riskClass="warn"; riskText="Medio"; }
-      }
+      if(TPF>=m.hz_min && TPF<=m.hz_max){ riskClass="ok"; riskText="Bajo"; }
+      else if(TPF>=0.9*m.hz_min && TPF<=1.1*m.hz_max){ riskClass="warn"; riskText="Medio"; }
 
-      return {
-        Vc_min, Vc_max,
-        rpm_min_vc, rpm_max_vc, rpm_opt,
-        rpm_min_tpf, rpm_max_tpf, hasOverlap,
-        fz_mid,
-        Vf_min, Vf_max, Vf_opt,
-        ae, MRR, TPF, hzMin, hzMax, riskClass, riskText
-      };
+      return {m, rpm_min_vc, rpm_max_vc, rpm_min_tpf, rpm_max_tpf, rpm_opt, Vf_min, Vf_max, Vf_opt, fz_mid, ae, MRR, TPF, riskClass, riskText};
     }
 
-    function render(res, model){
-      if(res.error){ $("out").textContent = res.error; return; }
+    function render(res, mdl){
+      if(res.error){ $("out").textContent=res.error; return; }
       $("out").innerHTML = `
         <div class="grid grid2">
           <div>
             <h2>Material</h2>
-            <span class="tag">${model.material}</span><br>
-            <span class="tag">Vc: ${res.Vc_min}–${res.Vc_max} m/min</span>
-            <span class="tag">TPF auto: ${res.hzMin}–${res.hzMax} Hz</span>
+            <span class="tag">${mdl.material}</span>
+            <span class="tag">Vc: ${res.m.vc_min}–${res.m.vc_max} m/min</span>
+            <span class="tag">TPF auto: ${res.m.hz_min}–${res.m.hz_max} Hz</span>
           </div>
           <div>
             <h2>Estado</h2>
-            <span class="tag">fz actual: ${model.fz} mm/diente</span>
+            <span class="tag">fz actual: ${mdl.fz} mm/diente</span>
             <span class="tag">fz óptimo: ${res.fz_mid.toFixed(3)}</span>
             <span class="tag ${res.riskClass}">Riesgo: ${res.riskText}</span>
             <span class="tag">TPF: ${fmt(res.TPF,1)} Hz</span>
           </div>
           <div>
             <h2>Carga</h2>
-            <span class="tag">ae: ${fmt(res.ae,2)} mm (${fmt(model.aePct,1)}%)</span>
-            <span class="tag">ap: ${fmt(model.ap,2)} mm</span>
+            <span class="tag">ae: ${fmt(res.ae,2)} mm (${fmt(mdl.aePct,1)}%)</span>
+            <span class="tag">ap: ${fmt(mdl.ap,2)} mm</span>
             <span class="tag">MRR: ${fmt(res.MRR,2)} cm³/min</span>
           </div>
         </div>
       `;
-
-      // Cuadro de resultados
-      $("rpmMin").textContent   = `${res.rpm_min_vc}`;
-      $("rpmMaxOut").textContent= `${res.rpm_max_vc}`;
-      $("rpmOpt").textContent   = `${res.rpm_opt}`;
-      $("vfMin").textContent    = `${fmt(res.Vf_min,1)} mm/min`;
-      $("vfMax").textContent    = `${fmt(res.Vf_max,1)} mm/min`;
-      $("vfOpt").textContent    = `${fmt(res.Vf_opt,1)} mm/min`;
+      // resultados coloreados
+      $("rpmMin").textContent = res.rpm_min_vc;
+      $("rpmMaxOut").textContent = res.rpm_max_vc;
+      $("rpmOpt").textContent = res.rpm_opt;
+      $("vfMin").textContent = `${fmt(res.Vf_min,1)} mm/min`;
+      $("vfMax").textContent = `${fmt(res.Vf_max,1)} mm/min`;
+      $("vfOpt").textContent = `${fmt(res.Vf_opt,1)} mm/min`;
     }
 
     function saveState(){
-      const s = {
-        material:$("material").value,
-        d:+$("d").value, z:+$("z").value, fz:+$("fz").value,
-        ap:+$("ap").value, aePct:+$("aePct").value, rpmMax:+$("rpmMax").value
-      };
+      const s = readModel();
       localStorage.setItem(LSKEY, JSON.stringify(s));
     }
 
-    function calcAndRender(){
-      const model = readModel();
-      const res = compute(model);
-      render(res, model);
-      saveState();
-    }
-
+    function calcAndRender(){ const mdl=readModel(); const res=compute(mdl); render(res,mdl); saveState(); }
     function setOptimas(){
-      const m = MATERIALS[$("material").value];
-      if(!m) return;
-      $("fz").value = ((m.fz_min + m.fz_max)/2).toFixed(3);
-      calcAndRender();
-      $("msg").textContent = "Condiciones óptimas aplicadas";
-      setTimeout(()=>{$("msg").textContent="";},1500);
+      const m = MATERIALS[$("material").value]; if(!m) return;
+      $("fz").value = ((m.fz_min+m.fz_max)/2).toFixed(3);
+      calcAndRender(); $("msg").textContent="Condiciones óptimas aplicadas"; setTimeout(()=>{$("msg").textContent="";},1200);
     }
-
     async function shareResults(){
       const t = document.body.innerText;
-      if (navigator.share){
-        try{ await navigator.share({title:'RPM+Avance', text:t}); }catch(_){}
-      } else {
-        try{
-          await navigator.clipboard.writeText(t);
-          $("msg").textContent="Resultados copiados";
-          setTimeout(()=>{$("msg").textContent="";},1500);
-        }catch(_){}
-      }
+      if(navigator.share){ try{ await navigator.share({title:'RPM+Avance', text:t}); }catch(_){} }
+      else{ try{ await navigator.clipboard.writeText(t); $("msg").textContent="Resultados copiados"; setTimeout(()=>{$("msg").textContent="";},1200);}catch(_){} }
     }
 
     window.addEventListener("DOMContentLoaded", ()=>{
       populateMaterials();
       try{
-        const s = JSON.parse(localStorage.getItem(LSKEY)||"{}");
-        ["d","z","fz","ap","aePct","rpmMax"].forEach(k=>{ if(s[k]!=null && $(k)) $(k).value = s[k]; });
-        if(s.material && MATERIALS[s.material]) $("material").value = s.material;
+        const s=JSON.parse(localStorage.getItem(LSKEY)||"{}");
+        ["d","z","fz","ap","aePct","rpmMax"].forEach(k=>{ if(s[k]!=null && $(k)) $(k).value=s[k]; });
+        if(s.material && MATERIALS[s.material]) $("material").value=s.material;
       }catch(_){}
       updateHints();
       ["material","d","z","fz","ap","aePct","rpmMax"].forEach(id=> $(id).addEventListener("input", updateHints));
