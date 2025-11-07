@@ -106,33 +106,48 @@ export function renderSVG(svg, s){
     p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); p.setAttribute('pointer-events','none'); svg.appendChild(p);
   }
 
-  // Hélices sobre CL
-  {
-    const defs = mk('defs');
-    const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
-    const r = mk('rect'); r.setAttribute('x', leftBody); r.setAttribute('y', y);
-    r.setAttribute('width', WIDTH_BODY); r.setAttribute('height', s.CL*scale);
-    clip.appendChild(r); defs.appendChild(clip); svg.appendChild(defs);
+  // ---------- HÉLICE / FILOS ----------
+{
+  const defs = mk('defs');
+  const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
+  const clipRect = mk('rect');
+  clipRect.setAttribute('x', leftBody);
+  clipRect.setAttribute('y', y);
+  clipRect.setAttribute('width', WIDTH_BODY);
+  clipRect.setAttribute('height', s.CL * scale);
+  clip.appendChild(clipRect); defs.appendChild(clip); svg.appendChild(defs);
 
-    const g = mk('g'); g.setAttribute('clip-path','url(#clipCL)'); svg.appendChild(g);
+  const g = mk('g'); g.setAttribute('clip-path','url(#clipCL)'); svg.appendChild(g);
 
-    const sw = clamp((s.D*scale)*0.08, 1, 6);
-    const bandH = s.CL*scale;
-    const k = -Math.tan(s.helix*Math.PI/180);
-    const Z = Math.max(1, Math.round(s.Z));
-    const halfD = (s.D*scale)/2;
+  const bandH = s.CL * scale;                       // alto visible = CL
+  const k     = -Math.tan(s.helix * Math.PI / 180); // inclinación contraria
+  const Z     = Math.max(1, Math.round(s.Z));       // TODOS los filos
+  const halfD = (s.D * scale) / 2;
 
-    for(let i=0;i<Z;i++){
-      const x0 = (leftBody - halfD) + ((i+0.5) * (WIDTH_BODY / Z));
-      const x1 = x0 + k*bandH + halfD;
-      const l = mk('line');
-      l.setAttribute('x1',x0); l.setAttribute('y1',y);
-      l.setAttribute('x2',x1); l.setAttribute('y2',y+bandH);
-      l.setAttribute('stroke','#2aaae2'); l.setAttribute('stroke-width',sw);
-      l.setAttribute('stroke-linecap','round'); l.setAttribute('pointer-events','none');
-      g.appendChild(l);
-    }
+  // rango completo: desde D/2 a la IZQ hasta D/2 a la DER del cuerpo
+  const spanStart = leftBody - halfD;
+  const spanEnd   = leftBody + WIDTH_BODY + halfD;
+  const stepX     = (spanEnd - spanStart) / Z;      // separación uniforme
+
+  const strokeW = Math.max(1, Math.min(6, (s.D * scale) * 0.08));
+
+  for (let i = 0; i < Z; i++) {
+    // punto de arranque uniforme en el borde superior (y)
+    const x0 = spanStart + (i + 0.5) * stepX;
+    // punto final en el borde inferior (y + CL) desplazado para terminar D/2 a la derecha
+    const x1 = x0 + k * bandH;
+
+    const l = mk('line');
+    l.setAttribute('x1', x0); l.setAttribute('y1', y);
+    l.setAttribute('x2', x1); l.setAttribute('y2', y + bandH);
+    l.setAttribute('stroke', '#2aaae2');
+    l.setAttribute('stroke-width', strokeW);
+    l.setAttribute('stroke-linecap', 'round');
+    l.setAttribute('pointer-events','none');
+    g.appendChild(l);
   }
+}
+
 
   y += s.CL*scale;
 
