@@ -1,5 +1,5 @@
-// App-shell cache con rutas absolutas
-const CACHE = "rpm-vib-v3";
+// App shell cache con rutas absolutas
+const CACHE = "rpm-vib-v4"; // sube versión al actualizar
 const ASSETS = [
   "/pwa/calc-vibracion/",
   "/pwa/calc-vibracion/index.html",
