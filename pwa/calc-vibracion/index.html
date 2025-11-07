@@ -5,23 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora RPM/Avance + Umbral de Vibración</title>
 
- <!-- PWA -->
-<link rel="manifest" href="/pwa/calc-vibracion/manifest.json">
-<meta name="theme-color" content="#0b1220">
+  <!-- PWA -->
+  <link rel="manifest" href="/pwa/calc-vibracion/manifest.json">
+  <meta name="theme-color" content="#0b1220">
 
-<!-- iOS + Android -->
-<meta name="mobile-web-app-capable" content="yes">             <!-- nuevo -->
-<meta name="apple-mobile-web-app-capable" content="yes">       <!-- legado OK -->
+  <!-- iOS + Android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="RPM+Vib">
 
-<!-- Iconos iOS -->
-<link rel="apple-touch-icon" href="/pwa/calc-vibracion/icons/icon-180.png">
-<link rel="apple-touch-icon" sizes="167x167" href="/pwa/calc-vibracion/icons/icon-167.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/pwa/calc-vibracion/icons/icon-152.png">
-<link rel="apple-touch-icon" sizes="120x120" href="/pwa/calc-vibracion/icons/icon-120.png">
-
-<!-- Logo en header -->
-<img src="/pwa/calc-vibracion/icons/icon-192.png" ...>
-
+  <!-- Iconos iOS -->
+  <link rel="apple-touch-icon" href="/pwa/calc-vibracion/icons/icon-180.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/pwa/calc-vibracion/icons/icon-167.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/pwa/calc-vibracion/icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/pwa/calc-vibracion/icons/icon-120.png">
 
   <style>
     :root{
@@ -56,14 +54,14 @@
 </head>
 <body>
   <header class="hdr">
-    <!-- Logo: usa icon-192 generado; si prefieres el logo horizontal, cambia src por tu archivo -->
-    <img src="./icons/icon-192.png" alt="Prestige Tools" class="brand" width="40" height="40">
+    <!-- Logo: si prefieres el horizontal, cambia el src -->
+    <img src="/pwa/calc-vibracion/icons/icon-192.png" alt="Prestige Tools" class="brand" width="40" height="40">
     <h1 class="title">Calculadora RPM/Avance + Umbral de Vibración</h1>
   </header>
 
   <main class="wrap">
     <section class="card">
-      <p>Modelo rápido basado en <b>frecuencia de paso de diente</b> (TPF = RPM·z/60). Ajusta tu banda “estable” en Hz.</p>
+      <p>Modelo basado en <b>frecuencia de paso de diente</b> (TPF = RPM·z/60). Ajusta tu banda “estable” en Hz.</p>
 
       <div class="grid grid3">
         <div>
@@ -114,40 +112,34 @@
       </div>
 
       <div class="out" id="out"></div>
-      <small>Nota: no sustituye un diagrama de lóbulos. Es guía rápida para evitar TPF fuera de tu ventana estable.</small>
+      <small>Guía rápida. No sustituye un diagrama de lóbulos.</small>
     </section>
   </main>
 
-  <footer>© Prestige Tools — Paleta basada en tu logo (teal → azul) sobre tema oscuro.</footer>
+  <footer>© Prestige Tools — Paleta turquesa-azul sobre tema oscuro.</footer>
 
   <script>
-    // === Utilidades base ===
     const $=id=>document.getElementById(id);
     const ids=["d","z","fz","ae","ap","rpm","hzMin","hzMax","rpmMax"];
-    function fmt(n,d=2){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:d}); }
+    const fmt=(n,d=2)=>Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
 
-    // === Lógica de cálculo/render ===
     function render(){
       const d=+$("d").value, z=+$("z").value, fz=+$("fz").value, ae=+$("ae").value, ap=+$("ap").value;
       const rpm=+$("rpm").value, hzMin=+$("hzMin").value, hzMax=+$("hzMax").value, rpmMax=+$("rpmMax").value||Infinity;
 
       if(d<=0||z<=0||fz<=0||ae<0||ap<0||hzMin<=0||hzMax<=hzMin||rpm<=0){
-        $("out").textContent="Completa datos válidos.";
-        return;
+        $("out").textContent="Completa datos válidos."; return;
       }
 
-      // Rango por TPF
       const rpmMin = Math.floor(60*hzMin / z);
       const rpmMaxBand = Math.floor(60*hzMax / z);
-      const vcMin = (Math.PI * d * rpmMin)/1000;      // m/min
-      const vcMax = (Math.PI * d * rpmMaxBand)/1000;  // m/min
+      const vcMin = (Math.PI * d * rpmMin)/1000;
+      const vcMax = (Math.PI * d * rpmMaxBand)/1000;
 
-      // Condiciones con RPM actual
-      const vf = rpm * z * fz;                        // mm/min
-      const mrr = (ae * ap * vf)/1000;                // cm³/min
-      const tpf = (rpm * z) / 60;                     // Hz
+      const vf = rpm * z * fz;                 // mm/min
+      const mrr = (ae * ap * vf)/1000;         // cm³/min
+      const tpf = (rpm * z) / 60;              // Hz
 
-      // Riesgo por distancia a banda
       let riskClass="bad", riskText="Alto";
       if(tpf>=hzMin && tpf<=hzMax){ riskClass="ok"; riskText="Bajo"; }
       else{
@@ -180,12 +172,10 @@
         </div>
       `;
 
-      // Persistencia
       const o={}; ids.forEach(k=>o[k]=$(k).value);
       localStorage.setItem("calc_vib", JSON.stringify(o));
     }
 
-    // === Botones ===
     function suggestMidRPM(){
       const z=+$("z").value, hzMin=+$("hzMin").value, hzMax=+$("hzMax").value, rpmMax=+$("rpmMax").value||1e9;
       if(z<=0||hzMin<=0||hzMax<=0||hzMax<=hzMin){return;}
@@ -209,7 +199,6 @@
       }
     }
 
-    // === Init ===
     window.addEventListener("DOMContentLoaded", ()=>{
       try{
         const s = JSON.parse(localStorage.getItem("calc_vib")||"{}");
@@ -226,7 +215,7 @@
       $("shareBtn").addEventListener("click", shareResults);
       render();
       if('serviceWorker' in navigator){
-        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+        navigator.serviceWorker.register('/pwa/calc-vibracion/sw.js').catch(()=>{});
       }
     });
   </script>
