@@ -1,7 +1,11 @@
 // Vista alzada sin H.
-// - Ancho del cuerpo = D*scale; ancho del zanco = AD*scale (coinciden con sus cotas).
-// - Hélice/filos: se dibuja SOLO la mitad visible -> Zvis = round(Z/2), largo = CL.
-// - D/AD horizontales; TL/OHL/SL/CL verticales; bloques centrados.
+// Cambios pedidos:
+// - Hélices arrancan medio diámetro a la izquierda del cuerpo.
+// - Inclinación contraria (sentido invertido).
+// - Ancho del cuerpo = D*scale; ancho del zanco = AD*scale (cotas y rectángulos coinciden).
+// - Solo se dibuja la mitad de los filos visibles: Zvis = round(Z/2), mínimo 1.
+// - Largo de hélices = CL.
+// - Bloques centrados; cotas: D/AD horizontales, TL/OHL/SL/CL verticales.
 
 import { materialColor } from './svgTool.js';
 
@@ -10,7 +14,7 @@ export function renderSVG(svg, s){
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.innerHTML = '';
 
-  // -------- utils --------
+  // ---------- utils ----------
   const mk = n => document.createElementNS('http://www.w3.org/2000/svg', n);
   const line = (x1,y1,x2,y2,st='#6ee7ff',w=2)=>{
     const e=mk('line'); e.setAttribute('x1',x1); e.setAttribute('y1',y1);
@@ -45,25 +49,29 @@ export function renderSVG(svg, s){
   };
   const dimV = (x, y0, y1, label)=>{
     const yA = Math.min(y0,y1), yB = Math.max(y0,y1);
-    arrow(x, yA, x, yB); line(x, yA, x-8, yA); line(x, yB, x-8, yB);
+    arrow(x, yA, x, yB);
+    line(x, yA, x-8, yA);
+    line(x, yB, x-8, yB);
     text(x+6, yA + (yB-yA)/2, label);
   };
   const dimH = (y, x0, x1, label)=>{
     const xA = Math.min(x0,x1), xB = Math.max(x0,x1);
-    arrow(xA, y, xB, y); line(xA, y, xA, y-8); line(xB, y, xB, y-8);
+    arrow(xA, y, xB, y);
+    line(xA, y, xA, y-8);
+    line(xB, y, xB, y-8);
     text((xA+xB)/2 - 30, y-6, label);
   };
   const fmtUnit = (v, unit)=> unit==='inch' ? (v/25.4).toFixed(3)+' in' : v.toFixed(2)+' mm';
   const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
 
-  // -------- grid --------
-  for(let y=margin; y<=H-margin; y+=10){
+  // ---------- grid ----------
+  for(let gy=margin; gy<=H-margin; gy+=10){
     const g=mk('line'); g.setAttribute('x1','0'); g.setAttribute('x2',String(W));
-    g.setAttribute('y1',String(y)); g.setAttribute('y2',String(y));
+    g.setAttribute('y1',String(gy)); g.setAttribute('y2',String(gy));
     g.setAttribute('stroke','#1f2a3a'); g.setAttribute('opacity','0.15'); svg.appendChild(g);
   }
 
-  // -------- layout/escala --------
+  // ---------- layout/escala ----------
   const topExtra = s.tip==='ball' ? Math.max(16, s.D*0.15) : (s.tip==='chamfer' ? 8 : 0);
   const availableH = H - margin*2 - topExtra;
   const scale = availableH / s.TL;
@@ -72,9 +80,8 @@ export function renderSVG(svg, s){
   const WIDTH_BODY  = s.D  * scale;  // CL y SL
   const WIDTH_SHANK = s.AD * scale;  // OHL
 
-  // Centrados
-  const stageLeft  = margin, stageRight = W - margin;
-  const centerX_canvas = (stageLeft + stageRight) / 2;
+  // Centrados en el lienzo
+  const centerX_canvas = (margin + (W - margin)) / 2;
   const leftBody   = centerX_canvas - WIDTH_BODY  / 2;
   const leftShank  = centerX_canvas - WIDTH_SHANK / 2;
   const top = margin + topExtra;
@@ -83,15 +90,15 @@ export function renderSVG(svg, s){
   const centerX_shank = centerX_canvas;
 
   const maxRight = Math.max(leftBody + WIDTH_BODY, leftShank + WIDTH_SHANK);
-  const xRight   = Math.min(W - 10, maxRight + 20);
+  const xRight   = Math.min(W - 10, maxRight + 20); // cotas verticales siempre a la derecha
 
-  // -------- colores --------
+  // ---------- colores ----------
   const fillBody   = '#0f2238';
   const fillShank  = '#0e2034';
   const strokeBody = '#2a4f7a';
   const accent     = materialColor(s.material)+'14';
 
-  // -------- dibujo: CL --------
+  // ---------- CL (cuerpo) ----------
   let y = top;
   rect(leftBody, y, WIDTH_BODY, s.D*scale, fillBody, strokeBody);
 
@@ -110,7 +117,8 @@ export function renderSVG(svg, s){
     p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p);
   }
 
-  // --- HÉLICE/FILOS: solo la mitad visible, largo = CL ---
+  // ---------- HÉLICE / FILOS ----------
+  // Solo la mitad visible. Arranque medio diámetro a la izquierda. Inclinación contraria.
   {
     const defs = mk('defs');
     const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
@@ -118,24 +126,26 @@ export function renderSVG(svg, s){
     clipRect.setAttribute('x', leftBody);
     clipRect.setAttribute('y', y);
     clipRect.setAttribute('width', WIDTH_BODY);
-    clipRect.setAttribute('height', s.CL * scale);    // clip igual a CL
+    clipRect.setAttribute('height', s.CL * scale); // largo visible = CL
     clip.appendChild(clipRect); defs.appendChild(clip); svg.appendChild(defs);
 
     const g = mk('g'); g.setAttribute('clip-path','url(#clipCL)'); svg.appendChild(g);
 
-    const sw = clamp((s.D * scale) * 0.08, 1, 6);
-    const bandH = s.CL * scale;                        // largo = CL
-    const k = Math.tan(s.helix * Math.PI / 180);
+    const sw    = clamp((s.D * scale) * 0.08, 1, 6);
+    const bandH = s.CL * scale;
+    const k     = -Math.tan(s.helix * Math.PI / 180); // signo negativo => inclinación contraria
+    const Zvis  = Math.max(1, Math.round(s.Z / 2));
+    const halfDpx = (s.D * scale) / 2;                 // arranque medio diámetro a la izquierda
 
-    const Zvis = Math.max(1, Math.round(s.Z / 2));
     for(let i=0; i<Zvis; i++){
-      const x0 = leftBody + ( (i + 0.5) * (WIDTH_BODY / Zvis) );
+      const x0 = (leftBody - halfDpx) + ((i + 0.5) * (WIDTH_BODY / Zvis));
       const x1 = x0 + k * bandH;
 
       const l = mk('line');
       l.setAttribute('x1', x0); l.setAttribute('y1', y);
       l.setAttribute('x2', x1); l.setAttribute('y2', y + bandH);
-      l.setAttribute('stroke', '#2aaae2'); l.setAttribute('stroke-width', sw);
+      l.setAttribute('stroke', '#2aaae2');
+      l.setAttribute('stroke-width', sw);
       l.setAttribute('stroke-linecap', 'round');
       g.appendChild(l);
     }
@@ -144,20 +154,20 @@ export function renderSVG(svg, s){
   // avanzar CL
   y += s.CL*scale;
 
-  // -------- SL --------
+  // ---------- SL ----------
   rect(leftBody, y, WIDTH_BODY, s.D*scale, fillBody, strokeBody);
   y += s.SL*scale;
 
-  // -------- OHL (zanco) --------
+  // ---------- OHL (zanco) ----------
   rect(leftShank, y, WIDTH_SHANK, s.AD*scale, fillShank, '#1f2a3a');
 
   // overlay material
   const leftMin = Math.min(leftBody, leftShank);
-  const ov=rect(leftMin, top, maxRight - leftMin, s.TL*scale, accent, 'none');
+  const ov=rect(leftMin, top, Math.max(leftBody+WIDTH_BODY, leftShank+WIDTH_SHANK) - leftMin, s.TL*scale, accent, 'none');
   ov.setAttribute('stroke','none');
 
-  // -------- COTAS --------
-  // Verticales
+  // ---------- COTAS ----------
+  // Verticales (todas fuera a la derecha)
   dimV(xRight,         top, top + s.TL*scale,           `TL ${fmtUnit(s.TL, s.unit)}`);
   const yOHL0 = top + (s.CL + s.SL)*scale;
   dimV(xRight - 40,    yOHL0, yOHL0 + s.OHL*scale,      `OHL ${fmtUnit(s.OHL, s.unit)}`);
@@ -165,7 +175,7 @@ export function renderSVG(svg, s){
   dimV(xRight - 80,    ySL0,  ySL0 + s.SL*scale,        `SL ${fmtUnit(s.SL, s.unit)}`);
   dimV(xRight - 120,   top,   top + s.CL*scale,         `CL ${fmtUnit(s.CL, s.unit)}`);
 
-  // Horizontales (exactas al ancho real)
+  // Horizontales (exactas al ancho real, centradas)
   const halfD  = (s.D  * scale) / 2;
   const halfAD = (s.AD * scale) / 2;
   const yD  = top + s.CL*scale + 24;
