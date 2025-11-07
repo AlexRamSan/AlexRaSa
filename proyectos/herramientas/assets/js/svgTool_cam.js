@@ -1,8 +1,10 @@
-// Vista alzada (sin H).
-// - Z hélices = exactamente lo pedido.
-// - Hélices largo = CL, inclinación contraria, inicio medio D a la izquierda.
-// - Solo 3 zonas: CL, SL, OHL (tonos distintos).
-// - Cotas: derecha (CL, SL, OHL) alineadas; izquierda (TL); arriba D; abajo AD.
+// Vista alzada.
+// Implementa:
+// - Z hélices = exactamente lo pedido, largo = CL.
+// - Inclinación contraria. Inician D/2 a la izquierda y TERMINAN D/2 a la derecha.
+// - Zonas: CL, SL, OHL (rectángulos en tonos distintos). Anchos: CL usa D; SL/OHL usan AD.
+// - Cotas: derecha (CL, SL, OHL) alineadas; izquierda (TL); arriba (D); abajo (AD).
+// - Callouts azules a la izquierda: alturas = CL/SL/OHL; anchos: CL = D, SL/OHL = AD; centrados y apilados.
 
 import { materialColor } from './svgTool.js';
 
@@ -30,7 +32,8 @@ export function renderSVG(svg, s){
     svg.appendChild(e); return e;
   };
   const text = (x,y,t,fill='#9fb3c8',fs=12)=>{
-    const e=mk('text'); e.setAttribute('x',x); e.setAttribute('y',y);
+    const e=mk('text');
+    e.setAttribute('x',x); e.setAttribute('y',y);
     e.setAttribute('fill',fill); e.setAttribute('font-size',fs);
     e.textContent=t; svg.appendChild(e); return e;
   };
@@ -77,7 +80,7 @@ export function renderSVG(svg, s){
   const availableH = H - margin*2 - topExtra;
   const scale = availableH / s.TL;
 
-  // Ancho exacto por diámetro
+  // Anchos exactos (coinciden con D/AD)
   const WIDTH_BODY  = s.D  * scale;      // CL y SL
   const WIDTH_SHANK = s.AD * scale;      // OHL
 
@@ -93,8 +96,8 @@ export function renderSVG(svg, s){
   // límites para cotas fuera
   const rightGeom = Math.max(leftBody + WIDTH_BODY, leftShank + WIDTH_SHANK);
   const leftGeom  = Math.min(leftBody, leftShank);
-  const xRight    = Math.min(W - 10, rightGeom + 28); // ÚNICA línea vertical de cotas a la derecha
-  const xLeft     = Math.max(10, leftGeom  - 28);     // TL a la izquierda
+  const xRight    = Math.min(W - 10, rightGeom + 28); // columna derecha de cotas
+  const xLeft     = Math.max(10, leftGeom  - 28);     // cota TL izquierda
 
   // ---------- colores ----------
   const fillCL  = '#17314d';
@@ -121,7 +124,7 @@ export function renderSVG(svg, s){
     p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p);
   }
 
-  // --- Hélices (todas) sobre CL ---
+  // ---------- HÉLICE / FILOS ----------
   {
     const defs = mk('defs');
     const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
@@ -129,20 +132,23 @@ export function renderSVG(svg, s){
     clipRect.setAttribute('x', leftBody);
     clipRect.setAttribute('y', y);
     clipRect.setAttribute('width', WIDTH_BODY);
-    clipRect.setAttribute('height', s.CL * scale);
+    clipRect.setAttribute('height', s.CL * scale); // solo sobre CL
     clip.appendChild(clipRect); defs.appendChild(clip); svg.appendChild(defs);
 
     const g = mk('g'); g.setAttribute('clip-path','url(#clipCL)'); svg.appendChild(g);
 
-    const sw    = clamp((s.D * scale) * 0.08, 1, 6);
-    const bandH = s.CL * scale;
-    const k     = -Math.tan(s.helix * Math.PI / 180); // inclinación contraria
-    const Zvis  = Math.max(1, Math.round(s.Z));       // TODAS
-    const halfDpx = (s.D * scale) / 2;                // arranque medio D a la izq
+    const sw      = clamp((s.D * scale) * 0.08, 1, 6);
+    const bandH   = s.CL * scale;
+    const k       = -Math.tan(s.helix * Math.PI / 180); // inclinación contraria
+    const Zvis    = Math.max(1, Math.round(s.Z));       // TODAS
+    const halfDpx = (s.D * scale) / 2;
 
-    for(let i=0; i<Zvis; i++){
+    for (let i = 0; i < Zvis; i++) {
+      // arranque D/2 a la izquierda del cuerpo
       const x0 = (leftBody - halfDpx) + ((i + 0.5) * (WIDTH_BODY / Zvis));
-      const x1 = x0 + k * bandH;
+      // término D/2 a la derecha del cuerpo
+      const x1 = x0 + k * bandH + halfDpx;
+
       const l = mk('line');
       l.setAttribute('x1', x0); l.setAttribute('y1', y);
       l.setAttribute('x2', x1); l.setAttribute('y2', y + bandH);
@@ -162,10 +168,35 @@ export function renderSVG(svg, s){
   // ---------- OHL ----------
   rect(leftShank, y, WIDTH_SHANK, s.AD*scale, fillOHL, strokeAll);
 
+  // ---------- CALLOUTS IZQUIERDA (alturas ligadas a CL/SL/OHL; anchos por D/AD) ----------
+  {
+    const leftMost   = Math.min(leftBody, leftShank);
+    const colLeft    = xLeft + 6;
+    const colRight   = leftMost - 6;
+    const colCenter  = (colLeft + colRight) / 2;
+    const colAvail   = Math.max(24, colRight - colLeft);
+
+    const wCL_req  = s.D  * scale;                  // CL sigue D
+    const wADS_req = s.AD * scale;                  // SL/OHL siguen AD
+    const wCL  = Math.min(wCL_req,  colAvail);
+    const wADS = Math.min(wADS_req, colAvail);
+
+    const yCL  = top;
+    const ySL0 = top + s.CL * scale;
+    const yOHL0= top + (s.CL + s.SL) * scale;
+
+    const callStroke = '#2a4f7a';
+    rect(colCenter - wCL/2,  yCL,   wCL,  s.CL  * scale, '#18324e', callStroke);
+    rect(colCenter - wADS/2, ySL0,  wADS, s.SL  * scale, '#142b46', callStroke);
+    rect(colCenter - wADS/2, yOHL0, wADS, s.OHL * scale, '#10223a', callStroke);
+  }
+
   // ---------- COTAS ----------
-  // Líneas-guía desde el modelo a la columna de cotas derecha (para no tocar el dibujo)
-  // CL
+  // Derecha: CL, SL, OHL con guías desde el modelo
   const rightBody = leftBody + WIDTH_BODY;
+  const rightShank = leftShank + WIDTH_SHANK;
+
+  // CL
   line(rightBody, top, xRight, top, '#6ee7ff', 1.5);
   line(rightBody, top + s.CL*scale, xRight, top + s.CL*scale, '#6ee7ff', 1.5);
   dimV(xRight, top, top + s.CL*scale, `CL ${fmtUnit(s.CL, s.unit)}`);
@@ -177,7 +208,6 @@ export function renderSVG(svg, s){
   dimV(xRight, ySL0, ySL0 + s.SL*scale, `SL ${fmtUnit(s.SL, s.unit)}`);
 
   // OHL
-  const rightShank = leftShank + WIDTH_SHANK;
   const yOHL0 = ySL0 + s.SL*scale;
   line(rightShank, yOHL0, xRight, yOHL0, '#6ee7ff', 1.5);
   line(rightShank, yOHL0 + s.OHL*scale, xRight, yOHL0 + s.OHL*scale, '#6ee7ff', 1.5);
@@ -189,7 +219,7 @@ export function renderSVG(svg, s){
   line(xLeft, top + s.TL*scale, leftMost, top + s.TL*scale, '#6ee7ff', 1.5);
   dimV(xLeft, top, top + s.TL*scale, `TL ${fmtUnit(s.TL, s.unit)}`);
 
-  // Horizontales: D arriba, AD abajo (centradas)
+  // Horizontales: D arriba y AD abajo
   const halfD  = (s.D  * scale) / 2;
   const halfAD = (s.AD * scale) / 2;
   const yD  = top - 12;                      // arriba del modelo
