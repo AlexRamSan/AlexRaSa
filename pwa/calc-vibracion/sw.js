@@ -1,5 +1,5 @@
 // Cache básico para app-shell
-const CACHE = "rpm-vib-v2";
+const CACHE = "rpm-vib-v3";
 const ASSETS = [
   "/pwa/calc-vibracion/",
   "/pwa/calc-vibracion/index.html",
