@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Generador de Herramientas — AlexRaSa</title>
+  <meta name="description" content="Dibuja herramientas de corte por parámetros. Exporta SVG y DXF. Vista pseudo-3D. PWA offline." />
+  <meta name="color-scheme" content="dark" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <link rel="stylesheet" href="./assets/css/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <aside class="card panel">
+      <header>
+        <h1>Generador de Herramientas <span class="hl">AlexRaSa</span></h1>
+        <p class="tips">Llena los campos. Actualiza en vivo. Exporta y comparte URL con parámetros.</p>
+      </header>
+
+      <section class="group">
+        <h2>Geometría base</h2>
+        <div class="row">
+          <label>Diámetro de corte D (mm)<input id="diameter" type="number" value="12" min="0.1" step="0.1" /></label>
+          <label>Largo total L (mm)<input id="length" type="number" value="100" min="10" step="1" /></label>
+        </div>
+        <div class="row">
+          <label>Largo de corte lc (mm)<input id="cutLength" type="number" value="30" min="1" step="1" /></label>
+          <label>Diámetro zanco Dz (mm)<input id="shankDia" type="number" value="12" min="0.1" step="0.1" /></label>
+        </div>
+        <div class="row">
+          <label>Largo del zanco lz (mm)<input id="shankLen" type="number" value="60" min="1" step="1" /></label>
+          <label>Material<select id="material"></select></label>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2>Detalles</h2>
+        <div class="row">
+          <label>Filos (Z)<input id="flutes" type="number" value="4" min="1" step="1" /></label>
+          <label>Ángulo de hélice (°)<input id="helix" type="number" value="35" min="0" max="60" step="1" /></label>
+        </div>
+        <div class="row">
+          <label>Punta<select id="tip">
+            <option value="flat">Plana</option>
+            <option value="ball">Bola</option>
+            <option value="chamfer">Chaflán</option>
+          </select></label>
+          <label>Ángulo chaflán (°)<input id="chamferAngle" type="number" value="45" min="10" max="89" step="1" /></label>
+        </div>
+        <label>Escalones (DxL, separados por comas)
+          <input id="steps" type="text" placeholder="10x12,8x10" />
+        </label>
+      </section>
+
+      <section class="group">
+        <h2>Presets DIN/ISO</h2>
+        <div class="row">
+          <label>Familia<select id="family"></select></label>
+          <label>Modelo<select id="model"></select></label>
+        </div>
+        <button class="btn" id="applyPreset">Aplicar preset</button>
+      </section>
+
+      <section class="group">
+        <h2>Acciones</h2>
+        <div class="row">
+          <button class="btn" id="btnJson">JSON</button>
+          <button class="btn" id="btnSvg">SVG</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnDxf">DXF Perfil</button>
+          <button class="btn" id="btnShare">Compartir URL</button>
+        </div>
+      </section>
+
+      <footer class="tips">Representación esquemática lateral. Hélice 2D y vista pseudo-3D. No metrología.</footer>
+    </aside>
+
+    <main class="card stage">
+      <div class="tabs">
+        <button data-tab="svg" class="tab active">Vista SVG</button>
+        <button data-tab="preview" class="tab">Vista pseudo-3D</button>
+      </div>
+      <section id="pane-svg" class="pane active">
+        <svg id="view" width="1100" height="480" viewBox="0 0 1100 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vista lateral de herramienta"></svg>
+      </section>
+      <section id="pane-preview" class="pane">
+        <canvas id="preview3d" width="1100" height="480" aria-label="Vista pseudo-3D"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initApp } from './assets/js/app.js';
+    initApp();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
+  </script>
+</body>
+</html>
