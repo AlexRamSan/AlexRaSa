@@ -56,3 +56,4 @@ export function renderSVG(svg, state){
   // Overlay por material
   R(cx, top, 700, L*scale, accent+'14', 'none', 10);
 }
+ 
