@@ -1,8 +1,7 @@
-// Dibujo tipo “tabla de herramienta” sin H.
-// - Ancho del cuerpo depende de D; ancho del zanco depende de AD.
-// - TL = CL + SL + OHL (viene calculado).
-// - Hélice única: ángulo = helix, cantidad = Z.
-// - D/AD horizontales; TL/OHL/SL/CL verticales; todo centrado.
+// Vista alzada sin H.
+// - Ancho del cuerpo = D*scale; ancho del zanco = AD*scale (coinciden con sus cotas).
+// - Hélice/filos: se dibuja SOLO la mitad visible -> Zvis = round(Z/2), largo = CL.
+// - D/AD horizontales; TL/OHL/SL/CL verticales; bloques centrados.
 
 import { materialColor } from './svgTool.js';
 
@@ -46,14 +45,12 @@ export function renderSVG(svg, s){
   };
   const dimV = (x, y0, y1, label)=>{
     const yA = Math.min(y0,y1), yB = Math.max(y0,y1);
-    arrow(x, yA, x, yB);
-    line(x, yA, x-8, yA); line(x, yB, x-8, yB);
+    arrow(x, yA, x, yB); line(x, yA, x-8, yA); line(x, yB, x-8, yB);
     text(x+6, yA + (yB-yA)/2, label);
   };
   const dimH = (y, x0, x1, label)=>{
     const xA = Math.min(x0,x1), xB = Math.max(x0,x1);
-    arrow(xA, y, xB, y);
-    line(xA, y, xA, y-8); line(xB, y, xB, y-8);
+    arrow(xA, y, xB, y); line(xA, y, xA, y-8); line(xB, y, xB, y-8);
     text((xA+xB)/2 - 30, y-6, label);
   };
   const fmtUnit = (v, unit)=> unit==='inch' ? (v/25.4).toFixed(3)+' in' : v.toFixed(2)+' mm';
@@ -71,16 +68,13 @@ export function renderSVG(svg, s){
   const availableH = H - margin*2 - topExtra;
   const scale = availableH / s.TL;
 
-  // Anchos por zona, centrados
-  const WIDTH_BASE = 700, DIAM_REF = 12;
-  const widthFromDia = diaMm => clamp(WIDTH_BASE * (diaMm / DIAM_REF), 320, 900);
-  const WIDTH_BODY  = widthFromDia(s.D);   // CL, SL
-  const WIDTH_SHANK = widthFromDia(s.AD);  // OHL
+  // Anchos EXACTOS por diámetro (coinciden con cotas)
+  const WIDTH_BODY  = s.D  * scale;  // CL y SL
+  const WIDTH_SHANK = s.AD * scale;  // OHL
 
-  const stageLeft  = margin;
-  const stageRight = W - margin;
+  // Centrados
+  const stageLeft  = margin, stageRight = W - margin;
   const centerX_canvas = (stageLeft + stageRight) / 2;
-
   const leftBody   = centerX_canvas - WIDTH_BODY  / 2;
   const leftShank  = centerX_canvas - WIDTH_SHANK / 2;
   const top = margin + topExtra;
@@ -116,7 +110,7 @@ export function renderSVG(svg, s){
     p.setAttribute('stroke','#86e7ff'); p.setAttribute('fill','none'); svg.appendChild(p);
   }
 
-  // hélice: Z líneas a ángulo "helix", recortadas
+  // --- HÉLICE/FILOS: solo la mitad visible, largo = CL ---
   {
     const defs = mk('defs');
     const clip = mk('clipPath'); clip.setAttribute('id','clipCL');
@@ -124,17 +118,18 @@ export function renderSVG(svg, s){
     clipRect.setAttribute('x', leftBody);
     clipRect.setAttribute('y', y);
     clipRect.setAttribute('width', WIDTH_BODY);
-    clipRect.setAttribute('height', s.D * scale);
+    clipRect.setAttribute('height', s.CL * scale);    // clip igual a CL
     clip.appendChild(clipRect); defs.appendChild(clip); svg.appendChild(defs);
 
     const g = mk('g'); g.setAttribute('clip-path','url(#clipCL)'); svg.appendChild(g);
 
     const sw = clamp((s.D * scale) * 0.08, 1, 6);
-    const bandH = s.D * scale;
-    const k = Math.tan(s.helix * Math.PI / 180); // pendiente
+    const bandH = s.CL * scale;                        // largo = CL
+    const k = Math.tan(s.helix * Math.PI / 180);
 
-    for(let i=0; i<Math.max(1,s.Z); i++){
-      const x0 = leftBody + ( (i + 0.5) * (WIDTH_BODY / s.Z) );
+    const Zvis = Math.max(1, Math.round(s.Z / 2));
+    for(let i=0; i<Zvis; i++){
+      const x0 = leftBody + ( (i + 0.5) * (WIDTH_BODY / Zvis) );
       const x1 = x0 + k * bandH;
 
       const l = mk('line');
@@ -170,7 +165,7 @@ export function renderSVG(svg, s){
   dimV(xRight - 80,    ySL0,  ySL0 + s.SL*scale,        `SL ${fmtUnit(s.SL, s.unit)}`);
   dimV(xRight - 120,   top,   top + s.CL*scale,         `CL ${fmtUnit(s.CL, s.unit)}`);
 
-  // Horizontales (centradas en cada ancho)
+  // Horizontales (exactas al ancho real)
   const halfD  = (s.D  * scale) / 2;
   const halfAD = (s.AD * scale) / 2;
   const yD  = top + s.CL*scale + 24;
