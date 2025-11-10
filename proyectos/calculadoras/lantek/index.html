@@ -58,6 +58,7 @@
   thead th{font-weight:600;color:#cbd5e1}
   tbody tr{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
   tbody td{border-top:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04)}
+  .viz-xl{ min-height:520px }
 </style>
 </head>
 <body class="antialiased">
@@ -263,14 +264,14 @@
 
     <!-- Gráficos en dos columnas -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+     <div class="card p-4">
+  <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
+  <div id="vizDonut" class="mt-3 viz-xl"></div>
+</div>
       <div class="card p-4">
-        <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
-        <div id="vizDonut" class="mt-3"></div>
-      </div>
-      <div class="card p-4">
-        <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
-        <div id="vizCash" class="mt-3"></div>
-      </div>
+  <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
+  <div id="vizCash" class="mt-3 viz-xl"></div>
+</div>
     </div>
   </section>
 </main>
@@ -393,101 +394,128 @@
     renderCashflow('vizCash', { ahorroMes: total, cuota, capex });
   }
 
-  // Donut simple SVG
   function renderDonut(targetId, parts){
-    const data = parts.filter(p=>p[1]>0);
-    const total = data.reduce((s,p)=>s+p[1],0);
-    const W=760,H=320,cx=200,cy=160,r=120,th=38;
-    let start=0;
-    const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
-    const segs = data.map((p,i)=>{
-      const v = p[1]; const frac = total>0 ? v/total : 0;
-      const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
-      const large = (a1-a0)>Math.PI ? 1:0;
-      const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
-      const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
-      const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
-      const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
-      const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
-      const pct = total>0 ? Math.round(frac*100) : 0;
-      const legendX = cx + r + 60;
-      const legendY = 40 + 22*i;
-      return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
-              <text x="${legendX}" y="${legendY}" font-size="14" fill="var(--text)">${p[0]}: ${pct}%</text>`;
-    }).join('');
-    const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+10}" fill="rgba(255,255,255,0.03)"></circle>
-                    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="18" fill="var(--text)">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
-    const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
-    const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
-  }
+  const el = document.getElementById(targetId);
+  if(!el) return;
 
-  // Cashflow barras + línea de acumulado
-  function renderCashflow(targetId, {ahorroMes, cuota, capex}){
-    const meses = Array.from({length:12}, (_,i)=>`M${i+1}`);
-    const H = 320, pad = 32, barW = 22, gap = 16;
-    const cols = meses.length;
-    const W = Math.max(640, pad*2 + cols*(barW*2 + gap) + 80);
-    const neto = ahorroMes - cuota;
-    let acc = 0; const accArr = meses.map(()=>{acc+=neto;return acc;});
-    const maxY = Math.max(ahorroMes, cuota, ...accArr.map(v=>Math.abs(v)), capex||0, 1);
-    const scale = (v)=> Math.round((v/maxY) * (H - pad*2));
-    let x = pad + 10;
-    const bars = meses.map((m, i)=>{
-      const yA = H - pad - scale(ahorroMes);
-      const yM = H - pad - scale(cuota);
-      const hA = scale(ahorroMes);
-      const hM = scale(cuota);
-      const xa = x, xm = x + barW + 6;
-      const labelY = H - 8;
-      const txt = `<text x="${x}" y="${labelY}" font-size="12" fill="var(--text)">${m}</text>`;
-      const rects = `
-        <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E" opacity="0.9"></rect>
-        <rect x="${xm}" y="${yM}" width="${barW}" height="${hM}" fill="#EF4444" opacity="0.9"></rect>
-      `;
-      x += (barW*2 + gap);
-      return rects + txt;
-    }).join('');
-    const linePts = accArr.map((v, i)=>{
-      const xi = pad + 10 + i*(barW*2 + gap) + barW;
-      const yi = H - pad - scale(Math.max(0,v));
-      return `${xi},${yi}`;
-    }).join(' ');
+  const data = parts.filter(p=>p[1]>0);
+  const total = data.reduce((s,p)=>s+p[1],0);
 
-    let marker = '';
-    if ((capex||0) > 0) {
-      const idx = accArr.findIndex(v => v >= capex);
-      if (idx !== -1) {
-        const mx = pad + 10 + idx*(barW*2 + gap) + barW;
-        const my = H - pad - scale(Math.max(0, accArr[idx]));
-        marker = `<circle cx="${mx}" cy="${my}" r="5" fill="#A78BFA"></circle>
-                  <text x="${mx+10}" y="${my-8}" font-size="12" fill="#A78BFA">Payback M${idx+1}</text>`;
-      }
+  const W = Math.max(el.clientWidth || 980, 980);        // más ancho
+  const H = Math.max(el.clientHeight || 520, 520);       // más alto
+  const cx = Math.round(W*0.33);
+  const cy = Math.round(H*0.52);
+  const r  = Math.round(Math.min(W,H)*0.28);
+  const th = Math.round(r*0.34);
+
+  let start=0;
+  const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
+
+  const segs = data.map((p,i)=>{
+    const v=p[1], frac = total>0 ? v/total : 0;
+    const a0=start*2*Math.PI, a1=(start+frac)*2*Math.PI; start+=frac;
+    const large=(a1-a0)>Math.PI?1:0;
+    const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
+    const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+    const x0i=cx+(r-th)*Math.cos(a0), y0i=cy+(r-th)*Math.sin(a0);
+    const x1i=cx+(r-th)*Math.cos(a1), y1i=cy+(r-th)*Math.sin(a1);
+    const d=`M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
+    const pct = total>0 ? Math.round(frac*100) : 0;
+    const lx = Math.round(W*0.62), ly = 40 + 28*i;
+    return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
+            <text x="${lx}" y="${ly}" font-size="16" fill="var(--text)">${p[0]}: ${pct}%</text>`;
+  }).join('');
+
+  const center =
+    `<circle cx="${cx}" cy="${cy}" r="${r-th+14}" fill="rgba(255,255,255,0.04)"></circle>
+     <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle"
+           font-size="22" fill="var(--text)">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
+
+  el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img"
+                   aria-label="Distribución de ahorros">${segs}${center}</svg>`;
+}
+
+function renderCashflow(targetId, {ahorroMes, cuota, capex}){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+
+  const meses = Array.from({length:12}, (_,i)=>`M${i+1}`);
+  const H = Math.max(el.clientHeight || 520, 520);
+  const pad = 36, barW = 28, gap = 18;
+  const cols = meses.length;
+
+  const minW = pad*2 + cols*(barW*2 + gap) + 160;
+  const W = Math.max(el.clientWidth || minW, minW);
+
+  const neto = (ahorroMes||0) - (cuota||0);
+  let acc = 0; const accArr = meses.map(()=>{ acc += neto; return acc; });
+
+  const maxY = Math.max(ahorroMes||0, cuota||0, ...accArr.map(v=>Math.abs(v)), capex||0, 1);
+  const scale = v => Math.round((v/maxY) * (H - pad*2));
+
+  let x = pad + 12;
+  const bars = meses.map((m, i)=>{
+    const yA = H - pad - scale(ahorroMes);
+    const yM = H - pad - scale(cuota);
+    const hA = scale(ahorroMes);
+    const hM = scale(cuota);
+    const xa = x, xm = x + barW + 8;
+    const labelY = H - 10;
+    const txt = `<text x="${x}" y="${labelY}" font-size="14" fill="var(--text)">${m}</text>`;
+    const rects = `
+      <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E"></rect>
+      <rect x="${xm}" y="${yM}" width="${barW}" height="${hM}" fill="#EF4444"></rect>
+    `;
+    x += (barW*2 + gap);
+    return rects + txt;
+  }).join('');
+
+  const linePts = accArr.map((v,i)=>{
+    const xi = pad + 12 + i*(barW*2 + gap) + barW;
+    const yi = H - pad - scale(Math.max(0,v));
+    return `${xi},${yi}`;
+  }).join(' ');
+
+  let marker = '';
+  if ((capex||0) > 0){
+    const idx = accArr.findIndex(v => v >= capex);
+    if (idx !== -1){
+      const mx = pad + 12 + idx*(barW*2 + gap) + barW;
+      const my = H - pad - scale(Math.max(0, accArr[idx]));
+      marker = `<circle cx="${mx}" cy="${my}" r="6" fill="#A78BFA"></circle>
+                <text x="${mx+10}" y="${my-10}" font-size="14" fill="#A78BFA">Payback M${idx+1}</text>`;
     }
-    const yCapex = H - pad - scale(capex||0);
-    const capexLine = capex>0 ? `
-      <line x1="${pad}" y1="${yCapex}" x2="${W-pad}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6" opacity="0.9"></line>
-      <text x="${pad+8}" y="${yCapex-8}" font-size="12" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>
-    ` : '';
-    const axis = `
-      <line x1="${pad-8}" y1="${pad-4}" x2="${pad-8}" y2="${H-pad}" stroke="rgba(255,255,255,0.2)"></line>
-      <text x="${pad-12}" y="${H-pad+6}" font-size="12" text-anchor="end" fill="rgba(255,255,255,0.65)">$0</text>
-    `;
-    const legendX = W - pad - 220, legendY = pad;
-    const legend = `
-      <rect x="${legendX}" y="${legendY-12}" width="210" height="52" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
-      <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#22C55E"></rect>
-      <text x="${legendX+30}" y="${legendY+10}" font-size="12" fill="var(--text)">Ahorro mensual</text>
-      <rect x="${legendX+12}" y="${legendY+22}" width="12" height="12" fill="#EF4444"></rect>
-      <text x="${legendX+30}" y="${legendY+32}" font-size="12" fill="var(--text)">Mensualidad</text>
-      <polyline points="${legendX+12},${legendY+44} ${legendX+28},${legendY+44}" stroke="#A78BFA" stroke-width="2"></polyline>
-      <text x="${legendX+34}" y="${legendY+47}" font-size="12" fill="var(--text)">Acumulado</text>
-    `;
-    const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="2.5"></polyline>`;
-    const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flujo mensual y payback">
-      ${axis}${capexLine}${bars}${polyline}${marker}${legend}
-    </svg>`;
-    const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
   }
+
+  const yCapex = H - pad - scale(capex||0);
+  const capexLine = capex>0 ? `
+    <line x1="${pad}" y1="${yCapex}" x2="${W-pad}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6"></line>
+    <text x="${pad+10}" y="${yCapex-10}" font-size="14" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>
+  ` : '';
+
+  const legendX = W - pad - 260, legendY = pad;
+  const legend = `
+    <rect x="${legendX}" y="${legendY-14}" width="250" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
+    <rect x="${legendX+12}" y="${legendY}" width="14" height="14" fill="#22C55E"></rect>
+    <text x="${legendX+32}" y="${legendY+11}" font-size="14" fill="var(--text)">Ahorro mensual</text>
+    <rect x="${legendX+12}" y="${legendY+24}" width="14" height="14" fill="#EF4444"></rect>
+    <text x="${legendX+32}" y="${legendY+35}" font-size="14" fill="var(--text)">Mensualidad</text>
+    <polyline points="${legendX+12},${legendY+48} ${legendX+32},${legendY+48}" stroke="#A78BFA" stroke-width="3"></polyline>
+    <text x="${legendX+38}" y="${legendY+51}" font-size="14" fill="var(--text)">Acumulado</text>
+  `;
+
+  const axis = `
+    <line x1="${pad-10}" y1="${pad-6}" x2="${pad-10}" y2="${H-pad}" stroke="rgba(255,255,255,0.2)"></line>
+    <text x="${pad-14}" y="${H-pad+8}" font-size="14" text-anchor="end" fill="rgba(255,255,255,0.65)">$0</text>
+  `;
+
+  const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="3"></polyline>`;
+
+  el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img"
+                   aria-label="Flujo mensual y payback">
+    ${axis}${capexLine}${bars}${polyline}${marker}${legend}
+  </svg>`;
+}
 
   // Eventos
   document.getElementById('btnCalc').addEventListener('click', calcular);
