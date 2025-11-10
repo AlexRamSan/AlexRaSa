@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lantek ROI — Calculadora de Costo-Beneficio</title>
+<meta name="description" content="Calculadora ROI para Lantek: aprovechamiento de material, nesting, trazabilidad, programación y expansión a tubo. Calcula ahorros, ROI, payback y flujo." />
+<meta name="theme-color" content="#0F172A" />
+<meta name="robots" content="index,follow" />
+<link rel="canonical" href="https://alexrasa.store/proyectos/calculadoras/lantek/" />
+
+<!-- Manifest + PWA -->
+<link rel="manifest" href="/proyectos/calculadoras/lantek/lantek.webmanifest">
+<meta name="color-scheme" content="dark">
+
+<!-- Íconos (ajusta rutas según tus archivos) -->
+<link rel="icon" type="image/png" sizes="32x32" href="/proyectos/calculadoras/lantek/icons/icon-256.png" />
+<link rel="apple-touch-icon" href="/proyectos/calculadoras/lantek/icons/icon-192.png" />
+
+<!-- Preload de hero para evitar flash -->
+<link rel="preload" as="image" href="/assets/hero-industrial.png">
+
+<!-- Tailwind CDN para prototipo -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#071027;
+    --card:#0f172a;
+    --text:#e6eef8;
+    --accent:#60a5fa;
+    --accent-2:#6366F1;
+    --good:#22C55E;
+    --warn:#F59E0B;
+    --bad:#EF4444;
+  }
+  html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+  a{color:var(--accent)}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); border-radius:14px}
+  input,select,textarea{background:rgba(255,255,255,0.02); color:var(--text); border:1px solid rgba(255,255,255,0.06); padding:.55rem .65rem; border-radius:.6rem}
+  input:focus,select:focus{box-shadow:0 0 0 6px rgba(99,102,241,0.10); outline:none}
+
+  .hero-bg{
+    position:relative; background-size:cover; background-position:center; min-height:360px; overflow:hidden;
+  }
+  .hero-bg::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(2,6,23,0.25), rgba(2,6,23,0.65));z-index:1}
+  .hero-content{position:relative;z-index:2}
+
+  .stat{border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px}
+  .badge{display:inline-block;padding:.25rem .55rem;border-radius:999px;font-weight:700;font-size:11px;min-width:56px;text-align:center;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03)}
+  .badge.up{background:linear-gradient(180deg,#16a34a,#059669);color:#fff;border-color:rgba(5,118,78,0.25)}
+  .badge.mid{background:linear-gradient(180deg,#f59e0b,#d97706);color:#111;border-color:rgba(217,119,6,0.25)}
+  .badge.down{background:linear-gradient(180deg,#ef4444,#dc2626);color:#fff;border-color:rgba(220,38,38,0.25)}
+
+  /* tablas */
+  table{border-collapse:separate;border-spacing:0 8px}
+  thead th{font-weight:600;color:#cbd5e1}
+  tbody tr{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+  tbody td{border-top:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04)}
+</style>
+</head>
+<body class="antialiased">
+
+<!-- HEADER -->
+<header class="sticky top-0 z-40 backdrop-blur" style="background:rgba(2,6,23,0.55);border-bottom:1px solid rgba(255,255,255,0.04)">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="h-16 flex items-center justify-between gap-3">
+      <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Inicio">
+        <img src="/assets/logo.png" alt="AlexRaSa" class="h-9 w-auto" />
+        <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span style="color:var(--accent)">.store</span></span>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="/SolidCAM/" class="hover:text-sky-400">Soluciones</a>
+        <a href="/#recursos" class="hover:text-sky-400">Recursos</a>
+        <a href="/#contacto" class="hover:text-sky-400">Contacto</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero-bg" style="background-image:url('/assets/hero-industrial.png')">
+  <div class="hero-content max-w-6xl mx-auto px-4 py-12 md:py-20">
+    <h1 class="text-3xl md:text-5xl font-extrabold">Lantek ROI — <span style="color:var(--accent)">Calculadora</span></h1>
+    <p class="mt-3 max-w-3xl text-slate-200">Elige los casos A–E que aplican y calcula ahorros mensuales, ROI, payback y flujo con inversión inicial o esquema mensual.</p>
+  </div>
+</section>
+
+<!-- MAIN -->
+<main class="max-w-6xl mx-auto px-4 pt-8 pb-24 grid gap-5 lg:grid-cols-8">
+  <!-- FORM -->
+  <section class="card p-5 lg:col-span-3">
+    <h2 class="text-lg font-semibold">Entradas</h2>
+
+    <div class="mt-4 space-y-6">
+      <!-- toggles -->
+      <fieldset class="space-y-2">
+        <legend class="text-sm font-semibold mb-1">Casos a incluir</legend>
+        <label class="flex items-center gap-2 text-sm"><input id="incA" type="checkbox" class="h-4 w-4" checked> A) Material y nesting</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incB" type="checkbox" class="h-4 w-4" checked> B) Programación y throughput</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incC" type="checkbox" class="h-4 w-4"> C) Velocidad comercial</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incD" type="checkbox" class="h-4 w-4"> D) Trazabilidad y planeación</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incE" type="checkbox" class="h-4 w-4"> E) Consolidación chapa+tubo</label>
+      </fieldset>
+
+      <!-- A -->
+      <fieldset class="space-y-3">
+        <legend class="text-sm font-semibold">A) Material y nesting</legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-sm">Aprovechamiento actual (%)
+            <input id="aprovA" type="number" value="78">
+          </label>
+          <label class="text-sm">Aprovechamiento propuesto (%)
+            <input id="aprovP" type="number" value="86">
+          </label>
+          <label class="text-sm">Costo material por hoja (USD)
+            <input id="costoHoja" type="number" value="95">
+          </label>
+          <label class="text-sm">Hojas por mes
+            <input id="hojasMes" type="number" value="420">
+          </label>
+        </div>
+        <p class="text-xs text-slate-400">Supuesto: el software mejora el aprovechamiento y remanentes. No altera perforaciones ni gas/abrasivo per se.</p>
+      </fieldset>
+
+      <!-- B -->
+      <fieldset class="space-y-3">
+        <legend class="text-sm font-semibold">B) Programación y throughput</legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-sm">Min/NC manual
+            <input id="minNCManual" type="number" value="18">
+          </label>
+          <label class="text-sm">Min/NC con Lantek
+            <input id="minNCLantek" type="number" value="8">
+          </label>
+          <label class="text-sm">NC por mes
+            <input id="ncMes" type="number" value="260">
+          </label>
+          <label class="text-sm">Costo hora programador (USD)
+            <input id="costoProg" type="number" value="18">
+          </label>
+          <label class="text-sm">Min de cambio de software eliminados/NC
+            <input id="minCambio" type="number" value="3">
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- C -->
+      <fieldset class="space-y-3">
+        <legend class="text-sm font-semibold">C) Velocidad comercial</legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-sm">TAT cotización actual (h)
+            <input id="tatA" type="number" value="24">
+          </label>
+          <label class="text-sm">SLA objetivo (h)
+            <input id="tatP" type="number" value="8">
+          </label>
+          <label class="text-sm">Cotizaciones por mes
+            <input id="cotsMes" type="number" value="120">
+          </label>
+          <label class="text-sm">Costo hora ventas (USD)
+            <input id="costoVentas" type="number" value="16">
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- D -->
+      <fieldset class="space-y-3">
+        <legend class="text-sm font-semibold">D) Trazabilidad y planeación</legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-sm">Min perdidos/orden por falta de trazabilidad
+            <input id="minPerdidos" type="number" value="6">
+          </label>
+          <label class="text-sm">Órdenes por mes
+            <input id="ordenesMes" type="number" value="900">
+          </label>
+          <label class="text-sm">Costo hora producción (USD)
+            <input id="costoProd" type="number" value="28">
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- E -->
+      <fieldset class="space-y-3">
+        <legend class="text-sm font-semibold">E) Consolidación chapa+tubo</legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-sm">Licencias antiguas eliminadas (USD/mes)
+            <input id="licenciasElim" type="number" value="350">
+          </label>
+          <label class="text-sm">Jobs/mes afectados por cambio de software
+            <input id="jobsMes" type="number" value="120">
+          </label>
+        </div>
+        <p class="text-xs text-slate-400">Considera ahorros por dejar múltiples softwares y por tiempos de cambio evitados.</p>
+      </fieldset>
+
+      <!-- Modelo financiero -->
+      <fieldset class="space-y-3">
+        <legend class="text-sm font-semibold">Finanzas</legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="text-sm">Inversión inicial (USD)
+            <input id="capex" type="number" value="12000">
+          </label>
+          <label class="text-sm">Mensualidad (USD) — si aplica
+            <input id="mensualidad" type="number" value="450">
+          </label>
+        </div>
+      </fieldset>
+
+      <button id="btnCalc" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent-2);color:white">Calcular</button>
+    </div>
+  </section>
+
+  <!-- TABLA -->
+  <section class="card p-5 lg:col-span-3">
+    <h2 class="text-lg font-semibold">Comparativa de ahorros</h2>
+    <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
+      <table class="w-full text-sm">
+        <thead>
+          <tr>
+            <th class="text-left px-2 py-1">Concepto</th>
+            <th class="text-right px-2 py-1">Ahorro mensual (USD)</th>
+            <th class="text-right px-2 py-1">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyAhorros"></tbody>
+        <tfoot>
+          <tr>
+            <td class="px-2 py-2 font-semibold">Total</td>
+            <td id="tdTotal" class="px-2 py-2 text-right font-semibold"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- KPIs + GRÁFICOS -->
+  <section class="lg:col-span-2 grid gap-4">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold mb-2">KPIs</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="stat">
+          <div class="text-xs text-slate-300">ROI anual</div>
+          <div id="kpiROI" class="text-xl font-bold">0%</div>
+        </div>
+        <div class="stat">
+          <div class="text-xs text-slate-300">Payback (meses)</div>
+          <div id="kpiPayback" class="text-xl font-bold">—</div>
+        </div>
+        <div class="stat">
+          <div class="text-xs text-slate-300">Neto mensual (ahorro − cuota)</div>
+          <div id="kpiNeto" class="text-xl font-bold">$0</div>
+        </div>
+        <div class="stat">
+          <div class="text-xs text-slate-300">Ahorro por caso dominante</div>
+          <div id="kpiTop" class="text-sm"><span class="badge">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
+      <div id="vizDonut" class="mt-3"></div>
+    </div>
+
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
+      <div id="vizCash" class="mt-3"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="py-8 text-center text-sm text-slate-400">© 2025 AlexRaSa — Lantek ROI</footer>
+
+<script>
+  // Utilidad
+  const fmt = (n, d=2) => Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+  // Habilita/Deshabilita grupos según toggles
+  function toggleFieldset(idToggle, fieldset){
+    const on = document.getElementById(idToggle)?.checked ?? false;
+    fieldset.querySelectorAll('input,select,textarea').forEach(el => el.disabled = !on);
+  }
+  function applyToggles(){
+    toggleFieldset('incA', document.querySelector('fieldset:nth-of-type(2)')); // A
+    toggleFieldset('incB', document.querySelector('fieldset:nth-of-type(3)')); // B
+    toggleFieldset('incC', document.querySelector('fieldset:nth-of-type(4)')); // C
+    toggleFieldset('incD', document.querySelector('fieldset:nth-of-type(5)')); // D
+    toggleFieldset('incE', document.querySelector('fieldset:nth-of-type(6)')); // E
+  }
+
+  // Cálculo por caso
+  function calcA(){
+    const on = document.getElementById('incA').checked;
+    if(!on) return 0;
+    const aprovA = +document.getElementById('aprovA').value||0;
+    const aprovP = +document.getElementById('aprovP').value||0;
+    const costoHoja = +document.getElementById('costoHoja').value||0;
+    const hojasMes = +document.getElementById('hojasMes').value||0;
+    const wasteA = Math.max(0, 100 - aprovA)/100;
+    const wasteP = Math.max(0, 100 - aprovP)/100;
+    const ahorro = Math.max(0, (wasteA - wasteP)) * costoHoja * hojasMes;
+    return ahorro;
+  }
+  function calcB(){
+    const on = document.getElementById('incB').checked;
+    if(!on) return 0;
+    const minManual = +document.getElementById('minNCManual').value||0;
+    const minLantek = +document.getElementById('minNCLantek').value||0;
+    const ncMes = +document.getElementById('ncMes').value||0;
+    const costoProg = +document.getElementById('costoProg').value||0;
+    const minCambio = +document.getElementById('minCambio').value||0;
+    const ahMin = Math.max(0, (minManual - minLantek) + minCambio);
+    return (ahMin/60) * costoProg * ncMes;
+  }
+  function calcC(){
+    const on = document.getElementById('incC').checked;
+    if(!on) return 0;
+    const tatA = +document.getElementById('tatA').value||0;
+    const tatP = +document.getElementById('tatP').value||0;
+    const cotsMes = +document.getElementById('cotsMes').value||0;
+    const costoVentas = +document.getElementById('costoVentas').value||0;
+    const ahH = Math.max(0, tatA - tatP);
+    return ahH * cotsMes * costoVentas;
+  }
+  function calcD(){
+    const on = document.getElementById('incD').checked;
+    if(!on) return 0;
+    const minPerdidos = +document.getElementById('minPerdidos').value||0;
+    const ordenesMes = +document.getElementById('ordenesMes').value||0;
+    const costoProd = +document.getElementById('costoProd').value||0;
+    return (minPerdidos/60) * ordenesMes * costoProd;
+  }
+  function calcE(){
+    const on = document.getElementById('incE').checked;
+    if(!on) return 0;
+    const licenciasElim = +document.getElementById('licenciasElim').value||0;
+    const jobsMes = +document.getElementById('jobsMes').value||0;
+    const minCambio = +document.getElementById('minCambio').value||0; // reutilizamos B
+    const costoProg = +document.getElementById('costoProg').value||0; // reutilizamos B
+    const ahorroTiempo = (minCambio/60) * jobsMes * costoProg;
+    return licenciasElim + ahorroTiempo;
+  }
+
+  function calcular(){
+    const parts = [
+      ['Material y nesting (A)', calcA()],
+      ['Programación y throughput (B)', calcB()],
+      ['Velocidad comercial (C)', calcC()],
+      ['Trazabilidad y planeación (D)', calcD()],
+      ['Consolidación chapa+tubo (E)', calcE()]
+    ];
+    const total = parts.reduce((s, p)=> s + p[1], 0);
+
+    // KPIs
+    const capex = +document.getElementById('capex').value||0;
+    const cuota = +document.getElementById('mensualidad').value||0;
+    const roiAnual = capex>0 ? ((total*12)/capex)*100 : 0;
+    const neto = total - cuota;
+    // payback con acumulado de neto mensual contra CAPEX
+    const idxPayback = capex>0 && neto>0 ? Math.ceil(capex / neto) : -1;
+
+    // Render tabla
+    const body = document.getElementById('tbodyAhorros');
+    body.innerHTML = parts
+      .filter(([_,v]) => v>0.0001)
+      .map(([k,v]) => `
+        <tr>
+          <td class="px-2 py-2">${k}</td>
+          <td class="px-2 py-2 text-right font-mono">$${fmt(v)}</td>
+          <td class="px-2 py-2 text-right"><span class="badge up">+${fmt((v/Math.max(total,1))*100,0)}%</span></td>
+        </tr>
+      `).join('') || `<tr><td colspan="3" class="px-2 py-3 text-center text-slate-400">Sin ahorros activos</td></tr>`;
+    document.getElementById('tdTotal').textContent = `$${fmt(total)}`;
+
+    // KPIs
+    document.getElementById('kpiROI').textContent = `${fmt(roiAnual)}%`;
+    document.getElementById('kpiPayback').textContent = idxPayback>0 ? idxPayback : '—';
+    const kN = document.getElementById('kpiNeto');
+    kN.textContent = `$${fmt(neto)}`;
+    kN.style.color = neto>=0 ? 'var(--good)' : 'var(--bad)';
+    const top = parts.slice().sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('kpiTop').innerHTML = top && top[1]>0 ? `<span class="badge up">${top[0]}</span>` : '<span class="badge">—</span>';
+
+    // Gráficos
+    renderDonut('vizDonut', parts);
+    renderCashflow('vizCash', { ahorroMes: total, cuota, capex });
+  }
+
+  // Donut simple SVG
+  function renderDonut(targetId, parts){
+    const data = parts.filter(p=>p[1]>0);
+    const total = data.reduce((s,p)=>s+p[1],0);
+    const W=760,H=320,cx=200,cy=160,r=120,th=38;
+    let start=0;
+    const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
+    const segs = data.map((p,i)=>{
+      const v = p[1]; const frac = total>0 ? v/total : 0;
+      const a0 = start*2*Math.PI, a1 = (start+frac)*2*Math.PI; start+=frac;
+      const large = (a1-a0)>Math.PI ? 1:0;
+      const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+      const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+      const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
+      const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
+      const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
+      const pct = total>0 ? Math.round(frac*100) : 0;
+      const legendX = cx + r + 60;
+      const legendY = 40 + 22*i;
+      return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
+              <text x="${legendX}" y="${legendY}" font-size="14" fill="var(--text)">${p[0]}: ${pct}%</text>`;
+    }).join('');
+    const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+10}" fill="rgba(255,255,255,0.03)"></circle>
+                    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="18" fill="var(--text)">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
+    const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
+    const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+  }
+
+  // Cashflow barras + línea de acumulado
+  function renderCashflow(targetId, {ahorroMes, cuota, capex}){
+    const meses = Array.from({length:12}, (_,i)=>`M${i+1}`);
+    const H = 320, pad = 32, barW = 22, gap = 16;
+    const cols = meses.length;
+    const W = Math.max(640, pad*2 + cols*(barW*2 + gap) + 80);
+    const neto = ahorroMes - cuota;
+    let acc = 0; const accArr = meses.map(()=>{acc+=neto;return acc;});
+    const maxY = Math.max(ahorroMes, cuota, ...accArr.map(v=>Math.abs(v)), capex||0, 1);
+    const scale = (v)=> Math.round((v/maxY) * (H - pad*2));
+    let x = pad + 10;
+    const bars = meses.map((m, i)=>{
+      const yA = H - pad - scale(ahorroMes);
+      const yM = H - pad - scale(cuota);
+      const hA = scale(ahorroMes);
+      const hM = scale(cuota);
+      const xa = x, xm = x + barW + 6;
+      const labelY = H - 8;
+      const txt = `<text x="${x}" y="${labelY}" font-size="12" fill="var(--text)">${m}</text>`;
+      const rects = `
+        <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E" opacity="0.9"></rect>
+        <rect x="${xm}" y="${yM}" width="${barW}" height="${hM}" fill="#EF4444" opacity="0.9"></rect>
+      `;
+      x += (barW*2 + gap);
+      return rects + txt;
+    }).join('');
+    const linePts = accArr.map((v, i)=>{
+      const xi = pad + 10 + i*(barW*2 + gap) + barW;
+      const yi = H - pad - scale(Math.max(0,v));
+      return `${xi},${yi}`;
+    }).join(' ');
+
+    let marker = '';
+    if ((capex||0) > 0) {
+      const idx = accArr.findIndex(v => v >= capex);
+      if (idx !== -1) {
+        const mx = pad + 10 + idx*(barW*2 + gap) + barW;
+        const my = H - pad - scale(Math.max(0, accArr[idx]));
+        marker = `<circle cx="${mx}" cy="${my}" r="5" fill="#A78BFA"></circle>
+                  <text x="${mx+10}" y="${my-8}" font-size="12" fill="#A78BFA">Payback M${idx+1}</text>`;
+      }
+    }
+    const yCapex = H - pad - scale(capex||0);
+    const capexLine = capex>0 ? `
+      <line x1="${pad}" y1="${yCapex}" x2="${W-pad}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6" opacity="0.9"></line>
+      <text x="${pad+8}" y="${yCapex-8}" font-size="12" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>
+    ` : '';
+    const axis = `
+      <line x1="${pad-8}" y1="${pad-4}" x2="${pad-8}" y2="${H-pad}" stroke="rgba(255,255,255,0.2)"></line>
+      <text x="${pad-12}" y="${H-pad+6}" font-size="12" text-anchor="end" fill="rgba(255,255,255,0.65)">$0</text>
+    `;
+    const legendX = W - pad - 220, legendY = pad;
+    const legend = `
+      <rect x="${legendX}" y="${legendY-12}" width="210" height="52" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
+      <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#22C55E"></rect>
+      <text x="${legendX+30}" y="${legendY+10}" font-size="12" fill="var(--text)">Ahorro mensual</text>
+      <rect x="${legendX+12}" y="${legendY+22}" width="12" height="12" fill="#EF4444"></rect>
+      <text x="${legendX+30}" y="${legendY+32}" font-size="12" fill="var(--text)">Mensualidad</text>
+      <polyline points="${legendX+12},${legendY+44} ${legendX+28},${legendY+44}" stroke="#A78BFA" stroke-width="2"></polyline>
+      <text x="${legendX+34}" y="${legendY+47}" font-size="12" fill="var(--text)">Acumulado</text>
+    `;
+    const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="2.5"></polyline>`;
+    const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flujo mensual y payback">
+      ${axis}${capexLine}${bars}${polyline}${marker}${legend}
+    </svg>`;
+    const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
+  }
+
+  // Eventos
+  document.getElementById('btnCalc').addEventListener('click', calcular);
+  ['incA','incB','incC','incD','incE'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', ()=>{ applyToggles(); calcular(); });
+  });
+  document.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('input', ()=>{ calcular(); });
+  });
+
+  // Init
+  applyToggles();
+  calcular();
+
+  // Registro SW
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/proyectos/calculadoras/lantek/sw-lantek.js', { scope: '/proyectos/calculadoras/lantek/' })
+      .catch(console.error);
+  }
+</script>
+</body>
+</html>
