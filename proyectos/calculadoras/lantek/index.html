@@ -440,39 +440,43 @@ function renderCashflow(targetId, {ahorroMes, cuota, capex}){
   if(!el) return;
 
   const meses = Array.from({length:12}, (_,i)=>`M${i+1}`);
-  const H = Math.max(el.clientHeight || 520, 520);
-  const pad = 36, barW = 28, gap = 18;
-  const cols = meses.length;
 
-  const minW = pad*2 + cols*(barW*2 + gap) + 160;
+  // pads más compactos
+  const padTop = 20, padBottom = 18, padLeft = 36, barW = 28, gap = 18;
+
+  const cols = meses.length;
+  const minW = padLeft*2 + cols*(barW*2 + gap) + 160;
   const W = Math.max(el.clientWidth || minW, minW);
+  const H = Math.max(el.clientHeight || 460, 460); // menos alto
 
   const neto = (ahorroMes||0) - (cuota||0);
   let acc = 0; const accArr = meses.map(()=>{ acc += neto; return acc; });
 
   const maxY = Math.max(ahorroMes||0, cuota||0, ...accArr.map(v=>Math.abs(v)), capex||0, 1);
-  const scale = v => Math.round((v/maxY) * (H - pad*2));
+  const usableH = H - padTop - padBottom;
+  const scale = v => Math.round((v/maxY) * usableH);
 
-  let x = pad + 12;
+  let x = padLeft + 12;
   const bars = meses.map((m, i)=>{
-    const yA = H - pad - scale(ahorroMes);
-    const yM = H - pad - scale(cuota);
     const hA = scale(ahorroMes);
     const hM = scale(cuota);
+    const yA = H - padBottom - hA;
+    const yM = H - padBottom - hM;
     const xa = x, xm = x + barW + 8;
-    const labelY = H - 10;
-    const txt = `<text x="${x}" y="${labelY}" font-size="14" fill="var(--text)">${m}</text>`;
+    const labelY = H - padBottom + 12;  // pegado al eje
+
     const rects = `
       <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E"></rect>
       <rect x="${xm}" y="${yM}" width="${barW}" height="${hM}" fill="#EF4444"></rect>
+      <text x="${x}" y="${labelY}" font-size="12" fill="var(--text)">${m}</text>
     `;
     x += (barW*2 + gap);
-    return rects + txt;
+    return rects;
   }).join('');
 
   const linePts = accArr.map((v,i)=>{
-    const xi = pad + 12 + i*(barW*2 + gap) + barW;
-    const yi = H - pad - scale(Math.max(0,v));
+    const xi = padLeft + 12 + i*(barW*2 + gap) + barW;
+    const yi = H - padBottom - scale(Math.max(0,v));
     return `${xi},${yi}`;
   }).join(' ');
 
@@ -480,42 +484,42 @@ function renderCashflow(targetId, {ahorroMes, cuota, capex}){
   if ((capex||0) > 0){
     const idx = accArr.findIndex(v => v >= capex);
     if (idx !== -1){
-      const mx = pad + 12 + idx*(barW*2 + gap) + barW;
-      const my = H - pad - scale(Math.max(0, accArr[idx]));
+      const mx = padLeft + 12 + idx*(barW*2 + gap) + barW;
+      const my = H - padBottom - scale(Math.max(0, accArr[idx]));
       marker = `<circle cx="${mx}" cy="${my}" r="6" fill="#A78BFA"></circle>
-                <text x="${mx+10}" y="${my-10}" font-size="14" fill="#A78BFA">Payback M${idx+1}</text>`;
+                <text x="${mx+10}" y="${my-8}" font-size="12" fill="#A78BFA">Payback M${idx+1}</text>`;
     }
   }
 
-  const yCapex = H - pad - scale(capex||0);
+  const yCapex = H - padBottom - scale(capex||0);
   const capexLine = capex>0 ? `
-    <line x1="${pad}" y1="${yCapex}" x2="${W-pad}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6"></line>
-    <text x="${pad+10}" y="${yCapex-10}" font-size="14" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>
+    <line x1="${padLeft}" y1="${yCapex}" x2="${W-padLeft}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6"></line>
+    <text x="${padLeft+8}" y="${yCapex-8}" font-size="12" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>
   ` : '';
 
-  const legendX = W - pad - 260, legendY = pad;
-  const legend = `
-    <rect x="${legendX}" y="${legendY-14}" width="250" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
-    <rect x="${legendX+12}" y="${legendY}" width="14" height="14" fill="#22C55E"></rect>
-    <text x="${legendX+32}" y="${legendY+11}" font-size="14" fill="var(--text)">Ahorro mensual</text>
-    <rect x="${legendX+12}" y="${legendY+24}" width="14" height="14" fill="#EF4444"></rect>
-    <text x="${legendX+32}" y="${legendY+35}" font-size="14" fill="var(--text)">Mensualidad</text>
-    <polyline points="${legendX+12},${legendY+48} ${legendX+32},${legendY+48}" stroke="#A78BFA" stroke-width="3"></polyline>
-    <text x="${legendX+38}" y="${legendY+51}" font-size="14" fill="var(--text)">Acumulado</text>
-  `;
-
   const axis = `
-    <line x1="${pad-10}" y1="${pad-6}" x2="${pad-10}" y2="${H-pad}" stroke="rgba(255,255,255,0.2)"></line>
-    <text x="${pad-14}" y="${H-pad+8}" font-size="14" text-anchor="end" fill="rgba(255,255,255,0.65)">$0</text>
+    <line x1="${padLeft-10}" y1="${padTop}" x2="${padLeft-10}" y2="${H-padBottom}" stroke="rgba(255,255,255,0.2)"></line>
+    <text x="${padLeft-14}" y="${H-padBottom+10}" font-size="12" text-anchor="end" fill="rgba(255,255,255,0.65)">$0</text>
   `;
 
-  const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="3"></polyline>`;
+  const legendX = W - padLeft - 240, legendY = padTop;
+  const legend = `
+    <rect x="${legendX}" y="${legendY-12}" width="230" height="52" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
+    <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#22C55E"></rect>
+    <text x="${legendX+30}" y="${legendY+10}" font-size="12" fill="var(--text)">Ahorro mensual</text>
+    <rect x="${legendX+12}" y="${legendY+22}" width="12" height="12" fill="#EF4444"></rect>
+    <text x="${legendX+30}" y="${legendY+32}" font-size="12" fill="var(--text)">Mensualidad</text>
+    <polyline points="${legendX+12},${legendY+44} ${legendX+28},${legendY+44}" stroke="#A78BFA" stroke-width="2.5"></polyline>
+    <text x="${legendX+34}" y="${legendY+47}" font-size="12" fill="var(--text)">Acumulado</text>
+  `;
 
-  el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img"
-                   aria-label="Flujo mensual y payback">
+  const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="2.5"></polyline>`;
+
+  el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flujo mensual y payback">
     ${axis}${capexLine}${bars}${polyline}${marker}${legend}
   </svg>`;
 }
+
 
   // Eventos
   document.getElementById('btnCalc').addEventListener('click', calcular);
