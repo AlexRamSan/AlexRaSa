@@ -224,6 +224,9 @@
       <label class="text-sm">Inversión inicial (USD)
         <input id="inversion" type="number" value="2000" class="mt-1 w-full">
       </label>
+      <label class="text-sm">Mensualidad acordada (USD)
+  <input id="mensualidad" type="number" value="600" class="mt-1 w-full">
+</label>
       <label class="text-sm">T. muerto actual (min/mes)
         <input id="tmuertoA" type="number" value="120" class="mt-1 w-full">
       </label>
@@ -284,22 +287,32 @@
         <div class="text-sm">Payback (meses)</div>
         <div id="payback" class="text-right font-bold text-lg" style="color:var(--warn)">0</div>
       </div>
+      <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(34,197,94,0.04), rgba(255,255,255,0.01));">
+  <div class="text-sm">Neto mensual (ahorro - mensualidad)</div>
+  <div id="netoMensual" class="text-right font-bold text-lg">$0</div>
+</div>
+
     </div>
   </section>
 
   <!-- VISUALES -->
   <section id="visuales" class="card p-5 lg:col-span-8 lg:col-start-1">
     <h2 class="text-lg font-semibold">Visuales</h2>
-    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
-        <p class="text-sm font-semibold">Distribución de ahorros</p>
-        <div id="vizAhorros" class="mt-4"></div>
-      </div>
-      <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
-        <p class="text-sm font-semibold">Comparativa rápida</p>
-        <div id="vizPerf" class="mt-4"></div>
-      </div>
-    </div>
+    <!-- antes: md:grid-cols-2 -->
+<div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
+    <p class="text-sm font-semibold">Distribución de ahorros</p>
+    <div id="vizAhorros" class="mt-4"></div>
+  </div>
+  <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
+    <p class="text-sm font-semibold">Comparativa rápida</p>
+    <div id="vizPerf" class="mt-4"></div>
+  </div>
+  <div class="rounded-lg p-3" style="border:1px solid rgba(255,255,255,0.03);">
+    <p class="text-sm font-semibold">Flujo mensual y payback</p>
+    <div id="vizCash" class="mt-4"></div>
+  </div>
+</div>
   </section>
 </main>
 
@@ -320,6 +333,7 @@
 
   // calculator logic (unchanged semantics from your original)
   function calcular(){
+    const mensualidad = +document.getElementById('mensualidad').value || 0;
     const cicloA = +document.getElementById('cicloA').value || 0;
     const cicloP = +document.getElementById('cicloP').value || 0;
     const vidaA = +document.getElementById('vidaA').value || 0;
@@ -352,11 +366,29 @@
     const roiMensual = inversion > 0 ? (ahorroTotal / inversion) * 100 : 0;
     const roiAnual   = inversion > 0 ? ((ahorroTotal * 12) / inversion) * 100 : 0;
     const payback    = inversion > 0 && ahorroTotal > 0 ? inversion / ahorroTotal : 0;
+    // construir datos de cashflow 12 meses
+const meses = Array.from({length:12}, (_,i)=>`M${i+1}`);
+const ahorroMes = ahorroTotal;
+const cuota = mensualidad;
+const neto = ahorroMes - cuota;
+    let acc = 0;
+const accArr = meses.map(()=>{ acc += neto; return acc; });
+    // KPI visual de payback por mes usando acumulado neto vs CAPEX
+const idxPayback = inversion > 0 ? accArr.findIndex(v => v >= inversion) : -1;
+
+// Neto mensual UI
+const netoEl = document.getElementById('netoMensual');
+if (netoEl) {
+  netoEl.textContent = `$${fmt(neto)}`;
+  netoEl.style.color = neto >= 0 ? 'var(--good)' : 'var(--bad)';
+}
+// render del gráfico
+renderCashflow('vizCash', {meses, ahorroMes, cuota, accArr, capex: inversion});
 
     document.getElementById('ahorro').textContent     = `$${fmt(ahorroTotal)}`;
     document.getElementById('roi').textContent        = `${fmt(roiAnual)}%`;
     document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
-    document.getElementById('payback').textContent    = fmt(payback);
+    document.getElementById('payback').textContent = idxPayback !== -1 ? (idxPayback + 1) : '—';
     document.getElementById('ahorroTM').textContent   = `$${fmt(ahorroTM)}`;
 
     const pphA = cicloA>0 ? 3600/cicloA : 0;
@@ -425,6 +457,94 @@
     renderDonut('vizAhorros', parts, labels);
     renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
   }
+  function renderCashflow(targetId, {meses, ahorroMes, cuota, accArr, capex}){
+  const H = 220, pad = 28, barW = 18, gap = 14;
+  const cols = meses.length;
+  const W = Math.max(360, pad*2 + cols*(barW*2 + gap) + 40); // dos barras por mes
+  const maxY = Math.max(ahorroMes, cuota, ...accArr.map(v=>Math.abs(v)), capex||0, 1);
+  const scale = (v)=> Math.round((v/maxY) * (H - pad*2)) ;
+
+  let x = pad + 10;
+  const bars = meses.map((m, i)=>{
+    const yA = H - pad - scale(ahorroMes);
+    const yM = H - pad - scale(cuota);
+    const hA = scale(ahorroMes);
+    const hM = scale(cuota);
+    const xa = x, xm = x + barW + 4;
+    const labelY = H - 6;
+
+    const txt = `<text x="${x}" y="${labelY}" font-size="10" fill="var(--text)">${m}</text>`;
+    const rects = `
+      <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E" opacity="0.9"></rect>
+      <rect x="${xm}" y="${yM}" width="${barW}" height="${hM}" fill="#EF4444" opacity="0.9"></rect>
+    `;
+    x += (barW*2 + gap);
+    return rects + txt;
+  }).join('');
+
+  // línea de acumulado
+  const linePts = accArr.map((v, i)=>{
+    const xi = pad + 10 + i*(barW*2 + gap) + barW; // medio entre ambas barras
+    const yi = H - pad - scale(Math.max(0,v));     // no bajamos de 0 visualmente
+    return `${xi},${yi}`;
+  }).join(' ');
+    // marcador de payback: primer mes donde acumulado ≥ CAPEX
+let marker = '';
+if ((capex||0) > 0) {
+  const idx = accArr.findIndex(v => v >= capex);
+  if (idx !== -1) {
+    const mx = pad + 10 + idx*(barW*2 + gap) + barW;  // alineado a la polilínea
+    const my = H - pad - scale(Math.max(0, accArr[idx]));
+    marker = `
+      <circle cx="${mx}" cy="${my}" r="4" fill="#A78BFA"></circle>
+      <text x="${mx+8}" y="${my-6}" font-size="10" fill="#A78BFA">Payback M${idx+1}</text>
+    `;
+  }
+}
+
+
+  // línea de CAPEX
+  const yCapex = H - pad - scale(capex||0);
+  const capexLine = capex>0 ? `
+    <line x1="${pad}" y1="${yCapex}" x2="${W-pad}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="4 4" opacity="0.9"></line>
+    <text x="${pad+6}" y="${yCapex-6}" font-size="10" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>
+  ` : '';
+
+  // eje Y simple con marcas 0, 50%, 100%
+  const y0 = H - pad, y50 = H - pad - scale(maxY*0.5), y100 = H - pad - scale(maxY);
+  const axis = `
+    <line x1="${pad-6}" y1="${pad-4}" x2="${pad-6}" y2="${H-pad}" stroke="rgba(255,255,255,0.2)"></line>
+    <text x="${pad-10}" y="${y0+4}" font-size="10" text-anchor="end" fill="rgba(255,255,255,0.65)">$0</text>
+    <line x1="${pad-6}" y1="${y50}" x2="${W-pad}" y2="${y50}" stroke="rgba(255,255,255,0.06)"></line>
+    <text x="${pad-10}" y="${y50+4}" font-size="10" text-anchor="end" fill="rgba(255,255,255,0.65)">${(maxY*0.5).toLocaleString(undefined,{maximumFractionDigits:0})}</text>
+    <text x="${pad-10}" y="${y100+4}" font-size="10" text-anchor="end" fill="rgba(255,255,255,0.65)">${(maxY).toLocaleString(undefined,{maximumFractionDigits:0})}</text>
+  `;
+
+  const legendX = W - pad - 180, legendY = pad;
+  const legend = `
+    <rect x="${legendX}" y="${legendY-10}" width="170" height="44" rx="8" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
+    <rect x="${legendX+10}" y="${legendY}" width="10" height="10" fill="#22C55E"></rect>
+    <text x="${legendX+26}" y="${legendY+9}" font-size="10" fill="var(--text)">Ahorro mensual</text>
+    <rect x="${legendX+10}" y="${legendY+18}" width="10" height="10" fill="#EF4444"></rect>
+    <text x="${legendX+26}" y="${legendY+27}" font-size="10" fill="var(--text)">Mensualidad</text>
+    <polyline points="${legendX+10},${legendY+36} ${legendX+20},${legendY+36}" stroke="#A78BFA" stroke-width="2"></polyline>
+    <text x="${legendX+26}" y="${legendY+39}" font-size="10" fill="var(--text)">Acumulado</text>
+  `;
+
+  const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="2"></polyline>`;
+
+  const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flujo mensual y payback">
+    ${axis}
+    ${capexLine}
+    ${bars}
+    ${polyline}
+    ${marker}
+  </svg>`;
+
+  const el = document.getElementById(targetId);
+  if(el) el.innerHTML = svg;
+}
+
 
   function setEnabled(ids,on){ ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.disabled=!on; }); }
   function applyInclusions(){ setEnabled(['cicloA','cicloP'], document.getElementById('incCiclo')?.checked ?? true); setEnabled(['vidaA','vidaP','costoHerr'], document.getElementById('incHerr')?.checked ?? true); setEnabled(['tmuertoA','tmuertoP'], document.getElementById('incTM')?.checked ?? true); }
@@ -498,7 +618,7 @@
   // event wiring
   document.getElementById('btnCalcular')?.addEventListener('click', calcular);
   document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
-  ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{ if(window.innerWidth>=768) calcular(); }));
+  ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP','mensualidad'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{ if(window.innerWidth>=768) calcular(); }));
   ['incCiclo','incHerr','incTM'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{ applyInclusions(); calcular(); }));
 
   // reveal observer but we ensure hero has no-reveal
