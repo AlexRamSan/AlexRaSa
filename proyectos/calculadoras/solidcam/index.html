@@ -40,6 +40,112 @@ label[title] {
   text-decoration-style: dotted;
   text-decoration-color: rgba(255,255,255,0.4);
 }
+
+/* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
+@media print {
+  /* --- Configuración de página --- */
+  @page {
+    size: Letter; /* O A4 */
+    margin: 0.5in; /* Media pulgada de margen */
+  }
+  html, body {
+    font-size: 10pt !important; /* Reduce fuente base */
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* --- 1. Ocultar lo que no queremos --- */
+  header, footer, section[class*="lg:col-span-5"] { /* Oculta header, footer y el formulario */
+    display: none !important;
+  }
+
+  /* --- 2. Preparar el Contenedor del Reporte --- */
+  main {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #reportSection {
+    visibility: visible;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important; /* Asegura una columna */
+    gap: 0.5rem !important; /* Reduce el gap entre tarjetas */
+  }
+  
+  /* --- 3. Estilos de las tarjetas --- */
+  .card {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    page-break-inside: avoid; /* Evita que las tarjetas se corten */
+    padding: 0.75rem !important; /* Reduce padding */
+  }
+  .stat { border-color: #eee !important; padding: 0.5rem !important; }
+  tbody tr { background: #f9f9f9 !important; }
+  
+  /* --- 4. NUEVO: Poner gráficos lado a lado --- */
+  #graphsWrapper {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columnas */
+    gap: 1rem !important; /* Espacio entre los 2 gráficos */
+  }
+
+  /* --- 5. NUEVO: Reducir altura de gráficos --- */
+  .viz {
+    min-height: 280px !important; /* Altura reducida para que quepan */
+  }
+
+  /* --- 6. Fuentes y Colores --- */
+  h2 { font-size: 1.25rem !important; }
+  h3 { font-size: 1rem !important; }
+  .text-lg { font-size: 1rem !important; }
+  .text-sm { font-size: 0.8rem !important; }
+  .kpi-icon { width: 1.25rem !important; height: 1.25rem !important; }
+  
+  /* Forzar colores de texto e iconos a negro */
+  h1, h2, h3, p, span, div, text, svg, path {
+    color: #000 !important;
+    fill: #000 !important;
+    stroke: #000 !important;
+  }
+  
+  /* Estilos específicos para elementos con color */
+  .badge.up {
+    background: #16a34a !important; color: #fff !important;
+    border: 1px solid #16a34a !important;
+    -webkit-print-color-adjust: exact; /* Fuerza el fondo en impresión */
+  }
+  /* Corregido para SolidCAM (var --ok) */
+  #kpiNeto[style*="var(--ok)"] {
+    color: #16a34a !important; fill: #16a34a !important; stroke: #16a34a !important;
+  }
+  #kpiNeto[style*="var(--bad)"] {
+    color: #dc2626 !important; fill: #dc2626 !important; stroke: #dc2626 !important;
+  }
+  /* Colores de gráficos */
+  path[fill^="#6366F1"], polyline[stroke^="#A78BFA"], circle[fill^="#A78BFA"] {
+    fill: #5A5A9C !important; stroke: #5A5A9C !important; -webkit-print-color-adjust: exact;
+  }
+  path[fill^="#16A34A"], rect[fill^="#22C55E"] {
+    fill: #16a34a !important; stroke: #16a34a !important; -webkit-print-color-adjust: exact;
+  }
+  path[fill^="#F59E0B"] {
+    fill: #f59e0b !important; stroke: #f59e0b !important; -webkit-print-color-adjust: exact;
+  }
+  rect[fill^="#EF4444"] {
+    fill: #dc2626 !important; stroke: #dc2626 !important; -webkit-print-color-adjust: exact;
+  }
+  /* Reducir fuentes de los gráficos */
+  svg text { font-size: 10px !important; }
+  #vizDonut svg text[font-size="18"] { font-size: 12px !important; }
+  #vizDonut svg text[font-size="20"] { font-size: 14px !important; }
+  #vizCash svg text[font-size="14"] { font-size: 10px !important; }
+}
 </style>
 </head>
 <body class="antialiased">
@@ -60,141 +166,144 @@ label[title] {
   </div>
 </header>
 
-<section style="background-image:url('/assets/hero-industrial.png');background-size:cover;background-position:center">
-  <div style="background:linear-gradient(180deg,rgba(2,6,23,.25),rgba(2,6,23,.65))">
-    <div class="max-w-6xl mx-auto px-4 py-10 md:py-16">
-      <h1 class="text-3xl md:text-5xl font-extrabold">SolidCAM ROI — <span style="color:var(--accent)">Casos A–D</span></h1>
-      <p class="mt-3 max-w-3xl text-slate-200">Activa los casos, captura supuestos y obtén ahorros mensuales, ROI, payback y flujo.</p>
-    </div>
+<section class="hero-bg" style="background-image:url('/assets/hero-industrial.png');background-size:cover;background-position:center">
+  <div class="hero-content max-w-6xl mx-auto px-4 py-10 md:py-16">
+    <h1 class="text-3xl md:text-5xl font-extrabold">SolidCAM ROI — <span style="color:var(--accent)">Casos A–D</span></h1>
+    <p class="mt-3 max-w-3xl text-slate-200">Activa los casos, captura supuestos y obtén ahorros mensuales, ROI, payback y flujo.</p>
   </div>
 </section>
 
 <main class="max-w-6xl mx-auto px-4 pt-8 pb-20 grid gap-5 lg:grid-cols-12">
-  <section class="card p-5 lg:col-span-5 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-auto">
-    <h2 class="text-lg font-semibold">Entradas</h2>
+  <section class="lg:col-span-5">
+    <div class="card p-5 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-auto">
+      <h2 class="text-lg font-semibold">Entradas</h2>
 
-    <div class="mt-4 space-y-6">
-      <fieldset class="space-y-2">
-        <legend class="text-sm font-semibold mb-1">Casos a incluir</legend>
-        <label class="flex items-center gap-2 text-sm"><input id="incA" type="checkbox" class="h-4 w-4" checked> A) Tiempo-máquina</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incB" type="checkbox" class="h-4 w-4" checked> B) Menos silos de software</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incC" type="checkbox" class="h-4 w-4" checked> C) Calidad y riesgo</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incD" type="checkbox" class="h-4 w-4"> D) Mix complejo Mill-Turn/Swiss</label>
-      </fieldset>
+      <div class="mt-4 space-y-6">
+        <fieldset class="space-y-2">
+          <legend class="text-sm font-semibold mb-1">Casos a incluir</legend>
+          <label class="flex items-center gap-2 text-sm"><input id="incA" type="checkbox" class="h-4 w-4" checked> A) Tiempo-máquina</label>
+          <label class="flex items-center gap-2 text-sm"><input id="incB" type="checkbox" class="h-4 w-4" checked> B) Menos silos de software</label>
+          <label class="flex items-center gap-2 text-sm"><input id="incC" type="checkbox" class="h-4 w-4" checked> C) Calidad y riesgo</label>
+          <label class="flex items-center gap-2 text-sm"><input id="incD" type="checkbox" class="h-4 w-4"> D) Mix complejo Mill-Turn/Swiss</label>
+        </fieldset>
 
-      <fieldset id="fsA" class="space-y-3">
-        <legend class="text-sm font-semibold">A) Tiempo-máquina (iMachining)</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Min/pieza baseline
-            <input id="a_min_base" type="number" value="12">
-          </label>
-          <label class="text-sm">Min/pieza con iMachining
-            <input id="a_min_imach" type="number" value="6">
-          </label>
-          <label class="text-sm">Piezas/mes (3 jobs)
-            <input id="a_pzas_mes" type="number" value="1800">
-          </label>
-          <label class="text-sm" title="Incluye: costo de depreciación, energía, herramental y mano de obra.">$ /h máquina
-            <input id="a_costo_hm" type="number" value="45">
-          </label>
+        <fieldset id="fsA" class="space-y-3">
+          <legend class="text-sm font-semibold">A) Tiempo-máquina (iMachining)</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">Min/pieza baseline
+              <input id="a_min_base" type="number" value="12">
+            </label>
+            <label class="text-sm">Min/pieza con iMachining
+              <input id="a_min_imach" type="number" value="6">
+            </label>
+            <label class="text-sm">Piezas/mes (3 jobs)
+              <input id="a_pzas_mes" type="number" value="1800">
+            </label>
+            <label class="text-sm" title="Incluye: costo de depreciación, energía, herramental y mano de obra.">$ /h máquina
+              <input id="a_costo_hm" type="number" value="45">
+            </label>
+          </div>
+          <p class="text-xs text-slate-400">Fórmula: (baseline − iMach) × piezas/mes × ($/h)/60.</p>
+        </fieldset>
+
+        <fieldset id="fsB" class="space-y-3">
+          <legend class="text-sm font-semibold">B) Menos silos de software</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">Licencias eliminadas (#)
+              <input id="b_lic_del" type="number" value="2">
+            </label>
+            <label class="text-sm">Costo licencia eliminada (USD/mes)
+              <input id="b_lic_cost" type="number" value="200">
+            </label>
+            <label class="text-sm" title="Tiempo perdido en exportar/importar archivos, re-trabajo por cambios de ingeniería, etc.">Horas semanales ahorradas (handoffs)
+              <input id="b_horas_sem" type="number" value="8">
+            </label>
+            <label class="text-sm" title="Costo promedio por hora de un programador CAM.">$ /h programador
+              <input id="b_costo_hp" type="number" value="18">
+            </label>
+          </div>
+          <p class="text-xs text-slate-400">Fórmula: licencias×$ + (horas/sem × 4.33 × $/h).</p>
+        </fieldset>
+
+        <fieldset id="fsC" class="space-y-3 hidden">
+          <legend class="text-sm font-semibold">C) Calidad y riesgo</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">% scrap antes
+              <input id="c_scrap_a" type="number" value="2.5">
+            </label>
+            <label class="text-sm">% scrap después
+              <input id="c_scrap_d" type="number" value="0.8">
+            </label>
+            <label class="text-sm">Piezas/mes
+              <input id="c_pzas_mes" type="number" value="3000">
+            </label>
+            <label class="text-sm">Costo por pieza (USD)
+              <input id="c_costo_pza" type="number" value="12">
+            </label>
+            <label class="text-sm">Choques evitados/mes
+              <input id="c_crash_mes" type="number" value="0.3">
+            </label>
+            <label class="text-sm" title="Incluye: costo de herramental dañado, paro de máquina y mano de obra de reparación.">Costo promedio por choque (USD)
+              <input id="c_costo_crash" type="number" value="1800">
+            </label>
+          </div>
+          <p class="text-xs text-slate-400">Fórmula: Δscrap×pzas×costo + choques×costo.</p>
+        </fieldset>
+
+        <fieldset id="fsD" class="space-y-3 hidden">
+          <legend class="text-sm font-semibold">D) Mix complejo Mill-Turn/Swiss</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">Min programación/parte (antes)
+              <input id="d_prog_a" type="number" value="60">
+            </label>
+            <label class="text-sm">Min programación/parte (después)
+              <input id="d_prog_d" type="number" value="35">
+            </label>
+            <label class="text-sm">Partes/mes afectadas
+              <input id="d_partes_mes" type="number" value="120">
+            </label>
+            <label class="text-sm">$ /h programador
+              <input id="d_costo_hp" type="number" value="18">
+            </label>
+            <label class="text-sm">Min setup ahorrados/orden
+              <input id="d_setup_min" type="number" value="25">
+            </label>
+            <label class="text-sm">Órdenes/mes
+              <input id="d_orders_mes" type="number" value="60">
+            </label>
+            <label class="text-sm">$ /h máquina
+              <input id="d_costo_hm" type="number" value="45">
+            </label>
+          </div>
+          <p class="text-xs text-slate-400">Fórmula: Δprog×partes×$/h_prog + setup_min×órdenes×$/h_máq.</p>
+        </fieldset>
+
+        <fieldset class="space-y-3">
+          <legend class="text-sm font-semibold">Finanzas</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">Inversión (CAPEX) USD
+              <input id="capex" type="number" value="46526.2">
+            </label>
+            <label class="text-sm">Plan de pago
+              <select id="plan">
+                <option value="contado">Contado</option>
+                <option value="30_3">30% inicial + 3 meses</option>
+                <option value="20_6">20% inicial + 6 meses</option>
+                <option value="0_12" selected>12 mensualidades iguales (0% enganche)</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="space-y-3">
+          <button id="btnCalc" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent2);color:white">Calcular</button>
+          <button id="btnPrint" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent);color:white">Generar Reporte (PDF)</button>
         </div>
-        <p class="text-xs text-slate-400">Fórmula: (baseline − iMach) × piezas/mes × ($/h)/60.</p>
-      </fieldset>
-
-      <fieldset id="fsB" class="space-y-3">
-        <legend class="text-sm font-semibold">B) Menos silos de software</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Licencias eliminadas (#)
-            <input id="b_lic_del" type="number" value="2">
-          </label>
-          <label class="text-sm">Costo licencia eliminada (USD/mes)
-            <input id="b_lic_cost" type="number" value="200">
-          </label>
-          <label class="text-sm" title="Tiempo perdido en exportar/importar archivos, re-trabajo por cambios de ingeniería, etc.">Horas semanales ahorradas (handoffs)
-            <input id="b_horas_sem" type="number" value="8">
-          </label>
-          <label class="text-sm" title="Costo promedio por hora de un programador CAM.">$ /h programador
-            <input id="b_costo_hp" type="number" value="18">
-          </label>
-        </div>
-        <p class="text-xs text-slate-400">Fórmula: licencias×$ + (horas/sem × 4.33 × $/h).</p>
-      </fieldset>
-
-      <fieldset id="fsC" class="space-y-3 hidden">
-        <legend class="text-sm font-semibold">C) Calidad y riesgo</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">% scrap antes
-            <input id="c_scrap_a" type="number" value="2.5">
-          </label>
-          <label class="text-sm">% scrap después
-            <input id="c_scrap_d" type="number" value="0.8">
-          </label>
-          <label class="text-sm">Piezas/mes
-            <input id="c_pzas_mes" type="number" value="3000">
-          </label>
-          <label class="text-sm">Costo por pieza (USD)
-            <input id="c_costo_pza" type="number" value="12">
-          </label>
-          <label class="text-sm">Choques evitados/mes
-            <input id="c_crash_mes" type="number" value="0.3">
-          </label>
-          <label class="text-sm" title="Incluye: costo de herramental dañado, paro de máquina y mano de obra de reparación.">Costo promedio por choque (USD)
-            <input id="c_costo_crash" type="number" value="1800">
-          </label>
-        </div>
-        <p class="text-xs text-slate-400">Fórmula: Δscrap×pzas×costo + choques×costo.</p>
-      </fieldset>
-
-      <fieldset id="fsD" class="space-y-3 hidden">
-        <legend class="text-sm font-semibold">D) Mix complejo Mill-Turn/Swiss</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Min programación/parte (antes)
-            <input id="d_prog_a" type="number" value="60">
-          </label>
-          <label class="text-sm">Min programación/parte (después)
-            <input id="d_prog_d" type="number" value="35">
-          </label>
-          <label class="text-sm">Partes/mes afectadas
-            <input id="d_partes_mes" type="number" value="120">
-          </label>
-          <label class="text-sm">$ /h programador
-            <input id="d_costo_hp" type="number" value="18">
-          </label>
-          <label class="text-sm">Min setup ahorrados/orden
-            <input id="d_setup_min" type="number" value="25">
-          </label>
-          <label class="text-sm">Órdenes/mes
-            <input id="d_orders_mes" type="number" value="60">
-          </label>
-          <label class="text-sm">$ /h máquina
-            <input id="d_costo_hm" type="number" value="45">
-          </label>
-        </div>
-        <p class="text-xs text-slate-400">Fórmula: Δprog×partes×$/h_prog + setup_min×órdenes×$/h_máq.</p>
-      </fieldset>
-
-      <fieldset class="space-y-3">
-        <legend class="text-sm font-semibold">Finanzas</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Inversión (CAPEX) USD
-            <input id="capex" type="number" value="46526.2">
-          </label>
-          <label class="text-sm">Plan de pago
-            <select id="plan">
-              <option value="contado">Contado</option>
-              <option value="30_3">30% inicial + 3 meses</option>
-              <option value="20_6">20% inicial + 6 meses</option>
-              <option value="0_12" selected>12 mensualidades iguales (0% enganche)</option>
-            </select>
-          </label>
-        </div>
-      </fieldset>
-
-      <button id="btnCalc" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent2);color:white">Calcular</button>
+      </div>
     </div>
   </section>
 
-  <section class="lg:col-span-7 grid gap-5">
+  <section id="reportSection" class="lg:col-span-7 grid gap-5">
     
     <div class="card p-4">
       <h3 class="text-sm font-semibold mb-3">KPIs</h3>
@@ -202,14 +311,16 @@ label[title] {
         
         <div class="stat">
           <div class="text-xs text-slate-300">ROI anual</div>
-          <div id="kpiROI" class="text-lg font-bold stat-content"> <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" /></svg>
+          <div id="kpiROI" class="text-lg font-bold stat-content">
+            <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" /></svg>
             <span id="valROI">0%</span>
           </div>
         </div>
 
         <div class="stat">
           <div class="text-xs text-slate-300">Payback (meses)</div>
-          <div id="kpiPayback" class="text-lg font-bold stat-content"> <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
+          <div id="kpiPayback" class="text-lg font-bold stat-content">
+            <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
             <span id="valPayback">—</span>
           </div>
         </div>
@@ -226,8 +337,10 @@ label[title] {
           <div class="text-xs text-slate-300">Caso dominante</div>
           <div id="kpiTop" class="text-sm mt-1"><span class="badge up">—</span></div>
         </div>
-
-      </div> </div> <div class="card p-5">
+      </div>
+    </div>
+    
+    <div class="card p-5">
       <h2 class="text-lg font-semibold">Comparativa de ahorros</h2>
       <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
         <table class="w-full text-sm">
@@ -240,15 +353,18 @@ label[title] {
       </div>
     </div>
 
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
-      <div id="vizDonut" class="mt-3 viz"></div>
-    </div>
+    <div class="grid grid-cols-1 gap-5" id="graphsWrapper">
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
+        <div id="vizDonut" class="mt-3 viz"></div>
+      </div>
 
-    <div class="card p-4">
-      <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
-      <div id="vizCash" class="mt-3 viz"></div>
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
+        <div id="vizCash" class="mt-3 viz"></div>
+      </div>
     </div>
+    
   </section>
 </main>
 
@@ -513,7 +629,9 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
 
 // events
 btnCalc.addEventListener('click', calcular);
-// --- ACTUALIZADO: Los checkboxes de casos ahora también llaman a toggleFieldsets ---
+// --- EVENTO DE IMPRESIÓN AÑADIDO ---
+document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
 ['incA','incB','incC','incD'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{
   toggleFieldsets();
   calcular(); // <- Llama a calcular también
