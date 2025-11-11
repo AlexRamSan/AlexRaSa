@@ -3,68 +3,35 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lantek ROI — Calculadora de Costo-Beneficio</title>
-<meta name="description" content="Calculadora ROI para Lantek: aprovechamiento de material, nesting, trazabilidad, programación y expansión a tubo. Calcula ahorros, ROI, payback y flujo." />
+<title>SolidCAM ROI — Calculadora</title>
+<meta name="description" content="Calculadora ROI de SolidCAM por casos: Tiempo-Máquina, Menos Silos de Software, Calidad y Riesgo, Mix Complejo Mill-Turn/Swiss." />
 <meta name="theme-color" content="#0F172A" />
-<meta name="robots" content="index,follow" />
-<link rel="canonical" href="https://alexrasa.store/proyectos/calculadoras/lantek/" />
-
-<!-- Manifest + PWA -->
-<link rel="manifest" href="/proyectos/calculadoras/lantek/lantek.webmanifest">
-<meta name="color-scheme" content="dark">
-
-<!-- Íconos -->
-<link rel="icon" type="image/png" sizes="32x32" href="/proyectos/calculadoras/lantek/icons/icon-256.png" />
-<link rel="apple-touch-icon" href="/proyectos/calculadoras/lantek/icons/icon-192.png" />
-
-<!-- Preload de hero -->
-<link rel="preload" as="image" href="/assets/hero-industrial.png">
-
-<!-- Tailwind CDN para prototipo -->
+<meta name="color-scheme" content="dark" />
+<link rel="manifest" href="/proyectos/calculadoras/solidcam/solidcam.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/proyectos/calculadoras/solidcam/icons/icon-256.png" />
+<link rel="apple-touch-icon" href="/proyectos/calculadoras/solidcam/icons/icon-192.png" />
 <script src="https://cdn.tailwindcss.com"></script>
-
 <style>
-  :root{
-    color-scheme: dark;
-    --bg:#071027; --card:#0f172a; --text:#e6eef8;
-    --accent:#60a5fa; --accent-2:#6366F1;
-    --good:#22C55E; --warn:#F59E0B; --bad:#EF4444;
-  }
-  html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
-  a{color:var(--accent)}
-  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); border-radius:14px}
-  input,select,textarea{background:rgba(255,255,255,0.02); color:var(--text); border:1px solid rgba(255,255,255,0.06); padding:.55rem .65rem; border-radius:.6rem}
-  input:focus,select:focus{box-shadow:0 0 0 6px rgba(99,102,241,0.10); outline:none}
-
-  .hero-bg{ position:relative; background-size:cover; background-position:center; min-height:360px; overflow:hidden; }
-  .hero-bg::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(2,6,23,0.25), rgba(2,6,23,0.65));z-index:1}
-  .hero-content{position:relative;z-index:2}
-
-  .stat{border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px}
-  .badge{display:inline-block;padding:.25rem .55rem;border-radius:999px;font-weight:700;font-size:11px;min-width:56px;text-align:center;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03)}
-  .badge.up{background:linear-gradient(180deg,#16a34a,#059669);color:#fff;border-color:rgba(5,118,78,0.25)}
-  .badge.mid{background:linear-gradient(180deg,#f59e0b,#d97706);color:#111;border-color:rgba(217,119,6,0.25)}
-  .badge.down{background:linear-gradient(180deg,#ef4444,#dc2626);color:#fff;border-color:rgba(220,38,38,0.25)}
-
-  table{border-collapse:separate;border-spacing:0 8px}
-  thead th{font-weight:600;color:#cbd5e1}
-  tbody tr{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
-  tbody td{border-top:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04)}
-
-  .viz-xl{ min-height:520px }
+:root{ --bg:#071027; --card:#0f172a; --text:#e6eef8; --accent:#60a5fa; --accent2:#6366F1; --ok:#22C55E; --warn:#F59E0B; --bad:#EF4444}
+html,body{background:var(--bg);color:var(--text)}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:14px}
+input,select{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.55rem .65rem}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:.75rem}
+.badge.up{background:linear-gradient(180deg,#16a34a,#059669);color:#fff}
+.stat{border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
+.viz{min-height:420px}
 </style>
 </head>
 <body class="antialiased">
 
-<!-- HEADER -->
-<header class="sticky top-0 z-40 backdrop-blur" style="background:rgba(2,6,23,0.55);border-bottom:1px solid rgba(255,255,255,0.04)">
+<header class="sticky top-0 z-40 backdrop-blur" style="background:rgba(2,6,23,.55);border-bottom:1px solid rgba(255,255,255,.06)">
   <div class="max-w-6xl mx-auto px-4">
-    <div class="h-16 flex items-center justify-between gap-3">
-      <a href="/" class="flex items-center gap-2 shrink-0" aria-label="Inicio">
-        <img src="/assets/logo.png" alt="AlexRaSa" class="h-9 w-auto" />
-        <span class="hidden sm:inline text-base font-semibold tracking-tight">AlexRaSa<span style="color:var(--accent)">.store</span></span>
+    <div class="h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/assets/logo.png" class="h-9 w-auto" alt="AlexRaSa" />
+        <span class="hidden sm:inline font-semibold">AlexRaSa<span style="color:var(--accent)">.store</span></span>
       </a>
-      <nav class="hidden md:flex items-center gap-6 text-sm">
+      <nav class="hidden md:flex gap-6 text-sm">
         <a href="/SolidCAM/" class="hover:text-sky-400">Soluciones</a>
         <a href="/#recursos" class="hover:text-sky-400">Recursos</a>
         <a href="/#contacto" class="hover:text-sky-400">Contacto</a>
@@ -73,463 +40,372 @@
   </div>
 </header>
 
-<!-- HERO -->
-<section class="hero-bg" style="background-image:url('/assets/hero-industrial.png')">
-  <div class="hero-content max-w-6xl mx-auto px-4 py-12 md:py-20">
-    <h1 class="text-3xl md:text-5xl font-extrabold">Lantek ROI — <span style="color:var(--accent)">Calculadora</span></h1>
-    <p class="mt-3 max-w-3xl text-slate-200">Elige los casos A–E que aplican y calcula ahorros mensuales, ROI, payback y flujo con inversión inicial o esquema mensual.</p>
+<section style="background-image:url('/assets/hero-industrial.png');background-size:cover;background-position:center">
+  <div style="background:linear-gradient(180deg,rgba(2,6,23,.25),rgba(2,6,23,.65))">
+    <div class="max-w-6xl mx-auto px-4 py-10 md:py-16">
+      <h1 class="text-3xl md:text-5xl font-extrabold">SolidCAM ROI — <span style="color:var(--accent)">Casos A–D</span></h1>
+      <p class="mt-3 max-w-3xl text-slate-200">Activa los casos, captura supuestos y obtén ahorros mensuales, ROI, payback y flujo.</p>
+    </div>
   </div>
 </section>
 
-<!-- MAIN -->
-<main class="max-w-6xl mx-auto px-4 pt-8 pb-24 grid gap-5 lg:grid-cols-12">
-
+<main class="max-w-6xl mx-auto px-4 pt-8 pb-20 grid gap-5 lg:grid-cols-12">
   <!-- FORM -->
-  <section class="card p-5 lg:col-span-4 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-auto">
+  <section class="card p-5 lg:col-span-5 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-auto">
     <h2 class="text-lg font-semibold">Entradas</h2>
 
     <div class="mt-4 space-y-6">
       <!-- toggles -->
       <fieldset class="space-y-2">
         <legend class="text-sm font-semibold mb-1">Casos a incluir</legend>
-        <label class="flex items-center gap-2 text-sm"><input id="incA" type="checkbox" class="h-4 w-4" checked> A) Material y nesting</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incB" type="checkbox" class="h-4 w-4" checked> B) Programación y throughput</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incC" type="checkbox" class="h-4 w-4"> C) Velocidad comercial</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incD" type="checkbox" class="h-4 w-4"> D) Trazabilidad y planeación</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incE" type="checkbox" class="h-4 w-4"> E) Consolidación chapa+tubo</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incA" type="checkbox" class="h-4 w-4" checked> A) Tiempo-máquina</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incB" type="checkbox" class="h-4 w-4" checked> B) Menos silos de software</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incC" type="checkbox" class="h-4 w-4" checked> C) Calidad y riesgo</label>
+        <label class="flex items-center gap-2 text-sm"><input id="incD" type="checkbox" class="h-4 w-4"> D) Mix complejo Mill-Turn/Swiss</label>
       </fieldset>
 
-      <!-- A -->
+      <!-- A: Tiempo-máquina -->
       <fieldset class="space-y-3">
-        <legend class="text-sm font-semibold">A) Material y nesting</legend>
+        <legend class="text-sm font-semibold">A) Tiempo-máquina (iMachining)</legend>
         <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Aprovechamiento actual (%)
-            <input id="aprovA" type="number" value="78">
+          <label class="text-sm">Min/pieza baseline
+            <input id="a_min_base" type="number" value="12">
           </label>
-          <label class="text-sm">Aprovechamiento propuesto (%)
-            <input id="aprovP" type="number" value="86">
+          <label class="text-sm">Min/pieza con iMachining
+            <input id="a_min_imach" type="number" value="6">
           </label>
-          <label class="text-sm">Costo material por hoja (USD)
-            <input id="costoHoja" type="number" value="95">
+          <label class="text-sm">Piezas/mes (3 jobs)
+            <input id="a_pzas_mes" type="number" value="1800">
           </label>
-          <label class="text-sm">Hojas por mes
-            <input id="hojasMes" type="number" value="420">
+          <label class="text-sm">$ /h máquina
+            <input id="a_costo_hm" type="number" value="45">
           </label>
         </div>
-        <p class="text-xs text-slate-400">Supuesto: el software mejora el aprovechamiento y remanentes. No altera perforaciones ni gas/abrasivo per se.</p>
+        <p class="text-xs text-slate-400">Fórmula: (baseline − iMach) × piezas/mes × ($/h)/60.</p>
       </fieldset>
 
-      <!-- B -->
+      <!-- B: Menos silos -->
       <fieldset class="space-y-3">
-        <legend class="text-sm font-semibold">B) Programación y throughput</legend>
+        <legend class="text-sm font-semibold">B) Menos silos de software</legend>
         <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Min/NC manual
-            <input id="minNCManual" type="number" value="18">
+          <label class="text-sm">Licencias eliminadas (#)
+            <input id="b_lic_del" type="number" value="2">
           </label>
-          <label class="text-sm">Min/NC con Lantek
-            <input id="minNCLantek" type="number" value="8">
+          <label class="text-sm">Costo licencia eliminada (USD/mes)
+            <input id="b_lic_cost" type="number" value="200">
           </label>
-          <label class="text-sm">NC por mes
-            <input id="ncMes" type="number" value="260">
+          <label class="text-sm">Horas semanales ahorradas (handoffs)
+            <input id="b_horas_sem" type="number" value="8">
           </label>
-          <label class="text-sm">Costo hora programador (USD)
-            <input id="costoProg" type="number" value="18">
-          </label>
-          <label class="text-sm">Min de cambio de software eliminados/NC
-            <input id="minCambio" type="number" value="3">
+          <label class="text-sm">$ /h programador
+            <input id="b_costo_hp" type="number" value="18">
           </label>
         </div>
+        <p class="text-xs text-slate-400">Fórmula: licencias×$ + (horas/sem × 4.33 × $/h).</p>
       </fieldset>
 
-      <!-- C -->
+      <!-- C: Calidad y riesgo -->
       <fieldset class="space-y-3">
-        <legend class="text-sm font-semibold">C) Velocidad comercial</legend>
+        <legend class="text-sm font-semibold">C) Calidad y riesgo</legend>
         <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">TAT cotización actual (h)
-            <input id="tatA" type="number" value="24">
+          <label class="text-sm">% scrap antes
+            <input id="c_scrap_a" type="number" value="2.5">
           </label>
-          <label class="text-sm">SLA objetivo (h)
-            <input id="tatP" type="number" value="8">
+          <label class="text-sm">% scrap después
+            <input id="c_scrap_d" type="number" value="0.8">
           </label>
-          <label class="text-sm">Cotizaciones por mes
-            <input id="cotsMes" type="number" value="120">
+          <label class="text-sm">Piezas/mes
+            <input id="c_pzas_mes" type="number" value="3000">
           </label>
-          <label class="text-sm">Costo hora ventas (USD)
-            <input id="costoVentas" type="number" value="16">
+          <label class="text-sm">Costo por pieza (USD)
+            <input id="c_costo_pza" type="number" value="12">
+          </label>
+          <label class="text-sm">Choques evitados/mes
+            <input id="c_crash_mes" type="number" value="0.3">
+          </label>
+          <label class="text-sm">Costo promedio por choque (USD)
+            <input id="c_costo_crash" type="number" value="1800">
           </label>
         </div>
+        <p class="text-xs text-slate-400">Fórmula: Δscrap×pzas×costo + choques×costo.</p>
       </fieldset>
 
-      <!-- D -->
+      <!-- D: Mix complejo -->
       <fieldset class="space-y-3">
-        <legend class="text-sm font-semibold">D) Trazabilidad y planeación</legend>
+        <legend class="text-sm font-semibold">D) Mix complejo Mill-Turn/Swiss</legend>
         <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Min perdidos/orden por falta de trazabilidad
-            <input id="minPerdidos" type="number" value="6">
+          <label class="text-sm">Min programación/parte (antes)
+            <input id="d_prog_a" type="number" value="60">
           </label>
-          <label class="text-sm">Órdenes por mes
-            <input id="ordenesMes" type="number" value="900">
+          <label class="text-sm">Min programación/parte (después)
+            <input id="d_prog_d" type="number" value="35">
           </label>
-          <label class="text-sm">Costo hora producción (USD)
-            <input id="costoProd" type="number" value="28">
+          <label class="text-sm">Partes/mes afectadas
+            <input id="d_partes_mes" type="number" value="120">
+          </label>
+          <label class="text-sm">$ /h programador
+            <input id="d_costo_hp" type="number" value="18">
+          </label>
+          <label class="text-sm">Min setup ahorrados/orden
+            <input id="d_setup_min" type="number" value="25">
+          </label>
+          <label class="text-sm">Órdenes/mes
+            <input id="d_orders_mes" type="number" value="60">
+          </label>
+          <label class="text-sm">$ /h máquina
+            <input id="d_costo_hm" type="number" value="45">
           </label>
         </div>
-      </fieldset>
-
-      <!-- E -->
-      <fieldset class="space-y-3">
-        <legend class="text-sm font-semibold">E) Consolidación chapa+tubo</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Licencias antiguas eliminadas (USD/mes)
-            <input id="licenciasElim" type="number" value="350">
-          </label>
-          <label class="text-sm">Jobs/mes afectados por cambio de software
-            <input id="jobsMes" type="number" value="120">
-          </label>
-        </div>
-        <p class="text-xs text-slate-400">Considera ahorros por dejar múltiples softwares y por tiempos de cambio evitados.</p>
+        <p class="text-xs text-slate-400">Fórmula: Δprog×partes×$/h_prog + setup_min×órdenes×$/h_máq.</p>
       </fieldset>
 
       <!-- Modelo financiero -->
       <fieldset class="space-y-3">
         <legend class="text-sm font-semibold">Finanzas</legend>
         <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Inversión inicial (USD)
-            <input id="capex" type="number" value="12000">
+          <label class="text-sm">Inversión (CAPEX) USD
+            <input id="capex" type="number" value="46526.2">
           </label>
-          <label class="text-sm">Mensualidad (USD) — si aplica
-            <input id="mensualidad" type="number" value="450">
+          <label class="text-sm">Plan de pago
+            <select id="plan">
+              <option value="contado">Contado</option>
+              <option value="30_3">30% inicial + 3 meses</option>
+              <option value="20_6">20% inicial + 6 meses</option>
+              <option value="0_12">12 mensualidades iguales (0% enganche)</option>
+            </select>
           </label>
         </div>
       </fieldset>
 
-      <button id="btnCalc" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent-2);color:white">Calcular</button>
+      <button id="btnCalc" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent2);color:white">Calcular</button>
     </div>
   </section>
 
   <!-- OUTPUT -->
-  <section class="lg:col-span-8 grid gap-5">
-    <!-- KPIs -->
+  <section class="lg:col-span-7 grid gap-5">
     <div class="card p-4">
       <h3 class="text-sm font-semibold mb-3">KPIs</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="stat">
-          <div class="text-xs text-slate-300">ROI anual</div>
-          <div id="kpiROI" class="text-xl font-bold">0%</div>
-        </div>
-        <div class="stat">
-          <div class="text-xs text-slate-300">Payback (meses)</div>
-          <div id="kpiPayback" class="text-xl font-bold">—</div>
-        </div>
-        <div class="stat">
-          <div class="text-xs text-slate-300">Ahorro mensual</div>
-          <div id="kpiAhorro" class="text-xl font-bold">$0</div>
-        </div>
-        <div class="stat">
-          <div class="text-xs text-slate-300">Caso dominante</div>
-          <div id="kpiTop" class="text-sm"><span class="badge">—</span></div>
-        </div>
+        <div class="stat"><div class="text-xs text-slate-300">ROI anual</div><div id="kpiROI" class="text-xl font-bold">0%</div></div>
+        <div class="stat"><div class="text-xs text-slate-300">Payback (meses)</div><div id="kpiPayback" class="text-xl font-bold">—</div></div>
+        <div class="stat"><div class="text-xs text-slate-300">Neto en M1</div><div id="kpiNeto" class="text-xl font-bold">$0</div></div>
+        <div class="stat"><div class="text-xs text-slate-300">Caso dominante</div><div id="kpiTop" class="text-sm"><span class="badge">—</span></div></div>
       </div>
     </div>
 
-    <!-- Tabla -->
     <div class="card p-5">
       <h2 class="text-lg font-semibold">Comparativa de ahorros</h2>
       <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
         <table class="w-full text-sm">
           <thead>
-            <tr>
-              <th class="text-left px-2 py-1">Concepto</th>
-              <th class="text-right px-2 py-1">Ahorro mensual (USD)</th>
-              <th class="text-right px-2 py-1">Estado</th>
-            </tr>
+            <tr><th class="text-left px-2 py-1">Concepto</th><th class="text-right px-2 py-1">Ahorro mensual (USD)</th><th class="text-right px-2 py-1">Estado</th></tr>
           </thead>
           <tbody id="tbodyAhorros"></tbody>
-          <tfoot>
-            <tr>
-              <td class="px-2 py-2 font-semibold">Total</td>
-              <td id="tdTotal" class="px-2 py-2 text-right font-semibold"></td>
-              <td></td>
-            </tr>
-          </tfoot>
+          <tfoot><tr><td class="px-2 py-2 font-semibold">Total</td><td id="tdTotal" class="px-2 py-2 text-right font-semibold"></td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
 
-    <!-- Gráficos apilados -->
-    <div class="grid grid-cols-1 gap-5">
-      <div class="card p-4">
-        <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
-        <div id="vizDonut" class="mt-3 viz-xl"></div>
-      </div>
-      <div class="card p-4">
-        <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
-        <div id="vizCash" class="mt-3 viz-xl"></div>
-      </div>
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
+      <div id="vizDonut" class="mt-3 viz"></div>
+    </div>
+
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
+      <div id="vizCash" class="mt-3 viz"></div>
     </div>
   </section>
 </main>
 
-<footer class="py-8 text-center text-sm text-slate-400">© 2025 AlexRaSa — Lantek ROI</footer>
+<footer class="py-8 text-center text-sm text-slate-400">© 2025 AlexRaSa — SolidCAM ROI</footer>
 
 <script>
-  // Utilidad
-  const fmt = (n, d=2) => Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+// util
+const fmt = (n,d=2)=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 
-  // Habilita/Deshabilita grupos según toggles
-  function toggleFieldset(idToggle, fieldset){
-    const on = document.getElementById(idToggle)?.checked ?? false;
-    fieldset.querySelectorAll('input,select,textarea').forEach(el => el.disabled = !on);
-  }
-  function applyToggles(){
-    toggleFieldset('incA', document.querySelector('fieldset:nth-of-type(2)')); // A
-    toggleFieldset('incB', document.querySelector('fieldset:nth-of-type(3)')); // B
-    toggleFieldset('incC', document.querySelector('fieldset:nth-of-type(4)')); // C
-    toggleFieldset('incD', document.querySelector('fieldset:nth-of-type(5)')); // D
-    toggleFieldset('incE', document.querySelector('fieldset:nth-of-type(6)')); // E
-  }
+// payment plan helper: returns array[12] of pagos por mes y enganche
+function planPagos(capex, plan){
+  const m = Array(12).fill(0); let eng=0;
+  if(plan==='contado'){ eng=capex; }
+  else if(plan==='30_3'){ eng=capex*0.30; const cuota=(capex*0.70)/3; m[0]+=cuota; m[1]+=cuota; m[2]+=cuota; }
+  else if(plan==='20_6'){ eng=capex*0.20; const cuota=(capex*0.80)/6; for(let i=0;i<6;i++) m[i]+=cuota; }
+  else if(plan==='0_12'){ const cuota=capex/12; for(let i=0;i<12;i++) m[i]+=cuota; }
+  return {enganche:eng, cuotas:m};
+}
 
-  // Cálculo por caso
-  function calcA(){
-    const on = document.getElementById('incA').checked;
-    if(!on) return 0;
-    const aprovA = +document.getElementById('aprovA').value||0;
-    const aprovP = +document.getElementById('aprovP').value||0;
-    const costoHoja = +document.getElementById('costoHoja').value||0;
-    const hojasMes = +document.getElementById('hojasMes').value||0;
-    const wasteA = Math.max(0, 100 - aprovA)/100;
-    const wasteP = Math.max(0, 100 - aprovP)/100;
-    const ahorro = Math.max(0, (wasteA - wasteP)) * costoHoja * hojasMes;
-    return ahorro;
-  }
-  function calcB(){
-    const on = document.getElementById('incB').checked;
-    if(!on) return 0;
-    const minManual = +document.getElementById('minNCManual').value||0;
-    const minLantek = +document.getElementById('minNCLantek').value||0;
-    const ncMes = +document.getElementById('ncMes').value||0;
-    const costoProg = +document.getElementById('costoProg').value||0;
-    const minCambio = +document.getElementById('minCambio').value||0;
-    const ahMin = Math.max(0, (minManual - minLantek) + minCambio);
-    return (ahMin/60) * costoProg * ncMes;
-  }
-  function calcC(){
-    const on = document.getElementById('incC').checked;
-    if(!on) return 0;
-    const tatA = +document.getElementById('tatA').value||0;
-    const tatP = +document.getElementById('tatP').value||0;
-    const cotsMes = +document.getElementById('cotsMes').value||0;
-    const costoVentas = +document.getElementById('costoVentas').value||0;
-    const ahH = Math.max(0, tatA - tatP);
-    return ahH * cotsMes * costoVentas;
-  }
-  function calcD(){
-    const on = document.getElementById('incD').checked;
-    if(!on) return 0;
-    const minPerdidos = +document.getElementById('minPerdidos').value||0;
-    const ordenesMes = +document.getElementById('ordenesMes').value||0;
-    const costoProd = +document.getElementById('costoProd').value||0;
-    return (minPerdidos/60) * ordenesMes * costoProd;
-  }
-  function calcE(){
-    const on = document.getElementById('incE').checked;
-    if(!on) return 0;
-    const licenciasElim = +document.getElementById('licenciasElim').value||0;
-    const jobsMes = +document.getElementById('jobsMes').value||0;
-    const minCambio = +document.getElementById('minCambio').value||0; // reutilizamos B
-    const costoProg = +document.getElementById('costoProg').value||0; // reutilizamos B
-    const ahorroTiempo = (minCambio/60) * jobsMes * costoProg;
-    return licenciasElim + ahorroTiempo;
-  }
+// cases
+function caseA(){
+  if(!document.getElementById('incA').checked) return 0;
+  const a = +a_min_base.value, b = +a_min_imach.value, p = +a_pzas_mes.value, hm = +a_costo_hm.value;
+  return Math.max(0, a-b) * p * (hm/60);
+}
+function caseB(){
+  if(!document.getElementById('incB').checked) return 0;
+  const lic = +b_lic_del.value, licc = +b_lic_cost.value, hsem = +b_horas_sem.value, hp = +b_costo_hp.value;
+  return lic*licc + hsem*4.33*hp;
+}
+function caseC(){
+  if(!document.getElementById('incC').checked) return 0;
+  const sa = (+c_scrap_a.value||0)/100, sd = (+c_scrap_d.value||0)/100, pm = +c_pzas_mes.value, cp = +c_costo_pza.value;
+  const crash = +c_crash_mes.value, ccr = +c_costo_crash.value;
+  const ahScrap = Math.max(0, sa - sd) * pm * cp;
+  const ahCrash = crash * ccr;
+  return ahScrap + ahCrash;
+}
+function caseD(){
+  if(!document.getElementById('incD').checked) return 0;
+  const pa = +d_prog_a.value, pd = +d_prog_d.value, parts = +d_partes_mes.value, hp = +d_costo_hp.value;
+  const setup = +d_setup_min.value, orders = +d_orders_mes.value, hm = +d_costo_hm.value;
+  const ahProg = Math.max(0, pa-pd) * parts * (hp/60);
+  const ahSetup = setup * orders * (hm/60);
+  return ahProg + ahSetup;
+}
 
-  function calcular(){
-    const parts = [
-      ['Material y nesting (A)', calcA()],
-      ['Programación y throughput (B)', calcB()],
-      ['Velocidad comercial (C)', calcC()],
-      ['Trazabilidad y planeación (D)', calcD()],
-      ['Consolidación chapa+tubo (E)', calcE()]
-    ];
-    const total = parts.reduce((s, p)=> s + p[1], 0);
+function calcular(){
+  const parts = [
+    ['Tiempo-máquina (A)', caseA()],
+    ['Menos silos (B)', caseB()],
+    ['Calidad y riesgo (C)', caseC()],
+    ['Mix complejo (D)', caseD()]
+  ];
+  const total = parts.reduce((s,p)=>s+p[1],0);
 
-    // Finanzas
-    const capex = +document.getElementById('capex').value||0;
-    const cuota = +document.getElementById('mensualidad').value||0;
+  // tabla
+  const body = document.getElementById('tbodyAhorros');
+  body.innerHTML = parts.filter(p=>p[1]>0.0001).map(p=>{
+    const pct = total>0 ? (p[1]/total)*100 : 0;
+    return `<tr>
+      <td class="px-2 py-2">${p[0]}</td>
+      <td class="px-2 py-2 text-right font-mono">$${fmt(p[1])}</td>
+      <td class="px-2 py-2 text-right"><span class="badge up">+${fmt(pct,0)}%</span></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="3" class="px-2 py-3 text-center text-slate-400">Sin ahorros activos</td></tr>`;
+  tdTotal.textContent = `$${fmt(total)}`;
 
-    // KPIs
-    const roiAnual = capex>0 ? ((total*12)/capex)*100 : 0;
-    const neto = total - cuota; // usado para payback y gráfica, ya no como KPI visible
-    const idxPayback = capex>0 && neto>0 ? Math.ceil(capex / neto) : -1;
+  // finanzas
+  const capex = +document.getElementById('capex').value||0;
+  const planSel = document.getElementById('plan').value;
+  const {enganche, cuotas} = planPagos(capex, planSel);
 
-    // Render tabla
-    const body = document.getElementById('tbodyAhorros');
-    body.innerHTML = parts
-      .filter(([_,v]) => v>0.0001)
-      .map(([k,v]) => `
-        <tr>
-          <td class="px-2 py-2">${k}</td>
-          <td class="px-2 py-2 text-right font-mono">$${fmt(v)}</td>
-          <td class="px-2 py-2 text-right"><span class="badge up">+${fmt((v/Math.max(total,1))*100,0)}%</span></td>
-        </tr>
-      `).join('') || `<tr><td colspan="3" class="px-2 py-3 text-center text-slate-400">Sin ahorros activos</td></tr>`;
-    document.getElementById('tdTotal').textContent = `$${fmt(total)}`;
+  const roiAnual = capex>0 ? ((total*12)/capex)*100 : 0;
+  // neto M1 = ahorroMes − (enganche + cuota M1)  si hay enganche
+  const netoM1 = total - (enganche + cuotas[0]);
+  const acc = []; let acum = -enganche; // enganche en M1
+  for(let i=0;i<12;i++){ acum += (total - cuotas[i]); acc.push(acum); }
+  const payIdx = capex>0 ? acc.findIndex(v=>v>=capex-enganche) : -1; // alcanzar capex total
+  const payback = payIdx>=0 ? (payIdx+1) : '—';
 
-    // KPIs visibles
-    document.getElementById('kpiROI').textContent = `${fmt(roiAnual)}%`;
-    document.getElementById('kpiPayback').textContent = idxPayback>0 ? idxPayback : '—';
-    const kA = document.getElementById('kpiAhorro');
-    if (kA) kA.textContent = `$${fmt(total)}`;
-    const top = parts.slice().sort((a,b)=>b[1]-a[1])[0];
-    document.getElementById('kpiTop').innerHTML = top && top[1]>0 ? `<span class="badge up">${top[0]}</span>` : '<span class="badge">—</span>';
+  // KPIs
+  kpiROI.textContent = `${fmt(roiAnual)}%`;
+  kpiPayback.textContent = payback;
+  kpiNeto.textContent = `$${fmt(netoM1)}`;
+  kpiNeto.style.color = netoM1>=0 ? 'var(--ok)' : 'var(--bad)';
+  const top = parts.slice().sort((a,b)=>b[1]-a[1])[0];
+  kpiTop.innerHTML = top && top[1]>0 ? `<span class="badge up">${top[0]}</span>` : '<span class="badge">—</span>';
 
-    // Gráficos
-    renderDonut('vizDonut', parts);
-    renderCashflow('vizCash', { ahorroMes: total, cuota, capex });
-  }
+  // gráficos
+  renderDonut('vizDonut', parts);
+  renderCashflow('vizCash', { ahorroMes: total, capex, planSel, enganche, cuotas });
+}
 
-  // Donut SVG responsivo
-  function renderDonut(targetId, parts){
-    const el = document.getElementById(targetId);
-    if(!el) return;
+// donut svg
+function renderDonut(targetId, parts){
+  const el=document.getElementById(targetId); if(!el) return;
+  const data=parts.filter(p=>p[1]>0); const total=data.reduce((s,p)=>s+p[1],0);
+  const W=Math.max(el.clientWidth||960,960), H=Math.max(el.clientHeight||420,420);
+  const cx=Math.round(W*0.33), cy=Math.round(H*0.52), r=Math.round(Math.min(W,H)*0.28), th=Math.round(r*0.34);
+  let start=0; const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
+  const segs=data.map((p,i)=>{ const f= total? p[1]/total:0; const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI; start+=f;
+    const L=(a1-a0)>Math.PI?1:0;
+    const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+    const x0i=cx+(r-th)*Math.cos(a0),y0i=cy+(r-th)*Math.sin(a0),x1i=cx+(r-th)*Math.cos(a1),y1i=cy+(r-th)*Math.sin(a1);
+    const d=`M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
+    const pct=Math.round(f*100); const lx=Math.round(W*0.62), ly=40+26*i;
+    return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
+            <text x="${lx}" y="${ly}" font-size="14" fill="var(--text)">${p[0]}: ${pct}%</text>`;
+  }).join('');
+  const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+14}" fill="rgba(255,255,255,0.04)"></circle>
+                  <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="18" fill="var(--text)">${total?('$'+total.toLocaleString()):'—'}</text>`;
+  el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
+}
 
-    const data = parts.filter(p=>p[1]>0);
-    const total = data.reduce((s,p)=>s+p[1],0);
+// cashflow svg
+function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas}){
+  const el=document.getElementById(targetId); if(!el) return;
+  const meses=Array.from({length:12},(_,i)=>`M${i+1}`); const H=Math.max(el.clientHeight||420,420);
+  const pad=32, barW=24, gap=16; const minW=pad*2 + meses.length*(barW*2+gap) + 180; const W=Math.max(el.clientWidth||minW,minW);
+  const pagos = cuotas.slice(); pagos[0]+=enganche; // sumar enganche en M1
 
-    const W = Math.max(el.clientWidth || 980, 980);
-    const H = Math.max(el.clientHeight || 520, 520);
-    const cx = Math.round(W*0.33), cy = Math.round(H*0.52);
-    const r  = Math.round(Math.min(W,H)*0.28);
-    const th = Math.round(r*0.34);
+  const netoMes = meses.map((_,i)=> (ahorroMes - pagos[i]));
+  let acc = 0; const accArr = netoMes.map(v=>{ acc+=v; return acc; });
 
-    let start=0;
-    const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
+  const maxY = Math.max(ahorroMes||0, ...pagos, ...accArr.map(v=>Math.abs(v)), capex||0, 1);
+  const scale = v => Math.round((v/maxY) * (H - pad*2));
 
-    const segs = data.map((p,i)=>{
-      const v=p[1], frac = total>0 ? v/total : 0;
-      const a0=start*2*Math.PI, a1=(start+frac)*2*Math.PI; start+=frac;
-      const large=(a1-a0)>Math.PI?1:0;
-      const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
-      const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
-      const x0i=cx+(r-th)*cos(a0), y0i=cy+(r-th)*sin(a0);
-      const x1i=cx+(r-th)*cos(a1), y1i=cy+(r-th)*sin(a1);
-      function cos(a){return Math.cos(a)} function sin(a){return Math.sin(a)}
-      const d=`M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${large} 0 ${x0i} ${y0i} Z`;
-      const pct = total>0 ? Math.round(frac*100) : 0;
-      const lx = Math.round(W*0.62), ly = 40 + 28*i;
-      return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
-              <text x="${lx}" y="${ly}" font-size="16" fill="var(--text)">${p[0]}: ${pct}%</text>`;
-    }).join('');
+  let x=pad+10;
+  const bars = meses.map((m,i)=>{
+    const yA=H-pad-scale(ahorroMes), hA=scale(ahorroMes);
+    const yP=H-pad-scale(pagos[i]),   hP=scale(pagos[i]);
+    const xa=x, xp=x+barW+6; const labelY=H-8;
+    const rects=`<rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E"></rect>
+                 <rect x="${xp}" y="${yP}" width="${barW}" height="${hP}" fill="#EF4444"></rect>`;
+    const txt=`<text x="${x}" y="${labelY}" font-size="12" fill="var(--text)">${m}</text>`;
+    x += (barW*2 + gap); return rects+txt;
+  }).join('');
 
-    const center =
-      `<circle cx="${cx}" cy="${cy}" r="${r-th+14}" fill="rgba(255,255,255,0.04)"></circle>
-       <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle"
-             font-size="22" fill="var(--text)">${total>0?('$'+total.toLocaleString()):'—'}</text>`;
+  const linePts = accArr.map((v,i)=>{
+    const xi = pad+10 + i*(barW*2+gap) + barW;
+    const yi = H - pad - scale(Math.max(0,v));
+    return `${xi},${yi}`;
+  }).join(' ');
 
-    el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img"
-                     aria-label="Distribución de ahorros">${segs}${center}</svg>`;
-  }
-
-  // Cashflow SVG
-  function renderCashflow(targetId, {ahorroMes, cuota, capex}){
-    const el = document.getElementById(targetId);
-    if(!el) return;
-
-    const meses = Array.from({length:12}, (_,i)=>`M${i+1}`);
-    const H = Math.max(el.clientHeight || 520, 520);
-    const pad = 36, barW = 28, gap = 18;
-    const cols = meses.length;
-
-    const minW = pad*2 + cols*(barW*2 + gap) + 160;
-    const W = Math.max(el.clientWidth || minW, minW);
-
-    const neto = (ahorroMes||0) - (cuota||0);
-    let acc = 0; const accArr = meses.map(()=>{ acc += neto; return acc; });
-
-    const maxY = Math.max(ahorroMes||0, cuota||0, ...accArr.map(v=>Math.abs(v)), capex||0, 1);
-    const scale = v => Math.round((v/maxY) * (H - pad*2));
-
-    let x = pad + 12;
-    const bars = meses.map((m, i)=>{
-      const yA = H - pad - scale(ahorroMes);
-      const yM = H - pad - scale(cuota);
-      const hA = scale(ahorroMes);
-      const hM = scale(cuota);
-      const xa = x, xm = x + barW + 8;
-      const labelY = H - 10;
-      const txt = `<text x="${x}" y="${labelY}" font-size="14" fill="var(--text)">${m}</text>`;
-      const rects = `
-        <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E"></rect>
-        <rect x="${xm}" y="${yM}" width="${barW}" height="${hM}" fill="#EF4444"></rect>
-      `;
-      x += (barW*2 + gap);
-      return rects + txt;
-    }).join('');
-
-    const linePts = accArr.map((v,i)=>{
-      const xi = pad + 12 + i*(barW*2 + gap) + barW;
-      const yi = H - pad - scale(Math.max(0,v));
-      return `${xi},${yi}`;
-    }).join(' ');
-
-    let marker = '';
-    if ((capex||0) > 0){
-      const idx = accArr.findIndex(v => v >= capex);
-      if (idx !== -1){
-        const mx = pad + 12 + idx*(barW*2 + gap) + barW;
-        const my = H - pad - scale(Math.max(0, accArr[idx]));
-        marker = `<circle cx="${mx}" cy="${my}" r="6" fill="#A78BFA"></circle>
-                  <text x="${mx+10}" y="${my-10}" font-size="14" fill="#A78BFA">Payback M${idx+1}</text>`;
-      }
+  // payback marker cuando acumulado >= CAPEX
+  let marker=''; if ((capex||0) > 0){
+    const idx = accArr.findIndex(v=>v>=capex);
+    if(idx!==-1){
+      const mx = pad+10 + idx*(barW*2+gap) + barW;
+      const my = H - pad - scale(Math.max(0, accArr[idx]));
+      marker = `<circle cx="${mx}" cy="${my}" r="5" fill="#A78BFA"></circle>
+                <text x="${mx+8}" y="${my-8}" font-size="12" fill="#A78BFA">Payback M${idx+1}</text>`;
     }
-
-    const yCapex = H - pad - scale(capex||0);
-    const capexLine = capex>0 ? `
-      <line x1="${pad}" y1="${yCapex}" x2="${W-pad}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6"></line>
-      <text x="${pad+10}" y="${yCapex-10}" font-size="14" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>
-    ` : '';
-
-    const legendX = W - pad - 260, legendY = pad;
-    const legend = `
-      <rect x="${legendX}" y="${legendY-14}" width="250" height="56" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
-      <rect x="${legendX+12}" y="${legendY}" width="14" height="14" fill="#22C55E"></rect>
-      <text x="${legendX+32}" y="${legendY+11}" font-size="14" fill="var(--text)">Ahorro mensual</text>
-      <rect x="${legendX+12}" y="${legendY+24}" width="14" height="14" fill="#EF4444"></rect>
-      <text x="${legendX+32}" y="${legendY+35}" font-size="14" fill="var(--text)">Mensualidad</text>
-      <polyline points="${legendX+12},${legendY+48} ${legendX+32},${legendY+48}" stroke="#A78BFA" stroke-width="3"></polyline>
-      <text x="${legendX+38}" y="${legendY+51}" font-size="14" fill="var(--text)">Acumulado</text>
-    `;
-
-    const axis = `
-      <line x1="${pad-10}" y1="${pad-6}" x2="${pad-10}" y2="${H-pad}" stroke="rgba(255,255,255,0.2)"></line>
-      <text x="${pad-14}" y="${H-pad+8}" font-size="14" text-anchor="end" fill="rgba(255,255,255,0.65)">$0</text>
-    `;
-
-    const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="3"></polyline>`;
-
-    el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img"
-                     aria-label="Flujo mensual y payback">
-      ${axis}${capexLine}${bars}${polyline}${marker}${legend}
-    </svg>`;
   }
 
-  // Eventos
-  document.getElementById('btnCalc').addEventListener('click', calcular);
-  ['incA','incB','incC','incD','incE'].forEach(id=>{
-    document.getElementById(id).addEventListener('change', ()=>{ applyToggles(); calcular(); });
-  });
-  document.querySelectorAll('input,select').forEach(el=>{
-    el.addEventListener('input', ()=>{ calcular(); });
-  });
+  const yCapex = H - pad - scale(capex||0);
+  const capexLine = capex>0 ? `<line x1="${pad}" y1="${yCapex}" x2="${W-pad}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6"></line>
+                               <text x="${pad+8}" y="${yCapex-8}" font-size="12" fill="#60A5FA">CAPEX $${(capex||0).toLocaleString()}</text>` : '';
 
-  // Init
-  applyToggles();
-  calcular();
+  const legendX = W - pad - 230, legendY = pad;
+  const legend = `<rect x="${legendX}" y="${legendY-12}" width="220" height="52" rx="10" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.06)"></rect>
+                  <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#22C55E"></rect>
+                  <text x="${legendX+30}" y="${legendY+10}" font-size="12" fill="var(--text)">Ahorro</text>
+                  <rect x="${legendX+12}" y="${legendY+22}" width="12" height="12" fill="#EF4444"></rect>
+                  <text x="${legendX+30}" y="${legendY+32}" font-size="12" fill="var(--text)">Pago</text>
+                  <polyline points="${legendX+12},${legendY+44} ${legendX+28},${legendY+44}" stroke="#A78BFA" stroke-width="2.5"></polyline>
+                  <text x="${legendX+34}" y="${legendY+47}" font-size="12" fill="var(--text)">Acumulado</text>`;
 
-  // Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/proyectos/calculadoras/lantek/sw-lantek.js', { scope: '/proyectos/calculadoras/lantek/' })
-      .catch(console.error);
-  }
+  const axis = `<line x1="${pad-8}" y1="${pad-4}" x2="${pad-8}" y2="${H-pad}" stroke="rgba(255,255,255,.2)"></line>
+                <text x="${pad-12}" y="${H-pad+6}" font-size="12" text-anchor="end" fill="rgba(255,255,255,.65)">$0</text>`;
+
+  const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="2.5"></polyline>`;
+
+  el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">
+    ${axis}${capexLine}${bars}${polyline}${marker}${legend}
+  </svg>`;
+}
+
+// events
+btnCalc.addEventListener('click', calcular);
+['incA','incB','incC','incD','plan'].forEach(id=>document.getElementById(id).addEventListener('change', calcular));
+document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input', calcular));
+
+// init
+calcular();
+
+// SW
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/proyectos/calculadoras/solidcam/sw-solidcam.js', {scope:'/proyectos/calculadoras/solidcam/'}).catch(()=>{});
+}
 </script>
 </body>
 </html>
