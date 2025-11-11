@@ -8,15 +8,11 @@
 <meta name="theme-color" content="#0F172A" />
 <meta name="robots" content="index,follow" />
 <link rel="canonical" href="https://alexrasa.store/proyectos/calculadoras/lantek/" />
-
 <link rel="manifest" href="/proyectos/calculadoras/lantek/lantek.webmanifest">
 <meta name="color-scheme" content="dark">
-
 <link rel="icon" type="image/png" sizes="32x32" href="/proyectos/calculadoras/lantek/icons/icon-256.png" />
 <link rel="apple-touch-icon" href="/proyectos/calculadoras/lantek/icons/icon-192.png" />
-
 <link rel="preload" as="image" href="/assets/hero-industrial.png">
-
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
@@ -49,23 +45,22 @@
   .badge.mid{background:linear-gradient(180deg,#f59e0b,#d97706);color:#111;border-color:rgba(217,119,6,0.25)}
   .badge.down{background:linear-gradient(180deg,#ef4444,#dc2626);color:#fff;border-color:rgba(220,38,38,0.25)}
 
-  /* tablas */
   table{border-collapse:separate;border-spacing:0 8px}
   thead th{font-weight:600;color:#cbd5e1}
   tbody tr{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
   tbody td{border-top:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04)}
   
   /* --- ESTILOS MEJORADOS --- */
-  .viz{min-height:400px} /* Gráficos a 400px */
+  .viz{min-height:400px}
   
   .stat-content {
     display: flex;
     align-items: center;
-    gap: 0.5rem; /* 8px */
+    gap: 0.5rem;
   }
   .kpi-icon {
-    width: 1.5rem; /* 24px */
-    height: 1.5rem; /* 24px */
+    width: 1.5rem;
+    height: 1.5rem;
     color: currentColor;
     flex-shrink: 0;
   }
@@ -74,6 +69,45 @@
     text-decoration: underline;
     text-decoration-style: dotted;
     text-decoration-color: rgba(255,255,255,0.4);
+  }
+  
+  /* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
+  @media print {
+    body {
+      background: #fff !important;
+      color: #000 !important;
+    }
+    header, footer, .lg\:col-span-4 { /* Oculta header, footer y formulario */
+      display: none !important;
+    }
+    #reportSection { /* Expande sección de reporte */
+      visibility: visible;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .card {
+      border: 1px solid #ccc !important;
+      box-shadow: none !important;
+      background: #fff !important;
+      break-inside: avoid; /* Evita que las tarjetas se corten */
+    }
+    .stat { border-color: #eee !important; }
+    tbody tr { background: #f9f9f9 !important; }
+    h1, h2, h3, p, span, div, text {
+      color: #000 !important;
+    }
+    .badge.up {
+      background: #16a34a !important;
+      color: #fff !important;
+    }
+    /* Oculta todo lo que no esté en la sección de reporte */
+    body > *:not(#reportSection) {
+      display: none;
+    }
   }
 </style>
 </head>
@@ -103,124 +137,147 @@
 </section>
 
 <main class="max-w-6xl mx-auto px-4 pt-8 pb-24 grid gap-5 lg:grid-cols-12">
-  <section class="card p-5 lg:col-span-4 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-auto">
-    <h2 class="text-lg font-semibold">Entradas</h2>
+  <section class="lg:col-span-4">
+    <div class="card p-5 lg:sticky lg:top-20 max-h-[calc(100vh-6rem)] overflow-auto">
+      <h2 class="text-lg font-semibold">Entradas</h2>
 
-    <div class="mt-4 space-y-6">
-      <fieldset class="space-y-2">
-        <legend class="text-sm font-semibold mb-1">Casos a incluir</legend>
-        <label class="flex items-center gap-2 text-sm"><input id="incA" type="checkbox" class="h-4 w-4" checked> A) Material y nesting</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incB" type="checkbox" class="h-4 w-4" checked> B) Programación y throughput</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incC" type="checkbox" class="h-4 w-4"> C) Velocidad comercial</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incD" type="checkbox" class="h-4 w-4"> D) Trazabilidad y planeación</label>
-        <label class="flex items-center gap-2 text-sm"><input id="incE" type="checkbox" class="h-4 w-4"> E) Consolidación chapa+tubo</label>
-      </fieldset>
+      <div class="mt-4 space-y-6">
+        <fieldset class="space-y-2">
+          <legend class="text-sm font-semibold mb-1">Casos a incluir</legend>
+          <label class="flex items-center gap-2 text-sm"><input id="incA" type="checkbox" class="h-4 w-4" checked> A) Material y nesting</label>
+          <label class="flex items-center gap-2 text-sm"><input id="incB" type="checkbox" class="h-4 w-4" checked> B) Programación y throughput</label>
+          <label class="flex items-center gap-2 text-sm"><input id="incC" type="checkbox" class="h-4 w-4"> C) Velocidad comercial</label>
+          <label class="flex items-center gap-2 text-sm"><input id="incD" type="checkbox" class="h-4 w-4"> D) Trazabilidad y planeación</label>
+          <label class="flex items-center gap-2 text-sm"><input id="incE" type="checkbox" class="h-4 w-4"> E) Consolidación chapa+tubo</label>
+        </fieldset>
 
-      <fieldset id="fsA" class="space-y-3">
-        <legend class="text-sm font-semibold">A) Material y nesting</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm" title="Promedio de aprovechamiento de material (scrap) actual.">Aprovechamiento actual (%)
-            <input id="aprovA" type="number" value="78">
-          </label>
-          <label class="text-sm" title="Aprovechamiento esperado con nesting avanzado.">Aprovechamiento propuesto (%)
-            <input id="aprovP" type="number" value="86">
-          </label>
-          <label class="text-sm">Costo material por hoja (USD)
-            <input id="costoHoja" type="number" value="95">
-          </label>
-          <label class="text-sm">Hojas por mes
-            <input id="hojasMes" type="number" value="420">
-          </label>
+        <fieldset id="fsA" class="space-y-3">
+          <legend class="text-sm font-semibold">A) Material y nesting</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm" title="Promedio de aprovechamiento de material (scrap) actual.">Aprovechamiento actual (%)
+              <input id="aprovA" type="number" value="78">
+            </label>
+            <label class="text-sm" title="Aprovechamiento esperado con nesting avanzado y gestión de remanentes.">Aprovechamiento propuesto (%)
+              <input id="aprovP" type="number" value="86">
+            </label>
+            <label class="text-sm">Costo material por hoja (USD)
+              <input id="costoHoja" type="number" value="95">
+            </label>
+            <label class="text-sm">Hojas por mes
+              <input id="hojasMes" type="number" value="420">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset id="fsB" class="space-y-3">
+          <legend class="text-sm font-semibold">B) Programación y throughput</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">Min/NC manual
+              <input id="minNCManual" type="number" value="18">
+            </label>
+            <label class="text-sm">Min/NC con Lantek
+              <input id="minNCLantek" type="number" value="8">
+            </label>
+            <label class="text-sm">NC por mes
+              <input id="ncMes" type="number" value="260">
+            </label>
+            <label class="text-sm">Costo hora programador (USD)
+              <input id="costoProg" type="number" value="18">
+            </label>
+            <label class="text-sm" title="Tiempo ahorrado por no tener que cambiar entre diferentes softwares (ej. CAD a CAM).">Min de cambio de software eliminados/NC
+              <input id="minCambio" type="number" value="3">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset id="fsC" class="space-y-3 hidden">
+          <legend class="text-sm font-semibold">C) Velocidad comercial</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm" title="Tiempo de respuesta (Turnaround Time) actual para generar una cotización.">TAT cotización actual (h)
+              <input id="tatA" type="number" value="24">
+            </label>
+            <label class="text-sm" title="Nivel de servicio (SLA) objetivo.">SLA objetivo (h)
+              <input id="tatP" type="number" value="8">
+            </label>
+            <label class="text-sm">Cotizaciones por mes
+              <input id="cotsMes" type="number" value="120">
+            </label>
+            <label class="text-sm">Costo hora ventas (USD)
+              <input id="costoVentas" type="number" value="16">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset id="fsD" class="space-y-3 hidden">
+          <legend class="text-sm font-semibold">D) Trazabilidad y planeación</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm" title="Tiempo perdido buscando material, piezas o rehaciendo trabajo por falta de trazabilidad.">Min perdidos/orden
+              <input id="minPerdidos" type="number" value="6">
+            </label>
+            <label class="text-sm">Órdenes por mes
+              <input id="ordenesMes" type="number" value="900">
+            </label>
+            <label class="text-sm" title="Costo de hora-hombre en piso de producción (operarios, etc.)">Costo hora producción (USD)
+              <input id="costoProd" type="number" value="28">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset id="fsE" class="space-y-3 hidden">
+          <legend class="text-sm font-semibold">E) Consolidación chapa+tubo</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">Licencias antiguas eliminadas (USD/mes)
+              <input id="licenciasElim" type="number" value="350">
+            </label>
+            <label class="text-sm">Jobs/mes afectados por cambio de software
+              <input id="jobsMes" type="number" value="120">
+            </label>
+          </div>
+          <p class="text-xs text-slate-400">Considera ahorros por dejar múltiples softwares y por tiempos de cambio evitados.</p>
+        </fieldset>
+
+        <fieldset class="space-y-3">
+          <legend class="text-sm font-semibold">Finanzas</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">Inversión inicial (USD)
+              <input id="capex" type="number" value="12000">
+            </label>
+            <label class="text-sm">Mensualidad (USD) — si aplica
+              <input id="mensualidad" type="number" value="450">
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="space-y-3">
+          <button id="btnCalc" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent-2);color:white">Calcular</button>
+          <button id="btnPrint" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent);color:white">Generar Reporte (PDF)</button>
         </div>
-        <p class="text-xs text-slate-400">Supuesto: el software mejora el aprovechamiento y remanentes.</p>
-      </fieldset>
-
-      <fieldset id="fsB" class="space-y-3">
-        <legend class="text-sm font-semibold">B) Programación y throughput</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Min/NC manual
-            <input id="minNCManual" type="number" value="18">
-          </label>
-          <label class="text-sm">Min/NC con Lantek
-            <input id="minNCLantek" type="number" value="8">
-          </label>
-          <label class="text-sm">NC por mes
-            <input id="ncMes" type="number" value="260">
-          </label>
-          <label class="text-sm">Costo hora programador (USD)
-            <input id="costoProg" type="number" value="18">
-          </label>
-          <label class="text-sm" title="Tiempo ahorrado por no tener que cambiar entre diferentes softwares (ej. CAD a CAM).">Min de cambio de software eliminados/NC
-            <input id="minCambio" type="number" value="3">
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset id="fsC" class="space-y-3 hidden"> <legend class="text-sm font-semibold">C) Velocidad comercial</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm" title="Tiempo de respuesta (Turnaround Time) actual para generar una cotización.">TAT cotización actual (h)
-            <input id="tatA" type="number" value="24">
-          </label>
-          <label class="text-sm" title="Nivel de servicio (SLA) objetivo.">SLA objetivo (h)
-            <input id="tatP" type="number" value="8">
-          </label>
-          <label class="text-sm">Cotizaciones por mes
-            <input id="cotsMes" type="number" value="120">
-          </label>
-          <label class="text-sm">Costo hora ventas (USD)
-            <input id="costoVentas" type="number" value="16">
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset id="fsD" class="space-y-3 hidden"> <legend class="text-sm font-semibold">D) Trazabilidad y planeación</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm" title="Tiempo perdido buscando material, piezas o rehaciendo trabajo por falta de trazabilidad.">Min perdidos/orden
-            <input id="minPerdidos" type="number" value="6">
-          </label>
-          <label class="text-sm">Órdenes por mes
-            <input id="ordenesMes" type="number" value="900">
-          </label>
-          <label class="text-sm" title="Costo de hora-hombre en piso de producción.">Costo hora producción (USD)
-            <input id="costoProd" type="number" value="28">
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset id="fsE" class="space-y-3 hidden"> <legend class="text-sm font-semibold">E) Consolidación chapa+tubo</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Licencias antiguas eliminadas (USD/mes)
-            <input id="licenciasElim" type="number" value="350">
-          </label>
-          <label class="text-sm">Jobs/mes afectados por cambio de software
-            <input id="jobsMes" type="number" value="120">
-          </label>
-        </div>
-        <p class="text-xs text-slate-400">Considera ahorros por dejar múltiples softwares y por tiempos de cambio evitados.</p>
-      </fieldset>
-
-      <fieldset class="space-y-3">
-        <legend class="text-sm font-semibold">Finanzas</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="text-sm">Inversión inicial (USD)
-            <input id="capex" type="number" value="12000">
-          </label>
-          <label class="text-sm">Mensualidad (USD) — si aplica
-            <input id="mensualidad" type="number" value="450">
-          </label>
-        </div>
-      </fieldset>
-
-      <button id="btnCalc" class="w-full py-2.5 rounded-md font-semibold" style="background:var(--accent-2);color:white">Calcular</button>
+      </div>
     </div>
   </section>
 
-    <section class="lg:col-span-8 grid gap-5">
+  <section id="reportSection" class="lg:col-span-8 grid gap-5">
     
     <div class="card p-4">
       <h3 class="text-sm font-semibold mb-3">KPIs</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         
+        <div class="stat">
+          <div class="text-xs text-slate-300">Ahorro Bruto Mensual</div>
+          <div id="kpiAhorroBruto" class="text-lg font-bold stat-content" style="color:var(--good)">
+            <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v1.5m0-1.5H3.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H5.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H7.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H10.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H12.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H14.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H16.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H19.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m-1.5 0H20.25v-1.5m0 1.5H19.125M3.75 18.75v-1.5m0 1.5H3.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H5.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H7.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H10.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H12.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H14.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H16.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H19.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m-1.5 0H20.25v-1.5m0 1.5H19.125" /></svg>
+            <span id="valAhorroBruto">$0</span>
+          </div>
+        </div>
+        
+        <div class="stat">
+          <div class="text-xs text-slate-300">Neto Mensual</div>
+          <div id="kpiNeto" class="text-lg font-bold stat-content">
+            <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+            <span id="valNeto">$0</span>
+          </div>
+        </div>
+
         <div class="stat">
           <div class="text-xs text-slate-300">ROI anual</div>
           <div id="kpiROI" class="text-lg font-bold stat-content">
@@ -235,19 +292,6 @@
             <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
             <span id="valPayback">—</span>
           </div>
-        </div>
-        
-        <div class="stat">
-          <div class="text-xs text-slate-300">Neto mensual</div>
-          <div id="kpiNeto" class="text-lg font-bold stat-content">
-            <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-            <span id="valNeto">$0</span>
-          </div>
-        </div>
-        
-        <div class="stat">
-          <div class="text-xs text-slate-300">Caso dominante</div>
-          <div id="kpiTop" class="text-sm mt-1"><span class="badge">—</span></div>
         </div>
       </div>
     </div>
@@ -265,7 +309,7 @@
           <tbody id="tbodyAhorros"></tbody>
           <tfoot>
             <tr>
-              <td class="px-2 py-2 font-semibold">Total</td>
+              <td class="px-2 py-2 font-semibold">Total Ahorro Bruto</td>
               <td id="tdTotal" class="px-2 py-2 text-right font-semibold"></td>
               <td></td>
             </tr>
@@ -277,11 +321,13 @@
     <div class="grid grid-cols-1 gap-5">
       <div class="card p-4">
         <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
-        <div id="vizDonut" class="mt-3 viz"></div> </div>
+        <div id="vizDonut" class="mt-3 viz"></div>
+      </div>
 
       <div class="card p-4">
         <h3 class="text-sm font-semibold">Flujo mensual y payback</h3>
-        <div id="vizCash" class="mt-3 viz"></div> </div>
+        <div id="vizCash" class="mt-3 viz"></div>
+      </div>
     </div>
   </section>
 </main>
@@ -364,17 +410,14 @@
       ['Trazabilidad (D)', calcD()],
       ['Consolidación (E)', calcE()]
     ];
-    const total = parts.reduce((s, p)=> s + p[1], 0);
+    const total = parts.reduce((s, p)=> s + p[1], 0); // Ahorro Bruto
 
     // KPIs
     const capex = +document.getElementById('capex').value||0;
     const cuota = +document.getElementById('mensualidad').value||0;
     const neto = total - cuota; // Ahorro neto mensual
     
-    // ROI se calcula sobre CAPEX. Si no hay CAPEX, es infinito (o 0 si no hay ahorro).
     const roiAnual = capex > 0 ? ((neto * 12) / capex) * 100 : (neto > 0 ? Infinity : 0);
-    
-    // Payback: Meses para cubrir CAPEX con AHORRO NETO
     const idxPayback = capex > 0 && neto > 0 ? Math.ceil(capex / neto) : -1;
 
     // Render tabla
@@ -390,16 +433,16 @@
       `).join('') || `<tr><td colspan="3" class="px-2 py-3 text-center text-slate-400">Sin ahorros activos</td></tr>`;
     document.getElementById('tdTotal').textContent = `$${fmt(total)}`;
 
-    // KPIs
+    // Popular KPIs nuevos
+    document.getElementById('valAhorroBruto').textContent = `$${fmt(total)}`;
+    document.getElementById('valNeto').textContent = `$${fmt(neto)}`;
     document.getElementById('valROI').textContent = isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
     document.getElementById('valPayback').textContent = idxPayback > 0 ? idxPayback : '—';
+    
+    // Colorear KPI Neto
     const kN = document.getElementById('kpiNeto');
     kN.style.color = neto >= 0 ? 'var(--good)' : 'var(--bad)';
-    document.getElementById('valNeto').textContent = `$${fmt(neto)}`;
     
-    const top = parts.slice().sort((a,b)=>b[1]-a[1])[0];
-    document.getElementById('kpiTop').innerHTML = top && top[1]>0 ? `<span class="badge up">${top[0]}</span>` : '<span class="badge">—</span>';
-
     // Gráficos
     renderDonut('vizDonut', parts);
     renderCashflow('vizCash', { ahorroMes: total, cuota, capex });
@@ -510,10 +553,6 @@
       }
     }
     
-    // --- Línea de CAPEX (ya no es necesaria, el eje Y lo muestra) ---
-    // const yCapex = scaleY(capex || 0);
-    // const capexLine = ...
-
     // --- Leyenda ---
     const legendX = W - pad.right - 150, legendY = pad.top;
     const legend = `
@@ -541,6 +580,8 @@
 
   // Eventos
   document.getElementById('btnCalc').addEventListener('click', calcular);
+  document.getElementById('btnPrint').addEventListener('click', () => window.print());
+  
   ['incA','incB','incC','incD','incE'].forEach(id=>{
     document.getElementById(id).addEventListener('change', ()=>{ applyToggles(); calcular(); });
   });
