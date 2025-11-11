@@ -71,42 +71,87 @@
     text-decoration-color: rgba(255,255,255,0.4);
   }
   
-  /* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
+ /* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
   @media print {
     body {
       background: #fff !important;
       color: #000 !important;
     }
-    header, footer, .lg\:col-span-4 { /* Oculta header, footer y formulario */
+    
+    /* 1. Ocultar header, hero, footer y el formulario */
+    header, footer, .hero-bg, .lg\:col-span-4 {
       display: none !important;
     }
-    #reportSection { /* Expande sección de reporte */
+
+    /* 2. Asegurar que <main> y #reportSection tomen el 100% */
+    main {
+      display: block !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    #reportSection {
       visibility: visible;
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
+      width: 100% !important;
+      max-width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
+      display: block !important; /* Quita el 'grid' */
     }
+    
+    /* 3. Estilos de las tarjetas para impresión */
     .card {
       border: 1px solid #ccc !important;
       box-shadow: none !important;
       background: #fff !important;
-      break-inside: avoid; /* Evita que las tarjetas se corten */
+      page-break-inside: avoid; /* Evita que las tarjetas se corten */
     }
     .stat { border-color: #eee !important; }
     tbody tr { background: #f9f9f9 !important; }
-    h1, h2, h3, p, span, div, text {
+    
+    /* 4. Forzar colores de texto e iconos a negro */
+    h1, h2, h3, p, span, div, text, svg, path {
       color: #000 !important;
+      fill: #000 !important;
+      stroke: #000 !important;
     }
+    
+    /* 5. Estilos específicos para elementos con color */
     .badge.up {
       background: #16a34a !important;
       color: #fff !important;
+      border: 1px solid #16a34a !important;
+      fill: #fff !important; /* Para iconos dentro */
+      stroke: #fff !important;
     }
-    /* Oculta todo lo que no esté en la sección de reporte */
-    body > *:not(#reportSection) {
-      display: none;
+    /* Corrige color de iconos KPI (que heredan color) */
+    #kpiAhorroBruto, #kpiNeto[style*="var(--good)"] {
+      color: #16a34a !important;
+      fill: #16a34a !important;
+      stroke: #16a34a !important;
+    }
+    #kpiNeto[style*="var(--bad)"] {
+      color: #dc2626 !important;
+      fill: #dc2626 !important;
+      stroke: #dc2626 !important;
+    }
+    /* Color de gráficos */
+    path[fill^="#6366F1"], polyline[stroke^="#A78BFA"], circle[fill^="#A78BFA"] {
+      fill: #5A5A9C !important;
+      stroke: #5A5A9C !important;
+    }
+    path[fill^="#16A34A"], rect[fill^="#22C55E"] {
+      fill: #16a34a !important;
+      stroke: #16a34a !important;
+    }
+    path[fill^="#F59E0B"] {
+      fill: #f59e0b !important;
+      stroke: #f59e0b !important;
+    }
+    rect[fill^="#EF4444"] {
+      fill: #dc2626 !important;
+      stroke: #dc2626 !important;
     }
   }
 </style>
