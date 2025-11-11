@@ -19,7 +19,7 @@ input,select{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,
 .badge{display:inline-block;padding:.35rem .75rem;border-radius:999px;border:1px solid rgba(255,255,255,.08);font-size:.75rem; text-align:center; line-height: 1.2;}
 .badge.up{background:linear-gradient(180deg,#16a34a,#059669);color:#fff}
 .stat{border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
-.viz{min-height:420px}
+.viz{min-height:400px}
 
 /* --- Nuevos estilos para iconos de KPI --- */
 .stat-content {
@@ -30,7 +30,7 @@ input,select{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,
 .kpi-icon {
   width: 1.5rem; /* 24px */
   height: 1.5rem; /* 24px */
-  color: var(--accent);
+  color: currentColor; /* <-- CAMBIO DE COLOR AQUÍ */
   flex-shrink: 0;
 }
 /* --- Estilo para tooltips (ayuda) --- */
@@ -214,10 +214,10 @@ label[title] {
         </div>
         
         <div class="stat">
-          <div class="text-xs text-slate-300">Ahorro mensual</div>
-          <div id="kpiNeto" class="text-xl font-bold stat-content">
-  <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v1.5m0-1.5H3.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H5.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H7.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H10.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H12.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H14.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H16.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H19.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m-1.5 0H20.25v-1.5m0 1.5H19.125M3.75 18.75v-1.5m0 1.5H3.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H5.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H7.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H10.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H12.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H14.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H16.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H19.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m-1.5 0H20.25v-1.5m0 1.5H19.125" /></svg>
-  <span id="valNeto">$0</span>
+  <div class="text-xs text-slate-300">Ahorro mensual</div>
+  <div id="kpiNeto" class="text-lg font-bold stat-content"> <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+    <span id="valNeto">$0</span>
+  </div>
 </div>
         </div>
 
@@ -361,20 +361,48 @@ function calcular(){
 function renderDonut(targetId, parts){
   const el=document.getElementById(targetId); if(!el) return;
   const data=parts.filter(p=>p[1]>0); const total=data.reduce((s,p)=>s+p[1],0);
-  const W=Math.max(el.clientWidth||960,960), H=Math.max(el.clientHeight||420,420);
-  const cx=Math.round(W*0.33), cy=Math.round(H*0.52), r=Math.round(Math.min(W,H)*0.28), th=Math.round(r*0.34);
+  
+  // Usamos un ViewBox fijo de 600x400, que es más razonable
+  const W=600, H=400; 
+  
+  // Coordenadas del gráfico (más grande y centrado)
+  const cx = 210; // Centro X (en la parte izquierda)
+  const cy = H / 2; // Centro Y (200)
+  const r  = H * 0.4;  // Radio (160px)
+  const th = 50;  // Grosor del anillo (50px)
+  
   let start=0; const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
-  const segs=data.map((p,i)=>{ const f= total? p[1]/total:0; const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI; start+=f;
+
+  // Coordenadas de la leyenda
+  const legendX = 390; // Posición X de la leyenda
+  const legendFontSize = 18;
+  const legendLineHeight = 30;
+  const legendBlockHeight = data.length * legendLineHeight;
+  // Calcula dónde empezar a dibujar la leyenda para que el bloque quede centrado verticalmente
+  const legendStartY = (H - legendBlockHeight) / 2 + (legendFontSize / 2);
+
+  const segs=data.map((p,i)=>{ 
+    const f= total? p[1]/total:0; const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI; start+=f;
     const L=(a1-a0)>Math.PI?1:0;
     const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
     const x0i=cx+(r-th)*Math.cos(a0),y0i=cy+(r-th)*Math.sin(a0),x1i=cx+(r-th)*Math.cos(a1),y1i=cy+(r-th)*Math.sin(a1);
     const d=`M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
-    const pct=Math.round(f*100); const lx=Math.round(W*0.62), ly=40+26*i;
+    
+    // Leyenda
+    const pct=Math.round(f*100);
+    const ly = legendStartY + (i * legendLineHeight);
+
     return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
-            <text x="${lx}" y="${ly}" font-size="14" fill="var(--text)">${p[0]}: ${pct}%</text>`;
+            <text x="${legendX}" y="${ly}" font-size="${legendFontSize}" fill="var(--text)">${p[0]}: ${pct}%</text>`;
   }).join('');
-  const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+14}" fill="rgba(255,255,255,0.04)"></circle>
-                <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="18" fill="var(--text)">${total?('$'+total.toLocaleString()):'—'}</text>`;
+
+  // Texto del centro (más grande)
+  const centerFontSize = Math.max(20, Math.round(r * 0.2)); // Tamaño de fuente proporcional al radio
+  const centerText = total ? ('$' + fmt(total, 0)) : '—'; // Usamos fmt() y sin decimales
+
+  const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="rgba(255,255,255,0.04)"></circle>
+                <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${centerFontSize}" fill="var(--text)">${centerText}</text>`;
+  
   el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
 }
 
