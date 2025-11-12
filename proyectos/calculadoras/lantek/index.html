@@ -71,7 +71,13 @@
     text-decoration-color: rgba(255,255,255,0.4);
   }
   
- /* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
+  /* --- Corrección para Dropdowns (NUEVO) --- */
+  select option {
+    color: #000; /* Fuerza el texto a negro */
+    background: #fff; /* Asegura fondo blanco */
+  }
+
+  /* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
   @media print {
     /* --- Configuración de página --- */
     @page {
@@ -119,14 +125,13 @@
     .stat { border-color: #eee !important; padding: 0.5rem !important; }
     tbody tr { background: #f9f9f9 !important; }
     
-    /* --- 4. NUEVO: Poner gráficos lado a lado --- */
-    /* Este es el 'div' que contiene los dos gráficos */
+    /* --- 4. Poner gráficos lado a lado --- */
     #reportSection .grid-cols-1 {
       grid-template-columns: repeat(2, 1fr) !important; /* 2 columnas */
       gap: 1rem !important; /* Espacio entre los 2 gráficos */
     }
 
-    /* --- 5. NUEVO: Reducir altura de gráficos --- */
+    /* --- 5. Reducir altura de gráficos --- */
     .viz {
       min-height: 280px !important; /* Altura reducida para que quepan */
     }
@@ -227,10 +232,10 @@
             <label class="text-sm" title="Aprovechamiento esperado con nesting avanzado y gestión de remanentes.">Aprovechamiento propuesto (%)
               <input id="aprovP" type="number" value="86">
             </label>
-            <label class="text-sm">Costo material por hoja (USD)
+            <label class="text-sm" title="Costo promedio de una hoja/placa del material principal.">Costo material por hoja (USD)
               <input id="costoHoja" type="number" value="95">
             </label>
-            <label class="text-sm">Hojas por mes
+            <label class="text-sm" title="Total de hojas/placas procesadas al mes.">Hojas por mes
               <input id="hojasMes" type="number" value="420">
             </label>
           </div>
@@ -239,16 +244,16 @@
         <fieldset id="fsB" class="space-y-3">
           <legend class="text-sm font-semibold">B) Programación y throughput</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">Min/NC manual
+            <label class="text-sm" title="Minutos promedio para crear un programa NC (nesting y post-proceso) con el método actual.">Min/NC manual
               <input id="minNCManual" type="number" value="18">
             </label>
-            <label class="text-sm">Min/NC con Lantek
+            <label class="text-sm" title="Minutos promedio para crear el mismo programa NC con Lantek (automatizado).">Min/NC con Lantek
               <input id="minNCLantek" type="number" value="8">
             </label>
-            <label class="text-sm">NC por mes
+            <label class="text-sm" title="Total de programas NC (nestings) generados al mes.">NC por mes
               <input id="ncMes" type="number" value="260">
             </label>
-            <label class="text-sm">Costo hora programador (USD)
+            <label class="text-sm" title="Costo por hora del programador (salario + prestaciones / horas).">Costo hora programador (USD)
               <input id="costoProg" type="number" value="18">
             </label>
             <label class="text-sm" title="Tiempo ahorrado por no tener que cambiar entre diferentes softwares (ej. CAD a CAM).">Min de cambio de software eliminados/NC
@@ -263,13 +268,13 @@
             <label class="text-sm" title="Tiempo de respuesta (Turnaround Time) actual para generar una cotización.">TAT cotización actual (h)
               <input id="tatA" type="number" value="24">
             </label>
-            <label class="text-sm" title="Nivel de servicio (SLA) objetivo.">SLA objetivo (h)
+            <label class="text-sm" title="Nivel de servicio (SLA) objetivo para cotizar con Lantek.">SLA objetivo (h)
               <input id="tatP" type="number" value="8">
             </label>
-            <label class="text-sm">Cotizaciones por mes
+            <label class="text-sm" title="Número total de cotizaciones generadas al mes.">Cotizaciones por mes
               <input id="cotsMes" type="number" value="120">
             </label>
-            <label class="text-sm">Costo hora ventas (USD)
+            <label class="text-sm" title="Costo por hora del personal de ventas/cotizaciones.">Costo hora ventas (USD)
               <input id="costoVentas" type="number" value="16">
             </label>
           </div>
@@ -281,10 +286,10 @@
             <label class="text-sm" title="Tiempo perdido buscando material, piezas o rehaciendo trabajo por falta de trazabilidad.">Min perdidos/orden
               <input id="minPerdidos" type="number" value="6">
             </label>
-            <label class="text-sm">Órdenes por mes
+            <label class="text-sm" title="Total de órdenes de producción procesadas al mes.">Órdenes por mes
               <input id="ordenesMes" type="number" value="900">
             </label>
-            <label class="text-sm" title="Costo de hora-hombre en piso de producción (operarios, etc.)">Costo hora producción (USD)
+            <label class="text-sm" title="Costo de hora-hombre en piso de producción (operarios, supervisores).">Costo hora producción (USD)
               <input id="costoProd" type="number" value="28">
             </label>
           </div>
@@ -293,10 +298,10 @@
         <fieldset id="fsE" class="space-y-3 hidden">
           <legend class="text-sm font-semibold">E) Consolidación chapa+tubo</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">Licencias antiguas eliminadas (USD/mes)
+            <label class="text-sm" title="Costo mensual (suscripción o prorrateo de mantenimiento) de software de tubo que se dará de baja.">Licencias antiguas eliminadas (USD/mes)
               <input id="licenciasElim" type="number" value="350">
             </label>
-            <label class="text-sm">Jobs/mes afectados por cambio de software
+            <label class="text-sm" title="Número de jobs que requerían cambiar entre software de chapa y tubo.">Jobs/mes afectados por cambio de software
               <input id="jobsMes" type="number" value="120">
             </label>
           </div>
@@ -306,10 +311,10 @@
         <fieldset class="space-y-3">
           <legend class="text-sm font-semibold">Finanzas</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">Inversión inicial (USD)
+            <label class="text-sm" title="Inversión total única (CAPEX) en licencias perpetuas, implementación y capacitación.">Inversión inicial (USD)
               <input id="capex" type="number" value="12000">
             </label>
-            <label class="text-sm">Mensualidad (USD) — si aplica
+            <label class="text-sm" title="Costo recurrente (OPEX) si es un modelo de suscripción o mantenimiento.">Mensualidad (USD) — si aplica
               <input id="mensualidad" type="number" value="450">
             </label>
           </div>
@@ -385,7 +390,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-5">
+    <div class="grid grid-cols-1 gap-5" id="graphsWrapper">
       <div class="card p-4">
         <h3 class="text-sm font-semibold">Distribución de ahorros</h3>
         <div id="vizDonut" class="mt-3 viz"></div>
