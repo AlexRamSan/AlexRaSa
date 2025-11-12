@@ -71,7 +71,7 @@
     text-decoration-color: rgba(255,255,255,0.4);
   }
   
-  /* --- Corrección para Dropdowns (NUEVO) --- */
+  /* --- Corrección para Dropdowns --- */
   select option {
     color: #000; /* Fuerza el texto a negro */
     background: #fff; /* Asegura fondo blanco */
@@ -79,23 +79,18 @@
 
   /* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
   @media print {
-    /* --- Configuración de página --- */
     @page {
-      size: Letter; /* O A4 */
-      margin: 0.5in; /* Media pulgada de margen */
+      size: Letter;
+      margin: 0.5in;
     }
     html, body {
-      font-size: 10pt !important; /* Reduce fuente base */
+      font-size: 10pt !important;
       background: #fff !important;
       color: #000 !important;
     }
-
-    /* --- 1. Ocultar lo que no queremos --- */
     header, footer, .hero-bg, .lg\:col-span-4 {
       display: none !important;
     }
-
-    /* --- 2. Preparar el Contenedor del Reporte --- */
     main {
       display: block !important;
       padding: 0 !important;
@@ -110,59 +105,48 @@
       margin: 0 !important;
       padding: 0 !important;
       display: grid !important;
-      grid-template-columns: 1fr !important; /* Asegura una columna */
-      gap: 0.5rem !important; /* Reduce el gap entre tarjetas */
+      grid-template-columns: 1fr !important;
+      gap: 0.5rem !important;
     }
-    
-    /* --- 3. Estilos de las tarjetas --- */
     .card {
       border: 1px solid #ccc !important;
       box-shadow: none !important;
       background: #fff !important;
-      page-break-inside: avoid; /* Evita que las tarjetas se corten */
-      padding: 0.75rem !important; /* Reduce padding */
+      page-break-inside: avoid;
+      padding: 0.75rem !important;
     }
     .stat { border-color: #eee !important; padding: 0.5rem !important; }
     tbody tr { background: #f9f9f9 !important; }
     
-    /* --- 4. Poner gráficos lado a lado --- */
-    #reportSection .grid-cols-1 {
-      grid-template-columns: repeat(2, 1fr) !important; /* 2 columnas */
-      gap: 1rem !important; /* Espacio entre los 2 gráficos */
+    #graphsWrapper {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 1rem !important;
     }
-
-    /* --- 5. Reducir altura de gráficos --- */
     .viz {
-      min-height: 280px !important; /* Altura reducida para que quepan */
+      min-height: 280px !important;
     }
-
-    /* --- 6. Fuentes y Colores --- */
     h2 { font-size: 1.25rem !important; }
     h3 { font-size: 1rem !important; }
     .text-lg { font-size: 1rem !important; }
     .text-sm { font-size: 0.8rem !important; }
     .kpi-icon { width: 1.25rem !important; height: 1.25rem !important; }
     
-    /* Forzar colores de texto e iconos a negro */
     h1, h2, h3, p, span, div, text, svg, path {
       color: #000 !important;
       fill: #000 !important;
       stroke: #000 !important;
     }
-    
-    /* Estilos específicos para elementos con color */
     .badge.up {
       background: #16a34a !important; color: #fff !important;
       border: 1px solid #16a34a !important;
-      -webkit-print-color-adjust: exact; /* Fuerza el fondo en impresión */
+      -webkit-print-color-adjust: exact;
     }
-    #kpiAhorroBruto, #kpiNeto[style*="var(--good)"] {
+    #kpiAhorroBruto, #kpiNetoM1[style*="var(--good)"] {
       color: #16a34a !important; fill: #16a34a !important; stroke: #16a34a !important;
     }
-    #kpiNeto[style*="var(--bad)"] {
+    #kpiNetoM1[style*="var(--bad)"] {
       color: #dc2626 !important; fill: #dc2626 !important; stroke: #dc2626 !important;
     }
-    /* Colores de gráficos */
     path[fill^="#6366F1"], polyline[stroke^="#A78BFA"], circle[fill^="#A78BFA"] {
       fill: #5A5A9C !important; stroke: #5A5A9C !important; -webkit-print-color-adjust: exact;
     }
@@ -175,7 +159,6 @@
     rect[fill^="#EF4444"] {
       fill: #dc2626 !important; stroke: #dc2626 !important; -webkit-print-color-adjust: exact;
     }
-    /* Reducir fuentes de los gráficos */
     svg text { font-size: 10px !important; }
     #vizDonut svg text[font-size="18"] { font-size: 12px !important; }
     #vizDonut svg text[font-size="20"] { font-size: 14px !important; }
@@ -311,11 +294,16 @@
         <fieldset class="space-y-3">
           <legend class="text-sm font-semibold">Finanzas</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm" title="Inversión total única (CAPEX) en licencias perpetuas, implementación y capacitación.">Inversión inicial (USD)
+            <label class="text-sm" title="Inversión total única (CAPEX) en licencias perpetuas, implementación y capacitación.">Inversión (CAPEX) USD
               <input id="capex" type="number" value="12000">
             </label>
-            <label class="text-sm" title="Costo recurrente (OPEX) si es un modelo de suscripción o mantenimiento.">Mensualidad (USD) — si aplica
-              <input id="mensualidad" type="number" value="450">
+            <label class="text-sm" title="Método de pago para la inversión inicial.">Plan de pago
+              <select id="plan">
+                <option value="contado">Contado</option>
+                <option value="30_3">30% inicial + 3 meses</option>
+                <option value="20_6">20% inicial + 6 meses</option>
+                <option value="0_12" selected>12 mensualidades iguales (0% enganche)</option>
+              </select>
             </label>
           </div>
         </fieldset>
@@ -343,12 +331,13 @@
         </div>
         
         <div class="stat">
-          <div class="text-xs text-slate-300">Ahorro Mensual</div>
+          <div class="text-xs text-slate-300">Neto en M1</div>
           <div id="kpiNetoM1" class="text-lg font-bold stat-content">
-            <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v1.5m0-1.5H3.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H5.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H7.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H10.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H12.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H14.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H16.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H19.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m-1.5 0H20.25v-1.5m0 1.5H19.125M3.75 18.75v-1.5m0 1.5H3.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H5.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H7.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H10.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H12.375m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H14.625m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H16.875m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m2.121-3.121v1.5m0-1.5H19.125m0 0h1.5m-1.5 0h1.5m-1.5 0h1.5m-1.5 0H20.25v-1.5m0 1.5H19.125" /></svg>
+            <svg class="kpi-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
             <span id="valNetoM1">$0</span>
           </div>
         </div>
+
         <div class="stat">
           <div class="text-xs text-slate-300">ROI anual</div>
           <div id="kpiROI" class="text-lg font-bold stat-content">
@@ -417,6 +406,16 @@
   // Utilidad
   const fmt = (n, d=2) => Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 
+  // --- FUNCIÓN planPagos (AÑADIDA) ---
+  function planPagos(capex, plan){
+    const m = Array(12).fill(0); let eng=0;
+    if(plan==='contado'){ eng=capex; }
+    else if(plan==='30_3'){ eng=capex*0.30; const cuota=(capex*0.70)/3; m[0]+=cuota; m[1]+=cuota; m[2]+=cuota; }
+    else if(plan==='20_6'){ eng=capex*0.20; const cuota=(capex*0.80)/6; for(let i=0;i<6;i++) m[i]+=cuota; }
+    else if(plan==='0_12'){ const cuota=capex/12; for(let i=0;i<12;i++) m[i]+=cuota; }
+    return {enganche:eng, cuotas:m};
+  }
+
   // Habilita/Deshabilita y Oculta/Muestra grupos
   function applyToggles(){
     incA.checked ? fsA.classList.remove('hidden') : fsA.classList.add('hidden');
@@ -467,12 +466,13 @@
     if(!document.getElementById('incE').checked) return 0;
     const licenciasElim = +document.getElementById('licenciasElim').value||0;
     const jobsMes = +document.getElementById('jobsMes').value||0;
-    const minCambio = +document.getElementById('minCambio').value||0; // reutilizamos B
-    const costoProg = +document.getElementById('costoProg').value||0; // reutilizamos B
+    const minCambio = +document.getElementById('minCambio').value||0; 
+    const costoProg = +document.getElementById('costoProg').value||0;
     const ahorroTiempo = (minCambio/60) * jobsMes * costoProg;
     return licenciasElim + ahorroTiempo;
   }
 
+  // --- FUNCIÓN calcular() ACTUALIZADA ---
   function calcular(){
     const parts = [
       ['Material y nesting (A)', calcA()],
@@ -483,7 +483,7 @@
     ];
     const total = parts.reduce((s, p)=> s + p[1], 0); // Ahorro Bruto
 
-    // --- LÓGICA DE CÁLCULO ACTUALIZADA ---
+    // KPIs (Lógica SolidCAM)
     const capex = +document.getElementById('capex').value||0;
     const planSel = document.getElementById('plan').value;
     const {enganche, cuotas} = planPagos(capex, planSel);
@@ -491,13 +491,13 @@
     // ROI se basa en Ahorro Bruto Anual vs CAPEX
     const roiAnual = capex > 0 ? ((total * 12) / capex) * 100 : (total > 0 ? Infinity : 0);
     
-    // Payback (lógica de SolidCAM)
+    // Payback
     const acc = []; let acum = -enganche;
     for(let i=0;i<12;i++){ acum += (total - cuotas[i]); acc.push(acum); }
     const payIdx = capex > 0 ? acc.findIndex(v => v >= capex) : -1;
     const payback = payIdx >= 0 ? (payIdx + 1) : '—';
     
-    // Neto en M1 (ya no se usa en KPI, pero se mantiene la lógica por si acaso)
+    // Neto en M1
     const netoM1 = total - (enganche + cuotas[0]);
 
     // Render tabla
@@ -517,22 +517,16 @@
     document.getElementById('valAhorroBruto').textContent = `$${fmt(total)}`;
     document.getElementById('valROI').textContent = isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
     document.getElementById('valPayback').textContent = payback;
+    document.getElementById('valNetoM1').textContent = `$${fmt(netoM1)}`;
     
-    // --- CAMBIO AQUÍ ---
-    // El KPI 'kpiNetoM1' ahora muestra el Ahorro Mensual Total
-    document.getElementById('valNetoM1').textContent = `$${fmt(total)}`;
     const kN = document.getElementById('kpiNetoM1');
-    kN.style.color = 'var(--good)'; // Siempre verde
-    // --- FIN CAMBIO ---
+    kN.style.color = netoM1 >= 0 ? 'var(--good)' : 'var(--bad)';
     
-    const top = parts.slice().sort((a,b)=>b[1]-a[1])[0];
-    // Nota: El KPI kpiTop no existe en este HTML, así que esta línea no se usa.
-    // document.getElementById('kpiTop').innerHTML = top && top[1]>0 ? `<span class="badge up">${top[0]}</span>` : '<span class="badge">—</span>';
-
     // Gráficos
     renderDonut('vizDonut', parts);
     renderCashflow('vizCash', { ahorroMes: total, capex, planSel, enganche, cuotas });
   }
+
   // --- GRÁFICA DE DONA MEJORADA ---
   function renderDonut(targetId, parts){
     const el=document.getElementById(targetId); if(!el) return;
@@ -571,8 +565,8 @@
     el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
   }
 
-  // --- GRÁFICA DE FLUJO MEJORADA (CON EJE Y NEGATIVO) ---
-  function renderCashflow(targetId, {ahorroMes, cuota, capex}){
+  // --- GRÁFICA DE FLUJO REEMPLAZADA (LÓGICA SOLIDCAM) ---
+  function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas}){
     const el=document.getElementById(targetId); if(!el) return;
     const meses=Array.from({length:12},(_,i)=>`M${i+1}`);
     
@@ -581,12 +575,12 @@
     const barW = 18, barGap = 6, gap = 38;
     const H_drawable = H - pad.top - pad.bottom;
     
-    const neto = (ahorroMes||0) - (cuota||0);
-    let acc = -capex; // Flujo acumulado empieza en negativo con el CAPEX
-    const accArr = meses.map(() => { acc += neto; return acc; });
+    const pagos = cuotas.slice(); pagos[0]+=enganche; // sumar enganche en M1
+    const netoMes = meses.map((_,i)=> (ahorroMes - pagos[i]));
+    let acc = 0; const accArr = netoMes.map(v=>{ acc+=v; return acc; });
 
     // --- Nueva escala Y que maneja negativos ---
-    const allValues = [ahorroMes||0, cuota||0, ...accArr, -capex];
+    const allValues = [ahorroMes||0, capex||0, ...pagos, ...accArr];
     const dataMax = Math.max(1, ...allValues.map(v => Math.max(0, v)));
     const dataMin = Math.min(0, ...allValues.map(v => Math.min(0, v)));
     const totalRange = dataMax - dataMin;
@@ -603,7 +597,7 @@
     
     const bars = meses.map((m,i)=>{
       const yA = scaleY(ahorroMes); const hA = yZero - yA;
-      const yP = scaleY(cuota); const hP = yZero - yP; // "cuota" es la mensualidad
+      const yP = scaleY(pagos[i]); const hP = yZero - yP; // "pagos"
       const xa = x, xp = x + barW + barGap;
       const labelY = H - pad.bottom + 20;
       
@@ -621,22 +615,24 @@
       const yi = scaleY(v);
       return `${xi},${yi}`;
     }).join(' ');
-    // Añadir el punto inicial (Mes 0)
-    const x0 = pad.left + gap/2 - (barW*2+barGap+gap) + (barW + barGap/2);
-    const y0 = scaleY(-capex);
-    const polyline = `<polyline points="${x0},${y0} ${linePts}" fill="none" stroke="#A78BFA" stroke-width="3"></polyline>`;
+    const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="3"></polyline>`;
 
-    // --- Marcador de Payback ---
+    // --- Marcador de Payback (lógica SolidCAM) ---
     let marker=''; 
-    if (capex > 0){
-      const idx = accArr.findIndex(v => v >= 0); // Primer mes donde el acumulado es >= 0
-      if(idx !== -1){
+    if ((capex||0) > 0){
+      const idx = accArr.findIndex(v=>v>=capex);
+      if(idx!==-1){
         const xi_marker = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW + barGap/2);
         const yi_marker = scaleY(accArr[idx]);
         marker = `<circle cx="${xi_marker}" cy="${yi_marker}" r="6" fill="#A78BFA" stroke="var(--bg)" stroke-width="2"></circle>
                   <text x="${xi_marker + 10}" y="${yi_marker - 10}" font-size="14" fill="#A78BFA">Payback M${idx+1}</text>`;
       }
     }
+    
+    // --- Línea de CAPEX ---
+    const yCapex = scaleY(capex || 0);
+    const capexLine = capex > 0 ? `<line x1="${pad.left}" y1="${yCapex}" x2="${W - (pad.right + 150)}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6"></line>
+                                <text x="${pad.left + 8}" y="${yCapex-8}" font-size="14" fill="#60A5FA">CAPEX $${fmt(capex, 0)}</text>` : '';
     
     // --- Leyenda ---
     const legendX = W - pad.right - 150, legendY = pad.top;
@@ -645,7 +641,7 @@
         <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#22C55E"></rect>
         <text x="${legendX+30}" y="${legendY+10}" font-size="14" fill="var(--text)">Ahorro</text>
         <rect x="${legendX+12}" y="${legendY+26}" width="12" height="12" fill="#EF4444"></rect>
-        <text x="${legendX+30}" y="${legendY+36}" font-size="14" fill="var(--text)">Cuota</text>
+        <text x="${legendX+30}" y="${legendY+36}" font-size="14" fill="var(--text)">Pago</text>
         <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="#A78BFA" stroke-width="2.5"></line>
         <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="var(--text)">Acumulado</text>`;
 
@@ -659,7 +655,7 @@
     `;
 
     el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">
-      ${axis}${bars}${polyline}${marker}${legend}
+      ${axis}${capexLine}${bars}${polyline}${marker}${legend}
     </svg>`;
   }
 
