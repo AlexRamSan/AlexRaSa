@@ -7,21 +7,16 @@
 <meta name="description" content="Calcula ahorros por ciclo, vida de herramienta y tiempos muertos. ROI, payback y comparativas A vs P para procesos de maquinado." />
 <meta name="theme-color" content="#0F172A" />
 <meta name="robots" content="index,follow" />
-
 <link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
 <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
 <link rel="alternate" hreflang="es" href="https://alexrasa.store/calculadora-costo-beneficio/" />
 <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-
 <link rel="icon" href="/favicon.ico" sizes="any" />
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
 <link rel="preload" as="image" href="/assets/hero-industrial.png">
-
 <script src="https://cdn.tailwindcss.com"></script>
-
 <meta name="color-scheme" content="dark">
 <style>
   /* Badges de mejora: verde / ámbar / rojo */
@@ -41,7 +36,6 @@
   color: #7f1d1d;
   border: 1px solid rgba(239,68,68,0.08);
 }
-/* pequeña base para los badges */
 .stat-badge { display:inline-block; padding:.25rem .5rem; border-radius:999px; font-weight:700; font-size:11px; min-width:56px; text-align:center; }
 
   :root{
@@ -57,14 +51,11 @@
   }
   html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
   a{color:var(--accent);}
-  /* Header */
   #siteHeader{background:rgba(2,6,23,0.65);border-bottom:1px solid rgba(255,255,255,0.03);}
-  /* Cards / sections */
   .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); color:var(--text); border-radius:12px;}
   input,select,textarea{background:rgba(255,255,255,0.02); color:var(--text); border:1px solid rgba(255,255,255,0.06); padding:.5rem; border-radius:.5rem;}
   input:focus,select:focus{box-shadow:0 0 0 6px rgba(96,165,250,0.08); outline:none}
 
-  /* Hero specifics */
   .hero-bg{
     position:relative;
     background-size:cover;
@@ -81,19 +72,16 @@
   .hero-title{ color:var(--text); }
   .hero-sub{ color:rgba(230,238,248,0.9); }
 
-  /* Visuals SVG text */
   #vizAhorros svg text, #vizAhorros svg tspan, #vizPerf svg text, #vizPerf svg tspan, #vizCash svg text {
     fill:var(--text) !important;
     font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   }
   
-  /* --- Corrección para Dropdowns (NUEVO) --- */
   select option {
-    color: #000; /* Fuerza el texto a negro */
-    background: #fff; /* Asegura fondo blanco */
+    color: #000; 
+    background: #fff;
   }
   
-  /* --- Estilo para Tooltips (NUEVO) --- */
   label[title] {
     cursor: help;
     text-decoration: underline;
@@ -101,16 +89,12 @@
     text-decoration-color: rgba(255,255,255,0.4);
   }
 
-  /* badges */
   .stat-badge{ display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(255,255,255,0.03); color:var(--text); font-weight:700; font-size:11px; }
 
-  /* make reveal not hide hero (if present) */
   .no-reveal{ opacity:1 !important; transform:none !important; }
 
-  /* responsive tweaks */
   .safe-bottom{ padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
 
-  /* Badges claros y contrastados para dark mode — pegar al final del CSS */
 .stat-badge{
   display:inline-block;
   padding: .28rem .66rem;
@@ -128,7 +112,6 @@
   -webkit-font-smoothing:antialiased;
 }
 
-/* Mejoras (verde) */
 .stat-badge.badge-up{
   background: linear-gradient(180deg, #16a34a 0%, #059669 100%) !important;
   color: #ffffff !important;
@@ -136,7 +119,6 @@
   box-shadow: 0 6px 18px rgba(6,182,104,0.09);
 }
 
-/* Cambios pequeños / neutros (ámbar) */
 .stat-badge.badge-mid{
   background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
   color: #101010 !important;
@@ -144,7 +126,6 @@
   box-shadow: 0 6px 18px rgba(245,158,11,0.06);
 }
 
-/* Empeora (rojo) */
 .stat-badge.badge-down{
   background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%) !important;
   color: #ffffff !important;
@@ -152,7 +133,6 @@
   box-shadow: 0 6px 18px rgba(239,68,68,0.09);
 }
 
-/* Micro-interacción al hover para claridad */
 .stat-badge:hover{ transform: translateY(-1px); cursor:default; }
 </style>
   
@@ -315,6 +295,11 @@
   // small util
   function fmt(n){ return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
+  // --- ¡FUNCIONES RESTAURADAS! ---
+  function setEnabled(ids,on){ ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.disabled=!on; }); }
+  function applyInclusions(){ setEnabled(['cicloA','cicloP'], document.getElementById('incCiclo')?.checked ?? true); setEnabled(['vidaA','vidaP','costoHerr'], document.getElementById('incHerr')?.checked ?? true); setEnabled(['tmuertoA','tmuertoP'], document.getElementById('incTM')?.checked ?? true); }
+  // --- FIN DE LA CORRECCIÓN ---
+
   // calculator logic
   function calcular(){
     const mensualidad = +document.getElementById('mensualidad').value || 0;
@@ -348,20 +333,17 @@
     );
 
     const neto = ahorroTotal - mensualidad;
-    const roiMensual = inversion > 0 ? (neto / inversion) * 100 : 0; // ROI basado en NETO
-    const roiAnual   = inversion > 0 ? ((neto * 12) / inversion) * 100 : 0;
+    const roiMensual = inversion > 0 ? (neto / inversion) * 100 : (neto > 0 ? Infinity : 0);
+    const roiAnual   = inversion > 0 ? ((neto * 12) / inversion) * 100 : (neto > 0 ? Infinity : 0);
     const payback    = inversion > 0 && neto > 0 ? inversion / neto : 0;
     const idxPayback = inversion > 0 && neto > 0 ? Math.ceil(inversion / neto) : -1;
 
-    // Neto mensual UI
     const netoEl = document.getElementById('netoMensual');
     if (netoEl) {
       netoEl.textContent = `$${fmt(neto)}`;
       netoEl.style.color = neto >= 0 ? 'var(--good)' : 'var(--bad)';
     }
 
-    // --- **INICIO DE CAMBIOS EN calcular()** ---
-    
     // Llamada a renderCashflow actualizada
     renderCashflow('vizCash', {
       ahorroMes: ahorroTotal, // Ahorro bruto
@@ -370,12 +352,11 @@
     });
 
     document.getElementById('ahorro').textContent    = `$${fmt(ahorroTotal)}`;
-    document.getElementById('roi').textContent       = `${fmt(roiAnual)}%`;
-    document.getElementById('roiMensual').textContent = `${fmt(roiMensual)}%`;
-    document.getElementById('payback').textContent = idxPayback !== -1 ? (idxPayback) : '—'; // +1 no es necesario si se basa en neto
+    document.getElementById('roi').textContent       = isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
+    document.getElementById('roiMensual').textContent = isFinite(roiMensual) ? `${fmt(roiMensual)}%` : '∞%';
+    document.getElementById('payback').textContent = idxPayback !== -1 ? (idxPayback) : '—';
     document.getElementById('ahorroTM').textContent  = `$${fmt(ahorroTM)}`;
 
-    // --- (El resto de la función 'calcular' no cambia) ---
     const pphA = cicloA>0 ? 3600/cicloA : 0;
     const pphP = cicloP>0 ? 3600/cicloP : 0;
     const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
@@ -428,7 +409,7 @@
     renderBars('vizPerf', [ ['Pzas/h', pphA, pphP, false], ['T. muerto (min/mes)', tmuertoA, tmuertoP, true] ]);
   }
   
-  // --- **INICIO: `renderCashflow` REEMPLAZADA** ---
+  // --- `renderCashflow` REEMPLAZADA ---
   function renderCashflow(targetId, {ahorroMes, cuota, capex}){
     const el=document.getElementById(targetId); if(!el) return;
     const meses=Array.from({length:12},(_,i)=>`M${i+1}`);
@@ -442,7 +423,6 @@
     let acc = -capex; // Flujo acumulado empieza en negativo con el CAPEX
     const accArr = meses.map(() => { acc += neto; return acc; });
 
-    // --- Nueva escala Y que maneja negativos ---
     const allValues = [ahorroMes||0, cuota||0, ...accArr, -capex];
     const dataMax = Math.max(1, ...allValues.map(v => Math.max(0, v)));
     const dataMin = Math.min(0, ...allValues.map(v => Math.min(0, v)));
@@ -455,7 +435,6 @@
 
     const yZero = scaleY(0);
 
-    // --- Lógica de barras y líneas ---
     let x = pad.left + gap/2;
     
     const bars = meses.map((m,i)=>{
@@ -472,21 +451,18 @@
       return rects+txt;
     }).join('');
 
-    // --- Polilínea de Acumulado ---
     const linePts = accArr.map((v,i)=>{
       const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW + barGap/2);
       const yi = scaleY(v);
       return `${xi},${yi}`;
     }).join(' ');
-    // Añadir el punto inicial (Mes 0)
     const x0 = pad.left + gap/2 - (barW*2+barGap+gap) + (barW + barGap/2);
     const y0 = scaleY(-capex);
     const polyline = `<polyline points="${x0},${y0} ${linePts}" fill="none" stroke="#A78BFA" stroke-width="3"></polyline>`;
 
-    // --- Marcador de Payback ---
     let marker=''; 
     if (capex > 0){
-      const idx = accArr.findIndex(v => v >= 0); // Primer mes donde el acumulado es >= 0
+      const idx = accArr.findIndex(v => v >= 0);
       if(idx !== -1){
         const xi_marker = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW + barGap/2);
         const yi_marker = scaleY(accArr[idx]);
@@ -495,7 +471,6 @@
       }
     }
     
-    // --- Leyenda ---
     const legendX = W - pad.right - 150, legendY = pad.top;
     const legend = `
         <rect x="${legendX}" y="${legendY - 12}" width="140" height="82" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)"></rect>
@@ -506,7 +481,6 @@
         <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="#A78BFA" stroke-width="2.5"></line>
         <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="var(--text)">Acumulado</text>`;
 
-    // --- Ejes Y (vertical) y X (horizontal en $0) ---
     const axis = `
         <line x1="${pad.left}" y1="${pad.top - 10}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="rgba(255,255,255,.2)"></line>
         <line x1="${pad.left}" y1="${yZero}" x2="${W - pad.right}" y2="${yZero}" stroke="rgba(255,255,255,.2)"></line>
@@ -526,7 +500,7 @@
   function renderDonut(targetId, parts, labels){
     const el=document.getElementById(targetId); if(!el) return;
     const data=parts.map((p,i)=> [labels[i], p]).filter(p=>p[1]>0);
-    const total=data.reduce((s,p)=>s+p[1],0);
+    const total=data.reduce((s,p)=>s[1]+p[1],0);
     
     const W=600, H=400; 
     const cx = 210, cy = H / 2, r = H * 0.4, th = 50;
@@ -608,7 +582,7 @@
   ['cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP','mensualidad'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{ if(window.innerWidth>=768) calcular(); }));
   ['incCiclo','incHerr','incTM'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{ applyInclusions(); calcular(); }));
 
-  // reveal observer but we ensure hero has no-reveal
+  // reveal observer
   (function(){
     const els = document.querySelectorAll('.reveal');
     if(!('IntersectionObserver' in window)){ els.forEach(el=>el.classList.add('show')); return; }
