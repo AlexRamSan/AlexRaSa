@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
+<meta charset="utf-f" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Calculadora de Costo-Beneficio — AlexRaSa</title>
 <meta name="description" content="Calcula ahorros por ciclo, vida de herramienta y tiempos muertos. ROI, payback y comparativas A vs P para procesos de maquinado." />
@@ -135,19 +135,19 @@
 
 .stat-badge:hover{ transform: translateY(-1px); cursor:default; }
 
-/* --- ESTILOS DE IMPRESIÓN (REPORTE PDF) --- */
+/* --- ESTILOS DE IMPRESIÓN (REPORTE PDF DE 1 PÁGINA) --- */
 @media print {
   @page {
     size: Letter;
     margin: 0.5in;
   }
   html, body {
-    font-size: 10pt !important;
+    font-size: 9pt !important; /* Fuente más pequeña */
     background: #fff !important;
     color: #000 !important;
   }
-  /* Oculta header, hero, footer y el formulario (col-span-2) */
-  header, footer, .hero-bg, .lg\:col-span-2, #btnCalcularMobile {
+  /* Oculta todo menos el main */
+  header, footer, .hero-bg, #calc > .lg\:col-span-2, #btnCalcularMobile {
     display: none !important;
   }
   main {
@@ -157,7 +157,8 @@
     width: 100% !important;
     max-width: 100% !important;
   }
-  /* Expande el wrapper del reporte */
+  
+  /* --- Reorganiza el layout principal --- */
   #reportSection {
     visibility: visible;
     width: 100% !important;
@@ -165,52 +166,58 @@
     margin: 0 !important;
     padding: 0 !important;
     display: grid !important;
-    grid-template-columns: repeat(6, 1fr) !important; /* Mantiene layout de 6 cols */
+    grid-template-columns: 1fr 1fr !important; /* 2 columnas */
+    gap: 1rem !important;
+  }
+  
+  /* Col 1: Tabla (span 1) */
+  #reportSection > .lg\:col-span-4 {
+    grid-column: span 1 !important;
+    grid-row: span 2 !important; /* Ocupa 2 filas de alto */
+  }
+  
+  /* Col 2, Fila 1: KPIs (span 1) */
+  #reportSection > .lg\:col-span-2 {
+    grid-column: span 1 !important;
+    grid-row: 1 !important;
+  }
+  
+  /* Col 2, Fila 2: Visuales (span 1) */
+  #reportSection > #visuales {
+    grid-column: span 1 !important;
+    grid-row: 2 !important;
+  }
+
+  /* Dentro de Visuales, apila los 3 gráficos */
+  #visuales .grid-cols-1 {
+    grid-template-columns: 1fr !important;
     gap: 0.5rem !important;
   }
+  
+  /* --- Estilos de tarjetas y gráficos --- */
   .card {
     border: 1px solid #ccc !important;
     box-shadow: none !important;
     background: #fff !important;
     page-break-inside: avoid;
-    padding: 0.75rem !important;
+    padding: 0.5rem !important;
   }
-  .stat { border-color: #eee !important; padding: 0.5rem !important; }
+  .stat { border-color: #eee !important; padding: 0.4rem !important; }
   tbody tr { background: #f9f9f9 !important; }
   
-  /* --- REORDENAMIENTO DE LAYOUT PARA 1 PÁGINA --- */
-  
-  /* Mantiene Tabla y KPIs Lado a Lado */
-  #reportSection > .lg\:col-span-4 { grid-column: span 4 !important; }
-  #reportSection > .lg\:col-span-2 { grid-column: span 2 !important; }
-  
-  /* Visuales: span 6 */
-  #reportSection > #visuales { 
-    grid-column: span 6 !important; 
-  }
-  
-  /* El grid *dentro* de visuales ahora es de 2 columnas */
-  #visuales .grid-cols-1 {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 1rem !important;
-  }
-  
-  /* El último gráfico (Flujo) se expande a 2 columnas */
-  #visuales .grid-cols-1 > div:last-child {
-    grid-column: span 2 !important;
-  }
-  
-  /* Reduce altura de gráficos */
+  /* Altura compacta para gráficos */
   .viz, .min-h-\[320px\] {
-    min-height: 280px !important;
+    min-height: 180px !important; 
   }
-  /* --- FIN REORDENAMIENTO --- */
-
-  h2 { font-size: 1.25rem !important; }
-  h3 { font-size: 1rem !important; }
-  .text-lg { font-size: 1rem !important; }
-  .text-sm { font-size: 0.8rem !important; }
-  .kpi-icon { width: 1.25rem !important; height: 1.25rem !important; }
+  #vizPerf svg { height: 150px !important; }
+  #visuales .card { padding: 0.25rem !important; }
+  
+  /* Fuentes */
+  h2 { font-size: 1.1rem !important; margin-bottom: 0.25rem !important; }
+  h3 { font-size: 0.9rem !important; }
+  .text-lg { font-size: 0.9rem !important; }
+  .text-sm { font-size: 0.75rem !important; }
+  .text-xl { font-size: 1.1rem !important; }
   
   h1, h2, h3, p, span, div, text, svg, path {
     color: #000 !important;
@@ -219,26 +226,23 @@
   }
   .badge.up, .stat-badge.badge-up {
     background: #16a34a !important; color: #fff !important;
-    border: 1px solid #16a34a !important;
-    -webkit-print-color-adjust: exact;
+    border: 1px solid #16a34a !important; -webkit-print-color-adjust: exact;
   }
   .stat-badge.badge-mid {
-    background: #f59e0b !important; color: #111 !important;
-    -webkit-print-color-adjust: exact;
+    background: #f59e0b !important; color: #111 !important; -webkit-print-color-adjust: exact;
   }
   .stat-badge.badge-down {
-    background: #dc2626 !important; color: #fff !important;
-    -webkit-print-color-adjust: exact;
+    background: #dc2626 !important; color: #fff !important; -webkit-print-color-adjust: exact;
   }
   
-  /* Colores de KPI */
+  /* Colores KPI */
   div[style*="var(--good)"] { color: #16a34a !important; }
   div[style*="var(--bad)"] { color: #dc2626 !important; }
   div[style*="var(--accent-2)"] { color: #5A5A9C !important; }
   div[style*="var(--warn)"] { color: #f59e0b !important; }
   div[style*="color:#06b6d4"] { color: #06b6d4 !important; }
 
-  /* Colores de gráficos */
+  /* Colores Gráficos */
   path[fill^="#6366F1"], polyline[stroke^="#A78BFA"], circle[fill^="#A78BFA"] {
     fill: #5A5A9C !important; stroke: #5A5A9C !important; -webkit-print-color-adjust: exact;
   }
@@ -254,12 +258,14 @@
   rect[fill^="#94a3b8"] {
     fill: #94a3b8 !important; stroke: #94a3b8 !important; -webkit-print-color-adjust: exact;
   }
-  svg text { font-size: 10px !important; }
-  #vizDonut svg text[font-size="18"] { font-size: 12px !important; }
-  #vizDonut svg text[font-size="20"] { font-size: 14px !important; }
-  #vizCash svg text[font-size="14"] { font-size: 10px !important; }
-  #vizPerf svg text[font-size="14"] { font-size: 10px !important; }
-  #vizPerf svg text[font-size="12"] { font-size: 9px !important; }
+  
+  /* Fuentes de Gráficos */
+  svg text { font-size: 9px !important; }
+  #vizDonut svg text[font-size="18"] { font-size: 11px !important; }
+  #vizDonut svg text[font-size="20"] { font-size: 12px !important; }
+  #vizCash svg text[font-size="14"] { font-size: 9px !important; }
+  #vizPerf svg text[font-size="14"] { font-size: 9px !important; }
+  #vizPerf svg text[font-size="12"] { font-size: 8px !important; }
 }
 </style>
   
