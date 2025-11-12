@@ -496,11 +496,13 @@
   // --- **FIN: `renderCashflow` REEMPLAZADA** ---
 
 
-  // --- **INICIO: `renderDonut` REEMPLAZADA** ---
+  // --- **INICIO: `renderDonut` CORREGIDA** ---
   function renderDonut(targetId, parts, labels){
     const el=document.getElementById(targetId); if(!el) return;
     const data=parts.map((p,i)=> [labels[i], p]).filter(p=>p[1]>0);
-    const total=data.reduce((s,p)=>s[1]+p[1],0);
+    
+    // --- ESTA LÍNEA ESTÁ CORREGIDA ---
+    const total=data.reduce((s,p)=> s + p[1], 0); // Antes decía s[1] + p[1]
     
     const W=600, H=400; 
     const cx = 210, cy = H / 2, r = H * 0.4, th = 50;
@@ -527,14 +529,15 @@
     }).join('');
 
     const centerFontSize = Math.max(20, Math.round(r * 0.2));
-    const centerText = total ? ('$' + fmt(total)) : '—';
+    // --- ESTA LÍNEA TAMBIÉN ESTÁ CORREGIDA (usa fmt(total)) ---
+    const centerText = total > 0 ? ('$' + fmt(total)) : '—';
 
     const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="rgba(255,255,255,0.04)"></circle>
                   <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${centerFontSize}" fill="var(--text)">${centerText}</text>`;
     
     el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
   }
-  // --- **FIN: `renderDonut` REEMPLAZADA** ---
+  // --- **FIN: `renderDonut` CORREGIDA** ---
 
 
   function renderBars(targetId, pairs){
