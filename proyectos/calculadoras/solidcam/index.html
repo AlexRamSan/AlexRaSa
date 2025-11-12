@@ -55,7 +55,7 @@ label[title] {
   }
 
   /* --- 1. Ocultar lo que no queremos --- */
-  header, footer, section[class*="lg:col-span-5"] { /* Oculta header, footer y el formulario */
+  header, footer, section[class*="lg:col-span-5"], .hero-bg { /* Oculta header, hero, footer y el formulario */
     display: none !important;
   }
 
@@ -89,13 +89,13 @@ label[title] {
   .stat { border-color: #eee !important; padding: 0.5rem !important; }
   tbody tr { background: #f9f9f9 !important; }
   
-  /* --- 4. NUEVO: Poner gráficos lado a lado --- */
+  /* --- 4. Poner gráficos lado a lado --- */
   #graphsWrapper {
     grid-template-columns: repeat(2, 1fr) !important; /* 2 columnas */
     gap: 1rem !important; /* Espacio entre los 2 gráficos */
   }
 
-  /* --- 5. NUEVO: Reducir altura de gráficos --- */
+  /* --- 5. Reducir altura de gráficos --- */
   .viz {
     min-height: 280px !important; /* Altura reducida para que quepan */
   }
@@ -120,7 +120,6 @@ label[title] {
     border: 1px solid #16a34a !important;
     -webkit-print-color-adjust: exact; /* Fuerza el fondo en impresión */
   }
-  /* Corregido para SolidCAM (var --ok) */
   #kpiNeto[style*="var(--ok)"] {
     color: #16a34a !important; fill: #16a34a !important; stroke: #16a34a !important;
   }
@@ -190,16 +189,16 @@ label[title] {
         <fieldset id="fsA" class="space-y-3">
           <legend class="text-sm font-semibold">A) Tiempo-máquina (iMachining)</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">Min/pieza baseline
+            <label class="text-sm" title="Tiempo de ciclo actual (sin SolidCAM) para la pieza.">Min/pieza baseline
               <input id="a_min_base" type="number" value="12">
             </label>
-            <label class="text-sm">Min/pieza con iMachining
+            <label class="text-sm" title="Tiempo de ciclo objetivo usando iMachining.">Min/pieza con iMachining
               <input id="a_min_imach" type="number" value="6">
             </label>
-            <label class="text-sm">Piezas/mes (3 jobs)
+            <label class="text-sm" title="Volumen de producción mensual para las piezas afectadas.">Piezas/mes (3 jobs)
               <input id="a_pzas_mes" type="number" value="1800">
             </label>
-            <label class="text-sm" title="Incluye: costo de depreciación, energía, herramental y mano de obra.">$ /h máquina
+            <label class="text-sm" title="Costo total de operar la máquina por hora (incluye depreciación, energía, herramental y mano de obra directa).">$ /h máquina
               <input id="a_costo_hm" type="number" value="45">
             </label>
           </div>
@@ -209,16 +208,16 @@ label[title] {
         <fieldset id="fsB" class="space-y-3">
           <legend class="text-sm font-semibold">B) Menos silos de software</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">Licencias eliminadas (#)
+            <label class="text-sm" title="Número de licencias de software (ej. otro CAM, un verificador) que se pueden dar de baja.">Licencias eliminadas (#)
               <input id="b_lic_del" type="number" value="2">
             </label>
-            <label class="text-sm">Costo licencia eliminada (USD/mes)
+            <label class="text-sm" title="Costo mensual o anualidad (dividida entre 12) de esas licencias.">Costo licencia eliminada (USD/mes)
               <input id="b_lic_cost" type="number" value="200">
             </label>
-            <label class="text-sm" title="Tiempo perdido en exportar/importar archivos, re-trabajo por cambios de ingeniería, etc.">Horas semanales ahorradas (handoffs)
+            <label class="text-sm" title="Tiempo perdido por semana en exportar/importar archivos, re-trabajo por cambios de ingeniería, etc.">Horas semanales ahorradas (handoffs)
               <input id="b_horas_sem" type="number" value="8">
             </label>
-            <label class="text-sm" title="Costo promedio por hora de un programador CAM.">$ /h programador
+            <label class="text-sm" title="Costo promedio por hora de un programador CAM (salario + prestaciones / horas trabajadas).">$ /h programador
               <input id="b_costo_hp" type="number" value="18">
             </label>
           </div>
@@ -228,22 +227,22 @@ label[title] {
         <fieldset id="fsC" class="space-y-3 hidden">
           <legend class="text-sm font-semibold">C) Calidad y riesgo</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">% scrap antes
+            <label class="text-sm" title="Porcentaje de piezas desechadas (scrap) antes de SolidCAM."> % scrap antes
               <input id="c_scrap_a" type="number" value="2.5">
             </label>
-            <label class="text-sm">% scrap después
+            <label class="text-sm" title="Porcentaje de scrap objetivo con simulación y control mejorados.">% scrap después
               <input id="c_scrap_d" type="number" value="0.8">
             </label>
-            <label class="text-sm">Piezas/mes
+            <label class="text-sm" title="Volumen total de piezas/mes para esta área.">Piezas/mes
               <input id="c_pzas_mes" type="number" value="3000">
             </label>
-            <label class="text-sm">Costo por pieza (USD)
+            <label class="text-sm" title="Costo de material y tiempo-máquina de una pieza desechada.">Costo por pieza (USD)
               <input id="c_costo_pza" type="number" value="12">
             </label>
-            <label class="text-sm">Choques evitados/mes
+            <label class="text-sm" title="Número de colisiones (choques) de máquina que ocurren por mes (ej. 0.3 = 1 cada 3 meses).">Choques evitados/mes
               <input id="c_crash_mes" type="number" value="0.3">
             </label>
-            <label class="text-sm" title="Incluye: costo de herramental dañado, paro de máquina y mano de obra de reparación.">Costo promedio por choque (USD)
+            <label class="text-sm" title="Costo promedio de una colisión (incluye herramental dañado, paro de máquina y mano de obra de reparación).">Costo promedio por choque (USD)
               <input id="c_costo_crash" type="number" value="1800">
             </label>
           </div>
@@ -253,25 +252,25 @@ label[title] {
         <fieldset id="fsD" class="space-y-3 hidden">
           <legend class="text-sm font-semibold">D) Mix complejo Mill-Turn/Swiss</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">Min programación/parte (antes)
+            <label class="text-sm" title="Minutos para programar una parte compleja (Mill-Turn o Swiss) con el método actual.">Min programación/parte (antes)
               <input id="d_prog_a" type="number" value="60">
             </label>
-            <label class="text-sm">Min programación/parte (después)
+            <label class="text-sm" title="Minutos para programar la misma parte con SolidCAM.">Min programación/parte (después)
               <input id="d_prog_d" type="number" value="35">
             </label>
-            <label class="text-sm">Partes/mes afectadas
+            <label class="text-sm" title="Número de partes nuevas o con revisión que se programan al mes.">Partes/mes afectadas
               <input id="d_partes_mes" type="number" value="120">
             </label>
-            <label class="text-sm">$ /h programador
+            <label class="text-sm" title="Costo promedio por hora de un programador CAM.">$ /h programador
               <input id="d_costo_hp" type="number" value="18">
             </label>
-            <label class="text-sm">Min setup ahorrados/orden
+            <label class="text-sm" title="Minutos ahorrados en el setup físico de la máquina gracias a una mejor simulación y preparación.">Min setup ahorrados/orden
               <input id="d_setup_min" type="number" value="25">
             </label>
-            <label class="text-sm">Órdenes/mes
+            <label class="text-sm" title="Número de órdenes de trabajo (setups) al mes.">Órdenes/mes
               <input id="d_orders_mes" type="number" value="60">
             </label>
-            <label class="text-sm">$ /h máquina
+            <label class="text-sm" title="Costo total de operar la máquina por hora (incluye depreciación, energía, herramental y mano de obra directa).">$ /h máquina
               <input id="d_costo_hm" type="number" value="45">
             </label>
           </div>
@@ -281,10 +280,10 @@ label[title] {
         <fieldset class="space-y-3">
           <legend class="text-sm font-semibold">Finanzas</legend>
           <div class="grid grid-cols-2 gap-3">
-            <label class="text-sm">Inversión (CAPEX) USD
+            <label class="text-sm" title="Inversión total única (licencias perpetuas, implementación, capacitación).">Inversión (CAPEX) USD
               <input id="capex" type="number" value="46526.2">
             </label>
-            <label class="text-sm">Plan de pago
+            <label class="text-sm" title="Método de pago para la inversión inicial.">Plan de pago
               <select id="plan">
                 <option value="contado">Contado</option>
                 <option value="30_3">30% inicial + 3 meses</option>
@@ -462,7 +461,7 @@ function calcular(){
   valROI.textContent = `${fmt(roiAnual)}%`;
   valPayback.textContent = payback;
   valNeto.textContent = `$${fmt(total)}`;
-  kpiNeto.style.color = 'var(--ok)'; // (Este es el cambio de la solicitud anterior)
+  kpiNeto.style.color = 'var(--ok)';
   
   const top = parts.slice().sort((a,b)=>b[1]-a[1])[0];
   kpiTop.innerHTML = top && top[1]>0 ? `<span class="badge up">${top[0]}</span>` : '<span class="badge">—</span>';
@@ -477,19 +476,11 @@ function renderDonut(targetId, parts){
   const el=document.getElementById(targetId); if(!el) return;
   const data=parts.filter(p=>p[1]>0); const total=data.reduce((s,p)=>s+p[1],0);
   
-  // Usamos un ViewBox fijo de 600x400
   const W=600, H=400; 
-  
-  // Coordenadas del gráfico
-  const cx = 210; // Centro X
-  const cy = H / 2; // Centro Y (200)
-  const r  = H * 0.4;  // Radio (160px)
-  const th = 50;  // Grosor del anillo (50px)
-  
+  const cx = 210, cy = H / 2, r = H * 0.4, th = 50;
   let start=0; const colors=['#6366F1','#16A34A','#F59E0B','#06B6D4','#EF4444'];
 
-  // Coordenadas de la leyenda
-  const legendX = 390; // Posición X
+  const legendX = 390;
   const legendFontSize = 18;
   const legendLineHeight = 30;
   const legendBlockHeight = data.length * legendLineHeight;
@@ -502,7 +493,6 @@ function renderDonut(targetId, parts){
     const x0i=cx+(r-th)*Math.cos(a0),y0i=cy+(r-th)*Math.sin(a0),x1i=cx+(r-th)*Math.cos(a1),y1i=cy+(r-th)*Math.sin(a1);
     const d=`M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
     
-    // Leyenda
     const pct=Math.round(f*100);
     const ly = legendStartY + (i * legendLineHeight);
 
@@ -510,7 +500,6 @@ function renderDonut(targetId, parts){
             <text x="${legendX}" y="${ly}" font-size="${legendFontSize}" fill="var(--text)">${p[0]}: ${pct}%</text>`;
   }).join('');
 
-  // Texto del centro
   const centerFontSize = Math.max(20, Math.round(r * 0.2));
   const centerText = total ? ('$' + fmt(total, 0)) : '—'; // sin decimales
 
@@ -525,22 +514,15 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
   const el=document.getElementById(targetId); if(!el) return;
   const meses=Array.from({length:12},(_,i)=>`M${i+1}`);
   
-  // --- Definimos un lienzo fijo de 800x400 ---
-  const W = 800;
-  const H = 400;
+  const W = 800, H = 400;
   const pad = { top: 40, right: 10, bottom: 50, left: 60 };
-  const barW = 18;
-  const barGap = 6;
-  const gap = 38;
-
-  // Área de dibujo
+  const barW = 18, barGap = 6, gap = 38;
   const H_drawable = H - pad.top - pad.bottom;
   
-  const pagos = cuotas.slice(); pagos[0]+=enganche; // sumar enganche en M1
+  const pagos = cuotas.slice(); pagos[0]+=enganche;
   const netoMes = meses.map((_,i)=> (ahorroMes - pagos[i]));
   let acc = 0; const accArr = netoMes.map(v=>{ acc+=v; return acc; });
 
-  // --- Nueva escala Y que maneja negativos ---
   const allValues = [ahorroMes||0, capex||0, ...pagos, ...accArr];
   const dataMax = Math.max(1, ...allValues.map(v => Math.max(0, v)));
   const dataMin = Math.min(0, ...allValues.map(v => Math.min(0, v)));
@@ -551,20 +533,14 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
     return (H - pad.bottom) - (((v - dataMin) / totalRange) * H_drawable);
   };
 
-  // Posición del eje X (línea de $0)
   const yZero = scaleY(0);
 
-  // --- Lógica de barras y líneas ---
   let x = pad.left + gap/2;
   
   const bars = meses.map((m,i)=>{
-    const yA = scaleY(ahorroMes);
-    const hA = yZero - yA;
-    const yP = scaleY(pagos[i]);
-    const hP = yZero - yP;
-
-    const xa = x;
-    const xp = x + barW + barGap;
+    const yA = scaleY(ahorroMes); const hA = yZero - yA;
+    const yP = scaleY(pagos[i]); const hP = yZero - yP;
+    const xa = x, xp = x + barW + barGap;
     const labelY = H - pad.bottom + 20;
     
     const rects = `<rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#22C55E"></rect>
@@ -575,7 +551,6 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
     return rects+txt;
   }).join('');
 
-  // --- Polilínea de Acumulado ---
   const linePts = accArr.map((v,i)=>{
     const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW + barGap/2);
     const yi = scaleY(v);
@@ -583,7 +558,6 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
   }).join(' ');
   const polyline = `<polyline points="${linePts}" fill="none" stroke="#A78BFA" stroke-width="3"></polyline>`;
 
-  // --- Marcador de Payback ---
   let marker=''; 
   if ((capex||0) > 0){
     const idx = accArr.findIndex(v=>v>=capex);
@@ -596,12 +570,10 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
     }
   }
 
-  // --- Línea de CAPEX ---
   const yCapex = scaleY(capex || 0);
   const capexLine = capex > 0 ? `<line x1="${pad.left}" y1="${yCapex}" x2="${W - (pad.right + 150)}" y2="${yCapex}" stroke="#60A5FA" stroke-dasharray="6 6"></line>
                               <text x="${pad.left + 8}" y="${yCapex-8}" font-size="14" fill="#60A5FA">CAPEX $${fmt(capex, 0)}</text>` : '';
 
-  // --- Leyenda ---
   const legendX = W - pad.right - 150, legendY = pad.top;
   const legend = `
       <rect x="${legendX}" y="${legendY - 12}" width="140" height="82" rx="10" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.06)"></rect>
@@ -612,7 +584,6 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
       <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="#A78BFA" stroke-width="2.5"></line>
       <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="var(--text)">Acumulado</text>`;
 
-  // --- Ejes Y (vertical) y X (horizontal en $0) ---
   const axis = `
       <line x1="${pad.left}" y1="${pad.top - 10}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="rgba(255,255,255,.2)"></line>
       <line x1="${pad.left}" y1="${yZero}" x2="${W - pad.right}" y2="${yZero}" stroke="rgba(255,255,255,.2)"></line>
@@ -621,7 +592,6 @@ function renderCashflow(targetId, {ahorroMes, capex, planSel, enganche, cuotas})
       ${dataMin < 0 ? `<text x="${pad.left - 10}" y="${scaleY(dataMin) + 5}" font-size="14" text-anchor="end" fill="rgba(255,255,255,.65)">$${fmt(dataMin, 0)}</text>` : ''}
   `;
 
-  // --- Ensamblaje final ---
   el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">
     ${axis}${capexLine}${bars}${polyline}${marker}${legend}
   </svg>`;
