@@ -483,13 +483,22 @@
     ];
     const total = parts.reduce((s, p)=> s + p[1], 0); // Ahorro Bruto
 
-    // KPIs
+    // --- LÓGICA DE CÁLCULO ACTUALIZADA ---
     const capex = +document.getElementById('capex').value||0;
-    const cuota = +document.getElementById('mensualidad').value||0;
-    const neto = total - cuota; // Ahorro neto mensual
+    const planSel = document.getElementById('plan').value;
+    const {enganche, cuotas} = planPagos(capex, planSel);
+
+    // ROI se basa en Ahorro Bruto Anual vs CAPEX
+    const roiAnual = capex > 0 ? ((total * 12) / capex) * 100 : (total > 0 ? Infinity : 0);
     
-    const roiAnual = capex > 0 ? ((neto * 12) / capex) * 100 : (neto > 0 ? Infinity : 0);
-    const idxPayback = capex > 0 && neto > 0 ? Math.ceil(capex / neto) : -1;
+    // Payback (lógica de SolidCAM)
+    const acc = []; let acum = -enganche;
+    for(let i=0;i<12;i++){ acum += (total - cuotas[i]); acc.push(acum); }
+    const payIdx = capex > 0 ? acc.findIndex(v => v >= capex) : -1;
+    const payback = payIdx >= 0 ? (payIdx + 1) : '—';
+    
+    // Neto en M1 (ya no se usa en KPI, pero se mantiene la lógica por si acaso)
+    const netoM1 = total - (enganche + cuotas[0]);
 
     // Render tabla
     const body = document.getElementById('tbodyAhorros');
@@ -504,21 +513,26 @@
       `).join('') || `<tr><td colspan="3" class="px-2 py-3 text-center text-slate-400">Sin ahorros activos</td></tr>`;
     document.getElementById('tdTotal').textContent = `$${fmt(total)}`;
 
-    // Popular KPIs nuevos
+    // Popular KPIs
     document.getElementById('valAhorroBruto').textContent = `$${fmt(total)}`;
-    document.getElementById('valNeto').textContent = `$${fmt(neto)}`;
     document.getElementById('valROI').textContent = isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
-    document.getElementById('valPayback').textContent = idxPayback > 0 ? idxPayback : '—';
+    document.getElementById('valPayback').textContent = payback;
     
-    // Colorear KPI Neto
-    const kN = document.getElementById('kpiNeto');
-    kN.style.color = neto >= 0 ? 'var(--good)' : 'var(--bad)';
+    // --- CAMBIO AQUÍ ---
+    // El KPI 'kpiNetoM1' ahora muestra el Ahorro Mensual Total
+    document.getElementById('valNetoM1').textContent = `$${fmt(total)}`;
+    const kN = document.getElementById('kpiNetoM1');
+    kN.style.color = 'var(--good)'; // Siempre verde
+    // --- FIN CAMBIO ---
     
+    const top = parts.slice().sort((a,b)=>b[1]-a[1])[0];
+    // Nota: El KPI kpiTop no existe en este HTML, así que esta línea no se usa.
+    // document.getElementById('kpiTop').innerHTML = top && top[1]>0 ? `<span class="badge up">${top[0]}</span>` : '<span class="badge">—</span>';
+
     // Gráficos
     renderDonut('vizDonut', parts);
-    renderCashflow('vizCash', { ahorroMes: total, cuota, capex });
+    renderCashflow('vizCash', { ahorroMes: total, capex, planSel, enganche, cuotas });
   }
-
   // --- GRÁFICA DE DONA MEJORADA ---
   function renderDonut(targetId, parts){
     const el=document.getElementById(targetId); if(!el) return;
