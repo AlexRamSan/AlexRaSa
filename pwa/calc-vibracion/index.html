@@ -216,14 +216,114 @@
 <script>
   // ===== Presets =====
   const MATERIALS = {
-    "Acero al carbono (P)": { vc_min:120, vc_max:200, fz_min:0.03, fz_max:0.08, hz_min:600, hz_max:900 },
-    "Acero aleado (P duro)": { vc_min:80,  vc_max:160, fz_min:0.02, fz_max:0.06, hz_min:550, hz_max:850 },
-    "Acero inoxidable (M)": { vc_min:80,  vc_max:160, fz_min:0.02, fz_max:0.06, hz_min:550, hz_max:850 },
-    "Aluminio (N)":        { vc_min:300, vc_max:800, fz_min:0.05, fz_max:0.15, hz_min:800, hz_max:1200 },
-    "Fundición gris (K)":  { vc_min:120, vc_max:220, fz_min:0.03, fz_max:0.10, hz_min:600, hz_max:900 },
-    "Titanio (S)":         { vc_min:40,  vc_max:90,  fz_min:0.02, fz_max:0.06, hz_min:450, hz_max:750 },
-    "Superaleaciones Ni/Co (S)": { vc_min:25, vc_max:60, fz_min:0.01, fz_max:0.04, hz_min:450, hz_max:700 }
-  };
+  // ISO P – Aceros
+  "Acero al carbono (P – bajo C)": {
+    vc_min: 140, vc_max: 220,   // m/min
+    fz_min: 0.03, fz_max: 0.10, // mm/diente
+    hz_min: 600, hz_max: 900    // Hz TPF aprox
+  },
+  "Acero al carbono (P – medio C)": {
+    vc_min: 120, vc_max: 200,
+    fz_min: 0.03, fz_max: 0.08,
+    hz_min: 600, hz_max: 900
+  },
+  "Acero aleado (P – templado ≤ 32 HRC)": {
+    vc_min: 110, vc_max: 180,
+    fz_min: 0.025, fz_max: 0.07,
+    hz_min: 550, hz_max: 850
+  },
+  "Acero aleado (P – 32–45 HRC)": {
+    vc_min: 80,  vc_max: 150,
+    fz_min: 0.02, fz_max: 0.06,
+    hz_min: 500, hz_max: 800
+  },
+
+  // ISO M – Inoxidables
+  "Inox austenítico (M1)": {
+    vc_min: 140, vc_max: 230,   // Sandvik habla de 150–250 m/min en desbaste austenítico, ajusto un poco debajo/arriba
+    fz_min: 0.02, fz_max: 0.06,
+    hz_min: 550, hz_max: 850
+  },
+  "Inox ferrítico/martensítico (M2)": {
+    vc_min: 130, vc_max: 210,
+    fz_min: 0.02, fz_max: 0.07,
+    hz_min: 550, hz_max: 850
+  },
+  "Inox dúplex (M3)": {
+    vc_min: 100, vc_max: 180,
+    fz_min: 0.015, fz_max: 0.05,
+    hz_min: 500, hz_max: 800
+  },
+
+  // ISO N – No ferrosos
+  "Aluminio Si < 8% (N1.1-2)": {
+    vc_min: 350, vc_max: 900,   // Sandvik recomienda “velocidades altas” y da ejemplos >400–800 m/min en Al, dejo rango amplio
+    fz_min: 0.05, fz_max: 0.18,
+    hz_min: 800, hz_max: 1200
+  },
+  "Aluminio alto Si (N1.3)": {
+    vc_min: 250, vc_max: 700,
+    fz_min: 0.04, fz_max: 0.14,
+    hz_min: 800, hz_max: 1150
+  },
+  "Cobre / Latón (N3)": {
+    vc_min: 180, vc_max: 380,
+    fz_min: 0.04, fz_max: 0.12,
+    hz_min: 700, hz_max: 1100
+  },
+
+  // ISO K – Fundiciones
+  "Fundición gris (K1)": {
+    vc_min: 120, vc_max: 220,   // con carburo; para cerámica recomiendan hasta 800–1000 m/min, eso ya sería otro preset
+    fz_min: 0.03, fz_max: 0.10,
+    hz_min: 600, hz_max: 900
+  },
+  "Fundición nodular (K2)": {
+    vc_min: 110, vc_max: 200,
+    fz_min: 0.03, fz_max: 0.09,
+    hz_min: 550, hz_max: 850
+  },
+  "Fundición aleada / blanca (K3)": {
+    vc_min: 80,  vc_max: 160,
+    fz_min: 0.02, fz_max: 0.06,
+    hz_min: 500, hz_max: 800
+  },
+
+  // ISO S – HRSA y Titanio
+  "Titanio α/β (S1 – Ti6Al4V)": {
+    vc_min: 40, vc_max: 90,     // en línea con guías de Sandvik y otros proveedores para Ti α/β con carburo
+    fz_min: 0.02, fz_max: 0.06,
+    hz_min: 450, hz_max: 750
+  },
+  "Titanio puro (S2)": {
+    vc_min: 35, vc_max: 80,
+    fz_min: 0.02, fz_max: 0.06,
+    hz_min: 450, hz_max: 700
+  },
+  "HRSA Ni base (S3 – Inconel, etc.)": {
+    vc_min: 25, vc_max: 60,     // típico para HRSA con carburo en fresado: 20–60 m/min
+    fz_min: 0.01, fz_max: 0.04,
+    hz_min: 450, hz_max: 700
+  },
+  "HRSA Co base (S4)": {
+    vc_min: 20, vc_max: 50,
+    fz_min: 0.01, fz_max: 0.035,
+    hz_min: 450, hz_max: 700
+  },
+
+  // ISO H – Aceros endurecidos
+  "Acero endurecido 45–55 HRC (H1)": {
+    vc_min: 60, vc_max: 120,
+    fz_min: 0.01, fz_max: 0.04,
+    hz_min: 450, hz_max: 750
+  },
+  "Acero endurecido >55 HRC (H2)": {
+    vc_min: 40, vc_max: 80,
+    fz_min: 0.005, fz_max: 0.03,
+    hz_min: 450, hz_max: 700
+  }
+};
+
 
   // ===== Utils =====
   const $ = id => document.getElementById(id);
