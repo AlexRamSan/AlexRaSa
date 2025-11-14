@@ -38,10 +38,9 @@
     position:relative;
     overflow-x:hidden;
   }
-  /* Marca de agua difuminada del logo */
   body::after{
     content:"";
-    position:fixed; inset:auto -120px -120px auto; /* esquina inferior derecha */
+    position:fixed; inset:auto -120px -120px auto;
     width:min(42vw,520px); aspect-ratio:1/1;
     background:url("/pwa/calc-vibracion/icons/icon-512.png") center/contain no-repeat;
     filter:blur(28px);
@@ -52,20 +51,15 @@
   .hdr{
     max-width:960px;
     margin:0 auto;
-    /* top  right  bottom  left */
-    padding:40px 24px 40px 56px;  /* mueve todo (logo+título) a la derecha */
+    padding:40px 24px 40px 56px;
     display:flex; align-items:center; gap:40px;
     position:relative; z-index:1;
   }
-
-  /* Corrige el contenedor del logo */
   .brand{
     width:auto; height:auto;
     border-radius:12px;
     background:none; box-shadow:none; overflow:visible;
   }
-
-  /* Tamaño del logo */
   .brand img{ width:140px; height:auto; display:block; }
 
   .title{font-size:1.2rem;margin:0}
@@ -103,7 +97,6 @@
   footer{max-width:960px;margin:16px auto 24px;padding:0 24px;color:var(--muted);font-size:.85rem}
   .subtle{opacity:.85}
 
-  /* Resultados */
   .results{display:grid;gap:12px;margin-top:12px}
   @media(min-width:1024px){ .results{grid-template-columns:1fr 1fr 1fr} }
   @media(min-width:780px) and (max-width:1023px){ .results{grid-template-columns:1fr 1fr} }
@@ -123,13 +116,11 @@
   .chip.max{background:#261a05; border-color:#b4530911; color:#fcd34d}
   .chip.opt{background:linear-gradient(135deg,#22d3ee22,#7c3aed22); border-color:#22d3ee55; color:#93c5fd}
 
-  /* Riesgo con fondo */
   .risk{font-weight:800}
   .risk.ok   {color:#052b2b; background:#34d399; border-color:#065f46}
   .risk.warn {color:#351e01; background:#fbbf24; border-color:#b45309}
   .risk.bad  {color:#3b0b0b; background:#f87171; border-color:#991b1b}
 
-  /* Mensajes */
   #msg{min-height:1.2em;}
   .msg-warn{color:#fbbf24;}
 </style>
@@ -137,7 +128,6 @@
 <body>
 <header class="hdr">
   <div class="brand" aria-hidden="true">
-    <!-- Logo visible -->
     <img src="/pwa/calc-vibracion/icons/icon-180.png" alt="Logo">
   </div>
   <h1 class="title">Calculadora RPM & Avance</h1>
@@ -191,7 +181,6 @@
 
     <div class="out" id="out"></div>
 
-    <!-- Cuadros de resultados -->
     <div class="results">
       <div class="resbox">
         <h3>RPM</h3>
@@ -218,117 +207,110 @@
 <footer>© Prestige Cutting Tools</footer>
 
 <script>
-  // ===== Presets =====
+  // ===== Presets (tus materiales) =====
   const MATERIALS = {
-  // ISO P – Aceros
-  "Acero al carbono (P – bajo C)": {
-    vc_min: 140, vc_max: 220,   // m/min
-    fz_min: 0.03, fz_max: 0.10, // mm/diente
-    hz_min: 600, hz_max: 900    // Hz TPF aprox
-  },
-  "Acero al carbono (P – medio C)": {
-    vc_min: 120, vc_max: 200,
-    fz_min: 0.03, fz_max: 0.08,
-    hz_min: 600, hz_max: 900
-  },
-  "Acero aleado (P – templado ≤ 32 HRC)": {
-    vc_min: 110, vc_max: 180,
-    fz_min: 0.025, fz_max: 0.07,
-    hz_min: 550, hz_max: 850
-  },
-  "Acero aleado (P – 32–45 HRC)": {
-    vc_min: 80,  vc_max: 150,
-    fz_min: 0.02, fz_max: 0.06,
-    hz_min: 500, hz_max: 800
-  },
+    "Acero al carbono (P – bajo C)": {
+      vc_min: 140, vc_max: 220,
+      fz_min: 0.03, fz_max: 0.10,
+      hz_min: 600, hz_max: 900
+    },
+    "Acero al carbono (P – medio C)": {
+      vc_min: 120, vc_max: 200,
+      fz_min: 0.03, fz_max: 0.08,
+      hz_min: 600, hz_max: 900
+    },
+    "Acero aleado (P – templado ≤ 32 HRC)": {
+      vc_min: 110, vc_max: 180,
+      fz_min: 0.025, fz_max: 0.07,
+      hz_min: 550, hz_max: 850
+    },
+    "Acero aleado (P – 32–45 HRC)": {
+      vc_min: 80,  vc_max: 150,
+      fz_min: 0.02, fz_max: 0.06,
+      hz_min: 500, hz_max: 800
+    },
 
-  // ISO M – Inoxidables
-  "Inox austenítico (M1)": {
-    vc_min: 140, vc_max: 230,   // Sandvik habla de 150–250 m/min en desbaste austenítico, ajusto un poco debajo/arriba
-    fz_min: 0.02, fz_max: 0.06,
-    hz_min: 550, hz_max: 850
-  },
-  "Inox ferrítico/martensítico (M2)": {
-    vc_min: 130, vc_max: 210,
-    fz_min: 0.02, fz_max: 0.07,
-    hz_min: 550, hz_max: 850
-  },
-  "Inox dúplex (M3)": {
-    vc_min: 100, vc_max: 180,
-    fz_min: 0.015, fz_max: 0.05,
-    hz_min: 500, hz_max: 800
-  },
+    "Inox austenítico (M1)": {
+      vc_min: 140, vc_max: 230,
+      fz_min: 0.02, fz_max: 0.06,
+      hz_min: 550, hz_max: 850
+    },
+    "Inox ferrítico/martensítico (M2)": {
+      vc_min: 130, vc_max: 210,
+      fz_min: 0.02, fz_max: 0.07,
+      hz_min: 550, hz_max: 850
+    },
+    "Inox dúplex (M3)": {
+      vc_min: 100, vc_max: 180,
+      fz_min: 0.015, fz_max: 0.05,
+      hz_min: 500, hz_max: 800
+    },
 
-  // ISO N – No ferrosos
-  "Aluminio Si < 8% (N1.1-2)": {
-    vc_min: 350, vc_max: 900,   // Sandvik recomienda “velocidades altas” y da ejemplos >400–800 m/min en Al, dejo rango amplio
-    fz_min: 0.05, fz_max: 0.18,
-    hz_min: 800, hz_max: 1200
-  },
-  "Aluminio alto Si (N1.3)": {
-    vc_min: 250, vc_max: 700,
-    fz_min: 0.04, fz_max: 0.14,
-    hz_min: 800, hz_max: 1150
-  },
-  "Cobre / Latón (N3)": {
-    vc_min: 180, vc_max: 380,
-    fz_min: 0.04, fz_max: 0.12,
-    hz_min: 700, hz_max: 1100
-  },
+    "Aluminio Si < 8% (N1.1-2)": {
+      vc_min: 350, vc_max: 900,
+      fz_min: 0.05, fz_max: 0.18,
+      hz_min: 800, hz_max: 1200
+    },
+    "Aluminio alto Si (N1.3)": {
+      vc_min: 250, vc_max: 700,
+      fz_min: 0.04, fz_max: 0.14,
+      hz_min: 800, hz_max: 1150
+    },
+    "Cobre / Latón (N3)": {
+      vc_min: 180, vc_max: 380,
+      fz_min: 0.04, fz_max: 0.12,
+      hz_min: 700, hz_max: 1100
+    },
 
-  // ISO K – Fundiciones
-  "Fundición gris (K1)": {
-    vc_min: 120, vc_max: 220,   // con carburo; para cerámica recomiendan hasta 800–1000 m/min, eso ya sería otro preset
-    fz_min: 0.03, fz_max: 0.10,
-    hz_min: 600, hz_max: 900
-  },
-  "Fundición nodular (K2)": {
-    vc_min: 110, vc_max: 200,
-    fz_min: 0.03, fz_max: 0.09,
-    hz_min: 550, hz_max: 850
-  },
-  "Fundición aleada / blanca (K3)": {
-    vc_min: 80,  vc_max: 160,
-    fz_min: 0.02, fz_max: 0.06,
-    hz_min: 500, hz_max: 800
-  },
+    "Fundición gris (K1)": {
+      vc_min: 120, vc_max: 220,
+      fz_min: 0.03, fz_max: 0.10,
+      hz_min: 600, hz_max: 900
+    },
+    "Fundición nodular (K2)": {
+      vc_min: 110, vc_max: 200,
+      fz_min: 0.03, fz_max: 0.09,
+      hz_min: 550, hz_max: 850
+    },
+    "Fundición aleada / blanca (K3)": {
+      vc_min: 80,  vc_max: 160,
+      fz_min: 0.02, fz_max: 0.06,
+      hz_min: 500, hz_max: 800
+    },
 
-  // ISO S – HRSA y Titanio
-  "Titanio α/β (S1 – Ti6Al4V)": {
-    vc_min: 40, vc_max: 90,     // en línea con guías de Sandvik y otros proveedores para Ti α/β con carburo
-    fz_min: 0.02, fz_max: 0.06,
-    hz_min: 450, hz_max: 750
-  },
-  "Titanio puro (S2)": {
-    vc_min: 35, vc_max: 80,
-    fz_min: 0.02, fz_max: 0.06,
-    hz_min: 450, hz_max: 700
-  },
-  "HRSA Ni base (S3 – Inconel, etc.)": {
-    vc_min: 25, vc_max: 60,     // típico para HRSA con carburo en fresado: 20–60 m/min
-    fz_min: 0.01, fz_max: 0.04,
-    hz_min: 450, hz_max: 700
-  },
-  "HRSA Co base (S4)": {
-    vc_min: 20, vc_max: 50,
-    fz_min: 0.01, fz_max: 0.035,
-    hz_min: 450, hz_max: 700
-  },
+    "Titanio α/β (S1 – Ti6Al4V)": {
+      vc_min: 40, vc_max: 90,
+      fz_min: 0.02, fz_max: 0.06,
+      hz_min: 450, hz_max: 750
+    },
+    "Titanio puro (S2)": {
+      vc_min: 35, vc_max: 80,
+      fz_min: 0.02, fz_max: 0.06,
+      hz_min: 450, hz_max: 700
+    },
+    "HRSA Ni base (S3 – Inconel, etc.)": {
+      vc_min: 25, vc_max: 60,
+      fz_min: 0.01, fz_max: 0.04,
+      hz_min: 450, hz_max: 700
+    },
+    "HRSA Co base (S4)": {
+      vc_min: 20, vc_max: 50,
+      fz_min: 0.01, fz_max: 0.035,
+      hz_min: 450, hz_max: 700
+    },
 
-  // ISO H – Aceros endurecidos
-  "Acero endurecido 45–55 HRC (H1)": {
-    vc_min: 60, vc_max: 120,
-    fz_min: 0.01, fz_max: 0.04,
-    hz_min: 450, hz_max: 750
-  },
-  "Acero endurecido >55 HRC (H2)": {
-    vc_min: 40, vc_max: 80,
-    fz_min: 0.005, fz_max: 0.03,
-    hz_min: 450, hz_max: 700
-  }
-};
+    "Acero endurecido 45–55 HRC (H1)": {
+      vc_min: 60, vc_max: 120,
+      fz_min: 0.01, fz_max: 0.04,
+      hz_min: 450, hz_max: 750
+    },
+    "Acero endurecido >55 HRC (H2)": {
+      vc_min: 40, vc_max: 80,
+      fz_min: 0.005, fz_max: 0.03,
+      hz_min: 450, hz_max: 700
+    }
+  };
 
-  // ===== Utils =====
   const $ = id => document.getElementById(id);
   const fmt = (n,d=2)=>Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
   const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
@@ -370,7 +352,6 @@
 
     const ae = d*aePct/100;
 
-    // Rango por Vc (mantenemos tus rangos de proveedor)
     let rpm_min_vc = Math.floor((1000*m.vc_min)/(Math.PI*d));
     let rpm_max_vc_raw = Math.floor((1000*m.vc_max)/(Math.PI*d));
     const clippedBySpindle = rpm_max_vc_raw > rpmMax;
@@ -378,7 +359,6 @@
     rpm_min_vc = clamp(rpm_min_vc,1,rpmMax);
     if(rpm_max_vc<rpm_min_vc) rpm_max_vc=rpm_min_vc;
 
-    // Rango por banda TPF
     const rpm_min_tpf = Math.floor(60*m.hz_min/z);
     const rpm_max_tpf = Math.floor(60*m.hz_max/z);
     const overlap_min = Math.max(rpm_min_vc, rpm_min_tpf);
@@ -391,10 +371,9 @@
 
     const fz_mid = (m.fz_min+m.fz_max)/2;
 
-    // Avances: min/máx con rangos de catálogo, óptimo con fz actual
     const Vf_min = rpm_min_vc*z*m.fz_min;
     const Vf_max = rpm_max_vc*z*m.fz_max;
-    const Vf_opt = rpm_opt*z*fz;
+    const Vf_opt = rpm_opt*z*fz;   // usa fz actual
 
     const MRR = (ae*ap*Vf_opt)/1000;
     const TPF = (rpm_opt*z)/60;
@@ -452,24 +431,61 @@
     chip.classList.remove("ok","warn","bad");
     chip.classList.add(res.riskClass);
 
-    // ===== Alertas para llevarlo al punto óptimo =====
+    // ===== Análisis / sugerencias =====
     const alerts = [];
 
     // fz fuera de rango proveedor
     if(mdl.fz < res.m.fz_min){
-      alerts.push(`fz por debajo del rango recomendado (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
+      alerts.push(`fz por debajo del rango de catálogo (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
     }else if(mdl.fz > res.m.fz_max){
-      alerts.push(`fz por encima del rango recomendado (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
+      alerts.push(`fz por encima del rango de catálogo (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
     }
 
-    // No hay solapamiento Vc–TPF
+    // sobreposición Vc–TPF recortada
     if(!res.hasOverlap){
       alerts.push("No hay solapamiento entre el rango de Vc y la banda TPF; RPM óptima se calculó solo en función de Vc.");
     }
 
-    // Límite de husillo recortando Vc max de catálogo
     if(res.clippedBySpindle){
       alerts.push("El límite de husillo está recortando la RPM máxima recomendada por catálogo.");
+    }
+
+    // Diagnóstico de TPF vs banda → sugerencias de z, D o Vc
+    const hzCenter = (res.m.hz_min + res.m.hz_max) / 2;
+    const rpmCenterCurrentZ = 60 * hzCenter / mdl.z;                   // rpm para estar en centro de banda con D y z actuales
+    const vcCenterCurrent = Math.PI * mdl.d * rpmCenterCurrentZ / 1000;
+    const vcMid = (res.m.vc_min + res.m.vc_max) / 2;
+    const rpmFromVcMid = 1000 * vcMid / (Math.PI * mdl.d);             // rpm si corres a Vc medio con ese D
+    let zSuggest = Math.round(60 * hzCenter / rpmFromVcMid);           // dientes para centrar TPF manteniendo Vc medio
+    zSuggest = Math.max(1, Math.min(16, zSuggest));
+    const dSuggest = 1000 * vcMid / (Math.PI * rpmCenterCurrentZ);     // D para centrar banda con z actual y Vc medio
+
+    const belowBand = res.TPF < res.m.hz_min * 0.95;
+    const aboveBand = res.TPF > res.m.hz_max * 1.05;
+
+    if(belowBand || aboveBand){
+      if(belowBand){
+        alerts.push("TPF por debajo de la banda estable: frecuencia de paso de diente baja (giras “lento” para la rigidez declarada).");
+      } else if(aboveBand){
+        alerts.push("TPF por encima de la banda estable: frecuencia de paso de diente alta (tendencia a vibrar).");
+      }
+
+      alerts.push(`El centro de banda está alrededor de ${fmt(rpmCenterCurrentZ,0)} rpm (Vc ≈ ${fmt(vcCenterCurrent,1)} m/min) para tu D=${mdl.d} mm y z=${mdl.z}.`);
+
+      if(vcCenterCurrent > res.m.vc_max){
+        alerts.push(`Para llegar al centro de banda con esta geometría necesitarías Vc ≈ ${fmt(vcCenterCurrent,1)} m/min, por encima del catálogo (${res.m.vc_min}–${res.m.vc_max} m/min).`);
+        alerts.push(`Opciones: usar más dientes (≈ ${zSuggest}Z manteniendo Vc medio) o reducir diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
+      } else if(vcCenterCurrent < res.m.vc_min){
+        alerts.push(`Para centrarte en la banda con esta geometría tendrías que bajar Vc a ≈ ${fmt(vcCenterCurrent,1)} m/min, por debajo del mínimo de catálogo (${res.m.vc_min}–${res.m.vc_max} m/min).`);
+        alerts.push(`Opciones: usar menos dientes (≈ ${zSuggest}Z con Vc medio) o aumentar el diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
+      } else {
+        if(rpmCenterCurrentZ > mdl.rpmMax){
+          alerts.push(`El husillo se queda corto: para centro de banda necesitarías ≈ ${fmt(rpmCenterCurrentZ,0)} rpm y tu límite es ${fmt(mdl.rpmMax,0)} rpm.`);
+          alerts.push("Opciones: más dientes para subir TPF sin aumentar tanto la RPM, o reducir diámetro para subir Vc a la misma RPM.");
+        } else {
+          alerts.push("Puedes mover la velocidad hacia esa zona manteniéndote dentro del rango de Vc; ajusta RPM hasta acercarte al centro de banda.");
+        }
+      }
     }
 
     if(alerts.length){
@@ -494,16 +510,13 @@
     calcAndRender();
     $("msg").textContent="Condiciones óptimas aplicadas";
     $("msg").className="";
-    setTimeout(()=>{
-      $("msg").textContent="";
-    },1200);
+    setTimeout(()=>{$("msg").textContent="";},1200);
   }
   async function shareResults(){
     const t = document.body.innerText;
     if(navigator.share){
       try{ await navigator.share({title:'RPM+Avance', text:t}); }catch(_){}
-    }
-    else{
+    } else {
       try{
         await navigator.clipboard.writeText(t);
         $("msg").textContent="Resultados copiados";
