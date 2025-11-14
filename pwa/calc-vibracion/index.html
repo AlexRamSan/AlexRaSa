@@ -49,24 +49,24 @@
     pointer-events:none;
     z-index:0;
   }
-.hdr{
-  max-width:960px;
-  margin:0 auto;
-  /* top  right  bottom  left */
-  padding:40px 24px 40px 56px;  /* mueve todo (logo+título) a la derecha */
-  display:flex; align-items:center; gap:40px;
-  position:relative; z-index:1;
-}
+  .hdr{
+    max-width:960px;
+    margin:0 auto;
+    /* top  right  bottom  left */
+    padding:40px 24px 40px 56px;  /* mueve todo (logo+título) a la derecha */
+    display:flex; align-items:center; gap:40px;
+    position:relative; z-index:1;
+  }
 
-/* Corrige el contenedor del logo */
-.brand{
-  width:auto; height:auto;
-  border-radius:12px;          /* te faltaban las unidades */
-  background:none; box-shadow:none; overflow:visible;
-}
+  /* Corrige el contenedor del logo */
+  .brand{
+    width:auto; height:auto;
+    border-radius:12px;
+    background:none; box-shadow:none; overflow:visible;
+  }
 
-/* Tamaño del logo */
-.brand img{ width:140px; height:auto; display:block; }
+  /* Tamaño del logo */
+  .brand img{ width:140px; height:auto; display:block; }
 
   .title{font-size:1.2rem;margin:0}
   .wrap{max-width:960px;margin:auto;padding:0 24px 24px;position:relative;z-index:1}
@@ -128,6 +128,10 @@
   .risk.ok   {color:#052b2b; background:#34d399; border-color:#065f46}
   .risk.warn {color:#351e01; background:#fbbf24; border-color:#b45309}
   .risk.bad  {color:#3b0b0b; background:#f87171; border-color:#991b1b}
+
+  /* Mensajes */
+  #msg{min-height:1.2em;}
+  .msg-warn{color:#fbbf24;}
 </style>
 </head>
 <body>
@@ -324,7 +328,6 @@
   }
 };
 
-
   // ===== Utils =====
   const $ = id => document.getElementById(id);
   const fmt = (n,d=2)=>Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
@@ -366,35 +369,56 @@
     if(d<=0||z<=0||fz<=0||ap<0||aePct<0) return {error:"Completa datos válidos."};
 
     const ae = d*aePct/100;
+
+    // Rango por Vc (mantenemos tus rangos de proveedor)
     let rpm_min_vc = Math.floor((1000*m.vc_min)/(Math.PI*d));
-    let rpm_max_vc = Math.floor((1000*m.vc_max)/(Math.PI*d));
+    let rpm_max_vc_raw = Math.floor((1000*m.vc_max)/(Math.PI*d));
+    const clippedBySpindle = rpm_max_vc_raw > rpmMax;
+    let rpm_max_vc = clamp(rpm_max_vc_raw,1,rpmMax);
     rpm_min_vc = clamp(rpm_min_vc,1,rpmMax);
-    rpm_max_vc = clamp(rpm_max_vc,1,rpmMax);
     if(rpm_max_vc<rpm_min_vc) rpm_max_vc=rpm_min_vc;
 
+    // Rango por banda TPF
     const rpm_min_tpf = Math.floor(60*m.hz_min/z);
     const rpm_max_tpf = Math.floor(60*m.hz_max/z);
     const overlap_min = Math.max(rpm_min_vc, rpm_min_tpf);
     const overlap_max = Math.min(rpm_max_vc, rpm_max_tpf);
     const hasOverlap = overlap_max>=overlap_min;
-    const rpm_opt = hasOverlap? Math.floor((overlap_min+overlap_max)/2) : Math.floor((rpm_min_vc+rpm_max_vc)/2);
+
+    const rpm_opt = hasOverlap
+      ? Math.floor((overlap_min+overlap_max)/2)
+      : Math.floor((rpm_min_vc+rpm_max_vc)/2);
 
     const fz_mid = (m.fz_min+m.fz_max)/2;
+
+    // Avances: min/máx con rangos de catálogo, óptimo con fz actual
     const Vf_min = rpm_min_vc*z*m.fz_min;
     const Vf_max = rpm_max_vc*z*m.fz_max;
-    const Vf_opt = rpm_opt*z*fz_mid;
+    const Vf_opt = rpm_opt*z*fz;
 
     const MRR = (ae*ap*Vf_opt)/1000;
     const TPF = (rpm_opt*z)/60;
+
     let riskClass="bad", riskText="Alto";
     if(TPF>=m.hz_min && TPF<=m.hz_max){ riskClass="ok"; riskText="Bajo"; }
     else if(TPF>=0.9*m.hz_min && TPF<=1.1*m.hz_max){ riskClass="warn"; riskText="Medio"; }
 
-    return {m, rpm_min_vc, rpm_max_vc, rpm_min_tpf, rpm_max_tpf, rpm_opt, Vf_min, Vf_max, Vf_opt, fz_mid, ae, MRR, TPF, riskClass, riskText};
+    return {
+      m, rpm_min_vc, rpm_max_vc, rpm_min_tpf, rpm_max_tpf,
+      overlap_min, overlap_max, hasOverlap,
+      rpm_opt, Vf_min, Vf_max, Vf_opt, fz_mid, ae, MRR, TPF,
+      riskClass, riskText, clippedBySpindle
+    };
   }
 
   function render(res, mdl){
-    if(res.error){ $("out").textContent=res.error; return; }
+    const msgEl = $("msg");
+    if(res.error){
+      $("out").textContent=res.error;
+      msgEl.textContent = "";
+      msgEl.className = "";
+      return;
+    }
     $("out").innerHTML = `
       <div class="grid grid2">
         <div>
@@ -406,10 +430,10 @@
         <div>
           <h2>Estado</h2>
           <span class="tag">fz actual: ${mdl.fz} mm/diente</span>
-          <span class="tag">fz óptimo: ${res.fz_mid.toFixed(3)}</span>
+          <span class="tag">fz óptimo catálogo: ${res.fz_mid.toFixed(3)}</span>
           <span class="tag">ae: ${fmt(res.ae,2)} mm (${fmt(mdl.aePct,1)}%)</span>
           <span class="tag">ap: ${fmt(mdl.ap,2)} mm</span>
-          <span class="tag">MRR: ${fmt(res.MRR,2)} cm³/min</span>
+          <span class="tag">MRR (con fz actual): ${fmt(res.MRR,2)} cm³/min</span>
         </div>
       </div>
     `;
@@ -427,19 +451,66 @@
     chip.textContent = res.riskText;
     chip.classList.remove("ok","warn","bad");
     chip.classList.add(res.riskClass);
+
+    // ===== Alertas para llevarlo al punto óptimo =====
+    const alerts = [];
+
+    // fz fuera de rango proveedor
+    if(mdl.fz < res.m.fz_min){
+      alerts.push(`fz por debajo del rango recomendado (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
+    }else if(mdl.fz > res.m.fz_max){
+      alerts.push(`fz por encima del rango recomendado (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
+    }
+
+    // No hay solapamiento Vc–TPF
+    if(!res.hasOverlap){
+      alerts.push("No hay solapamiento entre el rango de Vc y la banda TPF; RPM óptima se calculó solo en función de Vc.");
+    }
+
+    // Límite de husillo recortando Vc max de catálogo
+    if(res.clippedBySpindle){
+      alerts.push("El límite de husillo está recortando la RPM máxima recomendada por catálogo.");
+    }
+
+    if(alerts.length){
+      msgEl.textContent = alerts.join(" | ");
+      msgEl.className = "msg-warn";
+    }else{
+      msgEl.textContent = "";
+      msgEl.className = "";
+    }
   }
 
   function saveState(){ localStorage.setItem(LSKEY, JSON.stringify(readModel())); }
-  function calcAndRender(){ const mdl=readModel(); const res=compute(mdl); render(res,mdl); saveState(); }
+  function calcAndRender(){
+    const mdl=readModel();
+    const res=compute(mdl);
+    render(res,mdl);
+    saveState();
+  }
   function setOptimas(){
     const m = MATERIALS[$("material").value]; if(!m) return;
     $("fz").value = ((m.fz_min+m.fz_max)/2).toFixed(3);
-    calcAndRender(); $("msg").textContent="Condiciones óptimas aplicadas"; setTimeout(()=>{$("msg").textContent="";},1200);
+    calcAndRender();
+    $("msg").textContent="Condiciones óptimas aplicadas";
+    $("msg").className="";
+    setTimeout(()=>{
+      $("msg").textContent="";
+    },1200);
   }
   async function shareResults(){
     const t = document.body.innerText;
-    if(navigator.share){ try{ await navigator.share({title:'RPM+Avance', text:t}); }catch(_){} }
-    else{ try{ await navigator.clipboard.writeText(t); $("msg").textContent="Resultados copiados"; setTimeout(()=>{$("msg").textContent="";},1200);}catch(_){} }
+    if(navigator.share){
+      try{ await navigator.share({title:'RPM+Avance', text:t}); }catch(_){}
+    }
+    else{
+      try{
+        await navigator.clipboard.writeText(t);
+        $("msg").textContent="Resultados copiados";
+        $("msg").className="";
+        setTimeout(()=>{$("msg").textContent="";},1200);
+      }catch(_){}
+    }
   }
 
   window.addEventListener("DOMContentLoaded", ()=>{
