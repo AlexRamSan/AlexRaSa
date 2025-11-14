@@ -49,7 +49,7 @@
     z-index:0;
   }
   .hdr{
-    max-width:960px;
+    max-width:1120px;
     margin:0 auto;
     padding:40px 24px 40px 56px;
     display:flex; align-items:center; gap:40px;
@@ -63,7 +63,7 @@
   .brand img{ width:140px; height:auto; display:block; }
 
   .title{font-size:1.2rem;margin:0}
-  .wrap{max-width:960px;margin:auto;padding:0 24px 24px;position:relative;z-index:1}
+  .wrap{max-width:1120px;margin:auto;padding:0 24px 24px;position:relative;z-index:1}
   .card{
     background:linear-gradient(180deg,#0f172a,#0e1728);
     border:1px solid var(--border);border-radius:16px;padding:18px;
@@ -73,6 +73,7 @@
   p{margin:6px 0;color:var(--muted)}
   .grid{display:grid;gap:12px}
   @media(min-width:780px){ .grid2{grid-template-columns:1fr 1fr} .grid3{grid-template-columns:repeat(3,1fr)} }
+  @media(min-width:1080px){ .grid4{grid-template-columns:repeat(4,1fr)} }
   label{display:block;font-size:.9rem;color:var(--muted);margin:6px 0 4px}
   input,select{
     width:100%;padding:.65rem;border-radius:12px;border:1px solid var(--border);
@@ -95,7 +96,7 @@
   .tag{display:inline-block;background:#0b1220;border:1px solid var(--border);border-radius:999px;
     padding:.25rem .6rem;margin:.15rem .25rem .15rem 0}
   small{color:var(--muted)}
-  footer{max-width:960px;margin:16px auto 24px;padding:0 24px;color:var(--muted);font-size:.85rem}
+  footer{max-width:1120px;margin:16px auto 24px;padding:0 24px;color:var(--muted);font-size:.85rem}
   .subtle{opacity:.85}
 
   .results{display:grid;gap:12px;margin-top:12px}
@@ -124,6 +125,30 @@
 
   #msg{min-height:1.2em;}
   .msg-warn{color:#fbbf24;}
+
+  .comp-table{
+    width:100%;border-collapse:collapse;margin-top:8px;font-size:.85rem;
+  }
+  .comp-table th,.comp-table td{
+    border:1px solid var(--border);padding:4px 6px;text-align:right;font-variant-numeric:tabular-nums;
+  }
+  .comp-table th:first-child,.comp-table td:first-child{text-align:left}
+  .code-block{
+    margin-top:10px;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:#020617;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,"Liberation Mono","Courier New",monospace;
+    font-size:.8rem;
+    white-space:pre-wrap;
+  }
+  .range-row{
+    display:flex;align-items:center;gap:8px;
+  }
+  .range-row span{
+    font-size:.8rem;color:var(--muted);
+  }
 </style>
 </head>
 <body>
@@ -136,13 +161,42 @@
 
 <main class="wrap">
   <section class="card">
-    <p>Selecciona material → ingresa herramienta → fija <b>ae%</b> → obtén <b>RPM</b> y <b>Vf</b> mínimos, máximos y óptimos, considerando <b>Vc</b>, <b>fz</b> y banda <b>TPF</b>. Puedes validar también una <b>RPM de programa</b>.</p>
+    <p>
+      Selecciona material → define herramienta (HSS / Carburo / PCD) → fija operación y <b>ae%</b> →
+      obtén <b>RPM</b>, <b>Vf</b>, <b>MRR</b> y riesgo de vibración, comparando condición
+      <b>recomendada</b> vs <b>RPM de programa</b>. Incluye efectos de <b>chip thinning</b>.
+    </p>
 
-    <div class="grid grid3">
+    <div class="grid grid4">
       <div>
-        <label>Material</label>
+        <label>Material de pieza</label>
         <select id="material"></select>
       </div>
+      <div>
+        <label>Material de herramienta</label>
+        <select id="toolMat">
+          <option value="Carburo">Carburo</option>
+          <option value="HSS">HSS</option>
+          <option value="PCD">PCD</option>
+        </select>
+      </div>
+      <div>
+        <label>Tipo de operación</label>
+        <select id="opType">
+          <option value="Desbaste">Desbaste</option>
+          <option value="Semiacabado">Semiacabado</option>
+          <option value="Acabado">Acabado</option>
+        </select>
+      </div>
+      <div>
+        <label>Nivel de agresividad</label>
+        <div class="range-row">
+          <input id="level" type="range" min="1" max="5" step="1" value="3">
+          <span id="levelLabel">3 / 5</span>
+        </div>
+        <small>1 = conservador, 5 = agresivo</small>
+      </div>
+
       <div>
         <label>Diámetro de Herramienta (mm)</label>
         <input id="d" type="number" step="0.01" value="10">
@@ -151,7 +205,6 @@
         <label># de Dientes z</label>
         <input id="z" type="number" step="1" value="4">
       </div>
-
       <div>
         <label>Avance por Diente f<sub>z</sub> (mm/diente)</label>
         <input id="fz" type="number" step="0.001">
@@ -162,11 +215,11 @@
         <input id="aePct" type="number" step="0.1" value="50">
         <small id="aeMmHint"></small>
       </div>
+
       <div>
         <label>Profundidad de Corte ap (mm)</label>
         <input id="ap" type="number" step="0.01" value="2">
       </div>
-
       <div>
         <label>Límite máx. husillo (RPM)</label>
         <input id="rpmMax" type="number" step="1" value="12000">
@@ -215,7 +268,7 @@
 <footer>© Prestige Cutting Tools</footer>
 
 <script>
-  // ===== Presets (tus materiales) =====
+  // ===== Presets (material de pieza) =====
   const MATERIALS = {
     "Acero al carbono (P – bajo C)": {
       vc_min: 140, vc_max: 220,
@@ -319,34 +372,85 @@
     }
   };
 
+  // Material de herramienta (factores sobre catálogo base por pieza)
+  const TOOL_MATERIALS = {
+    "HSS":    { vc_factor: 0.7, fz_factor: 0.9 },
+    "Carburo":{ vc_factor: 1.0, fz_factor: 1.0 },
+    "PCD":    { vc_factor: 1.4, fz_factor: 1.1 } // pensado para no ferrosos
+  };
+
+  // Nivel de agresividad (shift dentro del rango)
+  const LEVEL_FACTORS = {
+    1: 0.7,
+    2: 0.85,
+    3: 1.0,
+    4: 1.1,
+    5: 1.2
+  };
+
+  // Guía simple por tipo de operación (en función del diámetro)
+  const OP_GUIDE = {
+    "Desbaste":     { ap_minD: 0.5, ap_maxD: 1.5, ae_minPct: 20, ae_maxPct: 70 },
+    "Semiacabado":  { ap_minD: 0.2, ap_maxD: 0.8, ae_minPct: 10, ae_maxPct: 40 },
+    "Acabado":      { ap_minD: 0.05,ap_maxD: 0.3, ae_minPct: 3,  ae_maxPct: 20 }
+  };
+
   const $ = id => document.getElementById(id);
   const fmt = (n,d=2)=>Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
   const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
-  const LSKEY = "calc_vib_colors_v3";
+  const LSKEY = "calc_vib_colors_v4";
 
   function populateMaterials(){
     const sel = $("material"); sel.innerHTML = "";
     Object.keys(MATERIALS).forEach(k=>{
-      const o = document.createElement("option"); o.value=k; o.textContent=k; sel.appendChild(o);
+      const o = document.createElement("option");
+      o.value=k; o.textContent=k;
+      sel.appendChild(o);
     });
     const s = JSON.parse(localStorage.getItem(LSKEY)||"{}");
     if(s.material && MATERIALS[s.material]) sel.value = s.material; else sel.selectedIndex = 0;
+    if(s.toolMat) $("toolMat").value = s.toolMat;
+    if(s.opType) $("opType").value = s.opType;
+    if(s.level)  $("level").value  = s.level;
+    $("levelLabel").textContent = `${$("level").value} / 5`;
+  }
+
+  function getEffectiveRanges(matKey, toolMat, level){
+    const base = MATERIALS[matKey];
+    const tool = TOOL_MATERIALS[toolMat] || TOOL_MATERIALS["Carburo"];
+    const lvlF = LEVEL_FACTORS[level] || 1;
+    const vc_min_eff = base.vc_min * tool.vc_factor * lvlF;
+    const vc_max_eff = base.vc_max * tool.vc_factor * lvlF;
+    const fz_min_eff = base.fz_min * tool.fz_factor * lvlF;
+    const fz_max_eff = base.fz_max * tool.fz_factor * lvlF;
+    return {vc_min_eff, vc_max_eff, fz_min_eff, fz_max_eff};
   }
 
   function updateHints(){
     const d = +$("d").value || 0;
     const aePct = +$("aePct").value || 0;
     $("aeMmHint").textContent = d>0 ? `≈ ${fmt(d*aePct/100,2)} mm` : "";
-    const m = MATERIALS[$("material").value];
+
+    const matKey = $("material").value;
+    const toolMat = $("toolMat").value;
+    const level = +$("level").value || 3;
+    const m = MATERIALS[matKey];
     if(m){
-      $("fzHint").textContent = `Sugerencia fz: ${m.fz_min}–${m.fz_max} mm/diente`;
-      if(!(+$("fz").value)) $("fz").value = ((m.fz_min+m.fz_max)/2).toFixed(3);
+      const eff = getEffectiveRanges(matKey, toolMat, level);
+      $("fzHint").textContent = `Sugerencia fz (ajustada): ${eff.fz_min_eff.toFixed(3)}–${eff.fz_max_eff.toFixed(3)} mm/diente`;
+      if(!(+$("fz").value)){
+        $("fz").value = ((eff.fz_min_eff+eff.fz_max_eff)/2).toFixed(3);
+      }
     }
+    $("levelLabel").textContent = `${$("level").value} / 5`;
   }
 
   function readModel(){
     return {
       material:$("material").value,
+      toolMat:$("toolMat").value,
+      opType:$("opType").value,
+      level:+$("level").value || 3,
       d:+$("d").value,
       z:+$("z").value,
       fz:+$("fz").value,
@@ -360,18 +464,24 @@
   function compute(mdl){
     const m = MATERIALS[mdl.material];
     if(!m) return {error:"Material inválido"};
-    const {d,z,fz,ap,aePct,rpmMax,rpmProg} = mdl;
+
+    const {d,z,fz,ap,aePct,rpmMax,rpmProg,material,toolMat,level,opType} = mdl;
     if(d<=0 || z<=0 || fz<=0 || ap<=0 || aePct<=0) return {error:"Completa datos válidos (>0 en D, z, fz, ap y ae%)."};
+
+    const eff = getEffectiveRanges(material, toolMat, level);
+    const {vc_min_eff, vc_max_eff, fz_min_eff, fz_max_eff} = eff;
 
     const ae = d*aePct/100;
 
-    let rpm_min_vc = Math.floor((1000*m.vc_min)/(Math.PI*d));
-    let rpm_max_vc_raw = Math.floor((1000*m.vc_max)/(Math.PI*d));
+    // RPM por Vc ajustado
+    let rpm_min_vc = Math.floor((1000*vc_min_eff)/(Math.PI*d));
+    let rpm_max_vc_raw = Math.floor((1000*vc_max_eff)/(Math.PI*d));
     const clippedBySpindle = rpm_max_vc_raw > rpmMax;
     let rpm_max_vc = clamp(rpm_max_vc_raw,1,rpmMax);
     rpm_min_vc = clamp(rpm_min_vc,1,rpmMax);
     if(rpm_max_vc<rpm_min_vc) rpm_max_vc=rpm_min_vc;
 
+    // Rango TPF
     const rpm_min_tpf = Math.floor(60*m.hz_min/z);
     const rpm_max_tpf = Math.floor(60*m.hz_max/z);
     const overlap_min = Math.max(rpm_min_vc, rpm_min_tpf);
@@ -382,11 +492,11 @@
       ? Math.floor((overlap_min+overlap_max)/2)
       : Math.floor((rpm_min_vc+rpm_max_vc)/2);
 
-    const fz_mid = (m.fz_min+m.fz_max)/2;
+    const fz_mid_eff = (fz_min_eff+fz_max_eff)/2;
 
-    const Vf_min = rpm_min_vc*z*m.fz_min;
-    const Vf_max = rpm_max_vc*z*m.fz_max;
-    const Vf_opt = rpm_opt*z*fz;   // usa fz actual
+    const Vf_min = rpm_min_vc*z*fz_min_eff;
+    const Vf_max = rpm_max_vc*z*fz_max_eff;
+    const Vf_opt = rpm_opt*z*fz;
 
     const MRR = (ae*ap*Vf_opt)/1000;
     const TPF = (rpm_opt*z)/60;
@@ -395,7 +505,7 @@
     if(TPF>=m.hz_min && TPF<=m.hz_max){ riskClass="ok"; riskText="Bajo"; }
     else if(TPF>=0.9*m.hz_min && TPF<=1.1*m.hz_max){ riskClass="warn"; riskText="Medio"; }
 
-    // RPM de programa (opcional)
+    // RPM de programa
     const rpm_prog = (Number.isFinite(rpmProg) && rpmProg>0) ? rpmProg : null;
     const Vf_prog = rpm_prog ? rpm_prog*z*fz : null;
     const TPF_prog = rpm_prog ? (rpm_prog*z)/60 : null;
@@ -407,12 +517,37 @@
       else if(TPF_prog>=0.9*m.hz_min && TPF_prog<=1.1*m.hz_max){ riskProgClass="warn"; riskProgText="Medio"; }
     }
 
+    const MRR_prog = Vf_prog ? (ae*ap*Vf_prog)/1000 : null;
+
+    // Chip thinning (aprox) cuando ae% es pequeño
+    let chipInfo = null;
+    if(aePct>0 && aePct < 25){
+      const ratio = aePct/25; // <1
+      const h_eq = fz * ratio; // "espesor equivalente" vs 25% radial
+      const fz_target_raw = fz / ratio; // fz que daría mismo espesor a 25%
+      const fz_target = Math.min(fz_target_raw, fz_max_eff*1.2);
+      chipInfo = {
+        aePct,
+        h_eq,
+        fz_target,
+        fz_max_eff
+      };
+    }
+
+    // Guía operación
+    const opGuide = OP_GUIDE[opType] || OP_GUIDE["Desbaste"];
+
     return {
-      m, rpm_min_vc, rpm_max_vc, rpm_min_tpf, rpm_max_tpf,
+      m,
+      vc_min_eff, vc_max_eff,
+      fz_min_eff, fz_max_eff, fz_mid_eff,
+      rpm_min_vc, rpm_max_vc,
+      rpm_min_tpf, rpm_max_tpf,
       overlap_min, overlap_max, hasOverlap,
-      rpm_opt, Vf_min, Vf_max, Vf_opt, fz_mid, ae, MRR, TPF,
+      rpm_opt, Vf_min, Vf_max, Vf_opt, ae, MRR, TPF,
       riskClass, riskText, clippedBySpindle,
-      rpm_prog, Vf_prog, TPF_prog, riskProgClass, riskProgText
+      rpm_prog, Vf_prog, TPF_prog, riskProgClass, riskProgText, MRR_prog,
+      chipInfo, opGuide
     };
   }
 
@@ -422,17 +557,8 @@
       $("out").textContent=res.error;
       msgEl.textContent = "";
       msgEl.className = "";
-      // limpiar resultados
-      $("rpmMin").textContent = "—";
-      $("rpmMaxOut").textContent = "—";
-      $("rpmOpt").textContent = "—";
-      $("vfMin").textContent = "—";
-      $("vfMax").textContent = "—";
-      $("vfOpt").textContent = "—";
-      $("vfProg").textContent = "—";
-      $("tpfVal").textContent = "—";
-      $("tpfProg").textContent = "—";
-      $("bandVal").textContent = "—";
+      ["rpmMin","rpmMaxOut","rpmOpt","vfMin","vfMax","vfOpt","vfProg","tpfVal","tpfProg","bandVal"]
+        .forEach(id=> $(id).textContent="—");
       ["riskChip","riskProgChip"].forEach(id=>{
         const c=$(id); c.textContent="—"; c.classList.remove("ok","warn","bad");
       });
@@ -441,31 +567,31 @@
 
     const alerts = [];
 
-    // fz fuera de rango proveedor
-    if(mdl.fz < res.m.fz_min){
-      alerts.push(`fz por debajo del rango de catálogo (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
-    }else if(mdl.fz > res.m.fz_max){
-      alerts.push(`fz por encima del rango de catálogo (${res.m.fz_min}–${res.m.fz_max} mm/diente).`);
+    // fz vs rango ajustado
+    if(mdl.fz < res.fz_min_eff){
+      alerts.push(`fz por debajo del rango ajustado (${res.fz_min_eff.toFixed(3)}–${res.fz_max_eff.toFixed(3)} mm/diente).`);
+    }else if(mdl.fz > res.fz_max_eff){
+      alerts.push(`fz por encima del rango ajustado (${res.fz_min_eff.toFixed(3)}–${res.fz_max_eff.toFixed(3)} mm/diente).`);
     }
 
-    // sobreposición Vc–TPF recortada
+    // solape Vc–TPF
     if(!res.hasOverlap){
-      alerts.push("No hay solapamiento entre el rango de Vc y la banda TPF; la RPM óptima se calculó solo en función de Vc.");
+      alerts.push("No hay solapamiento entre el rango de Vc ajustado y la banda TPF; la RPM óptima se calculó solo en función de Vc.");
     }
 
     if(res.clippedBySpindle){
-      alerts.push("El límite de husillo está recortando la RPM máxima recomendada por catálogo.");
+      alerts.push("El límite de husillo está recortando la RPM máxima recomendada por catálogo ajustado.");
     }
 
-    // Diagnóstico de TPF vs banda → sugerencias de z, D o Vc (basado en recomendado)
+    // Diagnóstico TPF recomendado
     const hzCenter = (res.m.hz_min + res.m.hz_max) / 2;
-    const rpmCenterCurrentZ = 60 * hzCenter / mdl.z;                   // rpm para estar en centro de banda con D y z actuales
+    const rpmCenterCurrentZ = 60 * hzCenter / mdl.z;
     const vcCenterCurrent = Math.PI * mdl.d * rpmCenterCurrentZ / 1000;
-    const vcMid = (res.m.vc_min + res.m.vc_max) / 2;
-    const rpmFromVcMid = 1000 * vcMid / (Math.PI * mdl.d);             // rpm si corres a Vc medio con ese D
-    let zSuggest = Math.round(60 * hzCenter / rpmFromVcMid);           // dientes para centrar TPF manteniendo Vc medio
+    const vcMidEff = (res.vc_min_eff + res.vc_max_eff) / 2;
+    const rpmFromVcMid = 1000 * vcMidEff / (Math.PI * mdl.d);
+    let zSuggest = Math.round(60 * hzCenter / rpmFromVcMid);
     zSuggest = Math.max(1, Math.min(16, zSuggest));
-    const dSuggest = 1000 * vcMid / (Math.PI * rpmCenterCurrentZ);     // D para centrar banda con z actual y Vc medio
+    const dSuggest = 1000 * vcMidEff / (Math.PI * rpmCenterCurrentZ);
 
     const belowBand = res.TPF < res.m.hz_min * 0.95;
     const aboveBand = res.TPF > res.m.hz_max * 1.05;
@@ -479,23 +605,44 @@
 
       alerts.push(`El centro de banda está alrededor de ${fmt(rpmCenterCurrentZ,0)} rpm (Vc ≈ ${fmt(vcCenterCurrent,1)} m/min) para tu D=${mdl.d} mm y z=${mdl.z}.`);
 
-      if(vcCenterCurrent > res.m.vc_max){
-        alerts.push(`Para llegar al centro de banda con esta geometría necesitarías Vc ≈ ${fmt(vcCenterCurrent,1)} m/min, por encima del catálogo (${res.m.vc_min}–${res.m.vc_max} m/min).`);
+      if(vcCenterCurrent > res.vc_max_eff){
+        alerts.push(`Para llegar al centro de banda con esta geometría necesitarías Vc ≈ ${fmt(vcCenterCurrent,1)} m/min, por encima del catálogo ajustado (${fmt(res.vc_min_eff,1)}–${fmt(res.vc_max_eff,1)} m/min).`);
         alerts.push(`Opciones recomendadas: usar más dientes (≈ ${zSuggest}Z manteniendo Vc medio) o reducir diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
-      } else if(vcCenterCurrent < res.m.vc_min){
-        alerts.push(`Para centrarte en la banda con esta geometría tendrías que bajar Vc a ≈ ${fmt(vcCenterCurrent,1)} m/min, por debajo del mínimo de catálogo (${res.m.vc_min}–${res.m.vc_max} m/min).`);
+      } else if(vcCenterCurrent < res.vc_min_eff){
+        alerts.push(`Para centrarte en la banda con esta geometría tendrías que bajar Vc a ≈ ${fmt(vcCenterCurrent,1)} m/min, por debajo del mínimo ajustado (${fmt(res.vc_min_eff,1)}–${fmt(res.vc_max_eff,1)} m/min).`);
         alerts.push(`Opciones recomendadas: usar menos dientes (≈ ${zSuggest}Z con Vc medio) o aumentar el diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
       } else {
         if(rpmCenterCurrentZ > mdl.rpmMax){
           alerts.push(`El husillo se queda corto: para centro de banda necesitarías ≈ ${fmt(rpmCenterCurrentZ,0)} rpm y tu límite es ${fmt(mdl.rpmMax,0)} rpm.`);
           alerts.push("Opciones recomendadas: más dientes para subir TPF sin aumentar tanto la RPM, o reducir diámetro para subir Vc a la misma RPM.");
         } else {
-          alerts.push("Puedes mover la velocidad hacia esa zona manteniéndote dentro del rango de Vc; ajusta RPM hasta acercarte al centro de banda.");
+          alerts.push("Puedes mover la velocidad hacia esa zona manteniéndote dentro del rango de Vc ajustado; ajusta RPM hasta acercarte al centro de banda.");
         }
       }
     }
 
-    // Análisis RPM de programa (si la hay)
+    // Operación vs rango ap/ae
+    const g = res.opGuide;
+    const apMin = g.ap_minD * mdl.d;
+    const apMax = g.ap_maxD * mdl.d;
+    if(mdl.ap < apMin){
+      alerts.push(`ap por debajo del rango típico para ${mdl.opType.toLowerCase()} (${fmt(apMin,2)}–${fmt(apMax,2)} mm).`);
+    }else if(mdl.ap > apMax){
+      alerts.push(`ap por encima del rango típico para ${mdl.opType.toLowerCase()} (${fmt(apMin,2)}–${fmt(apMax,2)} mm).`);
+    }
+    if(mdl.aePct < g.ae_minPct){
+      alerts.push(`ae% por debajo del rango típico para ${mdl.opType.toLowerCase()} (${g.ae_minPct}–${g.ae_maxPct} % del D).`);
+    }else if(mdl.aePct > g.ae_maxPct){
+      alerts.push(`ae% por encima del rango típico para ${mdl.opType.toLowerCase()} (${g.ae_minPct}–${g.ae_maxPct} % del D).`);
+    }
+
+    // Chip thinning
+    if(res.chipInfo){
+      const c = res.chipInfo;
+      alerts.push(`Por ae=${c.aePct.toFixed(1)} % la carga real equivalente por filo es ≈ ${c.h_eq.toFixed(3)} mm. Podrías subir fz hasta ≈ ${c.fz_target.toFixed(3)} mm/diente sin exceder un nivel razonable (límite sugerido ≈ ${c.fz_max_eff.toFixed(3)}).`);
+    }
+
+    // Análisis RPM de programa
     if(res.rpm_prog){
       alerts.push(`Con la RPM de programa (${fmt(res.rpm_prog,0)} rpm) la TPF es ${fmt(res.TPF_prog,1)} Hz con riesgo ${res.riskProgText.toLowerCase()}.`);
       if(res.riskProgClass && res.riskProgClass !== res.riskClass){
@@ -503,7 +650,7 @@
       }
     }
 
-    // Mensaje corto arriba de la tarjeta
+    // Mensaje corto arriba
     if(alerts.length){
       msgEl.textContent = `${alerts.length} observación(es) para revisar.`;
       msgEl.className = "msg-warn";
@@ -512,26 +659,27 @@
       msgEl.className = "";
     }
 
-    // Construcción de salida principal + diagnóstico
+    // Construcción de salida principal
     let html = `
       <div class="grid grid2">
         <div>
-          <h2>Material</h2>
+          <h2>Material / Catálogo</h2>
           <span class="tag">${mdl.material}</span>
-          <span class="tag">Vc catálogo: ${res.m.vc_min}–${res.m.vc_max} m/min</span>
+          <span class="tag">Herramienta: ${mdl.toolMat}</span>
+          <span class="tag">Operación: ${mdl.opType}</span>
+          <span class="tag">Nivel agresividad: ${mdl.level}/5</span>
+          <span class="tag">Vc ajustado: ${fmt(res.vc_min_eff,1)}–${fmt(res.vc_max_eff,1)} m/min</span>
           <span class="tag">TPF catálogo: ${res.m.hz_min}–${res.m.hz_max} Hz</span>
         </div>
         <div>
-          <h2>Estado</h2>
+          <h2>Estado de corte</h2>
           <span class="tag">fz actual: ${mdl.fz} mm/diente</span>
-          <span class="tag">fz óptimo catálogo: ${res.fz_mid.toFixed(3)} mm/diente</span>
+          <span class="tag">fz óptimo ajustado: ${res.fz_mid_eff.toFixed(3)} mm/diente</span>
           <span class="tag">ae: ${fmt(res.ae,2)} mm (${fmt(mdl.aePct,1)}%)</span>
           <span class="tag">ap: ${fmt(mdl.ap,2)} mm</span>
-          <span class="tag">MRR (con fz actual): ${fmt(res.MRR,2)} cm³/min</span>
+          <span class="tag">MRR recomendado: ${fmt(res.MRR,2)} cm³/min</span>
           <span class="tag">RPM óptima recomendada: ${fmt(res.rpm_opt,0)} rpm</span>
           ${res.rpm_prog ? `<span class="tag">RPM de programa: ${fmt(res.rpm_prog,0)} rpm</span>` : ""}
-          <span class="tag">Sugerencia dientes: ≈ ${zSuggest}Z</span>
-          <span class="tag">Sugerencia diámetro: ≈ ${fmt(dSuggest,1)} mm</span>
         </div>
       </div>
     `;
@@ -547,9 +695,74 @@
       `;
     }
 
+    // Comparación recomendado vs programa (A/B)
+    if(res.rpm_prog){
+      html += `
+        <div style="margin-top:10px">
+          <h2>Comparación recomendado vs programa</h2>
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Magnitud</th>
+                <th>Recomendado</th>
+                <th>Programa</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>RPM</td>
+                <td>${fmt(res.rpm_opt,0)}</td>
+                <td>${fmt(res.rpm_prog,0)}</td>
+              </tr>
+              <tr>
+                <td>Vf (mm/min)</td>
+                <td>${fmt(res.Vf_opt,1)}</td>
+                <td>${res.Vf_prog ? fmt(res.Vf_prog,1) : "—"}</td>
+              </tr>
+              <tr>
+                <td>TPF (Hz)</td>
+                <td>${fmt(res.TPF,1)}</td>
+                <td>${res.TPF_prog ? fmt(res.TPF_prog,1) : "—"}</td>
+              </tr>
+              <tr>
+                <td>MRR (cm³/min)</td>
+                <td>${fmt(res.MRR,2)}</td>
+                <td>${res.MRR_prog ? fmt(res.MRR_prog,2) : "—"}</td>
+              </tr>
+              <tr>
+                <td>Riesgo vibración</td>
+                <td>${res.riskText}</td>
+                <td>${res.riskProgText || "—"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // Bloque de "programa sugerido"
+    const blockRec = `; Recomendado
+S${Math.round(res.rpm_opt)}  F${Math.round(res.Vf_opt)}
+; fz=${mdl.fz} mm/diente, ae=${mdl.aePct} %, ap=${mdl.ap} mm, material=${mdl.material}`;
+
+    let blockProg = "";
+    if(res.rpm_prog && res.Vf_prog){
+      blockProg = `
+
+; Condición de programa (actual)
+S${Math.round(res.rpm_prog)}  F${Math.round(res.Vf_prog)}
+; fz=${mdl.fz} mm/diente, ae=${mdl.aePct} %, ap=${mdl.ap} mm`;
+    }
+
+    html += `
+      <div class="code-block">
+${blockRec}${blockProg}
+      </div>
+    `;
+
     $("out").innerHTML = html;
 
-    // Resultados numéricos
+    // Resultados numéricos base
     $("rpmMin").textContent = res.rpm_min_vc;
     $("rpmMaxOut").textContent = res.rpm_max_vc;
     $("rpmOpt").textContent = res.rpm_opt;
@@ -579,20 +792,24 @@
   }
 
   function saveState(){ localStorage.setItem(LSKEY, JSON.stringify(readModel())); }
+
   function calcAndRender(){
     const mdl=readModel();
     const res=compute(mdl);
     render(res,mdl);
     if(!res.error) saveState();
   }
+
   function setOptimas(){
-    const m = MATERIALS[$("material").value]; if(!m) return;
-    $("fz").value = ((m.fz_min+m.fz_max)/2).toFixed(3);
+    const mdl = readModel();
+    const eff = getEffectiveRanges(mdl.material, mdl.toolMat, mdl.level);
+    $("fz").value = ((eff.fz_min_eff+eff.fz_max_eff)/2).toFixed(3);
     calcAndRender();
     $("msg").textContent="Condiciones óptimas aplicadas";
     $("msg").className="";
     setTimeout(()=>{$("msg").textContent="";},1200);
   }
+
   async function shareResults(){
     const t = document.body.innerText;
     if(navigator.share){
@@ -611,11 +828,18 @@
     populateMaterials();
     try{
       const s=JSON.parse(localStorage.getItem(LSKEY)||"{}");
-      ["d","z","fz","ap","aePct","rpmMax","rpmProg"].forEach(k=>{ if(s[k]!=null && $(k)) $(k).value=s[k]; });
+      ["d","z","fz","ap","aePct","rpmMax","rpmProg"].forEach(k=>{
+        if(s[k]!=null && $(k)) $(k).value=s[k];
+      });
       if(s.material && MATERIALS[s.material]) $("material").value=s.material;
+      if(s.toolMat) $("toolMat").value=s.toolMat;
+      if(s.opType)  $("opType").value=s.opType;
+      if(s.level)   $("level").value=s.level;
+      $("levelLabel").textContent = `${$("level").value} / 5`;
     }catch(_){}
     updateHints();
-    ["material","d","z","fz","ap","aePct","rpmMax","rpmProg"].forEach(id=> $(id).addEventListener("input", updateHints));
+    ["material","toolMat","opType","level","d","z","fz","ap","aePct","rpmMax","rpmProg"]
+      .forEach(id=> $(id).addEventListener("input", updateHints));
     $("btnCalc").addEventListener("click", calcAndRender);
     $("btnOpt").addEventListener("click", setOptimas);
     $("shareBtn").addEventListener("click", shareResults);
