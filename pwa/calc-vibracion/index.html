@@ -91,6 +91,7 @@
     border:1px dashed var(--border);border-radius:12px;padding:12px;margin-top:12px;
     background:linear-gradient(180deg,#0c1628,#0b1322);
   }
+  .out ul{margin:6px 0 0 1.1rem;padding:0;color:var(--muted);font-size:.9rem}
   .tag{display:inline-block;background:#0b1220;border:1px solid var(--border);border-radius:999px;
     padding:.25rem .6rem;margin:.15rem .25rem .15rem 0}
   small{color:var(--muted)}
@@ -135,7 +136,7 @@
 
 <main class="wrap">
   <section class="card">
-    <p>Selecciona material → ingresa herramienta → fija <b>ae%</b> → obtén <b>RPM</b> y <b>Vf</b> mínimos, máximos y óptimos, considerando <b>Vc</b>, <b>fz</b> y banda <b>TPF</b>.</p>
+    <p>Selecciona material → ingresa herramienta → fija <b>ae%</b> → obtén <b>RPM</b> y <b>Vf</b> mínimos, máximos y óptimos, considerando <b>Vc</b>, <b>fz</b> y banda <b>TPF</b>. Puedes validar también una <b>RPM de programa</b>.</p>
 
     <div class="grid grid3">
       <div>
@@ -170,6 +171,10 @@
         <label>Límite máx. husillo (RPM)</label>
         <input id="rpmMax" type="number" step="1" value="12000">
       </div>
+      <div>
+        <label>RPM de programa (opcional)</label>
+        <input id="rpmProg" type="number" step="1" placeholder="Usar recomendada">
+      </div>
     </div>
 
     <div class="row" style="margin-top:10px">
@@ -193,12 +198,15 @@
         <div class="kv"><span>Mínimo</span><span id="vfMin" class="chip min">—</span></div>
         <div class="kv"><span>Máximo</span><span id="vfMax" class="chip max">—</span></div>
         <div class="kv"><span>Óptimo</span><span id="vfOpt" class="chip opt">—</span></div>
+        <div class="kv"><span>Programa</span><span id="vfProg" class="chip">—</span></div>
       </div>
       <div class="resbox">
         <h3>Vibración</h3>
-        <div class="kv"><span>TPF</span><span id="tpfVal" class="chip">—</span></div>
+        <div class="kv"><span>TPF recomendado</span><span id="tpfVal" class="chip">—</span></div>
+        <div class="kv"><span>TPF programa</span><span id="tpfProg" class="chip">—</span></div>
         <div class="kv"><span>Banda estable</span><span id="bandVal" class="chip">—</span></div>
-        <div class="kv"><span>Riesgo</span><span id="riskChip" class="chip risk">—</span></div>
+        <div class="kv"><span>Riesgo recomendado</span><span id="riskChip" class="chip risk">—</span></div>
+        <div class="kv"><span>Riesgo programa</span><span id="riskProgChip" class="chip risk">—</span></div>
       </div>
     </div>
   </section>
@@ -339,16 +347,21 @@
   function readModel(){
     return {
       material:$("material").value,
-      d:+$("d").value, z:+$("z").value, fz:+$("fz").value,
-      ap:+$("ap").value, aePct:+$("aePct").value, rpmMax:+$("rpmMax").value || Infinity
+      d:+$("d").value,
+      z:+$("z").value,
+      fz:+$("fz").value,
+      ap:+$("ap").value,
+      aePct:+$("aePct").value,
+      rpmMax:+$("rpmMax").value || Infinity,
+      rpmProg:+$("rpmProg").value || null
     };
   }
 
   function compute(mdl){
     const m = MATERIALS[mdl.material];
     if(!m) return {error:"Material inválido"};
-    const {d,z,fz,ap,aePct,rpmMax} = mdl;
-    if(d<=0||z<=0||fz<=0||ap<0||aePct<0) return {error:"Completa datos válidos."};
+    const {d,z,fz,ap,aePct,rpmMax,rpmProg} = mdl;
+    if(d<=0 || z<=0 || fz<=0 || ap<=0 || aePct<=0) return {error:"Completa datos válidos (>0 en D, z, fz, ap y ae%)."};
 
     const ae = d*aePct/100;
 
@@ -382,11 +395,24 @@
     if(TPF>=m.hz_min && TPF<=m.hz_max){ riskClass="ok"; riskText="Bajo"; }
     else if(TPF>=0.9*m.hz_min && TPF<=1.1*m.hz_max){ riskClass="warn"; riskText="Medio"; }
 
+    // RPM de programa (opcional)
+    const rpm_prog = (Number.isFinite(rpmProg) && rpmProg>0) ? rpmProg : null;
+    const Vf_prog = rpm_prog ? rpm_prog*z*fz : null;
+    const TPF_prog = rpm_prog ? (rpm_prog*z)/60 : null;
+
+    let riskProgClass=null, riskProgText="";
+    if(TPF_prog!=null){
+      riskProgClass="bad"; riskProgText="Alto";
+      if(TPF_prog>=m.hz_min && TPF_prog<=m.hz_max){ riskProgClass="ok"; riskProgText="Bajo"; }
+      else if(TPF_prog>=0.9*m.hz_min && TPF_prog<=1.1*m.hz_max){ riskProgClass="warn"; riskProgText="Medio"; }
+    }
+
     return {
       m, rpm_min_vc, rpm_max_vc, rpm_min_tpf, rpm_max_tpf,
       overlap_min, overlap_max, hasOverlap,
       rpm_opt, Vf_min, Vf_max, Vf_opt, fz_mid, ae, MRR, TPF,
-      riskClass, riskText, clippedBySpindle
+      riskClass, riskText, clippedBySpindle,
+      rpm_prog, Vf_prog, TPF_prog, riskProgClass, riskProgText
     };
   }
 
@@ -396,42 +422,23 @@
       $("out").textContent=res.error;
       msgEl.textContent = "";
       msgEl.className = "";
+      // limpiar resultados
+      $("rpmMin").textContent = "—";
+      $("rpmMaxOut").textContent = "—";
+      $("rpmOpt").textContent = "—";
+      $("vfMin").textContent = "—";
+      $("vfMax").textContent = "—";
+      $("vfOpt").textContent = "—";
+      $("vfProg").textContent = "—";
+      $("tpfVal").textContent = "—";
+      $("tpfProg").textContent = "—";
+      $("bandVal").textContent = "—";
+      ["riskChip","riskProgChip"].forEach(id=>{
+        const c=$(id); c.textContent="—"; c.classList.remove("ok","warn","bad");
+      });
       return;
     }
-    $("out").innerHTML = `
-      <div class="grid grid2">
-        <div>
-          <h2>Material</h2>
-          <span class="tag">${mdl.material}</span>
-          <span class="tag">Vc: ${res.m.vc_min}–${res.m.vc_max} m/min</span>
-          <span class="tag">TPF auto: ${res.m.hz_min}–${res.m.hz_max} Hz</span>
-        </div>
-        <div>
-          <h2>Estado</h2>
-          <span class="tag">fz actual: ${mdl.fz} mm/diente</span>
-          <span class="tag">fz óptimo catálogo: ${res.fz_mid.toFixed(3)}</span>
-          <span class="tag">ae: ${fmt(res.ae,2)} mm (${fmt(mdl.aePct,1)}%)</span>
-          <span class="tag">ap: ${fmt(mdl.ap,2)} mm</span>
-          <span class="tag">MRR (con fz actual): ${fmt(res.MRR,2)} cm³/min</span>
-        </div>
-      </div>
-    `;
 
-    $("rpmMin").textContent = res.rpm_min_vc;
-    $("rpmMaxOut").textContent = res.rpm_max_vc;
-    $("rpmOpt").textContent = res.rpm_opt;
-    $("vfMin").textContent = `${fmt(res.Vf_min,1)} mm/min`;
-    $("vfMax").textContent = `${fmt(res.Vf_max,1)} mm/min`;
-    $("vfOpt").textContent = `${fmt(res.Vf_opt,1)} mm/min`;
-
-    $("tpfVal").textContent = `${fmt(res.TPF,1)} Hz`;
-    $("bandVal").textContent = `${res.m.hz_min}–${res.m.hz_max} Hz`;
-    const chip = $("riskChip");
-    chip.textContent = res.riskText;
-    chip.classList.remove("ok","warn","bad");
-    chip.classList.add(res.riskClass);
-
-    // ===== Análisis / sugerencias =====
     const alerts = [];
 
     // fz fuera de rango proveedor
@@ -443,14 +450,14 @@
 
     // sobreposición Vc–TPF recortada
     if(!res.hasOverlap){
-      alerts.push("No hay solapamiento entre el rango de Vc y la banda TPF; RPM óptima se calculó solo en función de Vc.");
+      alerts.push("No hay solapamiento entre el rango de Vc y la banda TPF; la RPM óptima se calculó solo en función de Vc.");
     }
 
     if(res.clippedBySpindle){
       alerts.push("El límite de husillo está recortando la RPM máxima recomendada por catálogo.");
     }
 
-    // Diagnóstico de TPF vs banda → sugerencias de z, D o Vc
+    // Diagnóstico de TPF vs banda → sugerencias de z, D o Vc (basado en recomendado)
     const hzCenter = (res.m.hz_min + res.m.hz_max) / 2;
     const rpmCenterCurrentZ = 60 * hzCenter / mdl.z;                   // rpm para estar en centro de banda con D y z actuales
     const vcCenterCurrent = Math.PI * mdl.d * rpmCenterCurrentZ / 1000;
@@ -465,35 +472,109 @@
 
     if(belowBand || aboveBand){
       if(belowBand){
-        alerts.push("TPF por debajo de la banda estable: frecuencia de paso de diente baja (giras “lento” para la rigidez declarada).");
+        alerts.push("TPF recomendada por debajo de la banda estable: frecuencia de paso de diente baja para la rigidez declarada.");
       } else if(aboveBand){
-        alerts.push("TPF por encima de la banda estable: frecuencia de paso de diente alta (tendencia a vibrar).");
+        alerts.push("TPF recomendada por encima de la banda estable: frecuencia de paso de diente alta con tendencia a vibrar.");
       }
 
       alerts.push(`El centro de banda está alrededor de ${fmt(rpmCenterCurrentZ,0)} rpm (Vc ≈ ${fmt(vcCenterCurrent,1)} m/min) para tu D=${mdl.d} mm y z=${mdl.z}.`);
 
       if(vcCenterCurrent > res.m.vc_max){
         alerts.push(`Para llegar al centro de banda con esta geometría necesitarías Vc ≈ ${fmt(vcCenterCurrent,1)} m/min, por encima del catálogo (${res.m.vc_min}–${res.m.vc_max} m/min).`);
-        alerts.push(`Opciones: usar más dientes (≈ ${zSuggest}Z manteniendo Vc medio) o reducir diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
+        alerts.push(`Opciones recomendadas: usar más dientes (≈ ${zSuggest}Z manteniendo Vc medio) o reducir diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
       } else if(vcCenterCurrent < res.m.vc_min){
         alerts.push(`Para centrarte en la banda con esta geometría tendrías que bajar Vc a ≈ ${fmt(vcCenterCurrent,1)} m/min, por debajo del mínimo de catálogo (${res.m.vc_min}–${res.m.vc_max} m/min).`);
-        alerts.push(`Opciones: usar menos dientes (≈ ${zSuggest}Z con Vc medio) o aumentar el diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
+        alerts.push(`Opciones recomendadas: usar menos dientes (≈ ${zSuggest}Z con Vc medio) o aumentar el diámetro hacia ≈ ${fmt(dSuggest,1)} mm.`);
       } else {
         if(rpmCenterCurrentZ > mdl.rpmMax){
           alerts.push(`El husillo se queda corto: para centro de banda necesitarías ≈ ${fmt(rpmCenterCurrentZ,0)} rpm y tu límite es ${fmt(mdl.rpmMax,0)} rpm.`);
-          alerts.push("Opciones: más dientes para subir TPF sin aumentar tanto la RPM, o reducir diámetro para subir Vc a la misma RPM.");
+          alerts.push("Opciones recomendadas: más dientes para subir TPF sin aumentar tanto la RPM, o reducir diámetro para subir Vc a la misma RPM.");
         } else {
           alerts.push("Puedes mover la velocidad hacia esa zona manteniéndote dentro del rango de Vc; ajusta RPM hasta acercarte al centro de banda.");
         }
       }
     }
 
+    // Análisis RPM de programa (si la hay)
+    if(res.rpm_prog){
+      alerts.push(`Con la RPM de programa (${fmt(res.rpm_prog,0)} rpm) la TPF es ${fmt(res.TPF_prog,1)} Hz con riesgo ${res.riskProgText.toLowerCase()}.`);
+      if(res.riskProgClass && res.riskProgClass !== res.riskClass){
+        alerts.push("El riesgo de vibración de la RPM de programa es distinto al de la condición recomendada; conviene revisar el compromiso entre estabilidad y productividad.");
+      }
+    }
+
+    // Mensaje corto arriba de la tarjeta
     if(alerts.length){
-      msgEl.textContent = alerts.join(" | ");
+      msgEl.textContent = `${alerts.length} observación(es) para revisar.`;
       msgEl.className = "msg-warn";
     }else{
       msgEl.textContent = "";
       msgEl.className = "";
+    }
+
+    // Construcción de salida principal + diagnóstico
+    let html = `
+      <div class="grid grid2">
+        <div>
+          <h2>Material</h2>
+          <span class="tag">${mdl.material}</span>
+          <span class="tag">Vc catálogo: ${res.m.vc_min}–${res.m.vc_max} m/min</span>
+          <span class="tag">TPF catálogo: ${res.m.hz_min}–${res.m.hz_max} Hz</span>
+        </div>
+        <div>
+          <h2>Estado</h2>
+          <span class="tag">fz actual: ${mdl.fz} mm/diente</span>
+          <span class="tag">fz óptimo catálogo: ${res.fz_mid.toFixed(3)} mm/diente</span>
+          <span class="tag">ae: ${fmt(res.ae,2)} mm (${fmt(mdl.aePct,1)}%)</span>
+          <span class="tag">ap: ${fmt(mdl.ap,2)} mm</span>
+          <span class="tag">MRR (con fz actual): ${fmt(res.MRR,2)} cm³/min</span>
+          <span class="tag">RPM óptima recomendada: ${fmt(res.rpm_opt,0)} rpm</span>
+          ${res.rpm_prog ? `<span class="tag">RPM de programa: ${fmt(res.rpm_prog,0)} rpm</span>` : ""}
+          <span class="tag">Sugerencia dientes: ≈ ${zSuggest}Z</span>
+          <span class="tag">Sugerencia diámetro: ≈ ${fmt(dSuggest,1)} mm</span>
+        </div>
+      </div>
+    `;
+
+    if(alerts.length){
+      html += `
+        <div style="margin-top:10px">
+          <h2>Diagnóstico</h2>
+          <ul>
+            ${alerts.map(a=>`<li>${a}</li>`).join("")}
+          </ul>
+        </div>
+      `;
+    }
+
+    $("out").innerHTML = html;
+
+    // Resultados numéricos
+    $("rpmMin").textContent = res.rpm_min_vc;
+    $("rpmMaxOut").textContent = res.rpm_max_vc;
+    $("rpmOpt").textContent = res.rpm_opt;
+
+    $("vfMin").textContent = `${fmt(res.Vf_min,1)} mm/min`;
+    $("vfMax").textContent = `${fmt(res.Vf_max,1)} mm/min`;
+    $("vfOpt").textContent = `${fmt(res.Vf_opt,1)} mm/min`;
+    $("vfProg").textContent = res.Vf_prog ? `${fmt(res.Vf_prog,1)} mm/min` : "—";
+
+    $("tpfVal").textContent = `${fmt(res.TPF,1)} Hz`;
+    $("tpfProg").textContent = res.TPF_prog ? `${fmt(res.TPF_prog,1)} Hz` : "—";
+    $("bandVal").textContent = `${res.m.hz_min}–${res.m.hz_max} Hz`;
+
+    const chip = $("riskChip");
+    chip.textContent = res.riskText;
+    chip.classList.remove("ok","warn","bad");
+    chip.classList.add(res.riskClass);
+
+    const chipProg = $("riskProgChip");
+    chipProg.classList.remove("ok","warn","bad");
+    if(res.riskProgClass){
+      chipProg.textContent = res.riskProgText;
+      chipProg.classList.add(res.riskProgClass);
+    }else{
+      chipProg.textContent = "—";
     }
   }
 
@@ -502,7 +583,7 @@
     const mdl=readModel();
     const res=compute(mdl);
     render(res,mdl);
-    saveState();
+    if(!res.error) saveState();
   }
   function setOptimas(){
     const m = MATERIALS[$("material").value]; if(!m) return;
@@ -530,11 +611,11 @@
     populateMaterials();
     try{
       const s=JSON.parse(localStorage.getItem(LSKEY)||"{}");
-      ["d","z","fz","ap","aePct","rpmMax"].forEach(k=>{ if(s[k]!=null && $(k)) $(k).value=s[k]; });
+      ["d","z","fz","ap","aePct","rpmMax","rpmProg"].forEach(k=>{ if(s[k]!=null && $(k)) $(k).value=s[k]; });
       if(s.material && MATERIALS[s.material]) $("material").value=s.material;
     }catch(_){}
     updateHints();
-    ["material","d","z","fz","ap","aePct","rpmMax"].forEach(id=> $(id).addEventListener("input", updateHints));
+    ["material","d","z","fz","ap","aePct","rpmMax","rpmProg"].forEach(id=> $(id).addEventListener("input", updateHints));
     $("btnCalc").addEventListener("click", calcAndRender);
     $("btnOpt").addEventListener("click", setOptimas);
     $("shareBtn").addEventListener("click", shareResults);
