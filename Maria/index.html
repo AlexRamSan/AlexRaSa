@@ -8,18 +8,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css" id="theme">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/white.min.css" id="theme">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Personalización de Reveal.js */
+        /* Reset básico de Reveal */
         .reveal .slides section, .reveal .slides section > section {
-            padding: 0;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            text-align: left; /* Alinear texto a la izquierda por defecto */
         }
-        .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+        
+        /* Tipografía */
+        .reveal h1, .reveal h2, .reveal h3 {
             text-transform: none;
-            font-weight: bold;
+            font-weight: 800;
+            letter-spacing: -0.02em;
         }
         .reveal ul {
             display: block;
@@ -28,321 +35,300 @@
             padding: 0;
         }
         .reveal li {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
             display: flex;
             align-items: flex-start;
+            font-size: 1.1rem;
+            line-height: 1.4;
+        }
+        .reveal p {
+            font-size: 1.1rem;
         }
         .reveal li i {
             margin-top: 0.3rem;
-            margin-right: 1rem;
-            color: #f97316;
+            margin-right: 0.8rem;
+            flex-shrink: 0;
         }
 
-        /* Fondos */
-        .slide-bg-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            z-index: -1;
-        }
-        .overlay-dark { background: rgba(0, 0, 0, 0.7); }
-        .overlay-blue { background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(23, 37, 84, 0.9) 100%); }
-
-        /* Caja de contenido */
-        .content-box {
-            background: rgba(255, 255, 255, 0.95);
-            color: #1e293b;
-            padding: 2.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            max-width: 800px;
-            margin: auto;
-        }
-        .content-box h2 { color: #1e3a8a; }
-
-        /* Texto blanco */
-        .text-white h1, .text-white h2, .text-white h3, .text-white p, .text-white li {
-            color: white !important;
-        }
-        .text-white li i { color: #fbbf24; }
-
-        /* --- ESTILOS ESPECÍFICOS PARA IMPRESIÓN / PDF --- */
+        /* Estilos para impresión */
         @media print {
-            /* Forzar impresión de fondos y colores exactos */
             body, .reveal {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                background-color: white !important;
             }
-            /* Ocultar el botón de PDF en el documento final */
-            #pdf-btn-container {
-                display: none !important;
-            }
-            /* Ajustes para que Reveal imprima cada slide en una hoja */
+            #pdf-btn-container { display: none !important; }
             .reveal .slides section {
+                height: 100vh !important;
+                page-break-after: always !important;
                 visibility: visible !important;
                 display: block !important;
-                position: relative !important;
-                margin: 0 !important;
-                page-break-after: always !important;
-                height: 100vh !important; /* Forzar altura completa */
-                width: 100% !important;
             }
-            /* Asegurar que los fondos oscuros cubran la hoja */
-            .slide-bg-container {
+            /* Forzar grid en impresión */
+            .grid-print {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 height: 100% !important;
-                position: absolute !important;
             }
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100">
 
     <div id="pdf-btn-container" class="fixed bottom-5 left-5 z-50">
         <button onclick="preparePDF()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full shadow-lg flex items-center transition transform hover:scale-105">
-            <i class="fa-solid fa-file-pdf mr-2"></i> Guardar como PDF
+            <i class="fa-solid fa-file-pdf mr-2"></i> Guardar PDF
         </button>
     </div>
 
     <div class="reveal">
-        <div class="slides">
+        <div class="slides w-full h-full">
 
-            <section class="text-white" data-transition="fade">
-                <div class="slide-bg-container overlay-blue" style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1600');"></div>
-                
-                <div class="flex flex-col items-center justify-center h-full px-10 pt-20">
-                    <div class="text-7xl text-orange-500 mb-6 animate-bounce">
-                        <i class="fa-solid fa-helmet-safety"></i>
+            <section data-transition="fade">
+                <div class="grid-print grid grid-cols-1 md:grid-cols-2 h-screen w-full">
+                    <div class="bg-slate-900 text-white p-12 flex flex-col justify-center relative overflow-hidden">
+                        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-blue-600 rounded-full opacity-20 blur-3xl"></div>
+                        
+                        <div class="z-10">
+                            <div class="text-6xl text-orange-500 mb-6">
+                                <i class="fa-solid fa-helmet-safety"></i>
+                            </div>
+                            <h1 class="text-5xl font-extrabold mb-4 leading-tight">Mantenimiento<br>Comercial Integral</h1>
+                            <div class="h-1 w-20 bg-orange-500 mb-6"></div>
+                            <h3 class="text-2xl text-blue-200 font-light mb-8">Carlos Ángel Araujo García</h3>
+                            
+                            <div class="space-y-3">
+                                <p class="flex items-center text-blue-100"><i class="fa-solid fa-check-circle text-orange-500 mr-3"></i> Especialista en Retail</p>
+                                <p class="flex items-center text-blue-100"><i class="fa-solid fa-check-circle text-orange-500 mr-3"></i> Atención 24/7</p>
+                                <p class="flex items-center text-blue-100"><i class="fa-solid fa-location-dot text-orange-500 mr-3"></i> Saltillo, Coahuila</p>
+                            </div>
+                        </div>
                     </div>
-                    <h1 class="text-5xl md:text-6xl font-extrabold mb-4 tracking-tight">Servicios de Mantenimiento Comercial</h1>
-                    <h3 class="text-2xl md:text-3xl font-light mb-12 text-blue-200">Carlos Ángel Araujo García – Persona física</h3>
-                    
-                    <div class="flex flex-wrap justify-center gap-4 text-lg">
-                        <span class="bg-blue-800/50 px-6 py-3 rounded-full backdrop-blur-sm border border-blue-500"><i class="fa-solid fa-check text-orange-400 mr-2"></i>Mantenimiento Integral</span>
-                        <span class="bg-blue-800/50 px-6 py-3 rounded-full backdrop-blur-sm border border-blue-500"><i class="fa-solid fa-store text-orange-400 mr-2"></i>Tiendas y Hospitales</span>
-                    </div>
-                    <p class="mt-8 text-blue-300"><i class="fa-solid fa-location-dot mr-2"></i> Saltillo, Coahuila, México</p>
+                    <div class="bg-cover bg-center h-full w-full" style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1600');">
+                        <div class="h-full w-full bg-blue-900/10"></div> </div>
                 </div>
             </section>
 
             <section data-transition="slide">
-                <div class="slide-bg-container overlay-dark" style="background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=1600');"></div>
-                
-                <div class="flex items-center justify-center h-screen p-4">
-                    <div class="content-box flex flex-col md:flex-row items-center gap-8">
-                        <div class="md:w-1/3 text-center">
-                            <i class="fa-solid fa-user-tie text-8xl text-blue-900 mb-4"></i>
-                        </div>
-                        <div class="md:w-2/3 text-left">
-                            <h2 class="text-4xl font-bold mb-6">¿Quién soy?</h2>
-                            <ul>
-                                <li><i class="fa-solid fa-circle-check"></i><span><strong>Carlos Ángel Araujo García</strong> – Persona física.</span></li>
-                                <li><i class="fa-solid fa-circle-check"></i><span>Prestador de servicios de mantenimiento integral.</span></li>
-                                <li><i class="fa-solid fa-circle-check"></i><span>Enfoque especializado en comercios y servicios.</span></li>
-                                <li><i class="fa-solid fa-circle-check"></i><span>Atención directa y personalizada al cliente.</span></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="slide" class="text-white">
-                <div class="slide-bg-container overlay-blue" style="background-image: url('https://images.unsplash.com/photo-1519567241046-7f570eee3c9f?auto=format&fit=crop&q=80&w=1600');"></div>
-                <div class="flex flex-col justify-center h-screen px-20 text-left">
-                    <div class="flex items-center mb-8">
-                         <i class="fa-solid fa-star text-5xl text-yellow-400 mr-6"></i>
-                         <h2 class="text-5xl font-bold">Especialidad Comercial</h2>
-                    </div>
-                    <div class="bg-white/10 p-8 rounded-2xl backdrop-blur-md border border-white/20">
-                        <ul>
-                            <li><i class="fa-solid fa-building"></i><span>Mantenimiento general de inmuebles comerciales.</span></li>
-                            <li><i class="fa-solid fa-hospital"></i><span>Tiendas de autoservicio, farmacias, hospitales y comercios.</span></li>
-                            <li><i class="fa-solid fa-tools"></i><span>Trabajo en mantenimiento <strong>preventivo y correctivo</strong>.</span></li>
-                            <li><i class="fa-solid fa-clock"></i><span>Enfoque total en la continuidad operativa de las sucursales.</span></li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="zoom">
-                <div class="slide-bg-container overlay-dark" style="background-image: url('https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&q=80&w=1600');"></div>
-                 <div class="flex items-center justify-center h-screen p-4">
-                    <div class="content-box">
-                        <div class="flex items-center mb-6 border-b-4 border-yellow-400 pb-4">
-                            <i class="fa-solid fa-bolt text-5xl text-yellow-500 mr-6"></i>
-                            <h2 class="text-4xl font-bold m-0">Sistemas Eléctricos</h2>
-                        </div>
-                         <div class="grid md:grid-cols-2 gap-4">
-                            <ul>
-                                <li><i class="fa-solid fa-plug"></i>Instalación y mantenimiento de baja tensión.</li>
-                                <li><i class="fa-regular fa-lightbulb"></i>Iluminación interior y exterior eficiente.</li>
-                            </ul>
-                            <ul>
-                                <li><i class="fa-solid fa-server"></i>Revisión de tableros, pastillas y circuitos.</li>
-                                <li><i class="fa-solid fa-triangle-exclamation"></i>Atención a fallas eléctricas urgentes.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="zoom">
-                 <div class="slide-bg-container overlay-dark" style="background-image: url('https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?auto=format&fit=crop&q=80&w=1600');"></div>
-                 <div class="flex items-center justify-center h-screen p-4">
-                    <div class="content-box">
-                        <div class="flex items-center mb-6 border-b-4 border-blue-400 pb-4">
-                            <i class="fa-solid fa-faucet-drip text-5xl text-blue-500 mr-6"></i>
-                            <h2 class="text-4xl font-bold m-0">Agua, Plomería y Desagües</h2>
-                        </div>
-                        <ul>
-                            <li><i class="fa-solid fa-droplet-slash"></i>Reparación de fugas en líneas de agua.</li>
-                            <li><i class="fa-solid fa-toilet"></i>Destape de drenajes y desagües.</li>
-                            <li><i class="fa-solid fa-sink"></i>Instalación y mantenimiento de muebles sanitarios.</li>
-                            <li><i class="fa-solid fa-magnifying-glass"></i>Revisión de redes hidráulicas y sanitarias.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="zoom">
-                 <div class="slide-bg-container overlay-dark" style="background-image: url('https://images.unsplash.com/photo-1585314881461-8d800418360c?auto=format&fit=crop&q=80&w=1600');"></div>
-                 <div class="flex items-center justify-center h-screen p-4">
-                    <div class="content-box">
-                        <div class="flex items-center mb-6 border-b-4 border-indigo-500 pb-4">
-                            <i class="fa-solid fa-arrow-up-from-water-pump text-5xl text-indigo-600 mr-6"></i>
-                            <h2 class="text-4xl font-bold m-0">Bombas e Hidroneumáticos</h2>
-                        </div>
-                         <ul>
-                            <li><i class="fa-solid fa-wrench"></i>Instalación y ajuste de bombas de agua.</li>
-                            <li><i class="fa-solid fa-gauge-high"></i>Mantenimiento de equipos hidroneumáticos y presión.</li>
-                            <li><i class="fa-solid fa-house-flood-water"></i>Solución a problemas de suministro en sucursales.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="zoom">
-                 <div class="slide-bg-container overlay-dark" style="background-image: url('https://images.unsplash.com/photo-1535242208474-9a2793260ca8?auto=format&fit=crop&q=80&w=1600');"></div>
-                 <div class="flex items-center justify-center h-screen p-4">
-                    <div class="content-box">
-                        <div class="flex items-center mb-6 border-b-4 border-sky-300 pb-4">
-                            <i class="fa-solid fa-snowflake text-5xl text-sky-400 mr-6"></i>
-                            <h2 class="text-4xl font-bold m-0">Refrigeración y Clima</h2>
-                        </div>
-                        <ul>
-                            <li><i class="fa-solid fa-wind"></i>Mantenimiento a minisplits y climatización comercial.</li>
-                            <li><i class="fa-solid fa-temperature-arrow-down"></i>Atención a equipos de refrigeración crítica.</li>
-                            <li><i class="fa-solid fa-clipboard-check"></i>Limpieza, revisión y diagnóstico de fallas.</li>
-                            <li><i class="fa-solid fa-box-archive"></i>Protección de productos sensibles a la temperatura.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="zoom">
-                 <div class="slide-bg-container overlay-dark" style="background-image: url('https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=1600');"></div>
-                 <div class="flex items-center justify-center h-screen p-4">
-                    <div class="content-box">
-                        <div class="flex items-center mb-6 border-b-4 border-orange-500 pb-4">
-                            <i class="fa-solid fa-paint-roller text-5xl text-orange-500 mr-6"></i>
-                            <h2 class="text-4xl font-bold m-0">Pintura y Conservación</h2>
-                        </div>
-                         <ul>
-                            <li><i class="fa-solid fa-brush"></i>Pintura interior y exterior en sucursales.</li>
-                            <li><i class="fa-solid fa-fill-drip"></i>Reparación menor de muros y acabados.</li>
-                            <li><i class="fa-solid fa-store"></i>Conservación de fachadas e imagen comercial.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="slide" class="text-white">
-                <div class="slide-bg-container overlay-blue" style="background-image: url('https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80&w=1600');"></div>
-                <div class="flex flex-col justify-center h-screen px-20">
-                     <h2 class="text-5xl font-bold mb-12 text-center"><i class="fa-solid fa-list-check text-yellow-400 mr-4"></i>Nuestro Enfoque</h2>
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div class="bg-green-600/80 p-8 rounded-2xl backdrop-blur-sm border-t-8 border-green-400">
-                            <h3 class="text-3xl font-bold mb-4 flex items-center"><i class="fa-regular fa-calendar-check mr-3"></i> Preventivo</h3>
-                            <ul>
-                                <li><i class="fa-solid fa-check"></i>Programas según calendario.</li>
-                                <li><i class="fa-solid fa-check"></i>Alineación con horarios del cliente.</li>
-                                <li><i class="fa-solid fa-arrow-trend-down"></i>Reducción de paros inesperados.</li>
-                            </ul>
-                        </div>
-                        <div class="bg-red-600/80 p-8 rounded-2xl backdrop-blur-sm border-t-8 border-red-400">
-                             <h3 class="text-3xl font-bold mb-4 flex items-center"><i class="fa-solid fa-triangle-exclamation mr-3"></i> Correctivo</h3>
-                             <ul>
-                                <li><i class="fa-solid fa-bolt"></i>Atención a reportes y emergencias.</li>
-                                <li><i class="fa-solid fa-stopwatch"></i>Respuesta rápida ante fallas.</li>
-                                <li><i class="fa-solid fa-rotate"></i>Restauración de la operación.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="slide" class="text-white">
-                 <div class="slide-bg-container overlay-blue" style="background-image: url('https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=1600');"></div>
-                <div class="flex flex-col justify-center h-screen px-10 text-center">
-                    <h2 class="text-5xl font-bold mb-12"><i class="fa-solid fa-hand-holding-heart text-red-400 mr-4"></i>Valor para el Cliente</h2>
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-cover bg-center h-full w-full order-2 md:order-1" style="background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=1600');"></div>
                     
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div class="bg-white/10 p-6 rounded-xl backdrop-blur-sm hover:bg-white/20 transition border border-white/30">
-                            <i class="fa-solid fa-infinity text-5xl text-blue-300 mb-4 block"></i>
-                            <h4 class="text-xl font-bold mb-2">Operación Continua</h4>
-                            <p class="text-sm">Su sucursal no se detiene.</p>
+                    <div class="bg-white p-12 flex flex-col justify-center text-slate-800 order-1 md:order-2">
+                        <div class="mb-6">
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Perfil</span>
                         </div>
-                        <div class="bg-white/10 p-6 rounded-xl backdrop-blur-sm hover:bg-white/20 transition border border-white/30">
-                             <i class="fa-solid fa-truck-fast text-5xl text-yellow-300 mb-4 block"></i>
-                            <h4 class="text-xl font-bold mb-2">Respuesta Rápida</h4>
-                            <p class="text-sm">Atención veloz a fallas.</p>
+                        <h2 class="text-4xl font-bold mb-6 text-slate-900">¿Quién soy?</h2>
+                        <ul class="text-slate-600">
+                            <li><i class="fa-solid fa-user text-blue-600"></i><span><strong>Carlos Ángel Araujo García</strong><br>Persona física con actividad empresarial.</span></li>
+                            <li><i class="fa-solid fa-briefcase text-blue-600"></i><span>Prestador de servicios de mantenimiento con enfoque ejecutivo.</span></li>
+                            <li><i class="fa-solid fa-handshake text-blue-600"></i><span>Trato directo, sin intermediarios y facturación inmediata.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section data-transition="slide">
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-slate-50 p-12 flex flex-col justify-center text-slate-800">
+                        <div class="flex items-center mb-6">
+                            <i class="fa-solid fa-star text-4xl text-yellow-500 mr-4"></i>
+                            <h2 class="text-4xl font-bold text-slate-900">Especialidad</h2>
                         </div>
-                        <div class="bg-white/10 p-6 rounded-xl backdrop-blur-sm hover:bg-white/20 transition border border-white/30">
-                             <i class="fa-solid fa-people-arrows text-5xl text-green-300 mb-4 block"></i>
-                            <h4 class="text-xl font-bold mb-2">Trato Directo</h4>
-                            <p class="text-sm">Sin intermediarios.</p>
-                        </div>
-                        <div class="bg-white/10 p-6 rounded-xl backdrop-blur-sm hover:bg-white/20 transition border border-white/30">
-                             <i class="fa-solid fa-puzzle-piece text-5xl text-orange-300 mb-4 block"></i>
-                            <h4 class="text-xl font-bold mb-2">Flexibilidad</h4>
-                            <p class="text-sm">Adaptación a sus necesidades.</p>
+                        <p class="mb-6 text-lg text-slate-600">Entiendo que una tienda cerrada o con fallas pierde dinero. Mi enfoque es la continuidad operativa.</p>
+                        <ul class="space-y-4">
+                            <li class="bg-white p-4 rounded shadow-sm border-l-4 border-blue-500"><i class="fa-solid fa-building text-blue-900"></i><span>Mantenimiento a Plazas y Locales.</span></li>
+                            <li class="bg-white p-4 rounded shadow-sm border-l-4 border-blue-500"><i class="fa-solid fa-hospital text-blue-900"></i><span>Farmacias y Hospitales.</span></li>
+                            <li class="bg-white p-4 rounded shadow-sm border-l-4 border-blue-500"><i class="fa-solid fa-clock text-blue-900"></i><span>Disponibilidad para urgencias.</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-cover bg-center h-full w-full" style="background-image: url('https://images.unsplash.com/photo-1519567241046-7f570eee3c9f?auto=format&fit=crop&q=80&w=1600');"></div>
+                </div>
+            </section>
+
+            <section>
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-cover bg-center h-full w-full" style="background-image: url('https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&q=80&w=1600');"></div>
+                    <div class="bg-white p-12 flex flex-col justify-center">
+                        <h2 class="text-3xl font-bold mb-2 text-slate-900">Sistemas Eléctricos</h2>
+                        <div class="h-1 w-16 bg-yellow-400 mb-8"></div>
+                        
+                        <div class="grid gap-6">
+                            <div>
+                                <h4 class="font-bold text-slate-800 mb-2 flex items-center"><i class="fa-solid fa-plug text-yellow-500 mr-2"></i> Baja Tensión</h4>
+                                <p class="text-sm text-slate-600">Instalación de contactos, apagadores y balanceo de cargas.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 mb-2 flex items-center"><i class="fa-regular fa-lightbulb text-yellow-500 mr-2"></i> Iluminación</h4>
+                                <p class="text-sm text-slate-600">Cambio a LED, iluminación exterior y de emergencia.</p>
+                            </div>
+                             <div>
+                                <h4 class="font-bold text-slate-800 mb-2 flex items-center"><i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-2"></i> Tableros</h4>
+                                <p class="text-sm text-slate-600">Corrección de cortos circuitos, pastillas calientes y fallas de tierra.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section data-transition="zoom" class="text-white">
-                 <div class="slide-bg-container overlay-blue" style="background-image: url('https://images.unsplash.com/photo-1534536281715-e28d76689b4d?auto=format&fit=crop&q=80&w=1600');"></div>
-                <div class="flex items-center justify-center h-screen p-4">
-                    <div class="bg-gray-900/80 p-10 rounded-2xl shadow-2xl border border-blue-500/50 text-center max-w-2xl backdrop-blur-md">
-                        <h2 class="text-4xl font-bold mb-8 text-blue-300">Contacto y Datos Fiscales</h2>
-                        
-                        <p class="text-2xl font-bold mb-2">Carlos Ángel Araujo García</p>
-                        <p class="text-gray-300 mb-6 tracking-wider bg-blue-900/50 inline-block px-4 py-1 rounded">RFC: AAGCOO0102GE2</p>
-                        
-                        <div class="text-left bg-white/10 p-4 rounded-lg mb-6 text-sm border-l-4 border-red-500">
-                            <p><i class="fa-solid fa-map-pin mr-3 text-red-400"></i> Calle Gorriones 291, Fracc. Portal del Sur, Saltillo, Coahuila, C.P. 25093</p>
-                        </div>
+            <section>
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-slate-900 p-12 flex flex-col justify-center text-white">
+                        <h2 class="text-3xl font-bold mb-2">Plomería y Desagües</h2>
+                        <div class="h-1 w-16 bg-blue-400 mb-8"></div>
+                        <ul class="space-y-6">
+                            <li><i class="fa-solid fa-faucet-drip text-blue-400 text-xl"></i><span class="text-slate-300">Reparación de fugas visibles y ocultas.</span></li>
+                            <li><i class="fa-solid fa-toilet text-blue-400 text-xl"></i><span class="text-slate-300">Destape de sanitarios, mingitorios y coladeras.</span></li>
+                            <li><i class="fa-solid fa-sink text-blue-400 text-xl"></i><span class="text-slate-300">Instalación de fluxómetros y llaves automáticas.</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-cover bg-center h-full w-full" style="background-image: url('https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?auto=format&fit=crop&q=80&w=1600');"></div>
+                </div>
+            </section>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                            <a href="tel:+528445316086" class="bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-lg transition flex items-center justify-center font-bold">
-                                <i class="fa-solid fa-phone mr-3"></i> +52 844 531 6086
-                            </a>
-                            <a href="tel:+17697704769" class="bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-lg transition flex items-center justify-center font-bold">
-                                <i class="fa-solid fa-phone mr-3"></i> +1 769 770 4769
-                            </a>
-                        </div>
-
-                        <a href="mailto:ing.araujo.garcia@gmail.com" class="block bg-orange-600 hover:bg-orange-500 text-white p-4 rounded-lg transition mb-8 font-bold text-lg">
-                            <i class="fa-solid fa-envelope mr-3"></i> ing.araujo.garcia@gmail.com
-                        </a>
+            <section>
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-cover bg-center h-full w-full" style="background-image: url('https://images.unsplash.com/photo-1585314881461-8d800418360c?auto=format&fit=crop&q=80&w=1600');"></div>
+                    <div class="bg-white p-12 flex flex-col justify-center">
+                        <h2 class="text-3xl font-bold mb-2 text-slate-900">Bombas e Hidroneumáticos</h2>
+                        <div class="h-1 w-16 bg-indigo-500 mb-8"></div>
                         
-                        <p class="italic text-sm text-blue-200 mt-6 border-t border-blue-800 pt-6">
-                            “Quedo a su disposición para registro como proveedor, cotizaciones y programación de mantenimientos.”
-                        </p>
+                        <div class="bg-indigo-50 p-6 rounded-lg border border-indigo-100">
+                            <p class="mb-4 font-semibold text-indigo-900">Garantizamos el suministro de agua constante.</p>
+                            <ul>
+                                <li><i class="fa-solid fa-wrench text-indigo-500"></i>Instalación y purga de bombas.</li>
+                                <li><i class="fa-solid fa-gauge-high text-indigo-500"></i>Calibración de presostatos.</li>
+                                <li><i class="fa-solid fa-rotate text-indigo-500"></i>Cambio de membranas en tanques.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-sky-900 p-12 flex flex-col justify-center text-white">
+                        <i class="fa-solid fa-snowflake text-6xl text-sky-400 mb-4"></i>
+                        <h2 class="text-3xl font-bold mb-6">Aire Acondicionado</h2>
+                        <ul class="space-y-4 text-sky-100">
+                            <li><i class="fa-solid fa-check text-sky-400"></i>Mantenimiento preventivo a minisplits.</li>
+                            <li><i class="fa-solid fa-check text-sky-400"></i>Limpieza profunda de serpentines y filtros.</li>
+                            <li><i class="fa-solid fa-check text-sky-400"></i>Cargas de gas y reparación de fugas.</li>
+                            <li><i class="fa-solid fa-check text-sky-400"></i>Diagnóstico de tarjetas electrónicas.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-cover bg-center h-full w-full" style="background-image: url('https://images.unsplash.com/photo-1535242208474-9a2793260ca8?auto=format&fit=crop&q=80&w=1600');"></div>
+                </div>
+            </section>
+
+            <section>
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-cover bg-center h-full w-full" style="background-image: url('https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&q=80&w=1600');"></div>
+                    <div class="bg-white p-12 flex flex-col justify-center">
+                        <h2 class="text-3xl font-bold mb-2 text-slate-900">Pintura y Acabados</h2>
+                        <div class="h-1 w-16 bg-orange-500 mb-8"></div>
+                        <ul>
+                            <li class="items-center"><i class="fa-solid fa-paint-roller text-orange-500 text-2xl mr-4"></i> <span class="text-lg text-slate-700">Pintura vinílica en muros y plafones.</span></li>
+                            <li class="items-center"><i class="fa-solid fa-brush text-orange-500 text-2xl mr-4"></i> <span class="text-lg text-slate-700">Esmaltes para estructuras metálicas.</span></li>
+                            <li class="items-center"><i class="fa-solid fa-store text-orange-500 text-2xl mr-4"></i> <span class="text-lg text-slate-700">Retoques de imagen corporativa.</span></li>
+                            <li class="items-center"><i class="fa-solid fa-fill-drip text-orange-500 text-2xl mr-4"></i> <span class="text-lg text-slate-700">Impermeabilización básica.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="flex flex-col h-screen">
+                    <div class="h-1/3 w-full bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80&w=1600');">
+                         <div class="absolute inset-0 bg-slate-900/60 flex items-center justify-center">
+                             <h2 class="text-5xl font-bold text-white tracking-tight">Esquemas de Trabajo</h2>
+                         </div>
+                    </div>
+                    
+                    <div class="h-2/3 grid grid-cols-2 w-full">
+                        <div class="bg-green-50 p-10 border-r border-green-100">
+                            <h3 class="text-2xl font-bold mb-4 text-green-800 flex items-center"><i class="fa-regular fa-calendar-check mr-3"></i> Preventivo</h3>
+                            <p class="text-sm text-slate-600 mb-4">Ideal para evitar el deterioro de las instalaciones.</p>
+                            <ul class="text-slate-700">
+                                <li><i class="fa-solid fa-check text-green-600"></i>Visitas programadas.</li>
+                                <li><i class="fa-solid fa-check text-green-600"></i>Listas de verificación (Checklists).</li>
+                                <li><i class="fa-solid fa-check text-green-600"></i>Reporte fotográfico de hallazgos.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-red-50 p-10">
+                             <h3 class="text-2xl font-bold mb-4 text-red-800 flex items-center"><i class="fa-solid fa-triangle-exclamation mr-3"></i> Correctivo</h3>
+                             <p class="text-sm text-slate-600 mb-4">Solución inmediata cuando algo falla.</p>
+                             <ul class="text-slate-700">
+                                <li><i class="fa-solid fa-bolt text-red-600"></i>Respuesta a emergencias.</li>
+                                <li><i class="fa-solid fa-stopwatch text-red-600"></i>Diagnóstico rápido en sitio.</li>
+                                <li><i class="fa-solid fa-rotate text-red-600"></i>Reparación o reemplazo inmediato.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                 <div class="grid-print grid grid-cols-1 md:grid-cols-3 h-screen w-full">
+                    <div class="bg-cover bg-center hidden md:block" style="background-image: url('https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=1600');"></div>
+                    
+                    <div class="md:col-span-2 bg-white p-12 flex flex-col justify-center">
+                        <h2 class="text-4xl font-bold mb-10 text-slate-900">¿Por qué elegir mis servicios?</h2>
+                        
+                        <div class="grid grid-cols-2 gap-8">
+                            <div class="p-4 border border-slate-200 rounded hover:shadow-md transition">
+                                <i class="fa-solid fa-truck-fast text-3xl text-blue-600 mb-3"></i>
+                                <h4 class="font-bold text-lg">Velocidad</h4>
+                                <p class="text-sm text-slate-500">Entiendo la urgencia comercial.</p>
+                            </div>
+                            <div class="p-4 border border-slate-200 rounded hover:shadow-md transition">
+                                <i class="fa-solid fa-file-invoice-dollar text-3xl text-green-600 mb-3"></i>
+                                <h4 class="font-bold text-lg">Facturación</h4>
+                                <p class="text-sm text-slate-500">Trámites fiscales en orden.</p>
+                            </div>
+                            <div class="p-4 border border-slate-200 rounded hover:shadow-md transition">
+                                <i class="fa-solid fa-thumbs-up text-3xl text-orange-600 mb-3"></i>
+                                <h4 class="font-bold text-lg">Calidad</h4>
+                                <p class="text-sm text-slate-500">Materiales adecuados y mano de obra calificada.</p>
+                            </div>
+                            <div class="p-4 border border-slate-200 rounded hover:shadow-md transition">
+                                <i class="fa-solid fa-user-shield text-3xl text-indigo-600 mb-3"></i>
+                                <h4 class="font-bold text-lg">Confianza</h4>
+                                <p class="text-sm text-slate-500">Proveedor local establecido en Saltillo.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="grid-print grid grid-cols-2 h-screen w-full">
+                    <div class="bg-slate-900 p-12 flex flex-col justify-center text-white relative">
+                        <h2 class="text-4xl font-bold mb-8">Contacto</h2>
+                        
+                        <div class="space-y-8">
+                            <div>
+                                <p class="text-sm text-slate-400 uppercase tracking-wider font-bold">Teléfono / WhatsApp</p>
+                                <a href="tel:+528445316086" class="text-2xl font-bold text-white hover:text-orange-400 block mt-1">+52 844 531 6086</a>
+                                <a href="tel:+17697704769" class="text-xl text-slate-300 hover:text-orange-400 block mt-1">+1 769 770 4769</a>
+                            </div>
+                            
+                            <div>
+                                <p class="text-sm text-slate-400 uppercase tracking-wider font-bold">Correo Electrónico</p>
+                                <a href="mailto:ing.araujo.garcia@gmail.com" class="text-xl font-bold text-orange-400 hover:text-white mt-1 block">ing.araujo.garcia@gmail.com</a>
+                            </div>
+
+                            <div>
+                                <p class="text-sm text-slate-400 uppercase tracking-wider font-bold">Ubicación</p>
+                                <p class="text-lg text-white mt-1">Calle Gorriones 291, Fracc. Portal del Sur,<br>Saltillo, Coahuila, C.P. 25093</p>
+                            </div>
+                            
+                             <div class="pt-6 border-t border-slate-700">
+                                <p class="text-sm text-slate-400">RFC: AAGCOO0102GE2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-cover bg-center h-full w-full grayscale" style="background-image: url('https://images.unsplash.com/photo-1534536281715-e28d76689b4d?auto=format&fit=crop&q=80&w=1600');">
+                        <div class="h-full w-full bg-orange-600/20 mix-blend-multiply"></div>
                     </div>
                 </div>
             </section>
@@ -352,43 +338,36 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
     <script>
-        // Inicialización normal de Reveal
         Reveal.initialize({
             controls: true,
             progress: true,
-            center: true,
+            center: true, // Importante: Mantener centrado para slides cortos, pero nuestros grids ocupan 100%
             hash: true,
-            transition: 'slide',
-            controlsTutorial: false,
-            touch: true,
-            transitionSpeed: 'default', 
-            // Configuración clave para PDF: fragmentar pasos en páginas separadas = falso
+            transition: 'fade', // 'fade' se ve mejor con layouts divididos que 'slide'
+            width: "100%",
+            height: "100%",
+            margin: 0, // Sin margen para que el split screen toque los bordes
+            minScale: 1,
+            maxScale: 1,
             pdfSeparateFragments: false
         });
 
-        // Script para manejar la impresión
         function preparePDF() {
-            // Verificar si ya estamos en modo impresión
             if (window.location.search.match(/print-pdf/gi)) {
                 window.print();
             } else {
-                // Si no, redirigir al modo impresión
-                // Esto recargará la página con ?print-pdf al final
                 var currentUrl = window.location.href.split('?')[0]; 
                 window.location.href = currentUrl + '?print-pdf';
             }
         }
 
-        // Autoejecutar impresión si la página se cargó ya con ?print-pdf
-        // (Esto sucede después de que el usuario hace clic en el botón y la página se recarga)
         window.onload = function() {
             if (window.location.search.match(/print-pdf/gi)) {
-                // Esperar un poco a que carguen las imágenes antes de abrir el diálogo
                 setTimeout(function() {
                     window.print();
                 }, 1000);
             }
         };
     </script>
-    </body>
+</body>
 </html>
