@@ -33,7 +33,7 @@
     .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
     .reveal.show{opacity:1;transform:none}
     .safe-top{padding-top:env(safe-area-inset-top)}
-    /* Tarjetas compactas */
+    /* Tarjetas compactas genéricas */
     .card{padding:1rem}
     /* Modal vídeo */
     .modal-enter{opacity:0}
@@ -42,6 +42,123 @@
     #mobileBackdrop{transition:opacity .25s ease}
     #mobileBackdrop.hidden{opacity:0;pointer-events:none}
     #mobileBackdrop:not(.hidden){opacity:1}
+
+    /* ---------- Microinteracciones globales ---------- */
+
+    /* Efecto estándar para tarjetas (servicios, recursos, blog) */
+    .hover-card{
+      transition:
+        transform .18s ease-out,
+        box-shadow .18s ease-out,
+        border-color .18s ease-out,
+        background-color .18s ease-out;
+    }
+    .hover-card:hover{
+      transform:translateY(-3px);
+      box-shadow:0 18px 40px rgba(15,23,42,.08);
+    }
+
+    /* Chips del hero y otras secciones */
+    .tag-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      padding:.25rem .7rem;
+      border-radius:999px;
+      font-size:.7rem;
+      line-height:1;
+      border:1px solid rgba(148,163,184,.6);
+      background:rgba(15,23,42,.45);
+      backdrop-filter:blur(6px);
+      white-space:nowrap;
+    }
+    .tag-pill-dot{
+      width:.4rem;
+      height:.4rem;
+      border-radius:999px;
+      background:linear-gradient(to right,#38bdf8,#22c55e);
+      flex-shrink:0;
+    }
+
+    /* Badge arriba del H1 del hero */
+    .hero-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      padding:.25rem .75rem;
+      border-radius:999px;
+      font-size:.7rem;
+      letter-spacing:.03em;
+      text-transform:uppercase;
+      background:rgba(15,23,42,.75);
+      border:1px solid rgba(148,163,184,.7);
+      backdrop-filter:blur(8px);
+    }
+    .hero-badge span{
+      font-weight:600;
+    }
+
+    /* Flotación muy ligera para chips del hero */
+    @keyframes float-slow{
+      0%{transform:translateY(0)}
+      50%{transform:translateY(-3px)}
+      100%{transform:translateY(0)}
+    }
+    .tag-pill.float{
+      animation:float-slow 5s ease-in-out infinite;
+    }
+
+    /* Botón flotante de WhatsApp */
+    .whatsapp-fab{
+      position:fixed;
+      right:1.25rem;
+      bottom:1.25rem;
+      width:3.5rem;
+      height:3.5rem;
+      border-radius:999px;
+      background:#22c55e;
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 12px 30px rgba(22,163,74,.55);
+      z-index:50;
+      transition:transform .18s ease-out,
+                 box-shadow .18s ease-out,
+                 background-color .18s ease-out;
+    }
+    .whatsapp-fab:hover{
+      transform:translateY(-2px) scale(1.03);
+      background:#16a34a;
+      box-shadow:0 18px 40px rgba(21,128,61,.6);
+    }
+    .whatsapp-fab svg{
+      width:1.6rem;
+      height:1.6rem;
+    }
+    .whatsapp-fab::before{
+      content:"";
+      position:absolute;
+      inset:-6px;
+      border-radius:999px;
+      border:2px solid rgba(34,197,94,.5);
+      opacity:.6;
+      animation:whapulse 2.4s ease-out infinite;
+    }
+    @keyframes whapulse{
+      0%{transform:scale(.9);opacity:.7;}
+      70%{transform:scale(1.2);opacity:0;}
+      100%{opacity:0;transform:scale(1.2);}
+    }
+
+    @media (max-width:640px){
+      .whatsapp-fab{
+        right:1rem;
+        bottom:1rem;
+        width:3.25rem;
+        height:3.25rem;
+      }
+    }
   </style>
 
   <!-- GA4 -->
@@ -50,6 +167,7 @@
     window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
     gtag('js', new Date()); gtag('config','G-GDQ8NN6T6Q');
   </script>
+
   <!-- estilos videos -->
   <style>
     .solu-head{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
@@ -130,41 +248,52 @@
     </aside>
   </header>
 
-  <!-- ===== HERO (ajustado) ===== -->
+  <!-- ===== HERO ===== -->
   <section id="inicio" class="relative">
     <div class="absolute inset-0 -z-10">
       <div class="absolute inset-0 bg-[url('/assets/hero-industrial.png')] bg-cover bg-center opacity-70"></div>
       <div class="absolute inset-0 bg-slate-900/60"></div>
     </div>
     <div class="max-w-6xl mx-auto px-4 py-12 md:py-16 text-white">
-      <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">
-        Ingeniería y soluciones para <span class="text-sky-300">manufactura CNC y chapa</span>
-      </h1>
+      <div class="flex flex-wrap gap-3 items-center">
+        <span class="hero-badge">
+          <span>+13 años</span> en manufactura CNC
+        </span>
+        <span class="text-xs text-sky-200/80 hidden sm:inline">
+          SolidCAM · Lantek · Logopress · KPIs en planta
+        </span>
+      </div>
 
-      <p class="mt-3 text-white/90 max-w-2xl">
-        Ayudo a empresas con centros de maquinado, láser y punzonado a reducir tiempos de ciclo,
-        scrap y retrabajo usando SolidCAM, Lantek y Logopress.
+      <h1 class="mt-4 text-3xl md:text-4xl font-extrabold leading-tight">
+        Ingeniería y soluciones para <span class="text-sky-300">manufactura</span>
+      </h1>
+      <p class="mt-2 text-white/90">
+        Optimización CNC con SolidCAM, Lantek y Logopress.
       </p>
 
-      <ul class="mt-3 text-sm text-sky-100 space-y-1 max-w-xl">
-        <li>• Ideal si tienes <span class="font-semibold">3+ CNC</span> o <span class="font-semibold">2+ equipos de corte chapa</span>.</li>
-        <li>• Programas con “colchón de seguridad” y tiempos de ciclo inflados.</li>
-        <li>• Quieres estandarizar CAM y tomar decisiones con datos de máquina.</li>
-      </ul>
+      <div class="mt-4 flex flex-wrap gap-3">
+        <a href="/#agenda" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
+          Agendar cita
+        </a>
+        <a href="/#soluciones" class="px-4 py-2 rounded-md border border-white/30 text-white hover:bg-white/10">
+          Explorar soluciones
+        </a>
+      </div>
 
-      <div class="mt-5 flex flex-wrap gap-3">
-        <a href="/#agenda"
-           class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700">
-          Agendar revisión de proceso
-        </a>
-        <a href="/#soluciones"
-           class="px-4 py-2 rounded-md border border-white/30 text-white hover:bg-white/10">
-          Ver soluciones CAM y nesting
-        </a>
-        <a href="/#recursos"
-           class="px-4 py-2 rounded-md border border-amber-300/80 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20">
-          Usar calculadoras y recursos
-        </a>
+      <!-- Chips de contexto -->
+      <div class="mt-5 flex flex-wrap gap-2 text-xs md:text-sm">
+        <span class="tag-pill float">
+          <span class="tag-pill-dot"></span> Fresado 3 ejes / 5 ejes
+        </span>
+        <span class="tag-pill">
+          <span class="tag-pill-dot"></span> Corte láser, plasma y oxicorte
+        </span>
+        <span class="tag-pill">
+          <span class="tag-pill-dot"></span> Reducción de ciclo y scrap
+        </span>
+        <span class="tag-pill">
+          <span class="tag-pill-dot"></span> ROI y tableros en Power BI
+        </span>
       </div>
     </div>
   </section>
@@ -360,7 +489,7 @@
 
   <section id="videos-soluciones" class="py-16 md:py-24 bg-white">
     <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-3xl md:text-4xl font-bold text-gray-900 text-center">Videos</h2>
+      <h2 id="videos" class="text-3xl md:4xl font-bold text-gray-900 text-center">Videos</h2>
       <p class="mt-3 text-gray-700 text-center max-w-3xl mx-auto">SolidCAM, Lantek y Logopress.</p>
 
       <!-- ===== SolidCAM ===== -->
@@ -371,7 +500,7 @@
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <!-- SolidCAM #1 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="CRFTGDkJPUU"
@@ -385,7 +514,7 @@
           </article>
 
           <!-- SolidCAM #2 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="Bzgjbky4HgY"
@@ -399,7 +528,7 @@
           </article>
 
           <!-- SolidCAM #3 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="4T97Rv7Azpc"
@@ -422,7 +551,7 @@
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <!-- Lantek #1 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="KVr9ljIUa5k"
@@ -436,7 +565,7 @@
           </article>
 
           <!-- Lantek #2 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="_kIur2ggEGE"
@@ -450,7 +579,7 @@
           </article>
 
           <!-- Lantek #3 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="kcqfV_XQ7yw"
@@ -473,7 +602,7 @@
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <!-- Logopress #1 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="pZMN9N3uw3M"
@@ -487,7 +616,7 @@
           </article>
 
           <!-- Logopress #2 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="x53Go5Fmd0w"
@@ -501,7 +630,7 @@
           </article>
 
           <!-- Logopress #3 -->
-          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white">
+          <article class="rounded-xl border border-gray-200 overflow-hidden bg-white hover-card">
             <div class="relative">
               <div class="yt-lite"
                    data-yt="WnL9C5gvmQ4"
@@ -518,6 +647,7 @@
 
     </div>
   </section>
+
   <script>
     // Reproduce inline al clic sin modal y evita el "play" gigante
     document.querySelectorAll('.yt-lite').forEach(el => {
@@ -527,8 +657,8 @@
 
       el.addEventListener('click', () => {
         const params = [
-          'autoplay=1',          // iniciar
-          'mute=1',              // permiso de autoplay en navegadores
+          'autoplay=1',
+          'mute=1',
           'playsinline=1',
           'rel=0',
           'modestbranding=1',
@@ -544,7 +674,6 @@
         iframe.loading = 'lazy';
         iframe.className = 'absolute inset-0 w-full h-full rounded-md';
 
-        // Contenedor 16:9
         const wrap = document.createElement('div');
         wrap.className = 'relative w-full';
         wrap.style.paddingTop = '56.25%';
@@ -554,21 +683,16 @@
       }, { once:true });
     });
   </script>
-  <!-- ===== /Sección única ===== -->
-
 
   <!-- ===== SERVICIOS (ejecución) ===== -->
   <section id="servicios" class="py-16 md:py-24 reveal">
     <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Servicios</h2>
-      <p class="mt-2 text-gray-800">
-        Implementación y acompañamiento para empresas con centros de maquinado y corte chapa:
-        reducción de ciclo, menos scrap y programación estandarizada.
-      </p>
+      <h2 class="text-2xl md:3xl font-bold text-gray-900">Servicios</h2>
+      <p class="mt-2 text-gray-800">Implementación y acompañamiento para resultados medibles: −20–70% ciclo, hasta 5× vida de herramienta.</p>
 
       <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Implementación CAM con SolidCAM -->
-        <article class="group bg-gradient-to-b from-white to-blue-50 border border-blue-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-blue-50 border border-blue-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-blue-800">Implementación CAM con SolidCAM</h3>
           <p class="mt-1 text-sm text-gray-700">De 2.5D a multi-ejes con iMachining. Integración con SOLIDWORKS/Inventor y plantillas por máquina.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -578,7 +702,7 @@
         </article>
 
         <!-- Ajuste de proceso y reducción de ciclo -->
-        <article class="group bg-gradient-to-b from-white to-rose-50 border border-rose-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-rose-50 border border-rose-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-rose-800">Ajuste de proceso y reducción de ciclo</h3>
           <p class="mt-1 text-sm text-gray-700">Optimización de Vc, fz, ae/ap, entradas, HSR/HSM y sincronías T1/T2 para mayor estabilidad y menor tiempo.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -588,7 +712,7 @@
         </article>
 
         <!-- Estandarización CAM -->
-        <article class="group bg-gradient-to-b from-white to-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-slate-50 border border-slate-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-slate-900">Estandarización CAM</h3>
           <p class="mt-1 text-sm text-gray-700">Librerías de herramientas/materiales, postprocesadores estables y plantillas por familia de piezas.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -598,7 +722,7 @@
         </article>
 
         <!-- Simulación y verificación -->
-        <article class="group bg-gradient-to-b from-white to-purple-50 border border-purple-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-purple-50 border border-purple-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-purple-800">Simulación y verificación</h3>
           <p class="mt-1 text-sm text-gray-700">Machine simulation, colisiones, límites de ejes y verificación de G-code para arranques seguros.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -608,7 +732,7 @@
         </article>
 
         <!-- Implementación Lantek (corte y nesting) -->
-        <article class="group bg-gradient-to-b from-white to-green-50 border border-green-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-green-50 border border-green-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-green-800">Implementación Lantek — Corte & Nesting</h3>
           <p class="mt-1 text-sm text-gray-700">Parámetros por material/espesor, reducción de merma y trazabilidad de órdenes.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -618,7 +742,7 @@
         </article>
 
         <!-- Diseño CAD y validación -->
-        <article class="group bg-gradient-to-b from-white to-indigo-50 border border-indigo-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-indigo-50 border border-indigo-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-indigo-800">Diseño CAD y validación</h3>
           <p class="mt-1 text-sm text-gray-700">Herramentales, desdobles y validación funcional (SOLIDWORKS/Logopress).</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -628,7 +752,7 @@
         </article>
 
         <!-- Apps web a medida -->
-        <article class="group bg-gradient-to-b from-white to-amber-50 border border-amber-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-amber-50 border border-amber-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-amber-800">Apps web a medida</h3>
           <p class="mt-1 text-sm text-gray-700">Calculadoras de RPM/avance, cotizadores y micro-tableros listos para móvil.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -638,7 +762,7 @@
         </article>
 
         <!-- KPIs y Power BI -->
-        <article class="group bg-gradient-to-b from-white to-cyan-50 border border-cyan-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-cyan-50 border border-cyan-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-cyan-800">KPIs y Power BI</h3>
           <p class="mt-1 text-sm text-gray-700">OEE, scrap, tiempos muertos y seguimiento de lotes con tableros accionables.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -648,7 +772,7 @@
         </article>
 
         <!-- Capacitación y coaching -->
-        <article class="group bg-gradient-to-b from-white to-teal-50 border border-teal-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-teal-50 border border-teal-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-teal-800">Capacitación y coaching en planta</h3>
           <p class="mt-1 text-sm text-gray-700">Formación por roles: programador, set-up y operador. Casos reales y checklists.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -658,7 +782,7 @@
         </article>
 
         <!-- Soporte con SLA -->
-        <article class="group bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-2xl transition">
+        <article class="group hover-card bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-xl p-6">
           <h3 class="font-semibold text-lg text-gray-900">Soporte remoto con SLA</h3>
           <p class="mt-1 text-sm text-gray-700">Mes a mes: revisión de programas, troubleshooting y ajustes bajo demanda.</p>
           <div class="mt-4 flex gap-2 text-sm">
@@ -674,204 +798,202 @@
     </div>
   </section>
 
-   <!-- ===== RECURSOS (auto-servicio) ===== -->
-<section id="recursos" class="py-16 md:py-24 reveal">
-  <div class="max-w-6xl mx-auto px-4">
-    <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Recursos</h2>
-    <p class="mt-2 text-gray-800">Plantillas, guías y herramientas para usar hoy. Sin reuniones.</p>
+  <!-- ===== RECURSOS (auto-servicio) ===== -->
+  <section id="recursos" class="py-16 md:py-24 reveal">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Recursos</h2>
+      <p class="mt-2 text-gray-800">Plantillas, guías y herramientas para usar hoy. Sin reuniones.</p>
 
-    <div class="mt-8 grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div class="mt-8 grid md:grid-cols-3 lg:grid-cols-4 gap-6">
 
-      <!-- Checklist — Auditoría CAM (Lead magnet) -->
-      <article class="relative overflow-hidden bg-white border border-emerald-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-sky-500 to-amber-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Checklist — Auditoría rápida de tu estrategia CAM</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Revisa tiempos de ciclo, vida de herramienta y estandarización de programación.
-          Lista para compartir con dirección.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Además recibirás nuevos recursos y calculadoras cuando estén disponibles.
-        </p>
-        <div class="mt-4 flex flex-col gap-2">
-          <a href="https://alexrasa.store/form"
-             class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition">
-            Quiero recibir la checklist
-          </a>
-          <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Checklist%20Auditor%C3%ADa%20CAM&body=Hola%20Miguel,%20m%C3%A1ndame%20la%20checklist%20de%20auditor%C3%ADa%20CAM.%20Mis%20datos%20son:%20Nombre,%20Empresa,%20Tel%C3%A9fono."
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-gray-200 text-gray-700 text-xs hover:bg-gray-50">
-            Pedirla directo por correo
-          </a>
-        </div>
-      </article>
+        <!-- Checklist — Auditoría CAM (Lead magnet) -->
+        <article class="hover-card relative overflow-hidden bg-white border border-emerald-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-sky-500 to-amber-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Checklist — Auditoría rápida de tu estrategia CAM</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Revisa tiempos de ciclo, vida de herramienta y estandarización de programación.
+            Lista para compartir con dirección.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Además recibirás nuevos recursos y calculadoras cuando estén disponibles.
+          </p>
+          <div class="mt-4 flex flex-col gap-2">
+            <a href="https://alexrasa.store/form"
+               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition">
+              Quiero recibir la checklist
+            </a>
+            <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Checklist%20Auditor%C3%ADa%20CAM&body=Hola%20Miguel,%20m%C3%A1ndame%20la%20checklist%20de%20auditor%C3%ADa%20CAM.%20Mis%20datos%20son:%20Nombre,%20Empresa,%20Tel%C3%A9fono."
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-gray-200 text-gray-700 text-xs hover:bg-gray-50">
+              Pedirla directo por correo
+            </a>
+          </div>
+        </article>
 
-      <!-- Plantilla — Librería base de herramientas -->
-      <article class="relative overflow-hidden bg-white border border-blue-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-sky-500 to-cyan-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Plantilla — Librería base de herramientas</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Estandariza herramientas, parámetros y materiales por máquina y familia de piezas.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Ideal para construir tu estándar CAM sin reinventar todo desde cero.
-        </p>
-        <div class="mt-4">
-          <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20recurso%3A%20Librer%C3%ADa%20base%20de%20herramientas"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">
-            Solicitar plantilla
-          </a>
-        </div>
-      </article>
+        <!-- Plantilla — Librería base de herramientas -->
+        <article class="hover-card relative overflow-hidden bg-white border border-blue-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-sky-500 to-cyan-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Plantilla — Librería base de herramientas</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Estandariza herramientas, parámetros y materiales por máquina y familia de piezas.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Ideal para construir tu estándar CAM sin reinventar todo desde cero.
+          </p>
+          <div class="mt-4">
+            <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20recurso%3A%20Librer%C3%ADa%20base%20de%20herramientas"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">
+              Solicitar plantilla
+            </a>
+          </div>
+        </article>
 
-      <!-- Guía rápida — iMachining -->
-      <article class="relative overflow-hidden bg-white border border-emerald-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Guía rápida — iMachining (7 ajustes clave)</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Puntos de mayor impacto para reducir ciclo, estabilizar carga y extender vida de herramienta.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Enfocada en programadores que ya usan SolidCAM y quieren “apretar” el proceso.
-        </p>
-        <div class="mt-4">
-          <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20recurso%3A%20Gu%C3%ADa%20r%C3%A1pida%20iMachining"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">
-            Solicitar guía
-          </a>
-        </div>
-      </article>
+        <!-- Guía rápida — iMachining -->
+        <article class="hover-card relative overflow-hidden bg-white border border-emerald-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Guía rápida — iMachining (7 ajustes clave)</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Puntos de mayor impacto para reducir ciclo, estabilizar carga y extender vida de herramienta.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Enfocada en programadores que ya usan SolidCAM y quieren “apretar” el proceso.
+          </p>
+          <div class="mt-4">
+            <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20recurso%3A%20Gu%C3%ADa%20r%C3%A1pida%20iMachining"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">
+              Solicitar guía
+            </a>
+          </div>
+        </article>
 
-      <!-- Calculadora de costo-beneficio (ROI / Payback) -->
-      <article class="relative overflow-hidden bg-white border border-amber-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Calculadora de costo-beneficio (ROI / Payback)</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Ahorros por ciclo, vida de herramienta y tiempos muertos para justificar proyectos CAM.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Pensada para presentaciones con dirección y áreas financieras.
-        </p>
-        <div class="mt-4">
-          <a href="/calc/"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
-            Abrir calculadora
-          </a>
-        </div>
-      </article>
+        <!-- Calculadora de costo-beneficio (ROI / Payback) -->
+        <article class="hover-card relative overflow-hidden bg-white border border-amber-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Calculadora de costo-beneficio (ROI / Payback)</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Ahorros por ciclo, vida de herramienta y tiempos muertos para justificar proyectos CAM.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Pensada para presentaciones con dirección y áreas financieras.
+          </p>
+          <div class="mt-4">
+            <a href="/calc/"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
+              Abrir calculadora
+            </a>
+          </div>
+        </article>
 
-      <!-- Calculadora — RPM y avance -->
-      <article class="relative overflow-hidden bg-white border border-cyan-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Calculadora — RPM y avance</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          RPM, Vf, MRR y potencia con presets y gráfica operativa para ajustar corte en piso.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Útil para programadores, setters y supervisores.
-        </p>
-        <div class="mt-4">
-          <a href="/blog/widget/calculadora-rpm.html"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-cyan-500 text-white text-xs font-semibold hover:bg-cyan-600">
-            Abrir herramienta
-          </a>
-        </div>
-      </article>
+        <!-- Calculadora — RPM y avance -->
+        <article class="hover-card relative overflow-hidden bg-white border border-cyan-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Calculadora — RPM y avance</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            RPM, Vf, MRR y potencia con presets y gráfica operativa para ajustar corte en piso.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Útil para programadores, setters y supervisores.
+          </p>
+          <div class="mt-4">
+            <a href="/blog/widget/calculadora-rpm.html"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-cyan-500 text-white text-xs font-semibold hover:bg-cyan-600">
+              Abrir herramienta
+            </a>
+          </div>
+        </article>
 
-      <!-- Brochure — SolidCAM & iMachining -->
-      <article class="relative overflow-hidden bg-white border border-rose-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-500 via-pink-500 to-red-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Brochure — SolidCAM & iMachining</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Resumen técnico de módulos, alcances y beneficios medibles de SolidCAM.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Ideal para compartir con gerencia de producción y dirección.
-        </p>
-        <div class="mt-4">
-          <a href="/SolidCAM/"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-rose-500 text-white text-xs font-semibold hover:bg-rose-600">
-            Ver brochure
-          </a>
-        </div>
-      </article>
+        <!-- Brochure — SolidCAM & iMachining -->
+        <article class="hover-card relative overflow-hidden bg-white border border-rose-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-500 via-pink-500 to-red-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Brochure — SolidCAM & iMachining</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Resumen técnico de módulos, alcances y beneficios medibles de SolidCAM.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Ideal para compartir con gerencia de producción y dirección.
+          </p>
+          <div class="mt-4">
+            <a href="/SolidCAM/"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-rose-500 text-white text-xs font-semibold hover:bg-rose-600">
+              Ver brochure
+            </a>
+          </div>
+        </article>
 
-      <!-- Brochure — Lantek (corte y nesting) -->
-      <article class="relative overflow-hidden bg-white border border-green-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-lime-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Brochure — Lantek (corte y nesting)</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Parámetros por material/espesor, reducción de merma y trazabilidad de órdenes.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Útil para responsables de láser, plasma, oxicorte y punzonado.
-        </p>
-        <div class="mt-4">
-          <a href="/lantek/"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-green-500 text-white text-xs font-semibold hover:bg-green-600">
-            Ver brochure
-          </a>
-        </div>
-      </article>
+        <!-- Brochure — Lantek (corte y nesting) -->
+        <article class="hover-card relative overflow-hidden bg-white border border-green-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-lime-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Brochure — Lantek (corte y nesting)</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Parámetros por material/espesor, reducción de merma y trazabilidad de órdenes.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Útil para responsables de láser, plasma, oxicorte y punzonado.
+          </p>
+          <div class="mt-4">
+            <a href="/lantek/"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-green-500 text-white text-xs font-semibold hover:bg-green-600">
+              Ver brochure
+            </a>
+          </div>
+        </article>
 
-      <!-- Brochure — Logopress (troqueles) -->
-      <article class="relative overflow-hidden bg-white border border-indigo-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-violet-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Brochure — Logopress (troqueles)</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Desdobles, disposición de etapas y validación de troqueles en SOLIDWORKS.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Pensado para responsables de herramentales y diseño.
-        </p>
-        <div class="mt-4">
-          <a href="/logopress/"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-500 text-white text-xs font-semibold hover:bg-indigo-600">
-            Ver brochure
-          </a>
-        </div>
-      </article>
+        <!-- Brochure — Logopress (troqueles) -->
+        <article class="hover-card relative overflow-hidden bg-white border border-indigo-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-violet-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Brochure — Logopress (troqueles)</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Desdobles, disposición de etapas y validación de troqueles en SOLIDWORKS.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Pensado para responsables de herramentales y diseño.
+          </p>
+          <div class="mt-4">
+            <a href="/logopress/"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-500 text-white text-xs font-semibold hover:bg-indigo-600">
+              Ver brochure
+            </a>
+          </div>
+        </article>
 
-      <!-- Caso de éxito — Reducción de ciclo -->
-      <article class="relative overflow-hidden bg-white border border-amber-100 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Caso de éxito — Reducción de ciclo</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          De 18:40 a 7:12 min por pieza y 4.2× vida de herramienta con iMachining y estandarización.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Buen material para “vender” internamente el proyecto.
-        </p>
-        <div class="mt-4">
-          <a href="/blog/"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
-            Leer caso
-          </a>
-        </div>
-      </article>
+        <!-- Caso de éxito — Reducción de ciclo -->
+        <article class="hover-card relative overflow-hidden bg-white border border-amber-100 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Caso de éxito — Reducción de ciclo</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            De 18:40 a 7:12 min por pieza y 4.2× vida de herramienta con iMachining y estandarización.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Buen material para “vender” internamente el proyecto.
+          </p>
+          <div class="mt-4">
+            <a href="/blog/"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600">
+              Leer caso
+            </a>
+          </div>
+        </article>
 
-      <!-- Checklist — Arranque seguro de programa -->
-      <article class="relative overflow-hidden bg-white border border-gray-200 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-500 via-gray-500 to-zinc-400"></div>
-        <h3 class="font-semibold text-base md:text-lg text-gray-900">Checklist — Arranque seguro de programa</h3>
-        <p class="mt-2 text-sm text-gray-700">
-          Protocolo rápido para evitar choques, errores de cero y tiempos muertos en el primer arranque.
-        </p>
-        <p class="mt-2 text-xs text-gray-500">
-          Pensada para supervisores y operadores clave.
-        </p>
-        <div class="mt-4">
-          <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20Checklist%20Arranque%20Seguro"
-             class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800">
-            Solicitar checklist
-          </a>
-        </div>
-      </article>
+        <!-- Checklist — Arranque seguro de programa -->
+        <article class="hover-card relative overflow-hidden bg-white border border-gray-200 rounded-xl p-5 flex flex-col shadow-sm">
+          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-500 via-gray-500 to-zinc-400"></div>
+          <h3 class="font-semibold text-base md:text-lg text-gray-900">Checklist — Arranque seguro de programa</h3>
+          <p class="mt-2 text-sm text-gray-700">
+            Protocolo rápido para evitar choques, errores de cero y tiempos muertos en el primer arranque.
+          </p>
+          <p class="mt-2 text-xs text-gray-500">
+            Pensada para supervisores y operadores clave.
+          </p>
+          <div class="mt-4">
+            <a href="mailto:ramirez.miguel.alejandro@gmail.com?subject=Solicitud%20de%20Checklist%20Arranque%20Seguro"
+               class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800">
+              Solicitar checklist
+            </a>
+          </div>
+        </article>
 
+      </div>
     </div>
-  </div>
-</section>
-
-
+  </section>
 
   <!-- ===== BLOG (nuevo) ===== -->
   <section id="blog" class="py-16 md:py-24 bg-white reveal">
@@ -888,9 +1010,8 @@
 
       <div id="home-blog-grid" class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-      <!-- Tarjeta -->
       <template id="home-blog-card">
-        <article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+        <article class="hover-card bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <a class="block" data-url>
             <div class="relative w-full overflow-hidden">
               <img data-img class="w-full h-auto aspect-[1200/630] object-cover bg-slate-200" alt="">
@@ -930,7 +1051,7 @@
       </div>
 
       <div class="mt-6 grid md:grid-cols-2 gap-6">
-        <article class="relative overflow-hidden bg-gradient-to-b from-white to-blue-50 border border-blue-200 rounded-xl p-6 transition hover:shadow-2xl">
+        <article class="hover-card relative overflow-hidden bg-gradient-to-b from-white to-blue-50 border border-blue-200 rounded-xl p-6 transition">
           <h3 class="font-semibold text-gray-900">Visita técnica en planta (30 min)</h3>
           <p class="mt-2 text-sm text-gray-800">Conocer tu proceso en sitio para detectar oportunidades.</p>
           <div class="mt-5 flex flex-wrap gap-3">
@@ -939,7 +1060,7 @@
           </div>
         </article>
 
-        <article class="relative overflow-hidden bg-gradient-to-b from-white to-green-50 border border-green-200 rounded-xl p-6 transition hover:shadow-2xl">
+        <article class="hover-card relative overflow-hidden bg-gradient-to-b from-white to-green-50 border border-green-200 rounded-xl p-6 transition">
           <h3 class="font-semibold text-gray-900">Asesoría remota especializada (30 min)</h3>
           <p class="mt-2 text-sm text-gray-800">Revisión de SolidCAM, iMachining, librerías, posts o KPIs.</p>
           <div class="mt-5 flex flex-wrap gap-3">
@@ -965,9 +1086,7 @@
   <section id="contacto" class="py-16 md:py-24 bg-white reveal">
     <div class="max-w-4xl mx-auto px-4 text-center">
       <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Contacto</h2>
-      <p class="mt-2 text-gray-700">
-        ¿Quieres revisar un reto específico de maquinado, chapa o troqueles y ver qué tan viable es mejorarlo?
-      </p>
+      <p class="mt-2 text-gray-700">¿Tienes una pregunta o quieres discutir un reto específico?</p>
 
       <div class="mt-10 bg-white border border-gray-200 shadow-sm rounded-2xl overflow-hidden">
         <div class="h-1 bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-500"></div>
@@ -1076,15 +1195,17 @@
       els.forEach(el=>io.observe(el));
     })();
 
-    // ===== Video modal =====
+    // ===== Video modal (referencias seguras) =====
     const modal=document.getElementById('videoModal');
     const iframe=document.getElementById('videoFrame');
     const closeBtn=document.getElementById('closeVideo');
     function openVideo(id){
+      if(!iframe || !modal) return;
       iframe.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&rel=0&modestbranding=1';
       modal.classList.remove('hidden'); modal.classList.add('modal-open','modal-enter');
     }
     function closeVideo(){
+      if(!iframe || !modal) return;
       iframe.src=''; modal.classList.add('hidden'); modal.classList.remove('modal-open');
     }
     document.querySelectorAll('.video-thumb').forEach(b=>b.addEventListener('click',()=>openVideo(b.dataset.yt)));
@@ -1102,7 +1223,8 @@
 
     const trimText = (s, n=120) => (s||"").length>n ? s.slice(0,n-1)+"…" : (s||"");
     const slugify  = (t="post") => t.toLowerCase().replace(/[^a-z0-9\-]/gi,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
-    const normalizeUrl = (u, slug) => (u && (u.startsWith("http")||u.startsWith("/"))) ? u : `/blog/${u||slugify(slug||"post")}.html`;
+    const normalizeUrl = (u, slug) =>
+      (u && (u.startsWith("http")||u.startsWith("/"))) ? u : `/blog/${u||slugify(slug||"post")}.html`;
     const normalizeImg = (img) => {
       if (!img) return PLACEHOLDER;
       const s = String(img).trim();
@@ -1169,5 +1291,16 @@
     render();
   })();
   </script>
+
+  <!-- Botón flotante de WhatsApp -->
+  <a href="https://wa.me/524425992802?text=Hola%20Miguel,%20quiero%20hablar%20sobre%20la%20optimizaci%C3%B3n%20de%20mi%20proceso%20de%20manufactura."
+     class="whatsapp-fab"
+     target="_blank"
+     rel="noopener noreferrer"
+     aria-label="Escribir por WhatsApp">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path fill="currentColor" d="M16.04 4C9.856 4 4.8 8.99 4.8 15.115c0 2.385.78 4.59 2.118 6.39L4 28l6.676-2.176A11.9 11.9 0 0 0 16.04 26C22.223 26 27.28 21.01 27.28 14.885 27.28 8.76 22.223 4 16.04 4zm0 2.133c5.03 0 9.12 3.99 9.12 8.884 0 4.896-4.09 8.886-9.12 8.886-1.694 0-3.272-.452-4.63-1.24l-.332-.19-3.95 1.287 1.29-3.72-.216-.342a8.4 8.4 0 0 1-1.41-4.68c0-4.894 4.09-8.885 9.12-8.885zm-4.03 4.18c-.227-.53-.466-.54-.68-.55l-.58-.01c-.2 0-.52.074-.79.37-.27.295-1.04 1.016-1.04 2.48 0 1.46 1.06 2.87 1.21 3.07.15.2 2.04 3.18 5.02 4.33 2.49.98 2.99.79 3.53.74.54-.05 1.74-.71 1.98-1.4.24-.69.24-1.28.17-1.4-.07-.12-.27-.19-.57-.34-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.68.15-.2.3-.78.97-.96 1.17-.18.2-.36.23-.66.08-.3-.15-1.26-.46-2.4-1.47-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.38-.02-.53-.07-.15-.62-1.53-.88-2.08z"/>
+    </svg>
+  </a>
 </body>
 </html>
