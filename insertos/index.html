@@ -39,7 +39,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
-      align-items: center;
+      align-items: pendant;
       margin-bottom: 1rem;
     }
     label {
@@ -280,52 +280,52 @@
       <div class="nomenclature-header">
         <div>
           <div class="nomenclature-title">Guía visual de la nomenclatura</div>
-          <div class="nomenclature-subtitle">
+          <div class="nomenclature-subtitle" id="nomenclature-current">
             Ejemplo: <strong>CNMG 120408</strong> (insertos de torno según norma ISO).
           </div>
         </div>
       </div>
 
-      <!-- Tira con cajas del código -->
+      <!-- Tira con cajas del código (se actualiza con el input) -->
       <div class="code-strip">
         <div class="code-block example">
-          C
+          <span id="code-char-1">C</span>
           <span class="code-block-label">1ª letra</span>
         </div>
         <div class="code-block">
-          N
+          <span id="code-char-2">N</span>
           <span class="code-block-label">2ª letra</span>
         </div>
         <div class="code-block">
-          M
+          <span id="code-char-3">M</span>
           <span class="code-block-label">3ª letra</span>
         </div>
         <div class="code-block">
-          G
+          <span id="code-char-4">G</span>
           <span class="code-block-label">4ª letra</span>
         </div>
         <div class="code-block">
-          1
+          <span id="code-char-5">1</span>
           <span class="code-block-label">1º número</span>
         </div>
         <div class="code-block">
-          2
+          <span id="code-char-6">2</span>
           <span class="code-block-label">2º número</span>
         </div>
         <div class="code-block">
-          0
+          <span id="code-char-7">0</span>
           <span class="code-block-label">3º número</span>
         </div>
         <div class="code-block">
-          4
+          <span id="code-char-8">4</span>
           <span class="code-block-label">4º número</span>
         </div>
         <div class="code-block">
-          0
+          <span id="code-char-9">0</span>
           <span class="code-block-label">5º número</span>
         </div>
         <div class="code-block">
-          8
+          <span id="code-char-10">8</span>
           <span class="code-block-label">6º número</span>
         </div>
       </div>
@@ -371,7 +371,7 @@
           <div class="nomenclature-pos">Posición 7 – Número</div>
           <div class="nomenclature-main">Espesor</div>
           <div class="nomenclature-example">
-            Espesor de la pastilla (por ejemplo, 0 = cierto espesor estándar, 4 = otro, depende de tabla ISO).
+            Espesor de la pastilla (depende de la tabla ISO para cada número).
           </div>
         </div>
         <div class="nomenclature-item">
@@ -478,41 +478,35 @@
   <script>
     // Polígonos base en coordenadas 0–100 (normalizados)
     const SHAPE_POLYGONS = {
-      // Rombo ~80° (C)
       C: [
         [50, 8],
         [90, 50],
         [50, 92],
         [10, 50]
       ],
-      // Rombo ~55° (D) – más alargado
       D: [
         [50, 5],
         [88, 50],
         [50, 95],
         [12, 50]
       ],
-      // Rombo “afilado” (V) – simplificado
       V: [
         [50, 4],
         [93, 50],
         [50, 96],
         [7, 50]
       ],
-      // Cuadrado (S)
       S: [
         [25, 25],
         [75, 25],
         [75, 75],
         [25, 75]
       ],
-      // Triángulo 60° (T)
       T: [
         [50, 6],
         [92, 85],
         [8, 85]
       ],
-      // Triángulo 80° aprox (W)
       W: [
         [50, 8],
         [90, 82],
@@ -524,15 +518,13 @@
       if (!rawCode) return null;
 
       const clean = rawCode.replace(/\s+/g, "").toUpperCase();
-      if (clean.length < 4) return null;
+      if (clean.length < 1) return null;
 
       const shape = clean[0];
 
-      // Primer dígito que aparezca → tamaño relativo
       const sizeMatch = clean.match(/\d/);
       const size = sizeMatch ? parseInt(sizeMatch[0], 10) : 1;
 
-      // Último dígito del string → radio relativo
       const digits = clean.match(/\d/g);
       const noseRadius = digits ? parseInt(digits[digits.length - 1], 10) : 1;
 
@@ -555,6 +547,30 @@
       });
     }
 
+    function updateNomenclatureStrip(rawCode) {
+      const subtitle = document.getElementById("nomenclature-current");
+      const clean = (rawCode || "").replace(/\s+/g, "").toUpperCase();
+      const maxPos = 10;
+
+      for (let i = 0; i < maxPos; i++) {
+        const span = document.getElementById(`code-char-${i + 1}`);
+        if (!span) continue;
+        if (i < clean.length) {
+          span.textContent = clean[i];
+        } else {
+          span.textContent = "·";
+        }
+      }
+
+      if (!clean) {
+        subtitle.innerHTML =
+          'Ejemplo: <strong>CNMG 120408</strong> (insertos de torno según norma ISO).';
+      } else {
+        subtitle.innerHTML =
+          'Código actual: <strong>' + clean + '</strong> (interpretado como inserto de torno).';
+      }
+    }
+
     function updateVisualizer(code) {
       const polygonEl = document.getElementById("insert-shape");
       const tipEl = document.getElementById("insert-tip");
@@ -566,6 +582,7 @@
       const infoNote = document.getElementById("info-note");
       const infoWarning = document.getElementById("info-warning");
 
+      updateNomenclatureStrip(code);
       infoWarning.textContent = "";
 
       const data = parseInsertCode(code);
@@ -597,14 +614,12 @@
         return;
       }
 
-      // Escala simple en función del tamaño (valor ISO → factor de dibujo)
       const scaleFactor = 0.6 + size * 0.05;
       const scaled = scalePolygon(basePolygon, scaleFactor);
 
       const pointsAttr = scaled.map(([x, y]) => `${x},${y}`).join(" ");
       polygonEl.setAttribute("points", pointsAttr);
 
-      // Punta en el primer vértice
       const [tipX, tipY] = scaled[0];
       const tipRadius = 2 + noseRadius * 0.4;
       tipEl.setAttribute("cx", tipX);
@@ -615,13 +630,11 @@
         "Interpretamos: 1ª letra como forma, primer dígito como tamaño relativo y último dígito como radio de punta relativo.";
     }
 
-    // Inicialización
     const input = document.getElementById("insert-code");
     input.addEventListener("input", (e) => {
       updateVisualizer(e.target.value);
     });
 
-    // Render inicial con valor por defecto
     updateVisualizer(input.value);
   </script>
 </body>
