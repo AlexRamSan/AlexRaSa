@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Visualizador de Insertos por Nomenclatura</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: center;
+    }
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: #020617;
+      border-radius: 16px;
+      padding: 1.5rem 1.75rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+      border: 1px solid rgba(148,163,184,0.3);
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 0.25rem;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 1.25rem;
+    }
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    label {
+      font-size: 0.9rem;
+    }
+    input[type="text"] {
+      flex: 1;
+      min-width: 180px;
+      padding: 0.5rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    input[type="text"]:focus {
+      border-color: #facc15;
+      box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.4);
+    }
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 1.25rem;
+    }
+    @media (max-width: 768px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+    }
+    .viewer {
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #020617 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid #1f2933;
+    }
+    .viewer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+    }
+    .viewer-title {
+      font-size: 0.95rem;
+      color: #e5e7eb;
+    }
+    .viewer-tag {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #9ca3af;
+    }
+    svg {
+      display: block;
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    .info-panel {
+      background: #020617;
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid #1f2933;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .info-item {
+      font-size: 0.8rem;
+      background: #020617;
+      border-radius: 8px;
+      padding: 0.5rem 0.6rem;
+      border: 1px solid #111827;
+    }
+    .info-label {
+      color: #9ca3af;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.15rem;
+    }
+    .info-value {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+    .info-note {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      line-height: 1.4;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      background: rgba(15,23,42,0.8);
+      color: #e5e7eb;
+      margin-top: 0.3rem;
+    }
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #fbbf24;
+    }
+    .warning {
+      font-size: 0.8rem;
+      color: #f97316;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Visualizador de insertos por nomenclatura</h1>
+    <p class="subtitle">
+      Escribe un código tipo <code>CNMG 120408</code> y se dibuja un inserto simplificado.
+    </p>
+
+    <div class="input-row">
+      <label for="insert-code">Código del inserto:</label>
+      <input
+        id="insert-code"
+        type="text"
+        value="CNMG 120408"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="content">
+      <!-- Vista gráfica -->
+      <div class="viewer">
+        <div class="viewer-header">
+          <div class="viewer-title">Vista ISO simplificada</div>
+          <div class="viewer-tag">Preview SVG</div>
+        </div>
+
+        <svg id="insert-svg" viewBox="0 0 100 100">
+          <defs>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-opacity="0.55"/>
+            </filter>
+            <radialGradient id="insert-grad" cx="30%" cy="15%" r="80%">
+              <stop offset="0%" stop-color="#fef3c7"/>
+              <stop offset="35%" stop-color="#facc15"/>
+              <stop offset="100%" stop-color="#b45309"/>
+            </radialGradient>
+          </defs>
+
+          <!-- fondo de referencia -->
+          <rect x="0" y="0" width="100" height="100" fill="#020617" />
+
+          <!-- ejes de referencia ligeros -->
+          <line x1="0" y1="50" x2="100" y2="50" stroke="#111827" stroke-width="0.4" />
+          <line x1="50" y1="0" x2="50" y2="100" stroke="#111827" stroke-width="0.4" />
+
+          <!-- inserto -->
+          <polygon
+            id="insert-shape"
+            points=""
+            fill="url(#insert-grad)"
+            stroke="#78350f"
+            stroke-width="1.6"
+            filter="url(#shadow)"
+          ></polygon>
+
+          <!-- punta / radio -->
+          <circle
+            id="insert-tip"
+            cx="50"
+            cy="10"
+            r="4"
+            fill="#fee2e2"
+            stroke="#7f1d1d"
+            stroke-width="0.7"
+          ></circle>
+        </svg>
+      </div>
+
+      <!-- Datos interpretados -->
+      <div class="info-panel">
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Código limpio</div>
+            <div class="info-value" id="info-raw">–</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Forma (letra 1)</div>
+            <div class="info-value" id="info-shape">–</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Tamaño relativo</div>
+            <div class="info-value" id="info-size">–</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Radio punta relativo</div>
+            <div class="info-value" id="info-radius">–</div>
+          </div>
+        </div>
+        <p class="info-note" id="info-note">
+          Es una representación conceptual. Más adelante podemos afinar ángulos y medidas según tablas ISO completas.
+        </p>
+        <div class="pill">
+          <span class="pill-dot"></span>
+          <span>MVP listo para portar a React Native</span>
+        </div>
+        <div class="warning" id="info-warning"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Polígonos base en coordenadas 0–100 (normalizados)
+    const SHAPE_POLYGONS = {
+      // Rombo ~80° (C)
+      C: [
+        [50, 8],
+        [90, 50],
+        [50, 92],
+        [10, 50]
+      ],
+      // Rombo ~55° (D) – más alargado
+      D: [
+        [50, 5],
+        [88, 50],
+        [50, 95],
+        [12, 50]
+      ],
+      // Rombo “afilado” (V) – simplificado
+      V: [
+        [50, 4],
+        [93, 50],
+        [50, 96],
+        [7, 50]
+      ],
+      // Cuadrado (S)
+      S: [
+        [25, 25],
+        [75, 25],
+        [75, 75],
+        [25, 75]
+      ],
+      // Triángulo 60° (T)
+      T: [
+        [50, 6],
+        [92, 85],
+        [8, 85]
+      ],
+      // Triángulo 80° aprox (W)
+      W: [
+        [50, 8],
+        [90, 82],
+        [10, 82]
+      ]
+    };
+
+    function parseInsertCode(rawCode) {
+      if (!rawCode) return null;
+
+      const clean = rawCode.replace(/\s+/g, "").toUpperCase();
+      if (clean.length < 4) return null;
+
+      const shape = clean[0];
+
+      // Primer dígito que aparezca → tamaño relativo
+      const sizeMatch = clean.match(/\d/);
+      const size = sizeMatch ? parseInt(sizeMatch[0], 10) : 1;
+
+      // Último dígito del string → radio relativo
+      const digits = clean.match(/\d/g);
+      const noseRadius = digits ? parseInt(digits[digits.length - 1], 10) : 1;
+
+      return {
+        raw: clean,
+        shape,
+        size,
+        noseRadius
+      };
+    }
+
+    function scalePolygon(points, factor) {
+      const cx = 50;
+      const cy = 50;
+      return points.map(([x, y]) => {
+        return [
+          (x - cx) * factor + cx,
+          (y - cy) * factor + cy
+        ];
+      });
+    }
+
+    function updateVisualizer(code) {
+      const polygonEl = document.getElementById("insert-shape");
+      const tipEl = document.getElementById("insert-tip");
+
+      const infoRaw = document.getElementById("info-raw");
+      const infoShape = document.getElementById("info-shape");
+      const infoSize = document.getElementById("info-size");
+      const infoRadius = document.getElementById("info-radius");
+      const infoNote = document.getElementById("info-note");
+      const infoWarning = document.getElementById("info-warning");
+
+      infoWarning.textContent = "";
+
+      const data = parseInsertCode(code);
+
+      if (!data) {
+        polygonEl.setAttribute("points", "");
+        infoRaw.textContent = "—";
+        infoShape.textContent = "—";
+        infoSize.textContent = "—";
+        infoRadius.textContent = "—";
+        infoNote.textContent = "Escribe un código tipo CNMG 120408 para ver el inserto.";
+        return;
+      }
+
+      const { raw, shape, size, noseRadius } = data;
+
+      infoRaw.textContent = raw;
+      infoShape.textContent = shape;
+      infoSize.textContent = size;
+      infoRadius.textContent = noseRadius;
+
+      const basePolygon = SHAPE_POLYGONS[shape];
+      if (!basePolygon) {
+        polygonEl.setAttribute("points", "");
+        infoWarning.textContent =
+          `Forma "${shape}" aún no está soportada. Prueba C, D, S, T, V o W.`;
+        infoNote.textContent =
+          "Podemos ampliar después a más formas según la norma ISO que quieras manejar.";
+        return;
+      }
+
+      // Escala simple en función del tamaño (valor ISO → factor de dibujo)
+      const scaleFactor = 0.6 + size * 0.05;
+      const scaled = scalePolygon(basePolygon, scaleFactor);
+
+      const pointsAttr = scaled.map(([x, y]) => `${x},${y}`).join(" ");
+      polygonEl.setAttribute("points", pointsAttr);
+
+      // Punta en el primer vértice
+      const [tipX, tipY] = scaled[0];
+      const tipRadius = 2 + noseRadius * 0.4;
+      tipEl.setAttribute("cx", tipX);
+      tipEl.setAttribute("cy", tipY);
+      tipEl.setAttribute("r", tipRadius);
+
+      infoNote.textContent =
+        "Interpretamos: letra 1 como forma, primer dígito como tamaño relativo y último dígito como radio de punta relativo.";
+    }
+
+    // Inicialización
+    const input = document.getElementById("insert-code");
+    input.addEventListener("input", (e) => {
+      updateVisualizer(e.target.value);
+    });
+
+    // Render inicial con valor por defecto
+    updateVisualizer(input.value);
+  </script>
+</body>
+</html>
