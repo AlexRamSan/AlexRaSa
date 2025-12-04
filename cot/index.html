@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Configurador de licencias SolidCAM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base: { 900: '#020617', 800: '#0f172a', 700: '#1e293b' },
+            accent: { 500: '#e11d48' }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-base-900 text-slate-100 min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <header class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold mb-2">
+        Configurador de licencias SolidCAM
+      </h1>
+      <p class="text-sm text-slate-300">
+        Marca el tipo de máquinas y capacidades para una estación CAM. El sistema propone módulos
+        y calcula la inversión con distintas opciones de licenciamiento, incluyendo el código
+        de producto que tienes en tu sistema.
+      </p>
+    </header>
+
+    <!-- Formulario -->
+    <section class="grid md:grid-cols-2 gap-6 mb-8">
+      <!-- Parque de máquinas -->
+      <div class="bg-base-800 rounded-xl p-4 md:p-5 shadow-lg shadow-black/30">
+        <h2 class="font-semibold mb-3 text-lg">1. Parque de máquinas (esta estación CAM)</h2>
+
+        <div class="space-y-3 text-sm">
+          <p class="text-slate-300 mb-1 font-semibold">Fresadoras / centros de maquinado</p>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="hasMill3" class="rounded border-slate-500 bg-base-900">
+            <span>Fresadoras 3 ejes</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="hasMill4" class="rounded border-slate-500 bg-base-900">
+            <span>Fresadoras 4 ejes (mesa / rotativo)</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="hasMill5" class="rounded border-slate-500 bg-base-900">
+            <span>Fresadoras 5 ejes (simultáneo / posicional)</span>
+          </label>
+
+          <p class="text-slate-300 mb-1 mt-3 font-semibold">Tornos</p>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="hasLathe" class="rounded border-slate-500 bg-base-900">
+            <span>Tornos 2 ejes / eje Y</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="hasSwiss" class="rounded border-slate-500 bg-base-900">
+            <span>Torno tipo suizo</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="hasMultiTurret" class="rounded border-slate-500 bg-base-900">
+            <span>Torno multitorreta</span>
+          </label>
+
+          <p class="text-slate-300 mb-1 mt-3 font-semibold">EDM</p>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="hasWireEDM" class="rounded border-slate-500 bg-base-900">
+            <span>EDM por hilo (wirecut)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Capacidades -->
+      <div class="bg-base-800 rounded-xl p-4 md:p-5 shadow-lg shadow-black/30">
+        <h2 class="font-semibold mb-3 text-lg">2. Capacidades requeridas</h2>
+
+        <div class="space-y-4 text-sm">
+          <div>
+            <p class="text-slate-300 mb-1 font-semibold">iMachining</p>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantIM2D" class="rounded border-slate-500 bg-base-900">
+              <span>iMachining 2D (desbaste rápido 2.5D)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantIM3D" class="rounded border-slate-500 bg-base-900">
+              <span>iMachining 3D (desbaste 3D complejo)</span>
+            </label>
+            <p class="text-xs text-slate-400 mt-1">
+              Si eliges 3D, se asume paquete 2D + 3D.
+            </p>
+          </div>
+
+          <div>
+            <p class="text-slate-300 mb-1 font-semibold">Superficies / 3D</p>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantHSM3D" class="rounded border-slate-500 bg-base-900">
+              <span>3D HSM (acabados / moldes / troqueles)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantHSS" class="rounded border-slate-500 bg-base-900">
+              <span>HSS (superficies locales / zonas críticas)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantHSR" class="rounded border-slate-500 bg-base-900">
+              <span>HSR (rough / desbaste 3D alto volumen)</span>
+            </label>
+          </div>
+
+          <div>
+            <p class="text-slate-300 mb-1 font-semibold">Ejes adicionales</p>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="want4Axis" class="rounded border-slate-500 bg-base-900">
+              <span>Simultáneo 4 ejes</span>
+            </label>
+
+            <label class="block text-xs text-slate-400 mt-1 mb-1">
+              Nivel de 5 ejes:
+            </label>
+            <select id="fiveAxisLevel" class="w-full bg-base-900 border border-slate-600 rounded px-2 py-1 text-sm">
+              <option value="">Sin 5 ejes</option>
+              <option value="standard">5 ejes Standard</option>
+              <option value="pro">5 ejes Professional</option>
+              <option value="premium">5 ejes Premium</option>
+            </select>
+
+            <label class="flex items-center gap-2 mt-2">
+              <input type="checkbox" id="wantRotary" class="rounded border-slate-500 bg-base-900">
+              <span>Rotary Machining (tornillos / rotores)</span>
+            </label>
+          </div>
+
+          <div>
+            <p class="text-slate-300 mb-1 font-semibold">Medición y simulación</p>
+            <div class="flex flex-col gap-1">
+              <label class="flex items-center gap-2">
+                <input type="radio" name="probeLevel" value="" checked class="border-slate-500 bg-base-900">
+                <span>Sin palpador</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="probeLevel" value="l1" class="border-slate-500 bg-base-900">
+                <span>Solid Probe Level 1 (origen / home)</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="probeLevel" value="l2" class="border-slate-500 bg-base-900">
+                <span>Solid Probe Level 2 (origen + medición)</span>
+              </label>
+            </div>
+
+            <label class="flex items-center gap-2 mt-2">
+              <input type="checkbox" id="wantMachineSim" class="rounded border-slate-500 bg-base-900">
+              <span>Simulación de máquina (choques / cinemática)</span>
+            </label>
+          </div>
+
+          <div>
+            <p class="text-slate-300 mb-1 font-semibold">Extras</p>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantCimco" class="rounded border-slate-500 bg-base-900">
+              <span>CIMCO Editor Professional</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantOperators" class="rounded border-slate-500 bg-base-900">
+              <span>SolidCAM for Operators (Editor + Simulator)</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantFloating" class="rounded border-slate-500 bg-base-900">
+              <span>Licencia flotante SolidCAM</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="wantDCAM" class="rounded border-slate-500 bg-base-900">
+              <span>DCAM / Wirecut (referencial)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="mb-6 flex justify-between items-center gap-4">
+      <button id="calcBtn"
+        class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-accent-500 text-sm font-semibold shadow-lg shadow-accent-500/40 hover:bg-rose-600 transition">
+        Calcular módulos y costos
+      </button>
+      <p class="text-xs text-slate-400 max-w-xl">
+        Esta versión calcula una estación CAM. Para más estaciones, multiplica los totales o duplica
+        la configuración.
+      </p>
+    </div>
+
+    <!-- Resultados -->
+    <section id="resultsSection" class="hidden space-y-4">
+      <div class="bg-base-800 rounded-xl p-4 md:p-5 shadow-lg shadow-black/30">
+        <h2 class="font-semibold mb-2 text-lg">Módulos recomendados</h2>
+        <ul id="modulesList" class="list-disc list-inside text-sm text-slate-200 space-y-1"></ul>
+      </div>
+
+      <div class="bg-base-800 rounded-xl p-4 md:p-5 shadow-lg shadow-black/30 overflow-x-auto">
+        <h2 class="font-semibold mb-3 text-lg">Desglose de inversión (USD)</h2>
+        <table class="min-w-full text-xs border-separate border-spacing-y-1">
+          <thead>
+            <tr class="text-[11px] text-slate-300">
+              <th class="text-left  px-2 py-1">Módulo</th>
+              <th class="text-right px-2 py-1">Licencia</th>
+              <th class="text-right px-2 py-1">Subs 1Y</th>
+              <th class="text-right px-2 py-1">Subs 3Y</th>
+              <th class="text-right px-2 py-1">Lic+Subs 1Y</th>
+              <th class="text-right px-2 py-1">Lic+Subs 3Y</th>
+              <th class="text-right px-2 py-1">Trade-in 2Y</th>
+              <th class="text-right px-2 py-1">Trade-in 3Y</th>
+              <th class="text-right px-2 py-1">Term</th>
+              <th class="text-left  px-2 py-1">Código sistema (1Y)</th>
+              <th class="text-right px-2 py-1">Precio paquete 1Y</th>
+            </tr>
+          </thead>
+          <tbody id="pricingBody"></tbody>
+          <tfoot>
+            <tr class="bg-base-700 font-semibold">
+              <td class="px-2 py-1 text-right">Totales</td>
+              <td class="px-2 py-1 text-right" id="totLicense"></td>
+              <td class="px-2 py-1 text-right" id="totSubs1"></td>
+              <td class="px-2 py-1 text-right" id="totSubs3"></td>
+              <td class="px-2 py-1 text-right" id="totLicSubs1"></td>
+              <td class="px-2 py-1 text-right" id="totLicSubs3"></td>
+              <td class="px-2 py-1 text-right" id="totTrade2"></td>
+              <td class="px-2 py-1 text-right" id="totTrade3"></td>
+              <td class="px-2 py-1 text-right" id="totTerm"></td>
+              <td class="px-2 py-1 text-right">Total paquetes</td>
+              <td class="px-2 py-1 text-right" id="totCrm"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // --- Tabla de precios basada en tu lista de precios + productos de sistema ---
+    // Para cada módulo se incluye:
+    // label      -> nombre comercial
+    // license    -> precio licencia sola
+    // subs1      -> mantenimiento 1 año
+    // subs3      -> mantenimiento 3 años (20 % off) si aplica
+    // licSubs1   -> licencia + subs 1 año
+    // licSubs3   -> licencia + subs 3 años
+    // trade2/3   -> programas de trade-in (si aplica)
+    // term       -> licencia tipo renta (si aplica)
+    // crmCode    -> código de producto que tienes en sistema
+    // crmName    -> descripción en sistema
+    // crmPrice   -> precio del paquete 1 año en sistema (normalmente = licSubs1)
+    const PRICE_TABLE = {
+      milling_25d: {
+        label: 'SolidCAM Milling (2.5D milling module)',
+        license: 3900, subs1: 702, subs3: 1684.80,
+        licSubs1: 4602.00, licSubs3: 5584.80,
+        trade2: 3744, trade3: 4446, term: 1610.70,
+        crmCode: 'SSA1008',
+        crmName: 'Package SolidCAM Milling (2.5D milling module)',
+        crmPrice: 4602.00
+      },
+      milling_imach2d: {
+        label: 'SolidCAM Milling + iMachining 2D',
+        license: 4290, subs1: 772, subs3: 1853.28,
+        licSubs1: 5062.20, licSubs3: 6143.28,
+        trade2: 4118, trade3: 4891, term: 1771.77,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      milling_imach2d3d: {
+        label: 'SolidCAM Milling + iMachining 2D/3D',
+        license: 7590, subs1: 1366, subs3: 3278.88,
+        licSubs1: 8956.20, licSubs3: 10868.88,
+        trade2: 7286, trade3: 8653, term: 3134.67,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      feature_rec: {
+        label: 'Feature recognition',
+        license: 1100, subs1: 198, subs3: 475.20,
+        licSubs1: 1298.00, licSubs3: 1575.20,
+        trade2: 1056, trade3: 1254, term: 454.30,
+        crmCode: 'SSM0004',
+        crmName: '+ Feature recognition',
+        crmPrice: 1100.00
+      },
+      hsm3d: {
+        label: '3D HSM module',
+        license: 6050, subs1: 1089, subs3: 2613.60,
+        licSubs1: 7139.00, licSubs3: 8663.60,
+        trade2: 5808, trade3: 6897, term: 2498.65,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      hss: {
+        label: 'HSS module (Simultaneous 3 axis)',
+        license: 1100, subs1: 198, subs3: 475.20,
+        licSubs1: 1298.00, licSubs3: 1575.20,
+        trade2: 1056, trade3: 1254, term: 454.30,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      hsr: {
+        label: 'HSM Rough milling module - HSR',
+        license: 1650, subs1: 297, subs3: 712.80,
+        licSubs1: 1947.00, licSubs3: 2362.80,
+        trade2: 1584, trade3: 1881, term: 681.45,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      sim4: {
+        label: 'Simultaneous 4 axis',
+        license: 1100, subs1: 198, subs3: 475.20,
+        licSubs1: 1298.00, licSubs3: 1575.20,
+        trade2: 1056, trade3: 1254, term: 454.30,
+        crmCode: 'SSM0007',
+        crmName: '+ Simultaneous 4 axis',
+        crmPrice: 1100.00
+      },
+      sim5_standard: {
+        label: 'Simultaneous 5 axis Standard',
+        license: 4400, subs1: 792, subs3: 1900.80,
+        licSubs1: 5192.00, licSubs3: 6300.80,
+        trade2: 4224, trade3: 5016, term: 1817.20,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      sim5_pro: {
+        label: 'Simultaneous 5 axis Professional',
+        license: 7700, subs1: 1386, subs3: 3326.40,
+        licSubs1: 9086.00, licSubs3: 11026.40,
+        trade2: 7392, trade3: 8778, term: 3180.10,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      sim5_premium: {
+        label: 'Simultaneous 5 axis Premium',
+        license: 9900, subs1: 1782, subs3: 4276.80,
+        licSubs1: 11682.00, licSubs3: 14176.80,
+        trade2: 9504, trade3: 11286, term: 4088.70,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      rotary: {
+        label: 'Rotary Machining (Screw)',
+        license: 1100, subs1: 198, subs3: 475.20,
+        licSubs1: 1298.00, licSubs3: 1575.20,
+        trade2: 1056, trade3: 1254, term: 454.30,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      turning_core: {
+        label: 'SolidCAM Turning',
+        license: 2500, subs1: 450, subs3: 1080.00,
+        licSubs1: 2950.00, licSubs3: 3580.00,
+        trade2: 2400, trade3: 2850, term: 1032.50,
+        crmCode: 'SSA1012',
+        crmName: 'Package SolidCAM Turning',
+        crmPrice: 2950.00
+      },
+      swiss_type: {
+        label: 'Swiss Type',
+        license: 6490, subs1: 1168, subs3: 2803.68,
+        licSubs1: 7658.20, licSubs3: 9293.68,
+        trade2: 6230, trade3: 7399, term: 2680.37,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      multi_turret: {
+        label: 'Multi-Turret Synchronization',
+        license: 3190, subs1: 574, subs3: 1378.08,
+        licSubs1: 3764.20, licSubs3: 4568.08,
+        trade2: 3062, trade3: 3637, term: 1317.47,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      machine_sim: {
+        label: 'Integration (G-Code simulation) / Machine simulation',
+        license: 1100, subs1: 198, subs3: 0,
+        licSubs1: 1298.00, licSubs3: 1100.00, // según la tabla de precios
+        trade2: 1056, trade3: 1254, term: 454.30,
+        crmCode: 'SSA1039',
+        crmName: 'Package Integration (G-Code simulation)',
+        crmPrice: 1298.00
+      },
+      probe_l1: {
+        label: 'Solid Probe Level 1 - Home Position',
+        license: 2090, subs1: 376, subs3: 902.88,
+        licSubs1: 2466.20, licSubs3: 2992.88,
+        trade2: 2006, trade3: 2383, term: 863.17,
+        crmCode: 'SSA1036',
+        crmName: 'Package Solid Probe Level 1 - Home Position',
+        crmPrice: 2467.00
+      },
+      probe_l2: {
+        label: 'Solid Probe Level 2 - Home Position & Measurement',
+        license: 4290, subs1: 772, subs3: 1853.28,
+        licSubs1: 5062.20, licSubs3: 6143.28,
+        trade2: 4118, trade3: 4891, term: 1771.77,
+        crmCode: 'SSA1016',
+        crmName: 'Package Solid Probe Level 2 - Home Position & Measurement',
+        crmPrice: 5063.00
+      },
+      cimco: {
+        label: 'CIMCO Editor Professional',
+        license: 550, subs1: 99, subs3: 237.60,
+        licSubs1: 649.00, licSubs3: 787.60,
+        trade2: 528, trade3: 627, term: 227.15,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      operators_editor: {
+        label: 'SolidCAM for Operators Editor',
+        license: 3190, subs1: 574, subs3: 1378.08,
+        licSubs1: 3764.20, licSubs3: 4568.08,
+        trade2: 3062, trade3: 3637, term: 1317.47,
+        crmCode: 'SSA1048',
+        crmName: 'Package SolidCAM for Operators Editor',
+        crmPrice: 3765.00
+      },
+      operators_sim: {
+        label: 'SolidCAM for Operators Simulator',
+        license: 2090, subs1: 376, subs3: 902.88,
+        licSubs1: 2466.20, licSubs3: 2992.88,
+        trade2: 2006, trade3: 2383, term: 863.17,
+        crmCode: 'SSA1049',
+        crmName: 'Package SolidCAM for Operators Simulator',
+        crmPrice: 2467.00
+      },
+      floating_cam: {
+        label: 'Floating license fee SolidCAM - one time fee',
+        license: 1320, subs1: 0, subs3: 0,
+        licSubs1: 1320.00, licSubs3: 0,
+        trade2: 600, trade3: 792, term: 462.00,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      },
+      dcam_standard: {
+        label: 'DCAMCUT / Wirecut (referencial)',
+        license: 5520, subs1: 715, subs3: 0,
+        licSubs1: null, licSubs3: null,
+        trade2: null, trade3: null, term: null,
+        crmCode: null,
+        crmName: null,
+        crmPrice: null
+      }
+    };
+
+    function formatMoney(value) {
+      if (value == null || isNaN(value)) return '-';
+      return '$ ' + value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function collectFormData() {
+      const probeRadios = document.querySelectorAll('input[name="probeLevel"]');
+      let probeLevel = '';
+      probeRadios.forEach(r => { if (r.checked) probeLevel = r.value; });
+
+      return {
+        hasMill3: document.getElementById('hasMill3').checked,
+        hasMill4: document.getElementById('hasMill4').checked,
+        hasMill5: document.getElementById('hasMill5').checked,
+        hasLathe: document.getElementById('hasLathe').checked,
+        hasSwiss: document.getElementById('hasSwiss').checked,
+        hasMultiTurret: document.getElementById('hasMultiTurret').checked,
+        hasWireEDM: document.getElementById('hasWireEDM').checked,
+        wantIM2D: document.getElementById('wantIM2D').checked,
+        wantIM3D: document.getElementById('wantIM3D').checked,
+        wantHSM3D: document.getElementById('wantHSM3D').checked,
+        wantHSS: document.getElementById('wantHSS').checked,
+        wantHSR: document.getElementById('wantHSR').checked,
+        want4Axis: document.getElementById('want4Axis').checked,
+        fiveAxisLevel: document.getElementById('fiveAxisLevel').value,
+        wantRotary: document.getElementById('wantRotary').checked,
+        probeLevel,
+        wantMachineSim: document.getElementById('wantMachineSim').checked,
+        wantCimco: document.getElementById('wantCimco').checked,
+        wantOperators: document.getElementById('wantOperators').checked,
+        wantFloating: document.getElementById('wantFloating').checked,
+        wantDCAM: document.getElementById('wantDCAM').checked
+      };
+    }
+
+    function recommendModules(data) {
+      const modules = new Set();
+
+      const anyMill = data.hasMill3 || data.hasMill4 || data.hasMill5;
+
+      if (anyMill) {
+        if (data.wantIM3D) {
+          modules.add('milling_imach2d3d');
+        } else if (data.wantIM2D) {
+          modules.add('milling_imach2d');
+        } else {
+          modules.add('milling_25d');
+        }
+
+        if (data.wantHSM3D) modules.add('hsm3d');
+        if (data.wantHSS) modules.add('hss');
+        if (data.wantHSR) modules.add('hsr');
+
+        if (data.want4Axis) modules.add('sim4');
+
+        if (data.fiveAxisLevel === 'standard') modules.add('sim5_standard');
+        if (data.fiveAxisLevel === 'pro') modules.add('sim5_pro');
+        if (data.fiveAxisLevel === 'premium') modules.add('sim5_premium');
+
+        if (data.wantRotary) modules.add('rotary');
+      }
+
+      if (data.hasLathe) {
+        modules.add('turning_core');
+      }
+      if (data.hasSwiss) {
+        modules.add('turning_core');
+        modules.add('swiss_type');
+      }
+      if (data.hasMultiTurret) {
+        modules.add('turning_core');
+        modules.add('multi_turret');
+      }
+
+      if (data.hasWireEDM || data.wantDCAM) {
+        modules.add('dcam_standard');
+      }
+
+      if (data.probeLevel === 'l1') modules.add('probe_l1');
+      if (data.probeLevel === 'l2') modules.add('probe_l2');
+
+      if (data.wantMachineSim) modules.add('machine_sim');
+
+      if (data.wantCimco) modules.add('cimco');
+      if (data.wantOperators) {
+        modules.add('operators_editor');
+        modules.add('operators_sim');
+      }
+      if (data.wantFloating) modules.add('floating_cam');
+
+      return Array.from(modules);
+    }
+
+    function renderResults(modules) {
+      const resultsSection = document.getElementById('resultsSection');
+      const modulesList = document.getElementById('modulesList');
+      const pricingBody = document.getElementById('pricingBody');
+
+      if (!modules.length) {
+        resultsSection.classList.remove('hidden');
+        modulesList.innerHTML = '<li class="text-sm text-amber-300">No se seleccionó ninguna máquina ni capacidad. Marca al menos un tipo de máquina.</li>';
+        pricingBody.innerHTML = '';
+        [
+          'totLicense', 'totSubs1', 'totSubs3',
+          'totLicSubs1', 'totLicSubs3',
+          'totTrade2', 'totTrade3', 'totTerm', 'totCrm'
+        ].forEach(id => document.getElementById(id).textContent = '');
+        return;
+      }
+
+      modulesList.innerHTML = modules.map(id => {
+        const p = PRICE_TABLE[id];
+        return `<li>${p ? p.label : id}</li>`;
+      }).join('');
+
+      let tot = {
+        license: 0, subs1: 0, subs3: 0,
+        licSubs1: 0, licSubs3: 0,
+        trade2: 0, trade3: 0, term: 0,
+        crm: 0
+      };
+
+      pricingBody.innerHTML = modules.map(id => {
+        const p = PRICE_TABLE[id];
+        if (!p) return '';
+
+        tot.license += p.license || 0;
+        tot.subs1 += p.subs1 || 0;
+        tot.subs3 += p.subs3 || 0;
+        tot.licSubs1 += p.licSubs1 || 0;
+        tot.licSubs3 += p.licSubs3 || 0;
+        tot.trade2 += p.trade2 || 0;
+        tot.trade3 += p.trade3 || 0;
+        tot.term += p.term || 0;
+        tot.crm += p.crmPrice || 0;
+
+        return `
+          <tr class="bg-base-700/60">
+            <td class="px-2 py-1 text-left">${p.label}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.license)}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.subs1)}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.subs3)}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.licSubs1)}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.licSubs3)}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.trade2)}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.trade3)}</td>
+            <td class="px-2 py-1 text-right">${formatMoney(p.term)}</td>
+            <td class="px-2 py-1 text-left">
+              ${p.crmCode ? `${p.crmCode}` : '-'}
+            </td>
+            <td class="px-2 py-1 text-right">
+              ${p.crmPrice ? formatMoney(p.crmPrice) : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('totLicense').textContent = formatMoney(tot.license);
+      document.getElementById('totSubs1').textContent = formatMoney(tot.subs1);
+      document.getElementById('totSubs3').textContent = formatMoney(tot.subs3);
+      document.getElementById('totLicSubs1').textContent = formatMoney(tot.licSubs1);
+      document.getElementById('totLicSubs3').textContent = formatMoney(tot.licSubs3);
+      document.getElementById('totTrade2').textContent = formatMoney(tot.trade2);
+      document.getElementById('totTrade3').textContent = formatMoney(tot.trade3);
+      document.getElementById('totTerm').textContent = formatMoney(tot.term);
+      document.getElementById('totCrm').textContent = formatMoney(tot.crm);
+
+      resultsSection.classList.remove('hidden');
+    }
+
+    document.getElementById('calcBtn').addEventListener('click', () => {
+      const data = collectFormData();
+      const modules = recommendModules(data);
+      renderResults(modules);
+    });
+  </script>
+</body>
+</html>
