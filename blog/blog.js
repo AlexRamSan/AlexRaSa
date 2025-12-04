@@ -1,23 +1,33 @@
 (() => {
-  const GRID = document.querySelector("#posts-grid");
-  const TPL = document.querySelector("#post-card-tpl");
+  const GRID  = document.querySelector("#posts-grid");
+  const TPL   = document.querySelector("#post-card-tpl");
   const EMPTY = document.querySelector("#empty-msg");
   const PLACEHOLDER = "/assets/blog/placeholder.jpg";
 
+  if (!GRID || !TPL) return;
+
   const normalizeImage = (img) => {
     if (!img) return PLACEHOLDER;
-    const s = img.trim();
+    const s = String(img).trim();
     if (s.startsWith("data:") || s.startsWith("http") || s.startsWith("/")) return s;
     return `/assets/blog/${s}`;
   };
 
   const slugify = (t = "post") =>
-    t.toLowerCase().replace(/[^a-z0-9\-]/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    t.toLowerCase()
+      .replace(/[^a-z0-9\-]/gi, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
 
   const normalizeUrl = (u, slug) => {
     if (u && (u.startsWith("http") || u.startsWith("/"))) return u;
     const safe = slugify(slug || "post");
     return `/blog/${u || safe}.html`;
+  };
+
+  const trimText = (s, n = 130) => {
+    if (!s) return "";
+    return s.length > n ? s.slice(0, n - 1) + "…" : s;
   };
 
   async function loadPosts() {
@@ -49,13 +59,16 @@
     GRID.innerHTML = "";
     EMPTY.classList.add("hidden");
 
-    if (!posts.length) return EMPTY.classList.remove("hidden");
+    if (!posts.length) {
+      EMPTY.classList.remove("hidden");
+      return;
+    }
 
     posts
       .filter(p => !p.draft)
-      .sort((a,b) => new Date(b.date||0) - new Date(a.date||0))
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
       .forEach(p => {
-        const node = TPL.content.firstElementChild.cloneNode(true);
+        const node  = TPL.content.firstElementChild.cloneNode(true);
         const img   = node.querySelector("[data-post-img]");
         const links = node.querySelectorAll("[data-post-link]");
         const title = node.querySelector("[data-post-title]");
@@ -71,8 +84,8 @@
 
         links.forEach(a => a.href = url);
         title.textContent = p.title || "Sin título";
-        desc.textContent  = p.description || "";
-        date.textContent  = (p.date || "").slice(0,10);
+        desc.textContent  = trimText(p.description || "");
+        date.textContent  = (p.date || "").slice(0, 10);
 
         GRID.appendChild(node);
       });
