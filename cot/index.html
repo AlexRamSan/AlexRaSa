@@ -77,7 +77,7 @@
             <input id="numPosts" type="number" min="0" value="1"
               class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
             <p class="text-xs text-slate-500 mt-1">
-              Los post de 3 ejes Milling generales se consideran sin costo; aquí se cuentan posts especiales (4/5 ejes, Mill-Turn, Turning dedicado, Wire).
+              Dato de referencia general; el detalle de cada post (tipo, control, cantidad) se configura en la sección de postprocesadores.
             </p>
           </div>
         </div>
@@ -205,23 +205,51 @@
       <!-- Posts -->
       <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
         <h3 class="font-semibold mb-2 text-sm md:text-base">Postprocesadores especiales</h3>
+
+        <!-- Editor de posts -->
+        <div class="flex flex-wrap items-end gap-3 mb-3">
+          <div class="flex-1 min-w-[180px]">
+            <label class="block text-xs font-medium text-slate-200">Tipo de post</label>
+            <select id="postTipo" class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
+              <!-- Opciones según tipo de máquina -->
+            </select>
+          </div>
+          <div class="flex-1 min-w-[160px]">
+            <label class="block text-xs font-medium text-slate-200">Control / máquina</label>
+            <input id="postControl" type="text"
+              placeholder="Ej. Haas VF-2, Fanuc 31i"
+              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
+          </div>
+          <div class="w-24">
+            <label class="block text-xs font-medium text-slate-200">Cantidad</label>
+            <input id="postCantidad" type="number" min="1" value="1"
+              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
+          </div>
+          <button id="btnAgregarPost" type="button"
+            class="inline-flex items-center h-9 mt-1.5 bg-accent-500 text-white text-xs font-semibold px-3 rounded-lg shadow hover:brightness-110 transition">
+            Agregar post
+          </button>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs md:text-sm">
             <thead class="bg-base-900/70">
               <tr>
                 <th class="px-3 py-2 text-left font-semibold">Postprocesador</th>
+                <th class="px-3 py-2 text-left font-semibold">Control / máquina</th>
                 <th class="px-3 py-2 text-right font-semibold">Precio unitario</th>
                 <th class="px-3 py-2 text-right font-semibold">Cantidad</th>
                 <th class="px-3 py-2 text-right font-semibold">Total</th>
                 <th class="px-3 py-2 text-left font-semibold">Código</th>
+                <th class="px-3 py-2 text-left font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaPosts" class="divide-y divide-slate-700"></tbody>
             <tfoot class="bg-base-900/60">
               <tr>
-                <td class="px-3 py-2 text-right font-semibold">Total posts</td>
-                <td></td><td></td>
+                <td class="px-3 py-2 text-right font-semibold" colspan="4">Total posts</td>
                 <td class="px-3 py-2 text-right" id="totPosts">$ 0.00</td>
+                <td></td>
                 <td></td>
               </tr>
             </tfoot>
@@ -278,7 +306,6 @@
   <script>
     // --------------------- Datos base ---------------------
 
-    // Precios de lista (licencia) de la tabla grande inicial
     const priceTable = {
       millingBase: 3900,
       iMach2D: 4290,
@@ -307,21 +334,18 @@
       xpress: 1870,
       xpressToMilling: 2030,
 
-      // Integraciones / IMOLD etc. (usamos solo algunos como ejemplo)
       gcodeSimPkg: 1298,
       imoldDesignerPkg: 9200,
       imoldElectrodePkg: 3350
     };
 
-    // Lógica de suscripciones y variantes
-    const SUB_1Y_FACTOR = 0.18; // ya está en la tabla, pero lo usamos como aproximado
-    const SUB_3Y_FACTOR = 0.432; // 3Y con 20% descuento: 0.18 * 3 * 0.8 ≈ 0.432
+    const SUB_1Y_FACTOR = 0.18;
+    const SUB_3Y_FACTOR = 0.432;
 
-    const TRADE_2Y_DISCOUNT = 0.1864; // (Lic + Subs1Y) * (1 - 0.1864)
+    const TRADE_2Y_DISCOUNT = 0.1864;
     const TRADE_3Y_DISCOUNT = 0.2039;
-    const TERM_DISCOUNT = 0.587; // Lic * (1 - 0.587)
+    const TERM_DISCOUNT = 0.587;
 
-    // Productos de sistema (packages) con código y precio final 1Y ya dado por ti
     const systemPackages = {
       SSA1008: { name: 'Package SolidCAM Milling (2.5D milling module)', licSubs1Y: 4602 },
       SSA1000: { name: 'Package SolidCAM Milling (2.5D milling module) + Feature recognition', licSubs1Y: 5635 },
@@ -342,7 +366,6 @@
       SSA9014: { name: 'Package SolidCAM Wirecut 2 axis + 4 axis - 1 year', licSubs1Y: 5145 },
     };
 
-    // Posts
     const postPrices = {
       milling4: { name: 'Post-Procesador Milling 4 Axis | G/M Code | General', code: 'SSM0101', price: 500 },
       milling5: { name: 'Post-Procesador Milling 5 Axis | G/M Code | General', code: 'SSM0102', price: 1250 },
@@ -351,10 +374,9 @@
       turning: { name: 'Postprocessor Turning', code: 'SSM0088', price: 2500 },
       wire2: { name: 'PostProcessor Wirecut 2 axis', code: 'SSM0134', price: 425 },
       wire4: { name: 'PostProcessor Wirecut 4 axis', code: 'SSM0135', price: 575 },
-      post4pkg: { name: 'Package Postprocessor 4 axis', code: 'SSA1022', price: 2598 } // por si quieres usar package
+      post4pkg: { name: 'Package Postprocessor 4 axis', code: 'SSA1022', price: 2598 }
     };
 
-    // Capacitaciones (solo algunas claves relevantes)
     const trainingCatalog = {
       millingBase: { name: 'Capacitación SolidCAM Milling (2.5D milling module)', code: 'SSC0034', price: 450 },
       hsr: { name: 'Capacitación HSM Rough milling module - HSR', code: 'SSC0038', price: 200 },
@@ -368,14 +390,12 @@
       generalWorkshop: { name: 'Taller de Capacitación SOLIDCAM', code: 'SSC0066', price: 320 }
     };
 
-    // Implementación genérica
     const implementationItem = {
       name: 'Implementación CAM en sitio 8 hrs',
       code: 'SSM0087',
       price: 1000
     };
 
-    // Ejes por tipo de máquina
     const axisOptionsByMachine = {
       cm: [
         { value: '3x', label: '3 ejes' },
@@ -401,9 +421,7 @@
       ]
     };
 
-    // Mapeo: selección → módulos sugeridos (ids internos)
     const moduleCatalog = {
-      // Milling base + opciones
       millingBase: { name: 'SolidCAM Milling (2.5D milling module)', price: priceTable.millingBase, packageCode: 'SSA1008' },
       iMach2D: { name: 'iMachining 2D', price: priceTable.iMach2D, packageCode: 'SSA1017' },
       iMach3D: { name: 'iMachining 3D (incluye 2D)', price: priceTable.iMach3D, packageCode: 'SSA1001' },
@@ -422,21 +440,20 @@
       probe2: { name: 'Solid Probe Level 2 - Home Position & Measurement', price: priceTable.probe2, packageCode: 'SSA1016' },
       xpress: { name: 'SolidCAM Xpress Milling', price: priceTable.xpress, packageCode: 'SSA1037' },
 
-      // Turning / Mill-Turn
       turningBase: { name: 'SolidCAM Turning', price: priceTable.turningBase, packageCode: 'SSA1012' },
       swiss: { name: 'Swiss Type', price: priceTable.swiss, packageCode: 'SSA1035' },
       multit: { name: 'Multi-Turret Synchronization', price: priceTable.multit, packageCode: 'SSA1018' },
 
-      // IMOLD / electrodos
       imoldDesigner: { name: 'IMOLD Mold Designer', price: priceTable.imoldDesignerPkg, packageCode: 'SSA1020' },
       imoldElectrode: { name: 'SolidCAM Electrode Designer (IMOLD)', price: priceTable.imoldElectrodePkg, packageCode: 'SSA1019' },
 
-      // Wire
       wire2: { name: 'Wirecut 2 axis SolidCAM', price: 2385, packageCode: 'SSM0130' },
       wire24: { name: 'Wirecut 2 axis + 4 axis SolidCAM', price: 4360, packageCode: 'SSM0132' },
     };
 
-    // --------------------- Utilidades ---------------------
+    // Overrides manuales: el usuario manda
+    const manualOverrides = {}; // key -> 'forceOn' | 'forceOff'
+
     function formatUSD(value) {
       return '$ ' + value.toFixed(2);
     }
@@ -459,11 +476,38 @@
       return licPrice * (1 - TERM_DISCOUNT);
     }
 
-    // --------------------- UI dinámica ---------------------
-
     const tipoMaquinaSelect = document.getElementById('tipoMaquina');
     const configEjesSelect = document.getElementById('configEjes');
     const ayudaConfigEjes = document.getElementById('ayudaConfigEjes');
+
+    const postTipoSelect = document.getElementById('postTipo');
+    const postControlInput = document.getElementById('postControl');
+    const postCantidadInput = document.getElementById('postCantidad');
+    const btnAgregarPost = document.getElementById('btnAgregarPost');
+
+    let currentPosts = [];
+
+    function getAvailablePostKeysForMachine(tipo) {
+      if (tipo === 'cm') return ['milling4', 'milling5', 'post4pkg'];
+      if (tipo === 'torno') return ['turning'];
+      if (tipo === 'millturn') return ['millturn4', 'millturn5'];
+      if (tipo === 'wire') return ['wire2', 'wire4'];
+      return [];
+    }
+
+    function fillPostTipoOptions() {
+      const tipo = tipoMaquinaSelect.value;
+      const keys = getAvailablePostKeysForMachine(tipo);
+      postTipoSelect.innerHTML = '';
+      keys.forEach(k => {
+        const def = postPrices[k];
+        if (!def) return;
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = `${def.name} (${def.code})`;
+        postTipoSelect.appendChild(opt);
+      });
+    }
 
     function refillAxisOptions() {
       const tipo = tipoMaquinaSelect.value;
@@ -475,7 +519,6 @@
         opt.textContent = o.label;
         configEjesSelect.appendChild(opt);
       }
-      // Mensaje de ayuda por tipo
       let msg = '';
       if (tipo === 'cm') {
         msg = 'Para 3/4/5 ejes de fresado se propondrán módulos Milling, iMachining, HSR/HSM/HSS, 4/5X y sonda según aplique.';
@@ -487,11 +530,17 @@
         msg = 'Para Wire EDM se usarán únicamente módulos de Wirecut 2/4 ejes y sus posts correspondientes.';
       }
       ayudaConfigEjes.textContent = msg;
+
+      fillPostTipoOptions();
     }
 
-    tipoMaquinaSelect.addEventListener('change', refillAxisOptions);
+    tipoMaquinaSelect.addEventListener('change', () => {
+      refillAxisOptions();
+      sugerirModulos();
+      currentPosts = [];
+      calcular();
+    });
 
-    // Módulos sugeridos (checkboxes) según enfoque / tipo
     const listaModulosDiv = document.getElementById('listaModulos');
 
     function sugerirModulos() {
@@ -534,12 +583,10 @@
           sugeridos.add('imoldElectrode');
         }
 
-        // sonda casi siempre útil si hay moldes / producción
         if (enfoque === '3d_moldes' || enfoque === 'produccion') {
           sugeridos.add('probe1');
         }
 
-        // machine simulation sólo si hay 4/5X o MillTurn
         if (ejes === '4x_sim' || ejes === '5x_std' || ejes === '5x_adv' || tipo === 'millturn') {
           sugeridos.add('machineSim');
         }
@@ -556,12 +603,10 @@
         if (ejes === 'wire4') sugeridos.add('wire24');
       }
 
-      // Render checkboxes
+      // Render checkboxes respetando overrides manuales
       listaModulosDiv.innerHTML = '';
       Object.entries(moduleCatalog).forEach(([key, def]) => {
-        // Filtrar por tipo de máquina para no mostrar cosas absurdas
         if (tipo === 'torno') {
-          // solo Turning / Swiss / Multiturret / quizá machineSim
           const soloTornoKeys = ['turningBase', 'swiss', 'multit'];
           if (!soloTornoKeys.includes(key)) return;
         }
@@ -583,48 +628,63 @@
         `;
         listaModulosDiv.appendChild(wrapper);
 
-        if (sugeridos.has(key)) {
-          wrapper.querySelector('input').checked = true;
+        const cb = wrapper.querySelector('input');
+
+        const sugerido = sugeridos.has(key);
+        const override = manualOverrides[key];
+
+        if (override === 'forceOn') {
+          cb.checked = true;
+        } else if (override === 'forceOff') {
+          cb.checked = false;
+        } else {
+          cb.checked = sugerido;
         }
+
+        cb.addEventListener('change', () => {
+          if (cb.checked === sugerido) {
+            delete manualOverrides[key];
+          } else {
+            manualOverrides[key] = cb.checked ? 'forceOn' : 'forceOff';
+          }
+        });
       });
     }
 
     document.getElementById('enfoquePrincipal').addEventListener('change', sugerirModulos);
     document.getElementById('prioridad').addEventListener('change', sugerirModulos);
-    configEgesListener();
 
     function configEgesListener() {
       configEjesSelect.addEventListener('change', sugerirModulos);
     }
 
     document.getElementById('btnSeleccionarTodos').addEventListener('click', () => {
-      listaModulosDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+      listaModulosDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.checked = true;
+        const key = cb.dataset.key;
+        manualOverrides[key] = 'forceOn';
+      });
     });
 
-    // Inicializar
     refillAxisOptions();
     sugerirModulos();
+    configEgesListener();
 
-    // --------------------- Cálculo de resultados ---------------------
     const tablaModulosBody = document.getElementById('tablaModulos');
     const tablaPostsBody = document.getElementById('tablaPosts');
     const tablaCapsBody = document.getElementById('tablaCaps');
     const tablaGlobalBody = document.getElementById('tablaGlobal');
 
     function calcular() {
-      const tipo = tipoMaquinaSelect.value;
       const numMaquinas = parseInt(document.getElementById('numMaquinas').value || '1', 10);
-      const numPosts = parseInt(document.getElementById('numPosts').value || '0', 10);
 
-      // 1) Módulos seleccionados
       const selectedModules = [];
       listaModulosDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
         const key = cb.dataset.key;
         const def = moduleCatalog[key];
-        if (def) selectedModules.push(def);
+        if (def) selectedModules.push({ key, ...def });
       });
 
-      // Calcular precios por módulo (multiplicados por # máquinas)
       let totLic = 0, totSubs1Y = 0, totSubs3Y = 0, totLicSubs1Y = 0, totLicSubs3Y = 0, totTrade2Y = 0, totTrade3Y = 0, totTerm = 0;
 
       tablaModulosBody.innerHTML = '';
@@ -632,7 +692,9 @@
         const lic = def.price * numMaquinas;
         const subs1 = calcSubs1Y(def.price) * numMaquinas;
         const subs3 = calcSubs3Y(def.price) * numMaquinas;
-        const licSubs1 = lic + subs1;
+
+        const pkg = def.packageCode ? systemPackages[def.packageCode] : undefined;
+        const licSubs1 = pkg ? pkg.licSubs1Y * numMaquinas : lic + subs1;
         const licSubs3 = lic + subs3;
         const trade2 = calcTrade2Y(def.price) * numMaquinas;
         const trade3 = calcTrade3Y(def.price) * numMaquinas;
@@ -672,42 +734,44 @@
       document.getElementById('totTrade3Y').textContent = formatUSD(totTrade3Y);
       document.getElementById('totTerm').textContent = formatUSD(totTerm);
 
-      // 2) Posts
       tablaPostsBody.innerHTML = '';
       let totalPosts = 0;
-      if (numPosts > 0) {
-        // Lógica simple: si tipo = cm, usar posts 4/5X; si torno, Turning; si millturn, MillTurn; si wire, wire
-        let postKey;
-        if (tipo === 'cm') {
-          postKey = 'milling4';
-        } else if (tipo === 'torno') {
-          postKey = 'turning';
-        } else if (tipo === 'millturn') {
-          postKey = 'millturn4';
-        } else if (tipo === 'wire') {
-          postKey = 'wire2';
-        }
-        const postDef = postPrices[postKey];
-        if (postDef) {
-          const rowTotal = postDef.price * numPosts;
-          totalPosts += rowTotal;
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td class="px-3 py-2">${postDef.name}</td>
-            <td class="px-3 py-2 text-right">${formatUSD(postDef.price)}</td>
-            <td class="px-3 py-2 text-right">${numPosts}</td>
-            <td class="px-3 py-2 text-right">${formatUSD(rowTotal)}</td>
-            <td class="px-3 py-2 text-xs">${postDef.code}</td>
-          `;
-          tablaPostsBody.appendChild(tr);
-        }
-      }
+      currentPosts.forEach((p, idx) => {
+        const def = postPrices[p.key];
+        if (!def) return;
+        const rowTotal = def.price * p.qty;
+        totalPosts += rowTotal;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2">${def.name}</td>
+          <td class="px-3 py-2">${p.control || '-'}</td>
+          <td class="px-3 py-2 text-right">${formatUSD(def.price)}</td>
+          <td class="px-3 py-2 text-right">${p.qty}</td>
+          <td class="px-3 py-2 text-right">${formatUSD(rowTotal)}</td>
+          <td class="px-3 py-2 text-xs">${def.code}</td>
+          <td class="px-3 py-2">
+            <button type="button" data-index="${idx}" class="text-[11px] px-2 py-1 border border-slate-600 rounded hover:bg-slate-800">
+              Quitar
+            </button>
+          </td>
+        `;
+        tablaPostsBody.appendChild(tr);
+      });
+
+      tablaPostsBody.querySelectorAll('button[data-index]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = parseInt(btn.dataset.index, 10);
+          if (!isNaN(i)) {
+            currentPosts.splice(i, 1);
+            calcular();
+          }
+        });
+      });
+
       document.getElementById('totPosts').textContent = formatUSD(totalPosts);
 
-      // 3) Capacitaciones sugeridas
       tablaCapsBody.innerHTML = '';
       let totalCaps = 0;
-      // Regla simple: si hay millingBase → curso milling, si hay iMach → generalWorkshop + hsm/hsr, etc.
       const moduleNames = selectedModules.map(m => m.name);
 
       function addCap(capKey) {
@@ -733,58 +797,220 @@
       if (moduleNames.includes(moduleCatalog.turningBase?.name)) addCap('turning');
       if (moduleNames.includes(moduleCatalog.imoldDesigner?.name)) addCap('imold');
 
-      // siempre puedes agregar un taller general
       addCap('generalWorkshop');
 
       document.getElementById('totCaps').textContent = formatUSD(totalCaps);
 
-      // 4) Resumen global de escenarios (módulos + posts + caps + implementación)
-      const baseTotalLic = totLic + totalPosts + totalCaps + implementationItem.price;
-
       tablaGlobalBody.innerHTML = '';
-      function addScenario(label, montoLic, extraSubs, termLike) {
-        const total = montoLic + (extraSubs || 0);
-        const totalIVA = total * 1.16;
+
+      const base1Y = totLicSubs1Y + totalPosts + totalCaps + implementationItem.price;
+      const baseLic = totLic + totalPosts + totalCaps + implementationItem.price;
+
+      function addScenario(label, montoUSD) {
+        const totalIVA = montoUSD * 1.16;
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="px-3 py-2">${label}</td>
-          <td class="px-3 py-2 text-right">${formatUSD(total)}</td>
+          <td class="px-3 py-2 text-right">${formatUSD(montoUSD)}</td>
           <td class="px-3 py-2 text-right">${formatUSD(totalIVA)}</td>
         `;
         tablaGlobalBody.appendChild(tr);
       }
 
-      addScenario('Licencia + 1 año de servicio', totLic + totalPosts + totalCaps + implementationItem.price, totSubs1Y);
-      addScenario('Licencia + 3 años de servicio', totLic + totalPosts + totalCaps + implementationItem.price, totSubs3Y);
-      addScenario('Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + implementationItem.price, 0);
-      addScenario('Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationItem.price, 0);
-      addScenario('Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps, 0);
+      addScenario('Licencia + 1 año de servicio', base1Y);
+      addScenario('Licencia + 3 años de servicio', baseLic + totSubs3Y);
+      addScenario('Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + implementationItem.price);
+      addScenario('Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationItem.price);
+      addScenario('Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps);
     }
 
     document.getElementById('btnCalcular').addEventListener('click', calcular);
 
-    // Exportación sencilla: genera texto en un popup
+    btnAgregarPost.addEventListener('click', () => {
+      const key = postTipoSelect.value;
+      const control = (postControlInput.value || '').trim();
+      const qty = parseInt(postCantidadInput.value || '1', 10);
+
+      if (!key || !postPrices[key]) return;
+      if (isNaN(qty) || qty <= 0) return;
+
+      currentPosts.push({ key, control, qty });
+      postControlInput.value = '';
+      postCantidadInput.value = '1';
+      calcular();
+    });
+
     document.getElementById('btnExportar').addEventListener('click', () => {
+      calcular();
+
+      const tipoTexto = tipoMaquinaSelect.options[tipoMaquinaSelect.selectedIndex]?.textContent || '';
+      const ejesTexto = configEjesSelect.options[configEjesSelect.selectedIndex]?.textContent || '';
+      const enfoqueTexto = document.getElementById('enfoquePrincipal').options[document.getElementById('enfoquePrincipal').selectedIndex]?.textContent || '';
+      const prioridadTexto = document.getElementById('prioridad').options[document.getElementById('prioridad').selectedIndex]?.textContent || '';
+      const numMaquinas = document.getElementById('numMaquinas').value || '1';
       const descripcion = document.getElementById('descripcionProceso').value || '(sin descripción)';
-      let text = 'Resumen configurador SolidCAM\n\n';
-      text += 'Descripción del proceso:\n' + descripcion + '\n\n';
-      text += 'Módulos seleccionados:\n';
+
+      const modLines = [];
       listaModulosDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
         const key = cb.dataset.key;
         const def = moduleCatalog[key];
         if (def) {
-          text += `- ${def.name} (${def.packageCode || 'sin código'}) - ${formatUSD(def.price)}\n`;
+          const pkg = def.packageCode ? systemPackages[def.packageCode] : undefined;
+          modLines.push({
+            name: def.name,
+            code: def.packageCode || '-',
+            price: def.price,
+            licSubs1Y: pkg ? pkg.licSubs1Y : (def.price + calcSubs1Y(def.price))
+          });
         }
       });
-      alert(text);
+
+      const postLines = currentPosts.map(p => {
+        const def = postPrices[p.key];
+        return def ? {
+          name: def.name,
+          code: def.code,
+          control: p.control || '-',
+          qty: p.qty,
+          price: def.price,
+          total: def.price * p.qty
+        } : null;
+      }).filter(Boolean);
+
+      const escenarios = [];
+      tablaGlobalBody.querySelectorAll('tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 3) {
+          escenarios.push({
+            label: tds[0].textContent.trim(),
+            total: tds[1].textContent.trim(),
+            totalIVA: tds[2].textContent.trim()
+          });
+        }
+      });
+
+      let html = `
+<h2 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Resumen propuesta SolidCAM</h2>
+<p><strong>Máquinas:</strong> ${numMaquinas}</p>
+<p><strong>Tipo de máquina:</strong> ${tipoTexto}</p>
+<p><strong>Configuración de ejes:</strong> ${ejesTexto}</p>
+<p><strong>Enfoque principal:</strong> ${enfoqueTexto}</p>
+<p><strong>Prioridad:</strong> ${prioridadTexto}</p>
+<p><strong>Descripción del proceso:</strong><br>${descripcion.replace(/\n/g, '<br>')}</p>
+<hr style="margin:16px 0;">
+<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Módulos seleccionados</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
+  <thead style="background:#e5e7eb;">
+    <tr>
+      <th align="left">Módulo</th>
+      <th align="left">Código sistema</th>
+      <th align="right">Licencia (USD)</th>
+      <th align="right">Lic+Subs 1Y (USD)</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
+
+      modLines.forEach(m => {
+        html += `
+    <tr>
+      <td>${m.name}</td>
+      <td>${m.code}</td>
+      <td align="right">${formatUSD(m.price)}</td>
+      <td align="right">${formatUSD(m.licSubs1Y)}</td>
+    </tr>`;
+      });
+
+      html += `
+  </tbody>
+</table>
+<hr style="margin:16px 0;">
+<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Postprocesadores especiales</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
+  <thead style="background:#e5e7eb;">
+    <tr>
+      <th align="left">Postprocesador</th>
+      <th align="left">Control / máquina</th>
+      <th align="left">Código</th>
+      <th align="right">Cantidad</th>
+      <th align="right">Precio unitario</th>
+      <th align="right">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
+
+      postLines.forEach(p => {
+        html += `
+    <tr>
+      <td>${p.name}</td>
+      <td>${p.control}</td>
+      <td>${p.code}</td>
+      <td align="right">${p.qty}</td>
+      <td align="right">${formatUSD(p.price)}</td>
+      <td align="right">${formatUSD(p.total)}</td>
+    </tr>`;
+      });
+
+      html += `
+  </tbody>
+</table>
+<hr style="margin:16px 0;">
+<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Escenarios económicos</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
+  <thead style="background:#e5e7eb;">
+    <tr>
+      <th align="left">Escenario</th>
+      <th align="right">Total USD</th>
+      <th align="right">Total + IVA</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
+
+      escenarios.forEach(e => {
+        html += `
+    <tr>
+      <td>${e.label}</td>
+      <td align="right">${e.total}</td>
+      <td align="right">${e.totalIVA}</td>
+    </tr>`;
+      });
+
+      html += `
+  </tbody>
+</table>
+<p style="font-size:11px; color:#6b7280; margin-top:8px;">
+  Montos en USD, IVA calculado al 16% como referencia. Sujeto a validación final de lista de precios y condiciones comerciales.
+</p>
+`;
+
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Resumen propuesta SolidCAM</title>
+</head>
+<body style="background:#f9fafb; padding:16px;">
+${html}
+</body>
+</html>`);
+        w.document.close();
+      } else {
+        alert('No se pudo abrir la ventana de exportación. Verifica que el navegador permita pop-ups.');
+      }
     });
 
-    // Limpiar todo
     document.getElementById('btnLimpiar').addEventListener('click', () => {
       document.getElementById('numMaquinas').value = 1;
       document.getElementById('numPosts').value = 1;
       document.getElementById('descripcionProceso').value = '';
       tipoMaquinaSelect.value = 'cm';
+      currentPosts = [];
+      for (const k in manualOverrides) delete manualOverrides[k];
       refillAxisOptions();
       sugerirModulos();
       tablaModulosBody.innerHTML = '';
