@@ -30,146 +30,70 @@
       <div>
         <h1 class="text-2xl md:text-3xl font-semibold">Configurador de licencias SolidCAM</h1>
         <p class="text-slate-400 text-sm md:text-base mt-1">
-          Define el tipo de máquina, proceso y nivel de complejidad. El sistema propondrá módulos (Milling / Turning, iMachining, HSR/HSM/HSS, 4/5 ejes, sonda, etc.), 
-          podrás quitar o agregar lo que quieras y recalcular los precios de Licencia + Servicio.
+          Configura uno o varios entornos de máquinas (CM, torno, Mill-Turn, Wire). Cada entorno tiene sus módulos sugeridos;
+          puedes quitar o agregar lo que gustes y el sistema suma todo para calcular licencias, servicio y escenarios.
         </p>
       </div>
     </header>
 
-    <!-- Panel principal -->
-    <section class="grid md:grid-cols-2 gap-6">
-      <!-- Lado izquierdo: descripción de máquinas / proceso -->
-      <div class="bg-base-800 rounded-xl border border-slate-700 p-4 space-y-4">
-        <h2 class="font-semibold text-lg mb-1">1. Entorno del cliente</h2>
-
-        <!-- Tipo de máquina -->
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-slate-200">Tipo de máquina principal</label>
-          <select id="tipoMaquina" class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
-            <option value="cm">Centro de maquinado</option>
-            <option value="torno">Torno CNC</option>
-            <option value="millturn">Mill-Turn / Y-axis</option>
-            <option value="wire">Wire EDM</option>
-          </select>
+    <!-- MÁQUINAS / ENTORNOS -->
+    <section class="space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <h2 class="font-semibold text-lg">1. Máquinas / entornos del cliente</h2>
           <p class="text-xs text-slate-400">
-            Esto controlará qué módulos se consideran base (Milling vs Turning) y qué opciones de ejes/postprocesadores son válidas.
+            Agrega un entorno por tipo de máquina / configuración relevante. Cada entorno puede tener diferentes módulos.
           </p>
         </div>
-
-        <!-- Configuración de ejes (dinámica según tipo) -->
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-slate-200">Configuración de ejes</label>
-          <select id="configEjes" class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
-            <!-- Se llena por JS según tipo de máquina -->
-          </select>
-          <p class="text-xs text-slate-400" id="ayudaConfigEjes"></p>
-        </div>
-
-        <!-- Producción / piezas -->
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm font-medium text-slate-200">Cantidad de máquinas</label>
-            <input id="numMaquinas" type="number" min="1" value="1"
-              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-200">Tipos de control / posts</label>
-            <input id="numPosts" type="number" min="0" value="1"
-              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
-            <p class="text-xs text-slate-500 mt-1">
-              Dato de referencia general; el detalle de cada post (tipo, control, cantidad) se configura en la sección de postprocesadores.
-            </p>
-          </div>
-        </div>
-
-        <!-- Descripción libre del proceso -->
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-slate-200">Describe qué hace el cliente</label>
-          <textarea id="descripcionProceso" rows="5"
-            placeholder="Ejemplo: 2 Haas 3 ejes y una prensa de moldes Haitían (Mitsubishi). Moldes de aluminio y acero, series cortas-medias. Buscan reducir ciclo y mejorar acabado."
-            class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500"></textarea>
-          <p class="text-xs text-slate-400">
-            Esta descripción no afecta el cálculo todavía, pero te sirve como bloque para el resumen / exportación y como guía para ajustar los módulos sugeridos.
-          </p>
-        </div>
+        <button id="btnAgregarMaquina" type="button"
+          class="inline-flex items-center gap-1 bg-accent-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow hover:brightness-110 transition">
+          + Agregar máquina / entorno
+        </button>
       </div>
 
-      <!-- Lado derecho: enfoque de maquinado y módulos sugeridos -->
-      <div class="bg-base-800 rounded-xl border border-slate-700 p-4 space-y-4">
-        <h2 class="font-semibold text-lg mb-1">2. Enfoque de maquinado y módulos sugeridos</h2>
-
-        <div class="space-y-3">
-          <!-- Enfoque principal -->
-          <div>
-            <label class="block text-sm font-medium text-slate-200">Enfoque principal</label>
-            <select id="enfoquePrincipal"
-              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
-              <option value="2d">2.5D / prismatico</option>
-              <option value="3d_moldes">Moldes 3D (cavidades, insertos)</option>
-              <option value="produccion">Producción en serie (tiempo de ciclo)</option>
-              <option value="multi_eje">5 ejes / indexado complejo</option>
-              <option value="electrodos">Electrodos / IMOLD</option>
-              <option value="wire">Wire EDM / cortadora hilo</option>
-            </select>
-          </div>
-
-          <!-- Nivel de automatización deseado -->
-          <div>
-            <label class="block text-sm font-medium text-slate-200">Prioridad principal</label>
-            <select id="prioridad"
-              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
-              <option value="equilibrado">Equilibrado (ciclo + acabado)</option>
-              <option value="ciclo">Reducir tiempo de ciclo</option>
-              <option value="acabado">Mejorar acabado superficial</option>
-              <option value="plantillas">Estandarizar plantillas / operadores</option>
-            </select>
-          </div>
-
-          <!-- Checkboxes de módulos sugeridos (se llenan por JS) -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-slate-200">Módulos sugeridos</span>
-              <button id="btnSeleccionarTodos" type="button"
-                class="text-xs px-2 py-1 border border-slate-600 rounded-md hover:bg-slate-800">
-                Seleccionar todos
-              </button>
-            </div>
-            <div id="listaModulos" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <!-- Relleno dinámico -->
-            </div>
-            <p class="text-[11px] text-slate-400">
-              Puedes activar o desactivar cualquier módulo antes de calcular. Por ejemplo: dejar iMachining 3D + HSM pero quitar HSS, o agregar sonda / operadores.
-            </p>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap gap-3 pt-2">
-          <button id="btnCalcular" type="button"
-            class="inline-flex items-center gap-2 bg-accent-500 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow hover:brightness-110 transition">
-            Calcular recomendación
-          </button>
-          <button id="btnExportar" type="button"
-            class="inline-flex items-center gap-2 border border-slate-600 text-sm px-3 py-2 rounded-lg hover:bg-slate-800">
-            Exportar resumen
-          </button>
-          <button id="btnLimpiar" type="button"
-            class="inline-flex items-center gap-2 border border-slate-600 text-sm px-3 py-2 rounded-lg hover:bg-slate-800">
-            Borrar y empezar de nuevo
-          </button>
-        </div>
+      <div id="contenedorMaquinas" class="space-y-4">
+        <!-- Tarjetas de máquinas dinámicas -->
       </div>
+    </section>
+
+    <!-- Descripción general -->
+    <section class="bg-base-800 rounded-xl border border-slate-700 p-4 space-y-2">
+      <h2 class="font-semibold text-lg">2. Descripción general del proceso</h2>
+      <textarea id="descripcionProceso" rows="4"
+        placeholder="Ejemplo: 2 Haas 3 ejes para moldes de aluminio/acero, 1 torno Doosan con subhusillo para producción en serie. Buscan reducir ciclo y mejorar vida de herramienta."
+        class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500"></textarea>
+      <p class="text-xs text-slate-400">
+        Texto para usar en el resumen / propuesta. No afecta el cálculo.
+      </p>
+    </section>
+
+    <!-- Botones generales -->
+    <section class="flex flex-wrap gap-3">
+      <button id="btnCalcular" type="button"
+        class="inline-flex items-center gap-2 bg-accent-500 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow hover:brightness-110 transition">
+        Calcular recomendación
+      </button>
+      <button id="btnExportar" type="button"
+        class="inline-flex items-center gap-2 border border-slate-600 text-sm px-3 py-2 rounded-lg hover:bg-slate-800">
+        Exportar resumen
+      </button>
+      <button id="btnLimpiar" type="button"
+        class="inline-flex items-center gap-2 border border-slate-600 text-sm px-3 py-2 rounded-lg hover:bg-slate-800">
+        Borrar y empezar de nuevo
+      </button>
     </section>
 
     <!-- Resultados -->
     <section id="resultados" class="space-y-4">
       <!-- Módulos seleccionados -->
       <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
-        <h3 class="font-semibold mb-2 text-sm md:text-base">Módulos recomendados (ajustables)</h3>
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Módulos recomendados (suma de todos los entornos)</h3>
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs md:text-sm">
             <thead class="bg-base-900/70">
               <tr>
                 <th class="px-3 py-2 text-left font-semibold">Módulo</th>
+                <th class="px-3 py-2 text-right font-semibold">Cantidad (máquinas)</th>
                 <th class="px-3 py-2 text-right font-semibold">Licencia</th>
                 <th class="px-3 py-2 text-right font-semibold">Subs 1Y</th>
                 <th class="px-3 py-2 text-right font-semibold">Subs 3Y</th>
@@ -186,7 +110,7 @@
             </tbody>
             <tfoot class="bg-base-900/60">
               <tr>
-                <td class="px-3 py-2 font-semibold text-right">Totales módulos</td>
+                <td class="px-3 py-2 font-semibold text-right" colspan="2">Totales módulos</td>
                 <td class="px-3 py-2 text-right" id="totLicencia">$ 0.00</td>
                 <td class="px-3 py-2 text-right" id="totSubs1Y">$ 0.00</td>
                 <td class="px-3 py-2 text-right" id="totSubs3Y">$ 0.00</td>
@@ -208,16 +132,16 @@
 
         <!-- Editor de posts -->
         <div class="flex flex-wrap items-end gap-3 mb-3">
-          <div class="flex-1 min-w-[180px]">
+          <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-medium text-slate-200">Tipo de post</label>
             <select id="postTipo" class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
-              <!-- Opciones según tipo de máquina -->
+              <!-- Opciones llenadas por JS -->
             </select>
           </div>
           <div class="flex-1 min-w-[160px]">
             <label class="block text-xs font-medium text-slate-200">Control / máquina</label>
             <input id="postControl" type="text"
-              placeholder="Ej. Haas VF-2, Fanuc 31i"
+              placeholder="Ej. Haas VF-2, Doosan Puma, Fanuc 31i"
               class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
           </div>
           <div class="w-24">
@@ -286,34 +210,55 @@
         </div>
       </div>
 
-      <!-- Implementación -->
+      <!-- Agregados manuales -->
       <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
-        <h3 class="font-semibold mb-2 text-sm md:text-base">Implementación / arranque CAM</h3>
-        <div class="flex flex-wrap items-end gap-4">
-          <div class="w-40">
-            <label class="block text-xs font-medium text-slate-200">Bloques de implementación (8 hrs)</label>
-            <input id="implQty" type="number" min="0" value="1"
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Agregados manuales (servicios / extras)</h3>
+
+        <div class="flex flex-wrap items-end gap-3 mb-3">
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-medium text-slate-200">Concepto</label>
+            <select id="extraItem" class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
+              <!-- Opciones llenadas por JS -->
+            </select>
+          </div>
+          <div class="w-24">
+            <label class="block text-xs font-medium text-slate-200">Cantidad</label>
+            <input id="extraQty" type="number" min="1" value="1"
               class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
           </div>
-          <div class="flex-1">
-            <p class="text-xs text-slate-300">
-              Precio por bloque de 8 hrs:
-              <span id="implUnitPrice" class="font-semibold">$ 0.00</span>
-            </p>
-            <p class="text-xs text-slate-300 mt-1">
-              Total implementación:
-              <span id="implTotal" class="font-semibold">$ 0.00</span>
-            </p>
-            <p class="text-[11px] text-slate-500 mt-1">
-              Si no deseas incluir implementación, deja el valor en 0. Si el proyecto requiere más días en planta, incrementa el número de bloques.
-            </p>
-          </div>
+          <button id="btnAgregarExtra" type="button"
+            class="inline-flex items-center h-9 mt-1.5 bg-accent-500 text-white text-xs font-semibold px-3 rounded-lg shadow hover:brightness-110 transition">
+            Agregar extra
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs md:text-sm">
+            <thead class="bg-base-900/70">
+              <tr>
+                <th class="px-3 py-2 text-left font-semibold">Concepto</th>
+                <th class="px-3 py-2 text-left font-semibold">Código</th>
+                <th class="px-3 py-2 text-right font-semibold">Precio unitario</th>
+                <th class="px-3 py-2 text-right font-semibold">Cantidad</th>
+                <th class="px-3 py-2 text-right font-semibold">Total</th>
+                <th class="px-3 py-2 text-left font-semibold">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaExtras" class="divide-y divide-slate-700"></tbody>
+            <tfoot class="bg-base-900/60">
+              <tr>
+                <td class="px-3 py-2 text-right font-semibold" colspan="4">Total agregados</td>
+                <td class="px-3 py-2 text-right" id="totExtras">$ 0.00</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
 
       <!-- Resumen global -->
       <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
-        <h3 class="font-semibold mb-2 text-sm md:text-base">Resumen económico global (módulos + posts + capacitación + implementación)</h3>
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Resumen económico global (módulos + posts + capacitación + agregados)</h3>
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs md:text-sm">
             <thead class="bg-base-900/70">
@@ -366,7 +311,7 @@
           </table>
         </div>
         <p class="text-[11px] text-slate-400 mt-2">
-          Valores negativos en diferencia y porcentaje indican un monto menor (descuento / ahorro) respecto al escenario base seleccionado.
+          Valores negativos en diferencia y porcentaje indican un monto menor (ahorro) respecto al escenario base seleccionado.
         </p>
       </div>
     </section>
@@ -465,6 +410,11 @@
       price: 1000
     };
 
+    // Agregados manuales: por ahora solo implementación 8h, se pueden añadir más códigos después.
+    const extrasCatalog = {
+      impl8h: { name: implementationItem.name, code: implementationItem.code, price: implementationItem.price }
+    };
+
     const axisOptionsByMachine = {
       cm: [
         { value: '3x', label: '3 ejes' },
@@ -520,8 +470,22 @@
       wire24: { name: 'Wirecut 2 axis + 4 axis SolidCAM', price: 4360, packageCode: 'SSM0132' },
     };
 
-    const manualOverrides = {};
-    const trainingOverrides = {};
+    // --------------------- Estado global ---------------------
+
+    const moduleOverrides = {};   // por máquina: { [machineId]: { [moduleKey]: 'forceOn'|'forceOff' } }
+    const trainingOverrides = {}; // global por tipo de capacitación
+
+    let currentPosts = [];
+    let extras = [];
+
+    let machines = [];
+    let nextMachineId = 1;
+
+    let escenariosActuales = [];
+    let escenarioBaseKey = 'lic1';
+    let escenariosSeleccionados = new Set();
+
+    // --------------------- Utilidades ---------------------
 
     function formatUSD(value) {
       return '$ ' + value.toFixed(2);
@@ -550,218 +514,380 @@
       return licPrice * (1 - TERM_DISCOUNT);
     }
 
-    const tipoMaquinaSelect = document.getElementById('tipoMaquina');
-    const configEjesSelect = document.getElementById('configEjes');
-    const ayudaConfigEjes = document.getElementById('ayudaConfigEjes');
+    // --------------------- Máquinas dinámicas ---------------------
+
+    const machinesContainer = document.getElementById('contenedorMaquinas');
+    const btnAgregarMaquina = document.getElementById('btnAgregarMaquina');
+
+    function updateRemoveButtonsVisibility() {
+      const buttons = machinesContainer.querySelectorAll('[data-remove-machine]');
+      if (buttons.length <= 1) {
+        buttons.forEach(btn => btn.classList.add('hidden'));
+      } else {
+        buttons.forEach(btn => btn.classList.remove('hidden'));
+      }
+    }
+
+    function createMachineCard() {
+      const id = nextMachineId++;
+      const card = document.createElement('div');
+      card.className = 'bg-base-800 rounded-xl border border-slate-700 p-4 space-y-4';
+      card.dataset.machineId = String(id);
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="font-semibold text-sm md:text-base">Máquina / entorno ${id}</h3>
+            <p class="text-[11px] text-slate-400">
+              Define tipo de máquina, ejes y enfoque; los módulos sugeridos se pueden ajustar con los checkboxes.
+            </p>
+          </div>
+          <button type="button" data-remove-machine
+            class="text-[11px] px-2 py-1 border border-slate-600 rounded hover:bg-slate-800">
+            Quitar máquina
+          </button>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-slate-200">Tipo de máquina</label>
+              <select class="js-tipoMaquina w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
+                <option value="cm">Centro de maquinado</option>
+                <option value="torno">Torno CNC</option>
+                <option value="millturn">Mill-Turn / Y-axis</option>
+                <option value="wire">Wire EDM</option>
+              </select>
+              <p class="js-ayudaEjes text-[11px] text-slate-400"></p>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-slate-200">Configuración de ejes</label>
+              <select class="js-configEjes w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500"></select>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-xs font-medium text-slate-200">Cantidad de máquinas en este entorno</label>
+              <input type="number" min="1" value="1"
+                class="js-numMaquinas w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-200">Enfoque principal</label>
+              <select class="js-enfoque w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
+                <option value="2d">2.5D / prismatico</option>
+                <option value="3d_moldes">Moldes 3D (cavidades, insertos)</option>
+                <option value="produccion">Producción en serie (tiempo de ciclo)</option>
+                <option value="multi_eje">5 ejes / indexado complejo</option>
+                <option value="electrodos">Electrodos / IMOLD</option>
+                <option value="wire">Wire EDM / cortadora hilo</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-200">Prioridad principal</label>
+              <select class="js-prioridad w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent-500">
+                <option value="equilibrado">Equilibrado (ciclo + acabado)</option>
+                <option value="ciclo">Reducir tiempo de ciclo</option>
+                <option value="acabado">Mejorar acabado superficial</option>
+                <option value="plantillas">Estandarizar plantillas / operadores</option>
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-200">Módulos sugeridos</span>
+                <button type="button" data-select-all
+                  class="text-[11px] px-2 py-1 border border-slate-600 rounded-md hover:bg-slate-800">
+                  Seleccionar todos
+                </button>
+              </div>
+              <div class="js-listaModulos grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
+              <p class="text-[11px] text-slate-400">
+                Activa o desactiva los módulos de este entorno. Por ejemplo: Milling + iMachining en el CM y Turning en el torno.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const tipoSelect = card.querySelector('.js-tipoMaquina');
+      const ejesSelect = card.querySelector('.js-configEjes');
+      const ayudaEjes = card.querySelector('.js-ayudaEjes');
+      const enfoqueSelect = card.querySelector('.js-enfoque');
+      const prioridadSelect = card.querySelector('.js-prioridad');
+      const numMaquinasInput = card.querySelector('.js-numMaquinas');
+      const listaModulosDiv = card.querySelector('.js-listaModulos');
+      const btnSelectAll = card.querySelector('[data-select-all]');
+      const btnRemove = card.querySelector('[data-remove-machine]');
+
+      function refillAxisOptionsForMachine() {
+        const tipo = tipoSelect.value;
+        const opts = axisOptionsByMachine[tipo] || [];
+        ejesSelect.innerHTML = '';
+        opts.forEach(o => {
+          const opt = document.createElement('option');
+          opt.value = o.value;
+          opt.textContent = o.label;
+          ejesSelect.appendChild(opt);
+        });
+
+        let msg = '';
+        if (tipo === 'cm') {
+          msg = 'Para 3/4/5 ejes de fresado se propondrán Milling, iMachining, HSR/HSM/HSS, 4/5X y sonda según aplique.';
+        } else if (tipo === 'torno') {
+          msg = 'Solo Turning / Swiss / Multi-Turret. No se muestran módulos exclusivos de fresado.';
+        } else if (tipo === 'millturn') {
+          msg = 'Se combinan Turning + Milling + sincronización / turrets / sub-husillo según el escenario.';
+        } else if (tipo === 'wire') {
+          msg = 'Solo módulos Wirecut 2/4 ejes y sus posts.';
+        }
+        ayudaEjes.textContent = msg;
+      }
+
+      function sugerirModulosForMachine() {
+        const tipo = tipoSelect.value;
+        const ejes = ejesSelect.value;
+        const enfoque = enfoqueSelect.value;
+        const prioridad = prioridadSelect.value;
+
+        const sugeridos = new Set();
+
+        if (tipo === 'cm' || tipo === 'millturn') {
+          sugeridos.add('millingBase');
+
+          if (enfoque === '3d_moldes' || enfoque === 'produccion') {
+            sugeridos.add('iMach3D');
+          } else if (enfoque === '2d') {
+            sugeridos.add('iMach2D');
+          }
+
+          if (enfoque === '3d_moldes' || enfoque === 'multi_eje') {
+            sugeridos.add('hsm3D');
+            if (prioridad === 'acabado' || prioridad === 'equilibrado') {
+              sugeridos.add('hss');
+            }
+          }
+
+          if (prioridad === 'ciclo') {
+            sugeridos.add('iMach3D');
+          }
+
+          if (ejes === '4x_index' || ejes === '4x_sim') {
+            sugeridos.add('sim4X');
+          }
+          if (ejes === '5x_std' || ejes === '5x_adv') {
+            sugeridos.add('sim5Std');
+          }
+
+          if (enfoque === 'electrodos') {
+            sugeridos.add('imoldDesigner');
+            sugeridos.add('imoldElectrode');
+          }
+
+          if (enfoque === '3d_moldes' || enfoque === 'produccion') {
+            sugeridos.add('probe1');
+          }
+
+          if (ejes === '4x_sim' || ejes === '5x_std' || ejes === '5x_adv' || tipo === 'millturn') {
+            sugeridos.add('machineSim');
+          }
+
+        } else if (tipo === 'torno') {
+          sugeridos.add('turningBase');
+          if (ejes === 'subspindle') {
+            sugeridos.add('multit');
+          }
+        } else if (tipo === 'wire') {
+          if (ejes === 'wire2') sugeridos.add('wire2');
+          if (ejes === 'wire4') sugeridos.add('wire24');
+        }
+
+        listaModulosDiv.innerHTML = '';
+        const overrides = moduleOverrides[id] || {};
+
+        Object.entries(moduleCatalog).forEach(([key, def]) => {
+          if (tipo === 'torno') {
+            const soloTorno = ['turningBase', 'swiss', 'multit'];
+            if (!soloTorno.includes(key)) return;
+          }
+          if (tipo === 'wire') {
+            const soloWire = ['wire2', 'wire24'];
+            if (!soloWire.includes(key)) return;
+          }
+          if (tipo === 'cm' || tipo === 'millturn') {
+            const soloMilling = [
+              'millingBase', 'iMach2D', 'iMach3D', 'iMach3Dwo2D',
+              'featureRec', 'hsm3D', 'hss', 'hsr', 'sim4X',
+              'sim5Std', 'sim5Pro', 'sim5Prem', 'rotary', 'machineSim',
+              'probe1', 'probe2', 'xpress', 'imoldDesigner', 'imoldElectrode'
+            ];
+            if (!soloMilling.includes(key)) return;
+          }
+
+          const wrapper = document.createElement('label');
+          wrapper.className = 'flex items-start gap-2 bg-base-900/40 border border-slate-700 rounded-lg px-2 py-2 cursor-pointer hover:border-accent-500';
+
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.dataset.key = key;
+          input.className = 'mt-1 h-3 w-3 rounded border-slate-600 bg-base-900';
+
+          const sugerido = sugeridos.has(key);
+          const override = overrides[key];
+
+          if (override === 'forceOn') input.checked = true;
+          else if (override === 'forceOff') input.checked = false;
+          else input.checked = sugerido;
+
+          input.addEventListener('change', () => {
+            if (!moduleOverrides[id]) moduleOverrides[id] = {};
+            if (input.checked === sugerido) {
+              delete moduleOverrides[id][key];
+            } else {
+              moduleOverrides[id][key] = input.checked ? 'forceOn' : 'forceOff';
+            }
+            calcular();
+          });
+
+          wrapper.appendChild(input);
+
+          const infoDiv = document.createElement('div');
+          infoDiv.className = 'flex-1';
+          infoDiv.innerHTML = `
+            <div class="font-medium text-[11px]">${def.name}</div>
+            <div class="text-[10px] text-slate-400">${def.packageCode || 'Sin código sistema definido'}</div>
+          `;
+          wrapper.appendChild(infoDiv);
+
+          const priceDiv = document.createElement('div');
+          priceDiv.className = 'text-[11px] text-slate-200 whitespace-nowrap';
+          priceDiv.textContent = formatUSD(def.price);
+          wrapper.appendChild(priceDiv);
+
+          listaModulosDiv.appendChild(wrapper);
+        });
+      }
+
+      tipoSelect.addEventListener('change', () => {
+        refillAxisOptionsForMachine();
+        sugerirModulosForMachine();
+        calcular();
+      });
+      ejesSelect.addEventListener('change', () => {
+        sugerirModulosForMachine();
+        calcular();
+      });
+      enfoqueSelect.addEventListener('change', () => {
+        sugerirModulosForMachine();
+        calcular();
+      });
+      prioridadSelect.addEventListener('change', () => {
+        sugerirModulosForMachine();
+        calcular();
+      });
+      numMaquinasInput.addEventListener('input', () => {
+        calcular();
+      });
+
+      btnSelectAll.addEventListener('click', () => {
+        const overrides = moduleOverrides[id] || (moduleOverrides[id] = {});
+        listaModulosDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.checked = true;
+          overrides[cb.dataset.key] = 'forceOn';
+        });
+        calcular();
+      });
+
+      btnRemove.addEventListener('click', () => {
+        const idx = machines.findIndex(m => m.id === id);
+        if (idx !== -1) machines.splice(idx, 1);
+        card.remove();
+        updateRemoveButtonsVisibility();
+        calcular();
+      });
+
+      refillAxisOptionsForMachine();
+      sugerirModulosForMachine();
+
+      return card;
+    }
+
+    function addMachine() {
+      const card = createMachineCard();
+      machines.push({ id: parseInt(card.dataset.machineId, 10) });
+      machinesContainer.appendChild(card);
+      updateRemoveButtonsVisibility();
+    }
+
+    btnAgregarMaquina.addEventListener('click', () => {
+      addMachine();
+    });
+
+    // --------------------- Posts ---------------------
 
     const postTipoSelect = document.getElementById('postTipo');
     const postControlInput = document.getElementById('postControl');
     const postCantidadInput = document.getElementById('postCantidad');
     const btnAgregarPost = document.getElementById('btnAgregarPost');
 
-    const implQtyInput = document.getElementById('implQty');
-    const implUnitPriceSpan = document.getElementById('implUnitPrice');
-    const implTotalSpan = document.getElementById('implTotal');
-
-    const escenarioBaseSelect = document.getElementById('escenarioBaseSelect');
-    const escenariosCheckContainer = document.getElementById('escenariosCheckContainer');
-
-    let currentPosts = [];
-
-    let escenariosActuales = [];
-    let escenarioBaseKey = 'lic1';
-    let escenariosSeleccionados = new Set();
-
-    function getAvailablePostKeysForMachine(tipo) {
-      if (tipo === 'cm') return ['milling4', 'milling5', 'post4pkg'];
-      if (tipo === 'torno') return ['turning'];
-      if (tipo === 'millturn') return ['millturn4', 'millturn5'];
-      if (tipo === 'wire') return ['wire2', 'wire4'];
-      return [];
-    }
-
     function fillPostTipoOptions() {
-      const tipo = tipoMaquinaSelect.value;
-      const keys = getAvailablePostKeysForMachine(tipo);
       postTipoSelect.innerHTML = '';
-      keys.forEach(k => {
-        const def = postPrices[k];
-        if (!def) return;
+      Object.entries(postPrices).forEach(([key, def]) => {
         const opt = document.createElement('option');
-        opt.value = k;
+        opt.value = key;
         opt.textContent = `${def.name} (${def.code})`;
         postTipoSelect.appendChild(opt);
       });
     }
 
-    function refillAxisOptions() {
-      const tipo = tipoMaquinaSelect.value;
-      const opts = axisOptionsByMachine[tipo] || [];
-      configEjesSelect.innerHTML = '';
-      for (const o of opts) {
-        const opt = document.createElement('option');
-        opt.value = o.value;
-        opt.textContent = o.label;
-        configEjesSelect.appendChild(opt);
-      }
-      let msg = '';
-      if (tipo === 'cm') {
-        msg = 'Para 3/4/5 ejes de fresado se propondrán módulos Milling, iMachining, HSR/HSM/HSS, 4/5X y sonda según aplique.';
-      } else if (tipo === 'torno') {
-        msg = 'Para torno solo se considerarán Turning, Swiss / Multi-Turret, posts de Turning y eventualmente Mill-Turn básico.';
-      } else if (tipo === 'millturn') {
-        msg = 'En Mill-Turn se combinan Turning + Milling + sincronización / turrets / sub-husillo según el escenario.';
-      } else if (tipo === 'wire') {
-        msg = 'Para Wire EDM se usarán únicamente módulos de Wirecut 2/4 ejes y sus posts correspondientes.';
-      }
-      ayudaConfigEjes.textContent = msg;
+    btnAgregarPost.addEventListener('click', () => {
+      const key = postTipoSelect.value;
+      const control = (postControlInput.value || '').trim();
+      const qty = parseInt(postCantidadInput.value || '1', 10);
 
-      fillPostTipoOptions();
-    }
+      if (!key || !postPrices[key]) return;
+      if (isNaN(qty) || qty <= 0) return;
 
-    tipoMaquinaSelect.addEventListener('change', () => {
-      refillAxisOptions();
-      sugerirModulos();
-      currentPosts = [];
+      currentPosts.push({ key, control, qty });
+      postControlInput.value = '';
+      postCantidadInput.value = '1';
       calcular();
     });
 
-    const listaModulosDiv = document.getElementById('listaModulos');
+    // --------------------- Agregados ---------------------
 
-    function sugerirModulos() {
-      const tipo = tipoMaquinaSelect.value;
-      const ejes = configEjesSelect.value;
-      const enfoque = document.getElementById('enfoquePrincipal').value;
-      const prioridad = document.getElementById('prioridad').value;
+    const extraItemSelect = document.getElementById('extraItem');
+    const extraQtyInput = document.getElementById('extraQty');
+    const btnAgregarExtra = document.getElementById('btnAgregarExtra');
 
-      const sugeridos = new Set();
-
-      if (tipo === 'cm' || tipo === 'millturn') {
-        sugeridos.add('millingBase');
-
-        if (enfoque === '3d_moldes' || enfoque === 'produccion') {
-          sugeridos.add('iMach3D');
-        } else if (enfoque === '2d') {
-          sugeridos.add('iMach2D');
-        }
-
-        if (enfoque === '3d_moldes' || enfoque === 'multi_eje') {
-          sugeridos.add('hsm3D');
-          if (prioridad === 'acabado' || prioridad === 'equilibrado') {
-            sugeridos.add('hss');
-          }
-        }
-
-        if (prioridad === 'ciclo') {
-          sugeridos.add('iMach3D');
-        }
-
-        if (ejes === '4x_index' || ejes === '4x_sim') {
-          sugeridos.add('sim4X');
-        }
-        if (ejes === '5x_std' || ejes === '5x_adv') {
-          sugeridos.add('sim5Std');
-        }
-
-        if (enfoque === 'electrodos') {
-          sugeridos.add('imoldDesigner');
-          sugeridos.add('imoldElectrode');
-        }
-
-        if (enfoque === '3d_moldes' || enfoque === 'produccion') {
-          sugeridos.add('probe1');
-        }
-
-        if (ejes === '4x_sim' || ejes === '5x_std' || ejes === '5x_adv' || tipo === 'millturn') {
-          sugeridos.add('machineSim');
-        }
-
-      } else if (tipo === 'torno') {
-        sugeridos.add('turningBase');
-
-        if (ejes === 'subspindle') {
-          sugeridos.add('multit');
-        }
-
-      } else if (tipo === 'wire') {
-        if (ejes === 'wire2') sugeridos.add('wire2');
-        if (ejes === 'wire4') sugeridos.add('wire24');
-      }
-
-      listaModulosDiv.innerHTML = '';
-      Object.entries(moduleCatalog).forEach(([key, def]) => {
-        if (tipo === 'torno') {
-          const soloTornoKeys = ['turningBase', 'swiss', 'multit'];
-          if (!soloTornoKeys.includes(key)) return;
-        }
-        if (tipo === 'wire') {
-          const soloWireKeys = ['wire2', 'wire24'];
-          if (!soloWireKeys.includes(key)) return;
-        }
-
-        const id = 'mod_' + key;
-        const wrapper = document.createElement('label');
-        wrapper.className = 'flex items-start gap-2 bg-base-900/40 border border-slate-700 rounded-lg px-2 py-2 cursor-pointer hover:border-accent-500';
-        wrapper.innerHTML = `
-          <input type="checkbox" id="${id}" data-key="${key}" class="mt-1 h-3 w-3 rounded border-slate-600 bg-base-900">
-          <div class="flex-1">
-            <div class="font-medium text-[11px]">${def.name}</div>
-            <div class="text-[10px] text-slate-400">${def.packageCode ? def.packageCode : 'Sin código sistema definido'}</div>
-          </div>
-          <div class="text-[11px] text-slate-200 whitespace-nowrap">${formatUSD(def.price)}</div>
-        `;
-        listaModulosDiv.appendChild(wrapper);
-
-        const cb = wrapper.querySelector('input');
-
-        const sugerido = sugeridos.has(key);
-        const override = manualOverrides[key];
-
-        if (override === 'forceOn') {
-          cb.checked = true;
-        } else if (override === 'forceOff') {
-          cb.checked = false;
-        } else {
-          cb.checked = sugerido;
-        }
-
-        cb.addEventListener('change', () => {
-          if (cb.checked === sugerido) {
-            delete manualOverrides[key];
-          } else {
-            manualOverrides[key] = cb.checked ? 'forceOn' : 'forceOff';
-          }
-        });
+    function fillExtrasOptions() {
+      extraItemSelect.innerHTML = '';
+      Object.entries(extrasCatalog).forEach(([key, def]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `${def.name} (${def.code})`;
+        extraItemSelect.appendChild(opt);
       });
     }
 
-    document.getElementById('enfoquePrincipal').addEventListener('change', sugerirModulos);
-    document.getElementById('prioridad').addEventListener('change', sugerirModulos);
+    btnAgregarExtra.addEventListener('click', () => {
+      const key = extraItemSelect.value;
+      const qty = parseInt(extraQtyInput.value || '1', 10);
+      if (!key || !extrasCatalog[key]) return;
+      if (isNaN(qty) || qty <= 0) return;
 
-    function configEgesListener() {
-      configEjesSelect.addEventListener('change', sugerirModulos);
-    }
-
-    document.getElementById('btnSeleccionarTodos').addEventListener('click', () => {
-      listaModulosDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.checked = true;
-        const key = cb.dataset.key;
-        manualOverrides[key] = 'forceOn';
-      });
+      extras.push({ key, qty });
+      extraQtyInput.value = '1';
+      calcular();
     });
 
-    refillAxisOptions();
-    sugerirModulos();
-    configEgesListener();
+    // --------------------- Comparativa ---------------------
 
-    const tablaModulosBody = document.getElementById('tablaModulos');
-    const tablaPostsBody = document.getElementById('tablaPosts');
-    const tablaCapsBody = document.getElementById('tablaCaps');
-    const tablaGlobalBody = document.getElementById('tablaGlobal');
+    const escenarioBaseSelect = document.getElementById('escenarioBaseSelect');
+    const escenariosCheckContainer = document.getElementById('escenariosCheckContainer');
     const tablaComparativoBody = document.getElementById('tablaComparativo');
-
-    implUnitPriceSpan.textContent = formatUSD(implementationItem.price);
-    implTotalSpan.textContent = formatUSD(implementationItem.price * parseInt(implQtyInput.value || '1', 10));
 
     function refrescarUIComparativa(escenarios) {
       escenarioBaseSelect.innerHTML = '';
@@ -792,9 +918,7 @@
 
       if (escenariosSeleccionados.size === 0) {
         escenarios.forEach(esc => {
-          if (esc.key !== escenarioBaseKey) {
-            escenariosSeleccionados.add(esc.key);
-          }
+          if (esc.key !== escenarioBaseKey) escenariosSeleccionados.add(esc.key);
         });
       }
 
@@ -810,11 +934,8 @@
         cb.checked = escenariosSeleccionados.has(esc.key);
 
         cb.addEventListener('change', () => {
-          if (cb.checked) {
-            escenariosSeleccionados.add(esc.key);
-          } else {
-            escenariosSeleccionados.delete(esc.key);
-          }
+          if (cb.checked) escenariosSeleccionados.add(esc.key);
+          else escenariosSeleccionados.delete(esc.key);
           recalcularTablaComparativo();
         });
 
@@ -855,36 +976,48 @@
       recalcularTablaComparativo();
     });
 
+    // --------------------- Cálculo principal ---------------------
+
+    const tablaModulosBody = document.getElementById('tablaModulos');
+    const tablaPostsBody = document.getElementById('tablaPosts');
+    const tablaCapsBody = document.getElementById('tablaCaps');
+    const tablaGlobalBody = document.getElementById('tablaGlobal');
+    const tablaExtrasBody = document.getElementById('tablaExtras');
+
     function calcular() {
-      const numMaquinas = parseInt(document.getElementById('numMaquinas').value || '1', 10);
+      // 1) Agregar módulos de todos los entornos
+      const moduleAgg = {}; // key -> { def, qty }
 
-      let implQty = parseInt(implQtyInput.value || '0', 10);
-      if (isNaN(implQty) || implQty < 0) implQty = 0;
-      const implementationTotal = implementationItem.price * implQty;
-      implQtyInput.value = implQty;
-      implTotalSpan.textContent = formatUSD(implementationTotal);
+      machines.forEach(m => {
+        const card = machinesContainer.querySelector(`[data-machine-id="${m.id}"]`);
+        if (!card) return;
+        const numMaquinasInput = card.querySelector('.js-numMaquinas');
+        const listaModulosDiv = card.querySelector('.js-listaModulos');
+        const numMaquinas = parseInt(numMaquinasInput.value || '1', 10) || 1;
 
-      const selectedModules = [];
-      listaModulosDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-        const key = cb.dataset.key;
-        const def = moduleCatalog[key];
-        if (def) selectedModules.push({ key, ...def });
+        listaModulosDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+          const key = cb.dataset.key;
+          const def = moduleCatalog[key];
+          if (!def) return;
+          if (!moduleAgg[key]) moduleAgg[key] = { def, qty: 0 };
+          moduleAgg[key].qty += numMaquinas;
+        });
       });
 
       let totLic = 0, totSubs1Y = 0, totSubs3Y = 0, totLicSubs1Y = 0, totLicSubs3Y = 0, totTrade2Y = 0, totTrade3Y = 0, totTerm = 0;
 
       tablaModulosBody.innerHTML = '';
-      selectedModules.forEach(def => {
-        const lic = def.price * numMaquinas;
-        const subs1 = calcSubs1Y(def.price) * numMaquinas;
-        const subs3 = calcSubs3Y(def.price) * numMaquinas;
 
+      Object.values(moduleAgg).forEach(({ def, qty }) => {
+        const lic = def.price * qty;
+        const subs1 = calcSubs1Y(def.price) * qty;
+        const subs3 = calcSubs3Y(def.price) * qty;
         const pkg = def.packageCode ? systemPackages[def.packageCode] : undefined;
-        const licSubs1 = pkg ? pkg.licSubs1Y * numMaquinas : lic + subs1;
+        const licSubs1 = pkg ? pkg.licSubs1Y * qty : (lic + subs1);
         const licSubs3 = lic + subs3;
-        const trade2 = calcTrade2Y(def.price) * numMaquinas;
-        const trade3 = calcTrade3Y(def.price) * numMaquinas;
-        const term = calcTerm(def.price) * numMaquinas;
+        const trade2 = calcTrade2Y(def.price) * qty;
+        const trade3 = calcTrade3Y(def.price) * qty;
+        const term = calcTerm(def.price) * qty;
 
         totLic += lic;
         totSubs1Y += subs1;
@@ -898,6 +1031,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="px-3 py-2">${def.name}</td>
+          <td class="px-3 py-2 text-right">${qty}</td>
           <td class="px-3 py-2 text-right">${formatUSD(lic)}</td>
           <td class="px-3 py-2 text-right">${formatUSD(subs1)}</td>
           <td class="px-3 py-2 text-right">${formatUSD(subs3)}</td>
@@ -920,7 +1054,7 @@
       document.getElementById('totTrade3Y').textContent = formatUSD(totTrade3Y);
       document.getElementById('totTerm').textContent = formatUSD(totTerm);
 
-      // -------- Posts ----------
+      // 2) Posts
       tablaPostsBody.innerHTML = '';
       let totalPosts = 0;
       currentPosts.forEach((p, idx) => {
@@ -944,7 +1078,6 @@
         `;
         tablaPostsBody.appendChild(tr);
       });
-
       tablaPostsBody.querySelectorAll('button[data-index]').forEach(btn => {
         btn.addEventListener('click', () => {
           const i = parseInt(btn.dataset.index, 10);
@@ -954,24 +1087,23 @@
           }
         });
       });
-
       document.getElementById('totPosts').textContent = formatUSD(totalPosts);
 
-      // -------- Capacitaciones ----------
+      // 3) Capacitaciones sugeridas
       tablaCapsBody.innerHTML = '';
       let totalCaps = 0;
-      const moduleNames = selectedModules.map(m => m.name);
 
+      const selectedKeys = Object.keys(moduleAgg);
       const suggestedCaps = new Set();
-      if (moduleNames.includes(moduleCatalog.millingBase?.name)) suggestedCaps.add('millingBase');
-      if (moduleNames.includes(moduleCatalog.hsr?.name)) suggestedCaps.add('hsr');
-      if (moduleNames.includes(moduleCatalog.hss?.name)) suggestedCaps.add('hss');
-      if (moduleNames.includes(moduleCatalog.hsm3D?.name)) suggestedCaps.add('hsm3d');
-      if (moduleNames.includes(moduleCatalog.sim4X?.name)) suggestedCaps.add('sim4');
-      if (moduleNames.includes(moduleCatalog.sim5Std?.name) || moduleNames.includes(moduleCatalog.sim5Pro?.name)) suggestedCaps.add('sim5');
-      if (moduleNames.includes(moduleCatalog.probe1?.name) || moduleNames.includes(moduleCatalog.probe2?.name)) suggestedCaps.add('probe');
-      if (moduleNames.includes(moduleCatalog.turningBase?.name)) suggestedCaps.add('turning');
-      if (moduleNames.includes(moduleCatalog.imoldDesigner?.name)) suggestedCaps.add('imold');
+      if (selectedKeys.includes('millingBase')) suggestedCaps.add('millingBase');
+      if (selectedKeys.includes('hsr')) suggestedCaps.add('hsr');
+      if (selectedKeys.includes('hss')) suggestedCaps.add('hss');
+      if (selectedKeys.includes('hsm3D')) suggestedCaps.add('hsm3d');
+      if (selectedKeys.includes('sim4X')) suggestedCaps.add('sim4');
+      if (selectedKeys.includes('sim5Std') || selectedKeys.includes('sim5Pro')) suggestedCaps.add('sim5');
+      if (selectedKeys.includes('probe1') || selectedKeys.includes('probe2')) suggestedCaps.add('probe');
+      if (selectedKeys.includes('turningBase')) suggestedCaps.add('turning');
+      if (selectedKeys.includes('imoldDesigner')) suggestedCaps.add('imold');
       suggestedCaps.add('generalWorkshop');
 
       function shouldIncludeCap(key) {
@@ -998,7 +1130,6 @@
         tablaCapsBody.appendChild(tr);
         totalCaps += cap.price;
       });
-
       tablaCapsBody.querySelectorAll('button[data-cap]').forEach(btn => {
         btn.addEventListener('click', () => {
           const key = btn.dataset.cap;
@@ -1006,18 +1137,50 @@
           calcular();
         });
       });
-
       document.getElementById('totCaps').textContent = formatUSD(totalCaps);
 
-      // -------- Resumen global ----------
+      // 4) Agregados manuales
+      tablaExtrasBody.innerHTML = '';
+      let totalExtras = 0;
+      extras.forEach((ex, idx) => {
+        const def = extrasCatalog[ex.key];
+        if (!def) return;
+        const rowTotal = def.price * ex.qty;
+        totalExtras += rowTotal;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2">${def.name}</td>
+          <td class="px-3 py-2 text-xs">${def.code}</td>
+          <td class="px-3 py-2 text-right">${formatUSD(def.price)}</td>
+          <td class="px-3 py-2 text-right">${ex.qty}</td>
+          <td class="px-3 py-2 text-right">${formatUSD(rowTotal)}</td>
+          <td class="px-3 py-2">
+            <button type="button" data-extra-index="${idx}" class="text-[11px] px-2 py-1 border border-slate-600 rounded hover:bg-slate-800">
+              Quitar
+            </button>
+          </td>
+        `;
+        tablaExtrasBody.appendChild(tr);
+      });
+      tablaExtrasBody.querySelectorAll('button[data-extra-index]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = parseInt(btn.dataset.extraIndex, 10);
+          if (!isNaN(i)) {
+            extras.splice(i, 1);
+            calcular();
+          }
+        });
+      });
+      document.getElementById('totExtras').textContent = formatUSD(totalExtras);
+
+      // 5) Resumen global y escenarios
       tablaGlobalBody.innerHTML = '';
       tablaComparativoBody.innerHTML = '';
 
-      const baseLic1Y = totLicSubs1Y + totalPosts + totalCaps + implementationTotal;
-      const baseLic = totLic + totalPosts + totalCaps + implementationTotal;
+      const baseLic1Y = totLicSubs1Y + totalPosts + totalCaps + totalExtras;
+      const baseLic = totLic + totalPosts + totalCaps + totalExtras;
 
       const escenarios = [];
-
       function addScenario(key, label, montoUSD) {
         escenarios.push({ key, label, total: montoUSD });
         const totalIVA = montoUSD * 1.16;
@@ -1032,9 +1195,9 @@
 
       addScenario('lic1', 'Licencia + 1 año de servicio', baseLic1Y);
       addScenario('lic3', 'Licencia + 3 años de servicio', baseLic + totSubs3Y);
-      addScenario('trade2', 'Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + implementationTotal);
-      addScenario('trade3', 'Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationTotal);
-      addScenario('term1', 'Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps + implementationTotal);
+      addScenario('trade2', 'Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + totalExtras);
+      addScenario('trade3', 'Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + totalExtras);
+      addScenario('term1', 'Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps + totalExtras);
 
       escenariosActuales = escenarios;
       refrescarUIComparativa(escenarios);
@@ -1043,87 +1206,130 @@
 
     document.getElementById('btnCalcular').addEventListener('click', calcular);
 
-    btnAgregarPost.addEventListener('click', () => {
-      const key = postTipoSelect.value;
-      const control = (postControlInput.value || '').trim();
-      const qty = parseInt(postCantidadInput.value || '1', 10);
-
-      if (!key || !postPrices[key]) return;
-      if (isNaN(qty) || qty <= 0) return;
-
-      currentPosts.push({ key, control, qty });
-      postControlInput.value = '';
-      postCantidadInput.value = '1';
-      calcular();
-    });
+    // --------------------- Exportar ---------------------
 
     document.getElementById('btnExportar').addEventListener('click', () => {
       calcular();
 
-      const tipoTexto = tipoMaquinaSelect.options[tipoMaquinaSelect.selectedIndex]?.textContent || '';
-      const ejesTexto = configEjesSelect.options[configEjesSelect.selectedIndex]?.textContent || '';
-      const enfoqueTexto = document.getElementById('enfoquePrincipal').options[document.getElementById('enfoquePrincipal').selectedIndex]?.textContent || '';
-      const prioridadTexto = document.getElementById('prioridad').options[document.getElementById('prioridad').selectedIndex]?.textContent || '';
-      const numMaquinas = document.getElementById('numMaquinas').value || '1';
-      const descripcion = document.getElementById('descripcionProceso').value || '(sin descripción)';
+      const descripcion = (document.getElementById('descripcionProceso').value || '(sin descripción)').replace(/\n/g, '<br>');
 
-      let implQty = parseInt(implQtyInput.value || '0', 10);
-      if (isNaN(implQty) || implQty < 0) implQty = 0;
-      const implementationTotal = implementationItem.price * implQty;
+      // Entornos
+      const entornoRows = [];
+      machines.forEach(m => {
+        const card = machinesContainer.querySelector(`[data-machine-id="${m.id}"]`);
+        if (!card) return;
+        const tipoSelect = card.querySelector('.js-tipoMaquina');
+        const ejesSelect = card.querySelector('.js-configEjes');
+        const enfoqueSelect = card.querySelector('.js-enfoque');
+        const prioridadSelect = card.querySelector('.js-prioridad');
+        const numMaquinasInput = card.querySelector('.js-numMaquinas');
 
-      const modLines = [];
-      listaModulosDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-        const key = cb.dataset.key;
-        const def = moduleCatalog[key];
-        if (def) {
-          const pkg = def.packageCode ? systemPackages[def.packageCode] : undefined;
-          modLines.push({
-            name: def.name,
-            code: def.packageCode || '-',
-            price: def.price,
-            licSubs1Y: pkg ? pkg.licSubs1Y : (def.price + calcSubs1Y(def.price))
-          });
-        }
+        entornoRows.push({
+          idx: m.id,
+          tipo: tipoSelect.options[tipoSelect.selectedIndex]?.textContent || '',
+          ejes: ejesSelect.options[ejesSelect.selectedIndex]?.textContent || '',
+          enfoque: enfoqueSelect.options[enfoqueSelect.selectedIndex]?.textContent || '',
+          prioridad: prioridadSelect.options[prioridadSelect.selectedIndex]?.textContent || '',
+          qty: numMaquinasInput.value || '1'
+        });
       });
 
-      const postLines = currentPosts.map(p => {
-        const def = postPrices[p.key];
-        return def ? {
-          name: def.name,
-          code: def.code,
-          control: p.control || '-',
-          qty: p.qty,
-          price: def.price,
-          total: def.price * p.qty
-        } : null;
-      }).filter(Boolean);
+      // Módulos desde tabla ya calculada
+      const modLines = [];
+      tablaModulosBody.querySelectorAll('tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 11) return;
+        modLines.push({
+          name: tds[0].textContent.trim(),
+          qty: tds[1].textContent.trim(),
+          lic: tds[2].textContent.trim(),
+          licSubs1Y: tds[5].textContent.trim(),
+          code: tds[10].textContent.trim()
+        });
+      });
 
+      // Posts
+      const postLines = [];
+      tablaPostsBody.querySelectorAll('tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 6) return;
+        postLines.push({
+          name: tds[0].textContent.trim(),
+          control: tds[1].textContent.trim(),
+          unit: tds[2].textContent.trim(),
+          qty: tds[3].textContent.trim(),
+          total: tds[4].textContent.trim(),
+          code: tds[5].textContent.trim()
+        });
+      });
+
+      // Extras
+      const extraLines = [];
+      tablaExtrasBody.querySelectorAll('tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 5) return;
+        extraLines.push({
+          name: tds[0].textContent.trim(),
+          code: tds[1].textContent.trim(),
+          unit: tds[2].textContent.trim(),
+          qty: tds[3].textContent.trim(),
+          total: tds[4].textContent.trim()
+        });
+      });
+
+      // Escenarios
       const escenariosExport = [];
       tablaGlobalBody.querySelectorAll('tr').forEach(tr => {
         const tds = tr.querySelectorAll('td');
-        if (tds.length >= 3) {
-          escenariosExport.push({
-            label: tds[0].textContent.trim(),
-            total: tds[1].textContent.trim(),
-            totalIVA: tds[2].textContent.trim()
-          });
-        }
+        if (tds.length < 3) return;
+        escenariosExport.push({
+          label: tds[0].textContent.trim(),
+          total: tds[1].textContent.trim(),
+          totalIVA: tds[2].textContent.trim()
+        });
       });
 
       let html = `
 <h2 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Resumen propuesta SolidCAM</h2>
-<p><strong>Máquinas:</strong> ${numMaquinas}</p>
-<p><strong>Tipo de máquina:</strong> ${tipoTexto}</p>
-<p><strong>Configuración de ejes:</strong> ${ejesTexto}</p>
-<p><strong>Enfoque principal:</strong> ${enfoqueTexto}</p>
-<p><strong>Prioridad:</strong> ${prioridadTexto}</p>
-<p><strong>Descripción del proceso:</strong><br>${descripcion.replace(/\n/g, '<br>')}</p>
+<p style="font-size:13px;"><strong>Descripción general del proceso:</strong><br>${descripcion}</p>
 <hr style="margin:16px 0;">
-<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Módulos seleccionados</h3>
+<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Entornos configurados</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
+  <thead style="background:#e5e7eb;">
+    <tr>
+      <th align="left">#</th>
+      <th align="left">Tipo de máquina</th>
+      <th align="left">Ejes</th>
+      <th align="left">Enfoque</th>
+      <th align="left">Prioridad</th>
+      <th align="right">Cantidad de máquinas</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
+
+      entornoRows.forEach(r => {
+        html += `
+    <tr>
+      <td>${r.idx}</td>
+      <td>${r.tipo}</td>
+      <td>${r.ejes}</td>
+      <td>${r.enfoque}</td>
+      <td>${r.prioridad}</td>
+      <td align="right">${r.qty}</td>
+    </tr>`;
+      });
+
+      html += `
+  </tbody>
+</table>
+<hr style="margin:16px 0;">
+<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Módulos de licencia</h3>
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
   <thead style="background:#e5e7eb;">
     <tr>
       <th align="left">Módulo</th>
+      <th align="right">Cantidad (máquinas)</th>
       <th align="left">Código sistema</th>
       <th align="right">Licencia (USD)</th>
       <th align="right">Lic+Subs 1Y (USD)</th>
@@ -1136,9 +1342,10 @@
         html += `
     <tr>
       <td>${m.name}</td>
+      <td align="right">${m.qty}</td>
       <td>${m.code}</td>
-      <td align="right">${formatUSD(m.price)}</td>
-      <td align="right">${formatUSD(m.licSubs1Y)}</td>
+      <td align="right">${m.lic}</td>
+      <td align="right">${m.licSubs1Y}</td>
     </tr>`;
       });
 
@@ -1168,8 +1375,8 @@
       <td>${p.control}</td>
       <td>${p.code}</td>
       <td align="right">${p.qty}</td>
-      <td align="right">${formatUSD(p.price)}</td>
-      <td align="right">${formatUSD(p.total)}</td>
+      <td align="right">${p.unit}</td>
+      <td align="right">${p.total}</td>
     </tr>`;
       });
 
@@ -1178,26 +1385,33 @@
 </table>
 `;
 
-      if (implQty > 0) {
+      if (extraLines.length > 0) {
         html += `
 <hr style="margin:16px 0;">
-<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Implementación / arranque CAM</h3>
+<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Agregados / servicios adicionales</h3>
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
   <thead style="background:#e5e7eb;">
     <tr>
       <th align="left">Concepto</th>
-      <th align="right">Bloques (8 hrs)</th>
-      <th align="right">Precio por bloque</th>
+      <th align="left">Código</th>
+      <th align="right">Cantidad</th>
+      <th align="right">Precio unitario</th>
       <th align="right">Total</th>
     </tr>
   </thead>
   <tbody>
+`;
+        extraLines.forEach(e => {
+          html += `
     <tr>
-      <td>${implementationItem.name}</td>
-      <td align="right">${implQty}</td>
-      <td align="right">${formatUSD(implementationItem.price)}</td>
-      <td align="right">${formatUSD(implementationTotal)}</td>
-    </tr>
+      <td>${e.name}</td>
+      <td>${e.code}</td>
+      <td align="right">${e.qty}</td>
+      <td align="right">${e.unit}</td>
+      <td align="right">${e.total}</td>
+    </tr>`;
+        });
+        html += `
   </tbody>
 </table>
 `;
@@ -1253,27 +1467,25 @@ ${html}
       }
     });
 
+    // --------------------- Limpiar ---------------------
+
     document.getElementById('btnLimpiar').addEventListener('click', () => {
-      document.getElementById('numMaquinas').value = 1;
-      document.getElementById('numPosts').value = 1;
       document.getElementById('descripcionProceso').value = '';
-      tipoMaquinaSelect.value = 'cm';
       currentPosts = [];
-      implQtyInput.value = 1;
-      implTotalSpan.textContent = formatUSD(implementationItem.price);
-      for (const k in manualOverrides) delete manualOverrides[k];
+      extras = [];
+      machines = [];
+      nextMachineId = 1;
+      for (const k in moduleOverrides) delete moduleOverrides[k];
       for (const k in trainingOverrides) delete trainingOverrides[k];
       escenariosActuales = [];
       escenarioBaseKey = 'lic1';
       escenariosSeleccionados = new Set();
-      escenarioBaseSelect.innerHTML = '';
-      escenariosCheckContainer.innerHTML = '';
 
-      refillAxisOptions();
-      sugerirModulos();
+      machinesContainer.innerHTML = '';
       tablaModulosBody.innerHTML = '';
       tablaPostsBody.innerHTML = '';
       tablaCapsBody.innerHTML = '';
+      tablaExtrasBody.innerHTML = '';
       tablaGlobalBody.innerHTML = '';
       tablaComparativoBody.innerHTML = '';
       document.getElementById('totLicencia').textContent = '$ 0.00';
@@ -1286,7 +1498,19 @@ ${html}
       document.getElementById('totTerm').textContent = '$ 0.00';
       document.getElementById('totPosts').textContent = '$ 0.00';
       document.getElementById('totCaps').textContent = '$ 0.00';
+      document.getElementById('totExtras').textContent = '$ 0.00';
+      escenarioBaseSelect.innerHTML = '';
+      escenariosCheckContainer.innerHTML = '';
+
+      addMachine();
     });
+
+    // --------------------- Init ---------------------
+
+    fillPostTipoOptions();
+    fillExtrasOptions();
+    addMachine();
+    calcular();
   </script>
 </body>
 </html>
