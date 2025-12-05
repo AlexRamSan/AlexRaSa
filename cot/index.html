@@ -302,6 +302,30 @@
           </table>
         </div>
       </div>
+
+      <!-- Comparativo de escenarios -->
+      <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Comparativo entre escenarios</h3>
+        <p class="text-[11px] text-slate-400 mb-2">
+          Comparación contra el escenario base <strong>"Licencia + 1 año de servicio"</strong>.
+        </p>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs md:text-sm">
+            <thead class="bg-base-900/70">
+              <tr>
+                <th class="px-3 py-2 text-left font-semibold">Escenario</th>
+                <th class="px-3 py-2 text-right font-semibold">Total USD</th>
+                <th class="px-3 py-2 text-right font-semibold">Diferencia vs Lic+1Y</th>
+                <th class="px-3 py-2 text-right font-semibold">% Diferencia</th>
+              </tr>
+            </thead>
+            <tbody id="tablaComparativo" class="divide-y divide-slate-700"></tbody>
+          </table>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">
+          Valores negativos en diferencia y porcentaje indican un <strong>monto menor (descuento / ahorro)</strong> respecto a "Licencia + 1 año de servicio".
+        </p>
+      </div>
     </section>
   </div>
 
@@ -453,12 +477,18 @@
       wire24: { name: 'Wirecut 2 axis + 4 axis SolidCAM', price: 4360, packageCode: 'SSM0132' },
     };
 
-    // Overrides manuales: usuario manda
-    const manualOverrides = {};     // módulos
-    const trainingOverrides = {};   // capacitaciones
+    // Overrides manuales
+    const manualOverrides = {};
+    const trainingOverrides = {};
 
     function formatUSD(value) {
       return '$ ' + value.toFixed(2);
+    }
+
+    // Para diferencias (+/-)
+    function formatUSDFlex(value) {
+      const sign = value < 0 ? '-' : '';
+      return sign + '$ ' + Math.abs(value).toFixed(2);
     }
 
     function calcSubs1Y(licPrice) {
@@ -677,6 +707,7 @@
     const tablaPostsBody = document.getElementById('tablaPosts');
     const tablaCapsBody = document.getElementById('tablaCaps');
     const tablaGlobalBody = document.getElementById('tablaGlobal');
+    const tablaComparativoBody = document.getElementById('tablaComparativo');
 
     function calcular() {
       const numMaquinas = parseInt(document.getElementById('numMaquinas').value || '1', 10);
@@ -774,7 +805,7 @@
 
       document.getElementById('totPosts').textContent = formatUSD(totalPosts);
 
-      // -------- Capacitaciones (con quitar) ----------
+      // -------- Capacitaciones ----------
       tablaCapsBody.innerHTML = '';
       let totalCaps = 0;
       const moduleNames = selectedModules.map(m => m.name);
@@ -828,11 +859,15 @@
 
       // -------- Resumen global ----------
       tablaGlobalBody.innerHTML = '';
+      tablaComparativoBody.innerHTML = '';
 
-      const base1Y = totLicSubs1Y + totalPosts + totalCaps + implementationItem.price;
+      const baseLic1Y = totLicSubs1Y + totalPosts + totalCaps + implementationItem.price;
       const baseLic = totLic + totalPosts + totalCaps + implementationItem.price;
 
-      function addScenario(label, montoUSD) {
+      const escenarios = [];
+
+      function addScenario(key, label, montoUSD) {
+        escenarios.push({ key, label, total: montoUSD });
         const totalIVA = montoUSD * 1.16;
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -843,11 +878,29 @@
         tablaGlobalBody.appendChild(tr);
       }
 
-      addScenario('Licencia + 1 año de servicio', base1Y);
-      addScenario('Licencia + 3 años de servicio', baseLic + totSubs3Y);
-      addScenario('Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + implementationItem.price);
-      addScenario('Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationItem.price);
-      addScenario('Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps);
+      addScenario('lic1', 'Licencia + 1 año de servicio', baseLic1Y);
+      addScenario('lic3', 'Licencia + 3 años de servicio', baseLic + totSubs3Y);
+      addScenario('trade2', 'Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + implementationItem.price);
+      addScenario('trade3', 'Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationItem.price);
+      addScenario('term1', 'Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps);
+
+      // -------- Comparativo de escenarios vs Lic+1Y ----------
+      const baseScenario = escenarios.find(s => s.key === 'lic1');
+      if (baseScenario && baseScenario.total !== 0) {
+        escenarios.forEach(s => {
+          if (s.key === 'lic1') return;
+          const diff = s.total - baseScenario.total; // >0 más caro, <0 más barato
+          const pct = (diff / baseScenario.total) * 100;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="px-3 py-2">${s.label}</td>
+            <td class="px-3 py-2 text-right">${formatUSD(s.total)}</td>
+            <td class="px-3 py-2 text-right">${formatUSDFlex(diff)}</td>
+            <td class="px-3 py-2 text-right">${pct.toFixed(1)} %</td>
+          `;
+          tablaComparativoBody.appendChild(tr);
+        });
+      }
     }
 
     document.getElementById('btnCalcular').addEventListener('click', calcular);
@@ -903,11 +956,11 @@
         } : null;
       }).filter(Boolean);
 
-      const escenarios = [];
+      const escenariosExport = [];
       tablaGlobalBody.querySelectorAll('tr').forEach(tr => {
         const tds = tr.querySelectorAll('td');
         if (tds.length >= 3) {
-          escenarios.push({
+          escenariosExport.push({
             label: tds[0].textContent.trim(),
             total: tds[1].textContent.trim(),
             totalIVA: tds[2].textContent.trim()
@@ -994,7 +1047,7 @@
   <tbody>
 `;
 
-      escenarios.forEach(e => {
+      escenariosExport.forEach(e => {
         html += `
     <tr>
       <td>${e.label}</td>
@@ -1044,6 +1097,7 @@ ${html}
       tablaPostsBody.innerHTML = '';
       tablaCapsBody.innerHTML = '';
       tablaGlobalBody.innerHTML = '';
+      tablaComparativoBody.innerHTML = '';
       document.getElementById('totLicencia').textContent = '$ 0.00';
       document.getElementById('totSubs1Y').textContent = '$ 0.00';
       document.getElementById('totSubs3Y').textContent = '$ 0.00';
