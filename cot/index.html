@@ -270,6 +270,7 @@
                 <th class="px-3 py-2 text-left font-semibold">Curso</th>
                 <th class="px-3 py-2 text-right font-semibold">Precio</th>
                 <th class="px-3 py-2 text-left font-semibold">Código</th>
+                <th class="px-3 py-2 text-left font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaCaps" class="divide-y divide-slate-700"></tbody>
@@ -277,6 +278,7 @@
               <tr>
                 <td class="px-3 py-2 text-right font-semibold">Total capacitación</td>
                 <td class="px-3 py-2 text-right" id="totCaps">$ 0.00</td>
+                <td></td>
                 <td></td>
               </tr>
             </tfoot>
@@ -451,8 +453,9 @@
       wire24: { name: 'Wirecut 2 axis + 4 axis SolidCAM', price: 4360, packageCode: 'SSM0132' },
     };
 
-    // Overrides manuales: el usuario manda
-    const manualOverrides = {}; // key -> 'forceOn' | 'forceOff'
+    // Overrides manuales: usuario manda
+    const manualOverrides = {};     // módulos
+    const trainingOverrides = {};   // capacitaciones
 
     function formatUSD(value) {
       return '$ ' + value.toFixed(2);
@@ -734,6 +737,7 @@
       document.getElementById('totTrade3Y').textContent = formatUSD(totTrade3Y);
       document.getElementById('totTerm').textContent = formatUSD(totTerm);
 
+      // -------- Posts ----------
       tablaPostsBody.innerHTML = '';
       let totalPosts = 0;
       currentPosts.forEach((p, idx) => {
@@ -770,37 +774,59 @@
 
       document.getElementById('totPosts').textContent = formatUSD(totalPosts);
 
+      // -------- Capacitaciones (con quitar) ----------
       tablaCapsBody.innerHTML = '';
       let totalCaps = 0;
       const moduleNames = selectedModules.map(m => m.name);
 
-      function addCap(capKey) {
-        const cap = trainingCatalog[capKey];
-        if (!cap) return;
+      const suggestedCaps = new Set();
+      if (moduleNames.includes(moduleCatalog.millingBase?.name)) suggestedCaps.add('millingBase');
+      if (moduleNames.includes(moduleCatalog.hsr?.name)) suggestedCaps.add('hsr');
+      if (moduleNames.includes(moduleCatalog.hss?.name)) suggestedCaps.add('hss');
+      if (moduleNames.includes(moduleCatalog.hsm3D?.name)) suggestedCaps.add('hsm3d');
+      if (moduleNames.includes(moduleCatalog.sim4X?.name)) suggestedCaps.add('sim4');
+      if (moduleNames.includes(moduleCatalog.sim5Std?.name) || moduleNames.includes(moduleCatalog.sim5Pro?.name)) suggestedCaps.add('sim5');
+      if (moduleNames.includes(moduleCatalog.probe1?.name) || moduleNames.includes(moduleCatalog.probe2?.name)) suggestedCaps.add('probe');
+      if (moduleNames.includes(moduleCatalog.turningBase?.name)) suggestedCaps.add('turning');
+      if (moduleNames.includes(moduleCatalog.imoldDesigner?.name)) suggestedCaps.add('imold');
+      suggestedCaps.add('generalWorkshop');
+
+      function shouldIncludeCap(key) {
+        const sugerido = suggestedCaps.has(key);
+        const override = trainingOverrides[key];
+        if (override === 'forceOn') return true;
+        if (override === 'forceOff') return false;
+        return sugerido;
+      }
+
+      Object.entries(trainingCatalog).forEach(([capKey, cap]) => {
+        if (!shouldIncludeCap(capKey)) return;
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="px-3 py-2">${cap.name}</td>
           <td class="px-3 py-2 text-right">${formatUSD(cap.price)}</td>
           <td class="px-3 py-2 text-xs">${cap.code}</td>
+          <td class="px-3 py-2">
+            <button type="button" data-cap="${capKey}" class="text-[11px] px-2 py-1 border border-slate-600 rounded hover:bg-slate-800">
+              Quitar
+            </button>
+          </td>
         `;
         tablaCapsBody.appendChild(tr);
         totalCaps += cap.price;
-      }
+      });
 
-      if (moduleNames.includes(moduleCatalog.millingBase?.name)) addCap('millingBase');
-      if (moduleNames.includes(moduleCatalog.hsr?.name)) addCap('hsr');
-      if (moduleNames.includes(moduleCatalog.hss?.name)) addCap('hss');
-      if (moduleNames.includes(moduleCatalog.hsm3D?.name)) addCap('hsm3d');
-      if (moduleNames.includes(moduleCatalog.sim4X?.name)) addCap('sim4');
-      if (moduleNames.includes(moduleCatalog.sim5Std?.name) || moduleNames.includes(moduleCatalog.sim5Pro?.name)) addCap('sim5');
-      if (moduleNames.includes(moduleCatalog.probe1?.name) || moduleNames.includes(moduleCatalog.probe2?.name)) addCap('probe');
-      if (moduleNames.includes(moduleCatalog.turningBase?.name)) addCap('turning');
-      if (moduleNames.includes(moduleCatalog.imoldDesigner?.name)) addCap('imold');
-
-      addCap('generalWorkshop');
+      tablaCapsBody.querySelectorAll('button[data-cap]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.cap;
+          trainingOverrides[key] = 'forceOff';
+          calcular();
+        });
+      });
 
       document.getElementById('totCaps').textContent = formatUSD(totalCaps);
 
+      // -------- Resumen global ----------
       tablaGlobalBody.innerHTML = '';
 
       const base1Y = totLicSubs1Y + totalPosts + totalCaps + implementationItem.price;
@@ -1011,6 +1037,7 @@ ${html}
       tipoMaquinaSelect.value = 'cm';
       currentPosts = [];
       for (const k in manualOverrides) delete manualOverrides[k];
+      for (const k in trainingOverrides) delete trainingOverrides[k];
       refillAxisOptions();
       sugerirModulos();
       tablaModulosBody.innerHTML = '';
