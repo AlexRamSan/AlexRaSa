@@ -20,31 +20,36 @@
 </head>
 <body class="bg-base-900 text-slate-100">
   <div class="min-h-screen max-w-6xl mx-auto px-4 py-6 space-y-6">
-    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold">Configurador de licencias SolidCAM</h1>
-        <p class="text-sm text-slate-400">
-          Calcula una propuesta rápida a partir de tus máquinas, tecnologías de maquinado y servicios
-          (módulos SolidCAM Milling / Turning, posts, capacitación, implementación).
-        </p>
-      </div>
-      <div class="text-right text-xs text-slate-500">
-        Fórmulas usadas:<br>
-        Trade-in 2Y = (Lic + Subs 1Y) × (1 − 18.64%)<br>
-        Trade-in 3Y = (Lic + Subs 3Y) × (1 − 20.39%)<br>
-        Term = Lic × (1 − 58.7%)<br>
-        Subs 1Y ≈ 18% de Lic, Subs 3Y = 2.4 × Subs 1Y
+    <header class="space-y-1">
+      <h1 class="text-2xl font-semibold">Configurador de licencias SolidCAM</h1>
+      <p class="text-sm text-slate-400">
+        Llena el contexto del cliente, deja que el sistema recomiende paquetes y después
+        en las tablas puedes quitar lo que no quieras (HSR, HSM, HSS, posts, cursos, etc.).
+      </p>
+      <div class="text-xs text-slate-500">
+        Fórmulas usadas para cada módulo de sistema (precio paquete = Lic+Subs 1Y):
+        Trade-in 2Y = (Lic+Subs 1Y) × (1 − 18.64%) ·
+        Trade-in 3Y = (Lic+Subs 3Y) × (1 − 20.39%) ·
+        Term = Lic × (1 − 58.7%) ·
+        Subs 1Y ≈ 18% de Lic · Subs 3Y = 2.4 × Subs 1Y.
       </div>
     </header>
 
     <!-- FORMULARIO -->
     <section class="grid md:grid-cols-2 gap-6 bg-base-800/70 border border-base-700 rounded-xl p-4">
-      <!-- Máquinas -->
+      <!-- Contexto cliente -->
       <div class="space-y-3">
-        <h2 class="text-lg font-semibold">1. Parque de máquinas</h2>
-        <p class="text-xs text-slate-400">Indica cuántas máquinas tienes de cada tipo.</p>
+        <h2 class="text-lg font-semibold">1. Contexto del cliente</h2>
+        <p class="text-xs text-slate-400">
+          Describe brevemente qué fabrica, materiales, lotes, tipo de piezas, etc.
+          Este texto se incluye en el export.
+        </p>
+        <textarea id="client_desc" rows="6"
+          class="w-full text-sm bg-base-900 border border-base-600 rounded-lg px-3 py-2 resize-y"
+          placeholder="Ejemplo: fabrica moldes de inyección, acero P20 y H13, lotes cortos, 2 Haas 3 ejes y 1 torno Mazak…"></textarea>
 
         <div class="space-y-2 text-sm">
+          <h3 class="font-medium">Parque de máquinas</h3>
           <label class="flex items-center justify-between gap-2">
             <span>Centros de maquinado 3 ejes</span>
             <input id="cm_3x" type="number" min="0" value="1"
@@ -71,88 +76,110 @@
                    class="w-20 bg-base-900 border border-base-600 rounded px-2 py-1 text-right" />
           </label>
           <label class="flex items-center justify-between gap-2">
-            <span>Máquinas Wirecut 2 ejes</span>
+            <span>Wirecut 2 ejes</span>
             <input id="wire_2x" type="number" min="0" value="0"
                    class="w-20 bg-base-900 border border-base-600 rounded px-2 py-1 text-right" />
           </label>
           <label class="flex items-center justify-between gap-2">
-            <span>Máquinas Wirecut 4 ejes</span>
+            <span>Wirecut 4 ejes</span>
             <input id="wire_4x" type="number" min="0" value="0"
                    class="w-20 bg-base-900 border border-base-600 rounded px-2 py-1 text-right" />
           </label>
         </div>
       </div>
 
-      <!-- Tecnologías -->
+      <!-- Necesidades técnicas -->
       <div class="space-y-3">
-        <h2 class="text-lg font-semibold">2. Tecnologías de maquinado</h2>
+        <h2 class="text-lg font-semibold">2. Necesidades de maquinado</h2>
         <p class="text-xs text-slate-400">
-          Selecciona lo que realmente usas o quieres vender (moldes, 5 ejes, sonda, etc.).
+          Marca lo que aplique. La recomendación se basa en esto, pero siempre podrás
+          quitar módulos en la tabla.
         </p>
 
         <div class="space-y-1 text-sm">
           <label class="flex items-center gap-2">
-            <input id="tec_molds" type="checkbox" class="rounded border-base-600 bg-base-900" />
-            <span>Fabricación de moldes / cavidades 3D</span>
+            <input id="tec_imach" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
+            <span>iMachining 2D/3D para reducción de ciclo</span>
           </label>
           <label class="flex items-center gap-2">
-            <input id="tec_imachining" type="checkbox" class="rounded border-base-600 bg-base-900" />
-            <span>Quiero iMachining 2D + 3D</span>
+            <input id="tec_hsr" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
+            <span>Roughing 3D (HSR / Pro 3D HSR)</span>
           </label>
           <label class="flex items-center gap-2">
-            <input id="tec_hsm_pack" type="checkbox" class="rounded border-base-600 bg-base-900" />
-            <span>High Speed Pack (HSR + HSM + HSS)</span>
+            <input id="tec_hsm" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
+            <span>Acabado 3D global (HSM)</span>
           </label>
           <label class="flex items-center gap-2">
-            <input id="tec_5x" type="checkbox" class="rounded border-base-600 bg-base-900" />
-            <span>5 ejes simultáneo (Sim5X)</span>
+            <input id="tec_hss" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
+            <span>Acabado local por superficies críticas (HSS)</span>
           </label>
           <label class="flex items-center gap-2">
-            <input id="tec_probe" type="checkbox" class="rounded border-base-600 bg-base-900" />
-            <span>Sonda en máquina (Solid Probe)</span>
+            <input id="tec_5x" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
+            <span>5 ejes simultáneo</span>
           </label>
           <label class="flex items-center gap-2">
-            <input id="tec_gcode_sim" type="checkbox" class="rounded border-base-600 bg-base-900" />
+            <input id="tec_probe" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
+            <span>Sonda en máquina (home position / medición)</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input id="tec_gcode" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
             <span>Simulación G-Code / Machine Simulation</span>
           </label>
           <label class="flex items-center gap-2">
-            <input id="tec_operators" type="checkbox" class="rounded border-base-600 bg-base-900" />
-            <span>Editors / Simulator para operadores</span>
+            <input id="tec_operators" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
+            <span>Editor / Simulator para operadores</span>
           </label>
           <label class="flex items-center gap-2">
-            <input id="tec_imold" type="checkbox" class="rounded border-base-600 bg-base-900" />
+            <input id="tec_imold" type="checkbox"
+                   class="tec-input rounded border-base-600 bg-base-900" />
             <span>IMOLD Mold Designer / Electrode Designer</span>
           </label>
         </div>
 
-        <div class="mt-3 flex items-center justify-between gap-3">
-          <label class="flex items-center gap-2 text-xs">
+        <div class="mt-3 flex flex-col gap-2 text-xs">
+          <label class="flex items-center gap-2">
             <input id="add_impl" type="checkbox" checked
                    class="rounded border-base-600 bg-base-900" />
-            <span>Incluir implementación CAM en sitio (8 hrs)</span>
+            <span>Incluir implementación CAM en sitio 8 hrs</span>
           </label>
-          <button id="btn_calc"
-                  class="px-4 py-2 rounded-lg bg-accent-500 text-xs font-semibold hover:bg-accent-400">
-            Calcular recomendación
-          </button>
+
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button id="btn_calc"
+                    class="px-4 py-2 rounded-lg bg-accent-500 text-xs font-semibold hover:bg-accent-400">
+              Calcular recomendación
+            </button>
+            <button id="btn_reset"
+                    class="px-4 py-2 rounded-lg border border-base-600 text-xs hover:bg-base-700">
+              Borrar todo
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- RESULTADOS -->
     <section id="results" class="space-y-6 hidden">
-      <!-- Módulos recomendados -->
+      <!-- Módulos -->
       <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-3">
-        <h2 class="text-lg font-semibold">Módulos recomendados</h2>
+        <h2 class="text-lg font-semibold">Módulos recomendados (editable)</h2>
         <p class="text-xs text-slate-400">
-          Usa siempre paquetes de sistema (SSA1xxx). Las columnas de precios se calculan
-          a partir del precio de sistema (Lic+Subs 1Y) con las reglas definidas.
+          Desmarca “Incluir” para quitar un módulo. Si vuelves a pulsar
+          “Calcular recomendación”, se recalcula la propuesta desde cero.
         </p>
 
         <div class="overflow-x-auto text-xs">
           <table class="min-w-full text-right border-collapse">
             <thead class="bg-base-700 text-slate-300">
               <tr>
+                <th class="px-2 py-1 text-left">Incluir</th>
                 <th class="px-2 py-1 text-left">Módulo</th>
                 <th class="px-2 py-1">Código sistema (1Y)</th>
                 <th class="px-2 py-1">Licencia</th>
@@ -169,8 +196,7 @@
             <tbody id="tbody_modules" class="divide-y divide-base-700"></tbody>
             <tfoot class="bg-base-900/60 font-semibold">
               <tr>
-                <td class="px-2 py-1 text-left">Totales módulos</td>
-                <td class="px-2 py-1"></td>
+                <td class="px-2 py-1 text-left" colspan="3">Totales módulos (sólo los incluidos)</td>
                 <td class="px-2 py-1" id="tot_mod_lic"></td>
                 <td class="px-2 py-1" id="tot_mod_s1"></td>
                 <td class="px-2 py-1" id="tot_mod_s3"></td>
@@ -186,21 +212,22 @@
         </div>
       </div>
 
-      <!-- Posts -->
+      <!-- Posts / servicios -->
       <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-3">
-        <h2 class="text-lg font-semibold">Postprocesadores sugeridos</h2>
+        <h2 class="text-lg font-semibold">Postprocesadores y servicios (editable)</h2>
         <p class="text-xs text-slate-400">
-          Para fresadoras 3 ejes se asume post estándar sin costo adicional.
-          Para 4/5 ejes, Mill-Turn y Wirecut se agregan posts dedicados.
+          Incluye posts, dongle, licencias flotantes e implementación CAM.
+          Puedes desmarcar lo que no quieras cotizar.
         </p>
 
         <div class="overflow-x-auto text-xs">
           <table class="min-w-full text-right border-collapse">
             <thead class="bg-base-700 text-slate-300">
               <tr>
+                <th class="px-2 py-1 text-left">Incluir</th>
                 <th class="px-2 py-1 text-left">Producto</th>
                 <th class="px-2 py-1">Código</th>
-                <th class="px-2 py-1">Precio unitario (USD)</th>
+                <th class="px-2 py-1">Precio unitario</th>
                 <th class="px-2 py-1">Cantidad</th>
                 <th class="px-2 py-1">Subtotal</th>
               </tr>
@@ -208,8 +235,7 @@
             <tbody id="tbody_posts" class="divide-y divide-base-700"></tbody>
             <tfoot class="bg-base-900/60 font-semibold">
               <tr>
-                <td class="px-2 py-1 text-left">Total posts</td>
-                <td></td><td></td>
+                <td class="px-2 py-1 text-left" colspan="4">Total posts / servicios</td>
                 <td class="px-2 py-1" id="tot_posts_qty"></td>
                 <td class="px-2 py-1" id="tot_posts_val"></td>
               </tr>
@@ -220,18 +246,20 @@
 
       <!-- Capacitaciones -->
       <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-3">
-        <h2 class="text-lg font-semibold">Capacitaciones sugeridas</h2>
+        <h2 class="text-lg font-semibold">Capacitaciones sugeridas (editable)</h2>
         <p class="text-xs text-slate-400">
-          Se calculan en función de los módulos elegidos (Milling base, iMachining, HSM/HSR/HSS, Probe, Turning, Wirecut, IMOLD).
+          Se sugieren en función de los módulos elegidos (Milling base, iMachining, HSR/HSM/HSS,
+          Turning, Probe, Wirecut, IMOLD). Desmarca lo que no quieras incluir.
         </p>
 
         <div class="overflow-x-auto text-xs">
           <table class="min-w-full text-right border-collapse">
             <thead class="bg-base-700 text-slate-300">
               <tr>
+                <th class="px-2 py-1 text-left">Incluir</th>
                 <th class="px-2 py-1 text-left">Curso</th>
                 <th class="px-2 py-1">Código</th>
-                <th class="px-2 py-1">Precio unitario (USD)</th>
+                <th class="px-2 py-1">Precio unitario</th>
                 <th class="px-2 py-1">Cantidad</th>
                 <th class="px-2 py-1">Subtotal</th>
               </tr>
@@ -239,8 +267,7 @@
             <tbody id="tbody_train" class="divide-y divide-base-700"></tbody>
             <tfoot class="bg-base-900/60 font-semibold">
               <tr>
-                <td class="px-2 py-1 text-left">Total capacitación</td>
-                <td></td><td></td>
+                <td class="px-2 py-1 text-left" colspan="4">Total capacitación</td>
                 <td class="px-2 py-1" id="tot_train_qty"></td>
                 <td class="px-2 py-1" id="tot_train_val"></td>
               </tr>
@@ -249,9 +276,10 @@
         </div>
       </div>
 
-      <!-- Resumen global -->
-      <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-3">
-        <h2 class="text-lg font-semibold">Resumen económico global (módulos + posts + capacitación + implementación)</h2>
+      <!-- Resumen global + export -->
+      <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-4">
+        <h2 class="text-lg font-semibold">Resumen económico global</h2>
+
         <div class="grid md:grid-cols-3 gap-4 text-sm">
           <div class="space-y-1">
             <div class="flex justify-between">
@@ -269,15 +297,30 @@
           </div>
           <div class="space-y-1 text-xs text-slate-400 md:col-span-2">
             <p>
-              Nota: este resumen está basado en los paquetes de sistema (SSA1xxx) y servicios
-              sugeridos. Para la oferta formal puedes usar:
+              El subtotal usa la columna <strong>Lic+Subs 1Y</strong> de los módulos incluidos,
+              más posts, servicios y capacitación seleccionados.
             </p>
             <ul class="list-disc list-inside space-y-1">
-              <li>Opción 1: Licencia + subscripción 1 año (recomendado para venta estándar).</li>
-              <li>Opción 2: Trade-in 2 años (basado en Lic+Subs 1Y con 18.64% de descuento).</li>
-              <li>Opción 3: Licencia de término (Term) a 12 meses (35% del paquete con 1Y incluido).</li>
+              <li>Opción estándar: Licencia + subscripción 1 año.</li>
+              <li>Trade-in 2Y y 3Y calculados con los descuentos oficiales (18.64% y 20.39%).</li>
+              <li>Term = licencia de término 12 meses, 35% del paquete con 1 año de subscripción.</li>
             </ul>
           </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 text-xs pt-1">
+          <button id="btn_export"
+                  class="px-4 py-2 rounded-lg bg-accent-500 font-semibold hover:bg-accent-400">
+            Exportar resumen (texto)
+          </button>
+        </div>
+
+        <div id="export_panel" class="hidden space-y-1 text-xs">
+          <p class="text-slate-400">
+            Copia y pega este texto en tu CRM, correo o Excel:
+          </p>
+          <textarea id="export_text" rows="8"
+            class="w-full bg-base-900 border border-base-600 rounded-lg px-3 py-2 font-mono text-[11px]"></textarea>
         </div>
       </div>
     </section>
@@ -292,82 +335,78 @@
     const TRADE3_DISC = 0.2039;  // 20.39%
     const TERM_DISC = 0.587;     // 58.7%
 
-    // --------- LISTA DE PRECIOS (sólo sistema + servicios que pasaste) ----------
-    // Clave = código SSA / SSC / SSM / etc.  Valor = precio de sistema en USD
     const PRICE = {
       // Paquetes de sistema principales
-      "SSA1008": 4602.00,   // Package SolidCAM Milling (2.5D milling module)
-      "SSA1000": 5635.00,   // Milling + Feature Recognition
-      "SSA1017": 5062.20,   // Package + iMachining 2D
-      "SSA1001": 8956.20,   // Package + iMachining 3D (2D incluido)
-      "SSA1028": 3894.00,   // Package + iMachining 3D sin 2D
-      "SSA1002": 7139.00,   // Package + 3D HSM module (HSR incluido)
-      "SSA1004": 1947.00,   // Package + HSM Rough milling module - HSR
-      "SSA1006": 1298.00,   // Package + HSS module (Sim 3 axis)
-      "SSA1029": 1298.00,   // Package + Feature recognition (otra clave)
-      "SSA1031": 1298.00,   // Package + Simultaneous 4 axis
-      "SSA1043": 5192.00,   // Package + Simultaneous 5 axis Standard
-      "SSA1044": 9086.00,   // Package + Simultaneous 5 axis Professional
-      "SSA1003": 2360.00,   // Package + Turning
-      "SSA1035": 7659.00,   // Package + Swiss Type
-      "SSA1030": 5192.00,   // Package + Upgrade from HSR to full 3D HSM
-      "SSA1011": 1947.00,   // Package + Machine simulation (G-Code)
-      "SSA1032": 1180.00,   // Package + Multi Axis machining
-      "SSA1033": 11210.00,  // Package + Multi-blade machining
-      "SSA1034": 9334.00,   // Package + Port machining
-      "SSA1039": 1298.00,   // Package Integration (G-Code simulation)
-      "SSA1022": 2598.00,   // Package Postprocessor 4 axis
-      "SSA1036": 2467.00,   // Package Solid Probe Level 1
-      "SSA1016": 5063.00,   // Package Solid Probe Level 2
-      "SSA1019": 3350.00,   // Package SolidCAM Electrode Designer (IMOLD)
-      "SSA1048": 3765.00,   // Package SolidCAM for Operators Editor
-      "SSA1049": 2467.00,   // Package SolidCAM for Operators Simulator
-      "SSA1037": 2207.00,   // Package SolidCAM Xpress Milling
-      "SSA1038": 2396.00,   // Package Upgrade to SolidCAM 2.5D
-      "SSA1012": 2950.00,   // Package SolidCAM Turning
-      "SSA9013": 2814.00,   // Package SolidCAM Wirecut 2 axis - 1 year
-      "SSA9014": 5145.00,   // Package SolidCAM Wirecut 2 + 4 axis - 1 year
-      "SSA1020": 9200.00,   // Package IMOLD Mold Designer
-      "SSA1015": 12730.00,  // Package DCAMCUT Expert
-      "SSA1005": 10133.00,  // Package DCAMCUT Professional
-      "SSA1013": 6235.00,   // Package DCAMCUT Standard
-      "SSA1021": 780.00,    // Package Floating license fee DCAM
-      "SSA1027": 275.00,    // Package producto de prueba
-      "SSA1021F": 780.00,   // alias si lo quieres usar aparte
+      "SSA1008": 4602.00,
+      "SSA1000": 5635.00,
+      "SSA1017": 5062.20,
+      "SSA1001": 8956.20,
+      "SSA1028": 3894.00,
+      "SSA1002": 7139.00,
+      "SSA1004": 1947.00,
+      "SSA1006": 1298.00,
+      "SSA1031": 1298.00,
+      "SSA1043": 5192.00,
+      "SSA1044": 9086.00,
+      "SSA1003": 2360.00,
+      "SSA1035": 7659.00,
+      "SSA1030": 5192.00,
+      "SSA1011": 1947.00,
+      "SSA1032": 1180.00,
+      "SSA1033": 11210.00,
+      "SSA1034": 9334.00,
+      "SSA1039": 1298.00,
+      "SSA1022": 2598.00,
+      "SSA1036": 2467.00,
+      "SSA1016": 5063.00,
+      "SSA1019": 3350.00,
+      "SSA1048": 3765.00,
+      "SSA1049": 2467.00,
+      "SSA1037": 2207.00,
+      "SSA1038": 2396.00,
+      "SSA1012": 2950.00,
+      "SSA9013": 2814.00,
+      "SSA9014": 5145.00,
+      "SSA1020": 9200.00,
+      "SSA1015": 12730.00,
+      "SSA1005": 10133.00,
+      "SSA1013": 6235.00,
+      "SSA1021": 780.00,
+      "SSA1027": 275.00,
 
       // Servicios / implementación / licencias especiales
-      "SSM0087": 1000.00,   // Implementación CAM en sitio 8 hrs
-      "SSM0033": 1320.00,   // Floating license fee SolidCAM - one time fee
-      "SSM0129": 150.00,    // USB Dongle SOLIDCAM
+      "SSM0087": 1000.00,
+      "SSM0033": 1320.00,
+      "SSM0129": 150.00,
 
-      // Postprocesadores unitarios (no sistema)
-      "SSM0136": 500.00,    // Post Milling 3X
-      "SSM0101": 500.00,    // Post Milling 4X
-      "SSM0102": 1250.00,   // Post Milling 5X
-      "SSM0100": 700.00,    // Post MillTurn 4 axis
-      "SSM0098": 1500.00,   // Post MillTurn 5 axis
-      "SSM0088": 2500.00,   // Post Turning
-      "SSM0134": 425.00,    // Post Wirecut 2 axis
-      "SSM0135": 575.00,    // Post Wirecut 4 axis
-      "SSM0086": 3076.00,   // SOLIDCAM Postprocessor 5 axis
+      // Postprocesadores unitarios
+      "SSM0136": 500.00,
+      "SSM0101": 500.00,
+      "SSM0102": 1250.00,
+      "SSM0100": 700.00,
+      "SSM0098": 1500.00,
+      "SSM0088": 2500.00,
+      "SSM0134": 425.00,
+      "SSM0135": 575.00,
+      "SSM0086": 3076.00,
 
-      // Wirecut licencias sueltas (no paquete)
-      "SSM0132": 4360.00,   // Wirecut 2 + 4 axis SolidCAM
-      "SSM0130": 2385.00,   // Wirecut 2 axis SolidCAM
+      // Wirecut licencias sueltas
+      "SSM0132": 4360.00,
+      "SSM0130": 2385.00,
 
-      // Entrenamientos (Training)
-      "SSC0038": 200.00,    // Cap HSM Rough module - HSR
-      "SSC0037": 200.00,    // Cap HSS module
-      "SSC0039": 200.00,    // Cap iMachining 2D y 3D
-      "SSC0061": 750.00,    // Cap IMOLD Mold Designer
-      "SSC0045": 450.00,    // Cap Mill-Turn
-      "SSC0062": 450.00,    // Cap SOLID Probe
-      "SSC0051": 750.00,    // Cap Electrode Designer (IMOLD)
-      "SSC0034": 450.00,    // Cap SolidCAM Milling (2.5D)
-      "SSC0040": 350.00,    // Cap Turning
-      "SSC0046": 350.00,    // Cap Wire EDM DCAMCUT 2 axis
-      "SSC0047": 350.00,    // Cap Wire EDM DCAMCUT 4 axis
-      "SSC0066": 320.00     // Taller de capacitación general SolidCAM
+      // Entrenamientos
+      "SSC0038": 200.00,
+      "SSC0037": 200.00,
+      "SSC0039": 200.00,
+      "SSC0061": 750.00,
+      "SSC0045": 450.00,
+      "SSC0062": 450.00,
+      "SSC0051": 750.00,
+      "SSC0034": 450.00,
+      "SSC0040": 350.00,
+      "SSC0046": 350.00,
+      "SSC0047": 350.00,
+      "SSC0066": 320.00
     };
 
     const MOD_INFO = {
@@ -384,6 +423,7 @@
       "SSA1044": { name: "Simultaneous 5 axis Professional" },
       "SSA1003": { name: "Turning (base)" },
       "SSA1035": { name: "Swiss Type" },
+      "SSA1030": { name: "Upgrade from HSR to full 3D HSM" },
       "SSA1011": { name: "Machine simulation / G-Code" },
       "SSA1032": { name: "Multi Axis machining" },
       "SSA1033": { name: "Multi-blade machining" },
@@ -399,7 +439,7 @@
       "SSA1038": { name: "Upgrade to SolidCAM 2.5D" },
       "SSA1012": { name: "SolidCAM Turning (paquete)" },
       "SSA9013": { name: "SolidCAM Wirecut 2 axis (1Y)" },
-      "SSA9014": { name: "SolidCAM Wirecut 2 + 4 axis (1Y)" },
+      "SSA9014": { name: "SolidCAM Wirecut 2+4 axis (1Y)" },
       "SSA1020": { name: "IMOLD Mold Designer (paquete)" },
       "SSA1015": { name: "DCAMCUT Expert (paquete)" },
       "SSA1005": { name: "DCAMCUT Professional (paquete)" },
@@ -410,16 +450,22 @@
       "SSM0129": { name: "USB Dongle SolidCAM" }
     };
 
+    const state = {
+      modules: [], // {code,name,lic,s1,s3,ls1,ls3,tr2,tr3,term,qty,included}
+      posts: [],   // {code,name,price,qty,included}
+      train: []    // {code,name,price,qty,included}
+    };
+
     function fmt(v) {
       if (!v || isNaN(v)) return "$ 0.00";
       return "$ " + v.toFixed(2);
     }
 
     function breakdownFromSystem(code, qty) {
-      const ls1 = PRICE[code] || 0; // precio paquete sistema (Lic+Subs 1Y)
+      const ls1 = PRICE[code] || 0;
       const lic = ls1 / (1 + SUB1_PCT);
-      const s1 = lic * SUB1_PCT;
-      const s3 = s1 * SUB3_FACTOR;
+      const s1  = lic * SUB1_PCT;
+      const s3  = s1 * SUB3_FACTOR;
       const ls3 = lic + s3;
       const tr2 = ls1 * (1 - TRADE2_DISC);
       const tr3 = ls3 * (1 - TRADE3_DISC);
@@ -429,7 +475,8 @@
         code,
         name: (MOD_INFO[code] && MOD_INFO[code].name) || code,
         lic, s1, s3, ls1, ls3, tr2, tr3, term,
-        qty
+        qty,
+        included: true
       };
     }
 
@@ -449,12 +496,13 @@
       const w4 = parseInt(document.getElementById("wire_4x").value || "0", 10);
 
       const tec = {
-        molds: document.getElementById("tec_molds").checked,
-        imach: document.getElementById("tec_imachining").checked,
-        hsmPack: document.getElementById("tec_hsm_pack").checked,
+        imach: document.getElementById("tec_imach").checked,
+        hsr:   document.getElementById("tec_hsr").checked,
+        hsm:   document.getElementById("tec_hsm").checked,
+        hss:   document.getElementById("tec_hss").checked,
         sim5x: document.getElementById("tec_5x").checked,
         probe: document.getElementById("tec_probe").checked,
-        gcode: document.getElementById("tec_gcode_sim").checked,
+        gcode: document.getElementById("tec_gcode").checked,
         operators: document.getElementById("tec_operators").checked,
         imold: document.getElementById("tec_imold").checked
       };
@@ -465,59 +513,73 @@
 
     function buildRecommendation() {
       const sel = gatherSelections();
-      const modMap = {};    // módulos SSA (sistema)
-      const postMap = {};   // posts unitarios
-      const trainMap = {};  // capacitaciones
-      const extraMap = {};  // implementación, dongle, floating
+      const modMap = {};
+      const postMap = {};
+      const trainMap = {};
+      const extraMap = {};
 
-      // -------- MÓDULOS MILLING --------
       const totalMills = sel.n3 + sel.n4 + sel.n5;
+
+      // Base Milling
       if (totalMills > 0) {
-        addOrInc(modMap, "SSA1008", 1); // Milling base por licencia
-        // si quiere Feature recog. puedes cambiar SSA1008 -> SSA1000, por ahora lo dejamos separado
+        addOrInc(modMap, "SSA1008", 1);
       }
 
-      if (sel.tec.imach) {
-        // Recomendación: iMachining full 2D/3D
+      // iMachining
+      if (sel.tec.imach && totalMills > 0) {
         addOrInc(modMap, "SSA1001", 1);
         trainMap["SSC0039"] = (trainMap["SSC0039"] || 0) + 1;
       }
 
-      if (sel.tec.hsmPack || sel.tec.molds) {
-        // pack HSM/HSS/HSR para moldes
-        addOrInc(modMap, "SSA1002", 1);  // 3D HSM (incluye HSR)
-        addOrInc(modMap, "SSA1006", 1);  // HSS
-        trainMap["SSC0038"] = (trainMap["SSC0038"] || 0) + 1; // HSR
-        trainMap["SSC0037"] = (trainMap["SSC0037"] || 0) + 1; // HSS
+      // High Speed rough / finish
+      if (totalMills > 0) {
+        if (sel.tec.hsr && sel.tec.hsm) {
+          // Combo HSR + HSM en un solo código
+          addOrInc(modMap, "SSA1002", 1);
+          trainMap["SSC0038"] = (trainMap["SSC0038"] || 0) + 1; // HSR
+        } else if (sel.tec.hsr && !sel.tec.hsm) {
+          addOrInc(modMap, "SSA1004", 1); // Sólo HSR
+          trainMap["SSC0038"] = (trainMap["SSC0038"] || 0) + 1;
+        } else if (!sel.tec.hsr && sel.tec.hsm) {
+          // Sólo HSM → no hay SKU solo HSM, se recomienda 3D HSM module (incluye HSR)
+          addOrInc(modMap, "SSA1002", 1);
+        }
+
+        if (sel.tec.hss) {
+          addOrInc(modMap, "SSA1006", 1);
+          trainMap["SSC0037"] = (trainMap["SSC0037"] || 0) + 1;
+        }
       }
 
+      // 4 y 5 ejes
       if (sel.n4 > 0) {
         addOrInc(modMap, "SSA1031", 1);
-        // post 4X general
         addOrInc(postMap, "SSM0101", 1);
       }
-
       if (sel.n5 > 0 || sel.tec.sim5x) {
-        addOrInc(modMap, "SSA1043", 1); // 5X Standard
-        addOrInc(postMap, "SSM0102", 1); // post 5X
+        addOrInc(modMap, "SSA1043", 1);
+        addOrInc(postMap, "SSM0102", 1);
       }
 
-      if (sel.tec.gcode) {
-        addOrInc(modMap, "SSA1011", 1); // Machine simulation
-        // integración G-code opcional
-        addOrInc(modMap, "SSA1039", 1);
-      }
-
+      // Probe
       if (sel.tec.probe) {
-        addOrInc(modMap, "SSA1036", 1); // Level 1
+        addOrInc(modMap, "SSA1036", 1);
         trainMap["SSC0062"] = (trainMap["SSC0062"] || 0) + 1;
       }
 
+      // Machine simulation / G-code
+      if (sel.tec.gcode) {
+        addOrInc(modMap, "SSA1011", 1);
+        addOrInc(modMap, "SSA1039", 1);
+      }
+
+      // Operators
       if (sel.tec.operators) {
         addOrInc(modMap, "SSA1048", 1);
         addOrInc(modMap, "SSA1049", 1);
       }
 
+      // IMOLD
       if (sel.tec.imold) {
         addOrInc(modMap, "SSA1020", 1);
         addOrInc(modMap, "SSA1019", 1);
@@ -525,29 +587,27 @@
         trainMap["SSC0051"] = (trainMap["SSC0051"] || 0) + 1;
       }
 
-      // -------- TURNING / MILL-TURN --------
+      // Turning / Swiss
       if (sel.nt > 0) {
-        addOrInc(modMap, "SSA1012", 1); // SolidCAM Turning paquete
-        addOrInc(postMap, "SSM0088", 1); // Post turning
-        trainMap["SSC0040"] = (trainMap["SSC0040"] || 0) + 1; // Cap turning
+        addOrInc(modMap, "SSA1012", 1);
+        addOrInc(postMap, "SSM0088", 1);
+        trainMap["SSC0040"] = (trainMap["SSC0040"] || 0) + 1;
       }
-
       if (sel.nsw > 0) {
-        addOrInc(modMap, "SSA1035", 1); // Swiss Type
-        // Mill-Turn typical posts:
+        addOrInc(modMap, "SSA1035", 1);
         addOrInc(postMap, "SSM0100", 1);
         addOrInc(postMap, "SSM0098", 1);
         trainMap["SSC0045"] = (trainMap["SSC0045"] || 0) + 1;
       }
 
-      // -------- WIRECUT / DCAMCUT --------
+      // Wirecut
       if (sel.w2 > 0 || sel.w4 > 0) {
         if (sel.w4 > 0) {
-          addOrInc(modMap, "SSA9014", 1); // 2+4 axis 1Y
+          addOrInc(modMap, "SSA9014", 1);
           addOrInc(postMap, "SSM0134", 1);
           addOrInc(postMap, "SSM0135", 1);
         } else {
-          addOrInc(modMap, "SSA9013", 1); // 2 axis 1Y
+          addOrInc(modMap, "SSA9013", 1);
           addOrInc(postMap, "SSM0134", 1);
         }
         trainMap["SSC0046"] = (trainMap["SSC0046"] || 0) + 1;
@@ -556,63 +616,118 @@
         }
       }
 
-      // -------- SERVICIOS / IMPLEMENTACIÓN --------
+      // Servicios / extras
       if (sel.addImpl) {
         extraMap["SSM0087"] = (extraMap["SSM0087"] || 0) + 1;
       }
-      // Siempre considerar un dongle y una licencia flotante opcional
       extraMap["SSM0129"] = (extraMap["SSM0129"] || 0) + 1;
       extraMap["SSM0033"] = (extraMap["SSM0033"] || 0) + 1;
 
-      // Siempre al menos un curso base de Milling si hay módulos de Milling
+      // Siempre un curso base de Milling si hay milling
       if (totalMills > 0) {
         trainMap["SSC0034"] = (trainMap["SSC0034"] || 0) + 1;
       }
-      // Taller general opcional
+      // Taller general
       trainMap["SSC0066"] = (trainMap["SSC0066"] || 0) + 1;
 
       return { modMap, postMap, trainMap, extraMap };
     }
 
-    function renderTable() {
-      const { modMap, postMap, trainMap, extraMap } = buildRecommendation();
-
+    function renderAll() {
       const tbodyModules = document.getElementById("tbody_modules");
+      const tbodyPosts   = document.getElementById("tbody_posts");
+      const tbodyTrain   = document.getElementById("tbody_train");
       tbodyModules.innerHTML = "";
+      tbodyPosts.innerHTML = "";
+      tbodyTrain.innerHTML = "";
 
-      let totLic=0, totS1=0, totS3=0, totLs1=0, totLs3=0, totTr2=0, totTr3=0, totTerm=0, totQty=0;
-
-      Object.keys(modMap).forEach(code => {
-        const qty = modMap[code];
-        const bd = breakdownFromSystem(code, qty);
-
+      // MÓDULOS
+      state.modules.forEach((m, idx) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="px-2 py-1 text-left">${bd.name}</td>
-          <td class="px-2 py-1">${code}</td>
-          <td class="px-2 py-1">${fmt(bd.lic * qty)}</td>
-          <td class="px-2 py-1">${fmt(bd.s1 * qty)}</td>
-          <td class="px-2 py-1">${fmt(bd.s3 * qty)}</td>
-          <td class="px-2 py-1">${fmt(bd.ls1 * qty)}</td>
-          <td class="px-2 py-1">${fmt(bd.ls3 * qty)}</td>
-          <td class="px-2 py-1">${fmt(bd.tr2 * qty)}</td>
-          <td class="px-2 py-1">${fmt(bd.tr3 * qty)}</td>
-          <td class="px-2 py-1">${fmt(bd.term * qty)}</td>
-          <td class="px-2 py-1">${qty}</td>
+          <td class="px-2 py-1 text-left">
+            <input type="checkbox" class="toggle-row rounded border-base-600 bg-base-900"
+                   data-type="modules" data-idx="${idx}" ${m.included ? "checked" : ""} />
+          </td>
+          <td class="px-2 py-1 text-left">${m.name}</td>
+          <td class="px-2 py-1">${m.code}</td>
+          <td class="px-2 py-1">${fmt(m.lic * m.qty)}</td>
+          <td class="px-2 py-1">${fmt(m.s1 * m.qty)}</td>
+          <td class="px-2 py-1">${fmt(m.s3 * m.qty)}</td>
+          <td class="px-2 py-1">${fmt(m.ls1 * m.qty)}</td>
+          <td class="px-2 py-1">${fmt(m.ls3 * m.qty)}</td>
+          <td class="px-2 py-1">${fmt(m.tr2 * m.qty)}</td>
+          <td class="px-2 py-1">${fmt(m.tr3 * m.qty)}</td>
+          <td class="px-2 py-1">${fmt(m.term * m.qty)}</td>
+          <td class="px-2 py-1">${m.qty}</td>
         `;
         tbodyModules.appendChild(tr);
-
-        totLic  += bd.lic  * qty;
-        totS1   += bd.s1   * qty;
-        totS3   += bd.s3   * qty;
-        totLs1  += bd.ls1  * qty;
-        totLs3  += bd.ls3  * qty;
-        totTr2  += bd.tr2  * qty;
-        totTr3  += bd.tr3  * qty;
-        totTerm += bd.term * qty;
-        totQty  += qty;
       });
 
+      // POSTS / SERVICIOS
+      state.posts.forEach((p, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="px-2 py-1 text-left">
+            <input type="checkbox" class="toggle-row rounded border-base-600 bg-base-900"
+                   data-type="posts" data-idx="${idx}" ${p.included ? "checked" : ""} />
+          </td>
+          <td class="px-2 py-1 text-left">${p.name}</td>
+          <td class="px-2 py-1">${p.code}</td>
+          <td class="px-2 py-1">${fmt(p.price)}</td>
+          <td class="px-2 py-1">${p.qty}</td>
+          <td class="px-2 py-1">${fmt(p.price * p.qty)}</td>
+        `;
+        tbodyPosts.appendChild(tr);
+      });
+
+      // TRAINING
+      state.train.forEach((t, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="px-2 py-1 text-left">
+            <input type="checkbox" class="toggle-row rounded border-base-600 bg-base-900"
+                   data-type="train" data-idx="${idx}" ${t.included ? "checked" : ""} />
+          </td>
+          <td class="px-2 py-1 text-left">${t.name}</td>
+          <td class="px-2 py-1">${t.code}</td>
+          <td class="px-2 py-1">${fmt(t.price)}</td>
+          <td class="px-2 py-1">${t.qty}</td>
+          <td class="px-2 py-1">${fmt(t.price * t.qty)}</td>
+        `;
+        tbodyTrain.appendChild(tr);
+      });
+
+      // Listeners de checkboxes
+      document.querySelectorAll(".toggle-row").forEach(cb => {
+        cb.addEventListener("change", (e) => {
+          const type = e.target.dataset.type;
+          const idx  = parseInt(e.target.dataset.idx, 10);
+          const arr = state[type];
+          if (!arr) return;
+          arr[idx].included = e.target.checked;
+          recalcTotals();
+        });
+      });
+
+      recalcTotals();
+      document.getElementById("results").classList.remove("hidden");
+    }
+
+    function recalcTotals() {
+      let totLic=0, totS1=0, totS3=0, totLs1=0, totLs3=0, totTr2=0, totTr3=0, totTerm=0, totQty=0;
+      state.modules.forEach(m => {
+        if (!m.included) return;
+        totLic  += m.lic  * m.qty;
+        totS1   += m.s1   * m.qty;
+        totS3   += m.s3   * m.qty;
+        totLs1  += m.ls1  * m.qty;
+        totLs3  += m.ls3  * m.qty;
+        totTr2  += m.tr2  * m.qty;
+        totTr3  += m.tr3  * m.qty;
+        totTerm += m.term * m.qty;
+        totQty  += m.qty;
+      });
       document.getElementById("tot_mod_lic").textContent  = fmt(totLic);
       document.getElementById("tot_mod_s1").textContent   = fmt(totS1);
       document.getElementById("tot_mod_s3").textContent   = fmt(totS3);
@@ -623,92 +738,129 @@
       document.getElementById("tot_mod_term").textContent = fmt(totTerm);
       document.getElementById("tot_mod_qty").textContent  = totQty.toString();
 
-      // POSTS
-      const tbodyPosts = document.getElementById("tbody_posts");
-      tbodyPosts.innerHTML = "";
-      let totPostQty=0, totPostVal=0;
-
-      const allPosts = Object.assign({}, postMap, extraMap); // junto posts + extras en misma tabla
-
-      Object.keys(allPosts).forEach(code => {
-        const qty = allPosts[code];
-        const price = PRICE[code] || 0;
-        const name =
-          (MOD_INFO[code] && MOD_INFO[code].name) ||
-          (code.startsWith("SSM01") ? "Postprocesador" : "Servicio / extra");
-        const sub = price * qty;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="px-2 py-1 text-left">${name}</td>
-          <td class="px-2 py-1">${code}</td>
-          <td class="px-2 py-1">${fmt(price)}</td>
-          <td class="px-2 py-1">${qty}</td>
-          <td class="px-2 py-1">${fmt(sub)}</td>
-        `;
-        tbodyPosts.appendChild(tr);
-
-        totPostQty += qty;
-        totPostVal += sub;
+      let totPostsVal = 0, totPostsQty = 0;
+      state.posts.forEach(p => {
+        if (!p.included) return;
+        totPostsVal += p.price * p.qty;
+        totPostsQty += p.qty;
       });
+      document.getElementById("tot_posts_val").textContent = fmt(totPostsVal);
+      document.getElementById("tot_posts_qty").textContent = totPostsQty.toString();
 
-      document.getElementById("tot_posts_qty").textContent = totPostQty.toString();
-      document.getElementById("tot_posts_val").textContent = fmt(totPostVal);
-
-      // TRAINING
-      const tbodyTrain = document.getElementById("tbody_train");
-      tbodyTrain.innerHTML = "";
-      let totTrainQty=0, totTrainVal=0;
-
-      Object.keys(trainMap).forEach(code => {
-        const qty = trainMap[code];
-        const price = PRICE[code] || 0;
-        const sub = price * qty;
-        const name = {
-          "SSC0038": "Capacitación HSM Rough / HSR",
-          "SSC0037": "Capacitación HSS module",
-          "SSC0039": "Capacitación iMachining 2D/3D",
-          "SSC0061": "Capacitación IMOLD Mold Designer",
-          "SSC0045": "Capacitación Mill-Turn",
-          "SSC0062": "Capacitación Solid Probe",
-          "SSC0051": "Capacitación Electrode Designer (IMOLD)",
-          "SSC0034": "Capacitación SolidCAM Milling 2.5D",
-          "SSC0040": "Capacitación Turning",
-          "SSC0046": "Capacitación Wire EDM DCAMCUT 2 ejes",
-          "SSC0047": "Capacitación Wire EDM DCAMCUT 4 ejes",
-          "SSC0066": "Taller de capacitación SolidCAM"
-        }[code] || "Capacitación " + code;
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="px-2 py-1 text-left">${name}</td>
-          <td class="px-2 py-1">${code}</td>
-          <td class="px-2 py-1">${fmt(price)}</td>
-          <td class="px-2 py-1">${qty}</td>
-          <td class="px-2 py-1">${fmt(sub)}</td>
-        `;
-        tbodyTrain.appendChild(tr);
-
-        totTrainQty += qty;
-        totTrainVal += sub;
+      let totTrainVal = 0, totTrainQty = 0;
+      state.train.forEach(t => {
+        if (!t.included) return;
+        totTrainVal += t.price * t.qty;
+        totTrainQty += t.qty;
       });
-
-      document.getElementById("tot_train_qty").textContent = totTrainQty.toString();
       document.getElementById("tot_train_val").textContent = fmt(totTrainVal);
+      document.getElementById("tot_train_qty").textContent = totTrainQty.toString();
 
-      // RESUMEN
-      const subtotal = totLs1 + totPostVal + totTrainVal; // base: paquete Lic+Subs 1Y
+      const subtotal = totLs1 + totPostsVal + totTrainVal;
       const iva = subtotal * IVA;
       const total = subtotal + iva;
-
       document.getElementById("res_subtotal").textContent = fmt(subtotal);
       document.getElementById("res_iva").textContent = fmt(iva);
       document.getElementById("res_total").textContent = fmt(total);
-
-      document.getElementById("results").classList.remove("hidden");
     }
 
-    document.getElementById("btn_calc").addEventListener("click", renderTable);
+    function regenerateFromForm() {
+      const { modMap, postMap, trainMap, extraMap } = buildRecommendation();
+
+      state.modules = Object.keys(modMap).map(code => breakdownFromSystem(code, modMap[code]));
+
+      const postCombined = { ...postMap, ...extraMap };
+      state.posts = Object.keys(postCombined).map(code => {
+        const price = PRICE[code] || 0;
+        const qty = postCombined[code];
+        let name =
+          (MOD_INFO[code] && MOD_INFO[code].name) ||
+          (code.startsWith("SSM01") ? "Postprocesador" : "Servicio / extra");
+        return { code, name, price, qty, included: true };
+      });
+
+      const trainNames = {
+        "SSC0038": "Capacitación HSM Rough / HSR",
+        "SSC0037": "Capacitación HSS module",
+        "SSC0039": "Capacitación iMachining 2D/3D",
+        "SSC0061": "Capacitación IMOLD Mold Designer",
+        "SSC0045": "Capacitación Mill-Turn",
+        "SSC0062": "Capacitación Solid Probe",
+        "SSC0051": "Capacitación Electrode Designer (IMOLD)",
+        "SSC0034": "Capacitación SolidCAM Milling 2.5D",
+        "SSC0040": "Capacitación Turning",
+        "SSC0046": "Capacitación Wire EDM DCAMCUT 2 ejes",
+        "SSC0047": "Capacitación Wire EDM DCAMCUT 4 ejes",
+        "SSC0066": "Taller de capacitación SolidCAM"
+      };
+      state.train = Object.keys(trainMap).map(code => {
+        const price = PRICE[code] || 0;
+        const qty = trainMap[code];
+        const name = trainNames[code] || ("Capacitación " + code);
+        return { code, name, price, qty, included: true };
+      });
+
+      renderAll();
+    }
+
+    function buildExportText() {
+      const lines = [];
+      const desc = document.getElementById("client_desc").value.trim();
+      if (desc) {
+        lines.push("Descripción del cliente:");
+        lines.push(desc);
+        lines.push("");
+      }
+
+      lines.push("MÓDULOS SELECCIONADOS:");
+      state.modules.forEach(m => {
+        if (!m.included) return;
+        lines.push(`- ${m.code} | ${m.name} | Cant: ${m.qty}`);
+      });
+      lines.push("");
+
+      lines.push("POSTPROCESADORES / SERVICIOS SELECCIONADOS:");
+      state.posts.forEach(p => {
+        if (!p.included) return;
+        lines.push(`- ${p.code} | ${p.name} | Cant: ${p.qty}`);
+      });
+      lines.push("");
+
+      lines.push("CAPACITACIONES SELECCIONADAS:");
+      state.train.forEach(t => {
+        if (!t.included) return;
+        lines.push(`- ${t.code} | ${t.name} | Cant: ${t.qty}`);
+      });
+      lines.push("");
+
+      return lines.join("\n");
+    }
+
+    // --------- EVENTOS ---------
+    document.getElementById("btn_calc").addEventListener("click", regenerateFromForm);
+
+    document.getElementById("btn_reset").addEventListener("click", () => {
+      ["cm_3x","cm_4x","cm_5x","cnc_turn","cnc_swiss","wire_2x","wire_4x"]
+        .forEach(id => document.getElementById(id).value = 0);
+      document.getElementById("cm_3x").value = 1;
+      document.querySelectorAll(".tec-input").forEach(el => el.checked = false);
+      document.getElementById("add_impl").checked = true;
+      document.getElementById("client_desc").value = "";
+      state.modules = [];
+      state.posts = [];
+      state.train = [];
+      document.getElementById("results").classList.add("hidden");
+      document.getElementById("export_panel").classList.add("hidden");
+    });
+
+    document.getElementById("btn_export").addEventListener("click", () => {
+      const txt = buildExportText();
+      const panel = document.getElementById("export_panel");
+      const area  = document.getElementById("export_text");
+      area.value = txt;
+      panel.classList.remove("hidden");
+      area.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   </script>
 </body>
 </html>
