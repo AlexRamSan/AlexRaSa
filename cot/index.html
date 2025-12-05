@@ -306,16 +306,34 @@
       <!-- Comparativo de escenarios -->
       <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
         <h3 class="font-semibold mb-2 text-sm md:text-base">Comparativo entre escenarios</h3>
+
+        <div class="flex flex-wrap items-end gap-3 mb-3">
+          <div class="min-w-[200px]">
+            <label class="block text-xs font-medium text-slate-200">Escenario base</label>
+            <select id="escenarioBaseSelect"
+              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
+              <!-- Se llena dinámicamente -->
+            </select>
+          </div>
+          <div class="flex-1 min-w-[220px]">
+            <span class="block text-[11px] font-medium text-slate-200">Escenarios a comparar (marca uno o varios)</span>
+            <div id="escenariosCheckContainer" class="flex flex-wrap gap-2 mt-1 text-[11px]">
+              <!-- Checkboxes dinámicos -->
+            </div>
+          </div>
+        </div>
+
         <p class="text-[11px] text-slate-400 mb-2">
-          Comparación contra el escenario base <strong>"Licencia + 1 año de servicio"</strong>.
+          Puedes elegir cualquier escenario como base y seleccionar cuáles quieres comparar contra él.
         </p>
+
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs md:text-sm">
             <thead class="bg-base-900/70">
               <tr>
                 <th class="px-3 py-2 text-left font-semibold">Escenario</th>
                 <th class="px-3 py-2 text-right font-semibold">Total USD</th>
-                <th class="px-3 py-2 text-right font-semibold">Diferencia vs Lic+1Y</th>
+                <th class="px-3 py-2 text-right font-semibold">Diferencia vs base</th>
                 <th class="px-3 py-2 text-right font-semibold">% Diferencia</th>
               </tr>
             </thead>
@@ -323,7 +341,7 @@
           </table>
         </div>
         <p class="text-[11px] text-slate-400 mt-2">
-          Valores negativos en diferencia y porcentaje indican un <strong>monto menor (descuento / ahorro)</strong> respecto a "Licencia + 1 año de servicio".
+          Valores negativos en diferencia y porcentaje indican un monto menor (descuento / ahorro) respecto al escenario base seleccionado.
         </p>
       </div>
     </section>
@@ -485,7 +503,6 @@
       return '$ ' + value.toFixed(2);
     }
 
-    // Para diferencias (+/-)
     function formatUSDFlex(value) {
       const sign = value < 0 ? '-' : '';
       return sign + '$ ' + Math.abs(value).toFixed(2);
@@ -518,7 +535,15 @@
     const postCantidadInput = document.getElementById('postCantidad');
     const btnAgregarPost = document.getElementById('btnAgregarPost');
 
+    const escenarioBaseSelect = document.getElementById('escenarioBaseSelect');
+    const escenariosCheckContainer = document.getElementById('escenariosCheckContainer');
+
     let currentPosts = [];
+
+    // Escenarios para comparativa
+    let escenariosActuales = [];
+    let escenarioBaseKey = 'lic1';
+    let escenariosSeleccionados = new Set();
 
     function getAvailablePostKeysForMachine(tipo) {
       if (tipo === 'cm') return ['milling4', 'milling5', 'post4pkg'];
@@ -709,6 +734,102 @@
     const tablaGlobalBody = document.getElementById('tablaGlobal');
     const tablaComparativoBody = document.getElementById('tablaComparativo');
 
+    function refrescarUIComparativa(escenarios) {
+      // Llenar select de base
+      escenarioBaseSelect.innerHTML = '';
+      const prevBase = escenarioBaseKey;
+      let existePrevio = false;
+
+      escenarios.forEach(esc => {
+        const opt = document.createElement('option');
+        opt.value = esc.key;
+        opt.textContent = esc.label;
+        if (esc.key === prevBase) existePrevio = true;
+        escenarioBaseSelect.appendChild(opt);
+      });
+
+      if (existePrevio) {
+        escenarioBaseSelect.value = prevBase;
+        escenarioBaseKey = prevBase;
+      } else if (escenarios.length) {
+        escenarioBaseSelect.value = escenarios[0].key;
+        escenarioBaseKey = escenarios[0].key;
+      }
+
+      // Limpiar seleccionados que ya no existan
+      [...escenariosSeleccionados].forEach(k => {
+        if (!escenarios.some(e => e.key === k)) {
+          escenariosSeleccionados.delete(k);
+        }
+      });
+
+      // Si no hay ninguno seleccionado, por default todos excepto base
+      if (escenariosSeleccionados.size === 0) {
+        escenarios.forEach(esc => {
+          if (esc.key !== escenarioBaseKey) {
+            escenariosSeleccionados.add(esc.key);
+          }
+        });
+      }
+
+      // Llenar checkboxes
+      escenariosCheckContainer.innerHTML = '';
+      escenarios.forEach(esc => {
+        const label = document.createElement('label');
+        label.className = 'inline-flex items-center gap-1 bg-base-900/40 border border-slate-700 rounded px-2 py-1';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'h-3 w-3';
+        cb.value = esc.key;
+        cb.checked = escenariosSeleccionados.has(esc.key);
+
+        cb.addEventListener('change', () => {
+          if (cb.checked) {
+            escenariosSeleccionados.add(esc.key);
+          } else {
+            escenariosSeleccionados.delete(esc.key);
+          }
+          recalcularTablaComparativo();
+        });
+
+        const span = document.createElement('span');
+        span.className = 'text-[11px]';
+        span.textContent = esc.label;
+
+        label.appendChild(cb);
+        label.appendChild(span);
+        escenariosCheckContainer.appendChild(label);
+      });
+    }
+
+    function recalcularTablaComparativo() {
+      tablaComparativoBody.innerHTML = '';
+      const base = escenariosActuales.find(e => e.key === escenarioBaseKey);
+      if (!base || base.total === 0) return;
+
+      escenariosActuales.forEach(esc => {
+        if (esc.key === escenarioBaseKey) return;
+        if (escenariosSeleccionados.size > 0 && !escenariosSeleccionados.has(esc.key)) return;
+
+        const diff = esc.total - base.total;
+        const pct = (diff / base.total) * 100;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2">${esc.label}</td>
+          <td class="px-3 py-2 text-right">${formatUSD(esc.total)}</td>
+          <td class="px-3 py-2 text-right">${formatUSDFlex(diff)}</td>
+          <td class="px-3 py-2 text-right">${pct.toFixed(1)} %</td>
+        `;
+        tablaComparativoBody.appendChild(tr);
+      });
+    }
+
+    escenarioBaseSelect.addEventListener('change', () => {
+      escenarioBaseKey = escenarioBaseSelect.value;
+      recalcularTablaComparativo();
+    });
+
     function calcular() {
       const numMaquinas = parseInt(document.getElementById('numMaquinas').value || '1', 10);
 
@@ -884,23 +1005,9 @@
       addScenario('trade3', 'Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationItem.price);
       addScenario('term1', 'Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps);
 
-      // -------- Comparativo de escenarios vs Lic+1Y ----------
-      const baseScenario = escenarios.find(s => s.key === 'lic1');
-      if (baseScenario && baseScenario.total !== 0) {
-        escenarios.forEach(s => {
-          if (s.key === 'lic1') return;
-          const diff = s.total - baseScenario.total; // >0 más caro, <0 más barato
-          const pct = (diff / baseScenario.total) * 100;
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td class="px-3 py-2">${s.label}</td>
-            <td class="px-3 py-2 text-right">${formatUSD(s.total)}</td>
-            <td class="px-3 py-2 text-right">${formatUSDFlex(diff)}</td>
-            <td class="px-3 py-2 text-right">${pct.toFixed(1)} %</td>
-          `;
-          tablaComparativoBody.appendChild(tr);
-        });
-      }
+      escenariosActuales = escenarios;
+      refrescarUIComparativa(escenarios);
+      recalcularTablaComparativo();
     }
 
     document.getElementById('btnCalcular').addEventListener('click', calcular);
@@ -1091,6 +1198,12 @@ ${html}
       currentPosts = [];
       for (const k in manualOverrides) delete manualOverrides[k];
       for (const k in trainingOverrides) delete trainingOverrides[k];
+      escenariosActuales = [];
+      escenarioBaseKey = 'lic1';
+      escenariosSeleccionados = new Set();
+      escenarioBaseSelect.innerHTML = '';
+      escenariosCheckContainer.innerHTML = '';
+
       refillAxisOptions();
       sugerirModulos();
       tablaModulosBody.innerHTML = '';
