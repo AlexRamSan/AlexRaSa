@@ -302,34 +302,65 @@
 
       <!-- Resumen global + export -->
       <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-4">
-        <h2 class="text-lg font-semibold">Resumen económico global</h2>
+        <h2 class="text-lg font-semibold">Resumen económico global por modalidad</h2>
 
-        <div class="grid md:grid-cols-3 gap-4 text-sm">
-          <div class="space-y-1">
-            <div class="flex justify-between">
-              <span>Subtotal sin IVA</span>
-              <span id="res_subtotal" class="font-semibold"></span>
-            </div>
-            <div class="flex justify-between text-slate-400">
-              <span>IVA 16%</span>
-              <span id="res_iva"></span>
-            </div>
-            <div class="flex justify-between text-lg font-semibold text-accent-400">
-              <span>Total con IVA</span>
-              <span id="res_total"></span>
-            </div>
-          </div>
-          <div class="space-y-1 text-xs text-slate-400 md:col-span-2">
-            <p>
-              El subtotal usa la columna <strong>Lic+Subs 1Y</strong> de los módulos incluidos,
-              más posts, servicios y capacitación seleccionados.
-            </p>
-            <ul class="list-disc list-inside space-y-1">
-              <li>Opción estándar: Licencia + subscripción 1 año.</li>
-              <li>Trade-in 2Y y 3Y calculados con los descuentos oficiales (18.64% y 20.39%).</li>
-              <li>Term = licencia de término 12 meses, 35% del paquete con 1 año de subscripción.</li>
-            </ul>
-          </div>
+        <div class="overflow-x-auto text-xs">
+          <table class="min-w-full text-right border-collapse">
+            <thead class="bg-base-700 text-slate-300">
+              <tr>
+                <th class="px-2 py-1 text-left">Modalidad</th>
+                <th class="px-2 py-1">Subtotal sin IVA</th>
+                <th class="px-2 py-1">IVA 16%</th>
+                <th class="px-2 py-1">Total con IVA</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-base-700">
+              <tr>
+                <td class="px-2 py-1 text-left">Licencia + 1 año de servicio</td>
+                <td class="px-2 py-1" id="res_ls1_sub"></td>
+                <td class="px-2 py-1" id="res_ls1_iva"></td>
+                <td class="px-2 py-1 font-semibold text-accent-400" id="res_ls1_tot"></td>
+              </tr>
+              <tr>
+                <td class="px-2 py-1 text-left">Licencia + 3 años de servicio</td>
+                <td class="px-2 py-1" id="res_ls3_sub"></td>
+                <td class="px-2 py-1" id="res_ls3_iva"></td>
+                <td class="px-2 py-1 font-semibold text-accent-400" id="res_ls3_tot"></td>
+              </tr>
+              <tr>
+                <td class="px-2 py-1 text-left">Trade-in + 2 años de servicio</td>
+                <td class="px-2 py-1" id="res_tr2_sub"></td>
+                <td class="px-2 py-1" id="res_tr2_iva"></td>
+                <td class="px-2 py-1 font-semibold text-accent-400" id="res_tr2_tot"></td>
+              </tr>
+              <tr>
+                <td class="px-2 py-1 text-left">Trade-in + 3 años de servicio</td>
+                <td class="px-2 py-1" id="res_tr3_sub"></td>
+                <td class="px-2 py-1" id="res_tr3_iva"></td>
+                <td class="px-2 py-1 font-semibold text-accent-400" id="res_tr3_tot"></td>
+              </tr>
+              <tr>
+                <td class="px-2 py-1 text-left">Sólo por 1 año sin servicio (Term)</td>
+                <td class="px-2 py-1" id="res_term_sub"></td>
+                <td class="px-2 py-1" id="res_term_iva"></td>
+                <td class="px-2 py-1 font-semibold text-accent-400" id="res_term_tot"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-xs text-slate-400 space-y-1">
+          <p>
+            Cada modalidad suma:
+            módulos según el esquema elegido (Lic+Subs / Trade-in / Term)
+            + posts/servicios seleccionados
+            + capacitación seleccionada.
+          </p>
+          <ul class="list-disc list-inside space-y-1">
+            <li>Licencia + 1Y / 3Y = paquetes con mantenimiento incluido.</li>
+            <li>Trade-in 2Y y 3Y aplican el descuento oficial sobre Lic+Subs.</li>
+            <li>Term = licencia de término 12 meses, sin servicio.</li>
+          </ul>
         </div>
 
         <div class="flex flex-wrap gap-2 text-xs pt-1">
@@ -551,7 +582,6 @@
       const wantsFinish = pri === "finish";
       const wantsStd = pri === "std";
 
-      // Flags ajustados por perfil/prioridad
       let needIMach = sel.tec.imach;
       if (!needIMach && totalMills > 0 && (wantsSpeed || prod === "serie_media" || prod === "serie_alta")) {
         needIMach = true;
@@ -803,12 +833,52 @@
       document.getElementById("tot_train_val").textContent = fmt(totTrainVal);
       document.getElementById("tot_train_qty").textContent = totTrainQty.toString();
 
-      const subtotal = totLs1 + totPostsVal + totTrainVal;
-      const iva = subtotal * IVA;
-      const total = subtotal + iva;
-      document.getElementById("res_subtotal").textContent = fmt(subtotal);
-      document.getElementById("res_iva").textContent = fmt(iva);
-      document.getElementById("res_total").textContent = fmt(total);
+      const extras = totPostsVal + totTrainVal;
+
+      // Modalidad: Lic+Subs 1Y
+      const ls1_sub = totLs1 + extras;
+      const ls1_iva = ls1_sub * IVA;
+      const ls1_tot = ls1_sub + ls1_iva;
+
+      // Modalidad: Lic+Subs 3Y
+      const ls3_sub = totLs3 + extras;
+      const ls3_iva = ls3_sub * IVA;
+      const ls3_tot = ls3_sub + ls3_iva;
+
+      // Modalidad: Trade-in 2Y
+      const tr2_sub = totTr2 + extras;
+      const tr2_iva = tr2_sub * IVA;
+      const tr2_tot = tr2_sub + tr2_iva;
+
+      // Modalidad: Trade-in 3Y
+      const tr3_sub = totTr3 + extras;
+      const tr3_iva = tr3_sub * IVA;
+      const tr3_tot = tr3_sub + tr3_iva;
+
+      // Modalidad: Term (1 año sin servicio)
+      const term_sub = totTerm + extras;
+      const term_iva = term_sub * IVA;
+      const term_tot = term_sub + term_iva;
+
+      document.getElementById("res_ls1_sub").textContent = fmt(ls1_sub);
+      document.getElementById("res_ls1_iva").textContent = fmt(ls1_iva);
+      document.getElementById("res_ls1_tot").textContent = fmt(ls1_tot);
+
+      document.getElementById("res_ls3_sub").textContent = fmt(ls3_sub);
+      document.getElementById("res_ls3_iva").textContent = fmt(ls3_iva);
+      document.getElementById("res_ls3_tot").textContent = fmt(ls3_tot);
+
+      document.getElementById("res_tr2_sub").textContent = fmt(tr2_sub);
+      document.getElementById("res_tr2_iva").textContent = fmt(tr2_iva);
+      document.getElementById("res_tr2_tot").textContent = fmt(tr2_tot);
+
+      document.getElementById("res_tr3_sub").textContent = fmt(tr3_sub);
+      document.getElementById("res_tr3_iva").textContent = fmt(tr3_iva);
+      document.getElementById("res_tr3_tot").textContent = fmt(tr3_tot);
+
+      document.getElementById("res_term_sub").textContent = fmt(term_sub);
+      document.getElementById("res_term_iva").textContent = fmt(term_iva);
+      document.getElementById("res_term_tot").textContent = fmt(term_tot);
     }
 
     function regenerateFromForm() {
