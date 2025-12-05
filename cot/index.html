@@ -286,9 +286,34 @@
         </div>
       </div>
 
+      <!-- Implementación -->
+      <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Implementación / arranque CAM</h3>
+        <div class="flex flex-wrap items-end gap-4">
+          <div class="w-40">
+            <label class="block text-xs font-medium text-slate-200">Bloques de implementación (8 hrs)</label>
+            <input id="implQty" type="number" min="0" value="1"
+              class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
+          </div>
+          <div class="flex-1">
+            <p class="text-xs text-slate-300">
+              Precio por bloque de 8 hrs:
+              <span id="implUnitPrice" class="font-semibold">$ 0.00</span>
+            </p>
+            <p class="text-xs text-slate-300 mt-1">
+              Total implementación:
+              <span id="implTotal" class="font-semibold">$ 0.00</span>
+            </p>
+            <p class="text-[11px] text-slate-500 mt-1">
+              Si no deseas incluir implementación, deja el valor en 0. Si el proyecto requiere más días en planta, incrementa el número de bloques.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Resumen global -->
       <div class="bg-base-800 rounded-xl border border-slate-700 p-4">
-        <h3 class="font-semibold mb-2 text-sm md:text-base">Resumen económico global (módulos + posts + capacitación)</h3>
+        <h3 class="font-semibold mb-2 text-sm md:text-base">Resumen económico global (módulos + posts + capacitación + implementación)</h3>
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs md:text-sm">
             <thead class="bg-base-900/70">
@@ -495,7 +520,6 @@
       wire24: { name: 'Wirecut 2 axis + 4 axis SolidCAM', price: 4360, packageCode: 'SSM0132' },
     };
 
-    // Overrides manuales
     const manualOverrides = {};
     const trainingOverrides = {};
 
@@ -535,12 +559,15 @@
     const postCantidadInput = document.getElementById('postCantidad');
     const btnAgregarPost = document.getElementById('btnAgregarPost');
 
+    const implQtyInput = document.getElementById('implQty');
+    const implUnitPriceSpan = document.getElementById('implUnitPrice');
+    const implTotalSpan = document.getElementById('implTotal');
+
     const escenarioBaseSelect = document.getElementById('escenarioBaseSelect');
     const escenariosCheckContainer = document.getElementById('escenariosCheckContainer');
 
     let currentPosts = [];
 
-    // Escenarios para comparativa
     let escenariosActuales = [];
     let escenarioBaseKey = 'lic1';
     let escenariosSeleccionados = new Set();
@@ -661,7 +688,6 @@
         if (ejes === 'wire4') sugeridos.add('wire24');
       }
 
-      // Render checkboxes respetando overrides manuales
       listaModulosDiv.innerHTML = '';
       Object.entries(moduleCatalog).forEach(([key, def]) => {
         if (tipo === 'torno') {
@@ -734,8 +760,10 @@
     const tablaGlobalBody = document.getElementById('tablaGlobal');
     const tablaComparativoBody = document.getElementById('tablaComparativo');
 
+    implUnitPriceSpan.textContent = formatUSD(implementationItem.price);
+    implTotalSpan.textContent = formatUSD(implementationItem.price * parseInt(implQtyInput.value || '1', 10));
+
     function refrescarUIComparativa(escenarios) {
-      // Llenar select de base
       escenarioBaseSelect.innerHTML = '';
       const prevBase = escenarioBaseKey;
       let existePrevio = false;
@@ -756,14 +784,12 @@
         escenarioBaseKey = escenarios[0].key;
       }
 
-      // Limpiar seleccionados que ya no existan
       [...escenariosSeleccionados].forEach(k => {
         if (!escenarios.some(e => e.key === k)) {
           escenariosSeleccionados.delete(k);
         }
       });
 
-      // Si no hay ninguno seleccionado, por default todos excepto base
       if (escenariosSeleccionados.size === 0) {
         escenarios.forEach(esc => {
           if (esc.key !== escenarioBaseKey) {
@@ -772,7 +798,6 @@
         });
       }
 
-      // Llenar checkboxes
       escenariosCheckContainer.innerHTML = '';
       escenarios.forEach(esc => {
         const label = document.createElement('label');
@@ -832,6 +857,12 @@
 
     function calcular() {
       const numMaquinas = parseInt(document.getElementById('numMaquinas').value || '1', 10);
+
+      let implQty = parseInt(implQtyInput.value || '0', 10);
+      if (isNaN(implQty) || implQty < 0) implQty = 0;
+      const implementationTotal = implementationItem.price * implQty;
+      implQtyInput.value = implQty;
+      implTotalSpan.textContent = formatUSD(implementationTotal);
 
       const selectedModules = [];
       listaModulosDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
@@ -982,8 +1013,8 @@
       tablaGlobalBody.innerHTML = '';
       tablaComparativoBody.innerHTML = '';
 
-      const baseLic1Y = totLicSubs1Y + totalPosts + totalCaps + implementationItem.price;
-      const baseLic = totLic + totalPosts + totalCaps + implementationItem.price;
+      const baseLic1Y = totLicSubs1Y + totalPosts + totalCaps + implementationTotal;
+      const baseLic = totLic + totalPosts + totalCaps + implementationTotal;
 
       const escenarios = [];
 
@@ -1001,9 +1032,9 @@
 
       addScenario('lic1', 'Licencia + 1 año de servicio', baseLic1Y);
       addScenario('lic3', 'Licencia + 3 años de servicio', baseLic + totSubs3Y);
-      addScenario('trade2', 'Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + implementationItem.price);
-      addScenario('trade3', 'Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationItem.price);
-      addScenario('term1', 'Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps);
+      addScenario('trade2', 'Trade-in 2 años (Lic + Subs1Y con desc.)', totTrade2Y + totalPosts + totalCaps + implementationTotal);
+      addScenario('trade3', 'Trade-in 3 años (Lic + Subs3Y con desc.)', totTrade3Y + totalPosts + totalCaps + implementationTotal);
+      addScenario('term1', 'Term 1 año (solo licencia sin servicio)', totTerm + totalPosts + totalCaps + implementationTotal);
 
       escenariosActuales = escenarios;
       refrescarUIComparativa(escenarios);
@@ -1035,6 +1066,10 @@
       const prioridadTexto = document.getElementById('prioridad').options[document.getElementById('prioridad').selectedIndex]?.textContent || '';
       const numMaquinas = document.getElementById('numMaquinas').value || '1';
       const descripcion = document.getElementById('descripcionProceso').value || '(sin descripción)';
+
+      let implQty = parseInt(implQtyInput.value || '0', 10);
+      if (isNaN(implQty) || implQty < 0) implQty = 0;
+      const implementationTotal = implementationItem.price * implQty;
 
       const modLines = [];
       listaModulosDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
@@ -1141,6 +1176,34 @@
       html += `
   </tbody>
 </table>
+`;
+
+      if (implQty > 0) {
+        html += `
+<hr style="margin:16px 0;">
+<h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Implementación / arranque CAM</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
+  <thead style="background:#e5e7eb;">
+    <tr>
+      <th align="left">Concepto</th>
+      <th align="right">Bloques (8 hrs)</th>
+      <th align="right">Precio por bloque</th>
+      <th align="right">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>${implementationItem.name}</td>
+      <td align="right">${implQty}</td>
+      <td align="right">${formatUSD(implementationItem.price)}</td>
+      <td align="right">${formatUSD(implementationTotal)}</td>
+    </tr>
+  </tbody>
+</table>
+`;
+      }
+
+      html += `
 <hr style="margin:16px 0;">
 <h3 style="font-family: system-ui, -apple-system, sans-serif; color:#0f172a;">Escenarios económicos</h3>
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; font-family: system-ui, -apple-system, sans-serif; font-size:13px;">
@@ -1196,6 +1259,8 @@ ${html}
       document.getElementById('descripcionProceso').value = '';
       tipoMaquinaSelect.value = 'cm';
       currentPosts = [];
+      implQtyInput.value = 1;
+      implTotalSpan.textContent = formatUSD(implementationItem.price);
       for (const k in manualOverrides) delete manualOverrides[k];
       for (const k in trainingOverrides) delete trainingOverrides[k];
       escenariosActuales = [];
