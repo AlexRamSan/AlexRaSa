@@ -23,11 +23,11 @@
     <header class="space-y-1">
       <h1 class="text-2xl font-semibold">Configurador de licencias SolidCAM</h1>
       <p class="text-sm text-slate-400">
-        Llena el contexto del cliente, deja que el sistema recomiende paquetes y después
-        en las tablas puedes quitar lo que no quieras (HSR, HSM, HSS, posts, cursos, etc.).
+        Define el contexto del cliente, su perfil de producción y prioridad. El sistema recomienda
+        paquetes y tú puedes apagar módulos en las tablas (HSR, HSM, HSS, posts, cursos, etc.).
       </p>
       <div class="text-xs text-slate-500">
-        Fórmulas usadas para cada módulo de sistema (precio paquete = Lic+Subs 1Y):
+        Fórmulas (a partir del precio de sistema 1Y):
         Trade-in 2Y = (Lic+Subs 1Y) × (1 − 18.64%) ·
         Trade-in 3Y = (Lic+Subs 3Y) × (1 − 20.39%) ·
         Term = Lic × (1 − 58.7%) ·
@@ -42,13 +42,38 @@
         <h2 class="text-lg font-semibold">1. Contexto del cliente</h2>
         <p class="text-xs text-slate-400">
           Describe brevemente qué fabrica, materiales, lotes, tipo de piezas, etc.
-          Este texto se incluye en el export.
+          Esto se irá al resumen exportado.
         </p>
-        <textarea id="client_desc" rows="6"
+        <textarea id="client_desc" rows="5"
           class="w-full text-sm bg-base-900 border border-base-600 rounded-lg px-3 py-2 resize-y"
           placeholder="Ejemplo: fabrica moldes de inyección, acero P20 y H13, lotes cortos, 2 Haas 3 ejes y 1 torno Mazak…"></textarea>
 
-        <div class="space-y-2 text-sm">
+        <div class="grid md:grid-cols-2 gap-3 text-sm">
+          <div class="space-y-2">
+            <h3 class="font-medium text-xs uppercase tracking-wide text-slate-400">
+              Perfil de producción
+            </h3>
+            <select id="prod_profile"
+              class="w-full bg-base-900 border border-base-600 rounded-lg px-2 py-1.5 text-sm">
+              <option value="proto">Prototipos / alta mezcla, bajo volumen</option>
+              <option value="serie_media">Series cortas / medias</option>
+              <option value="serie_alta">Alta producción</option>
+            </select>
+          </div>
+          <div class="space-y-2">
+            <h3 class="font-medium text-xs uppercase tracking-wide text-slate-400">
+              Prioridad principal
+            </h3>
+            <select id="priority"
+              class="w-full bg-base-900 border border-base-600 rounded-lg px-2 py-1.5 text-sm">
+              <option value="speed">Velocidad / reducción de ciclo</option>
+              <option value="finish">Calidad superficial / precisión</option>
+              <option value="std">Estandarización / plantillas / operadores</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-2 text-sm pt-1">
           <h3 class="font-medium">Parque de máquinas</h3>
           <label class="flex items-center justify-between gap-2">
             <span>Centros de maquinado 3 ejes</span>
@@ -92,8 +117,8 @@
       <div class="space-y-3">
         <h2 class="text-lg font-semibold">2. Necesidades de maquinado</h2>
         <p class="text-xs text-slate-400">
-          Marca lo que aplique. La recomendación se basa en esto, pero siempre podrás
-          quitar módulos en la tabla.
+          Marca lo que el cliente pide explícitamente. El perfil/prioridad puede sugerir
+          módulos extra (los puedes apagar después en la tabla).
         </p>
 
         <div class="space-y-1 text-sm">
@@ -148,7 +173,7 @@
           <label class="flex items-center gap-2">
             <input id="add_impl" type="checkbox" checked
                    class="rounded border-base-600 bg-base-900" />
-            <span>Incluir implementación CAM en sitio 8 hrs</span>
+            <span>Incluir implementación CAM en sitio 8 hrs (puedes quitarla abajo)</span>
           </label>
 
           <div class="flex flex-wrap gap-2 pt-1">
@@ -171,8 +196,8 @@
       <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-3">
         <h2 class="text-lg font-semibold">Módulos recomendados (editable)</h2>
         <p class="text-xs text-slate-400">
-          Desmarca “Incluir” para quitar un módulo. Si vuelves a pulsar
-          “Calcular recomendación”, se recalcula la propuesta desde cero.
+          Desmarca “Incluir” para quitar un módulo (por ejemplo HSS). Si modificas el contexto
+          y vuelves a pulsar “Calcular recomendación”, se recalcula desde cero.
         </p>
 
         <div class="overflow-x-auto text-xs">
@@ -196,7 +221,7 @@
             <tbody id="tbody_modules" class="divide-y divide-base-700"></tbody>
             <tfoot class="bg-base-900/60 font-semibold">
               <tr>
-                <td class="px-2 py-1 text-left" colspan="3">Totales módulos (sólo los incluidos)</td>
+                <td class="px-2 py-1 text-left" colspan="3">Totales módulos (sólo incluidos)</td>
                 <td class="px-2 py-1" id="tot_mod_lic"></td>
                 <td class="px-2 py-1" id="tot_mod_s1"></td>
                 <td class="px-2 py-1" id="tot_mod_s3"></td>
@@ -216,8 +241,7 @@
       <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-3">
         <h2 class="text-lg font-semibold">Postprocesadores y servicios (editable)</h2>
         <p class="text-xs text-slate-400">
-          Incluye posts, dongle, licencias flotantes e implementación CAM.
-          Puedes desmarcar lo que no quieras cotizar.
+          Incluye posts, dongle, licencias flotantes e implementación. Puedes desmarcar lo que no quieras cotizar.
         </p>
 
         <div class="overflow-x-auto text-xs">
@@ -248,8 +272,8 @@
       <div class="bg-base-800/80 border border-base-700 rounded-xl p-4 space-y-3">
         <h2 class="text-lg font-semibold">Capacitaciones sugeridas (editable)</h2>
         <p class="text-xs text-slate-400">
-          Se sugieren en función de los módulos elegidos (Milling base, iMachining, HSR/HSM/HSS,
-          Turning, Probe, Wirecut, IMOLD). Desmarca lo que no quieras incluir.
+          Se sugieren según módulos (Milling, iMachining, HSR/HSM/HSS, Turning, Probe, Wirecut, IMOLD).
+          Desmarca lo que no quieras incluir.
         </p>
 
         <div class="overflow-x-auto text-xs">
@@ -329,14 +353,14 @@
   <script>
     // --------- CONSTANTES GENERALES ----------
     const IVA = 0.16;
-    const SUB1_PCT = 0.18;       // Subscripción 1Y ≈ 18% de Licencia
-    const SUB3_FACTOR = 2.4;     // Subs 3Y = 2.4 × Subs 1Y
-    const TRADE2_DISC = 0.1864;  // 18.64%
-    const TRADE3_DISC = 0.2039;  // 20.39%
-    const TERM_DISC = 0.587;     // 58.7%
+    const SUB1_PCT = 0.18;
+    const SUB3_FACTOR = 2.4;
+    const TRADE2_DISC = 0.1864;
+    const TRADE3_DISC = 0.2039;
+    const TERM_DISC = 0.587;
 
     const PRICE = {
-      // Paquetes de sistema principales
+      // Paquetes sistema
       "SSA1008": 4602.00,
       "SSA1000": 5635.00,
       "SSA1017": 5062.20,
@@ -374,7 +398,7 @@
       "SSA1021": 780.00,
       "SSA1027": 275.00,
 
-      // Servicios / implementación / licencias especiales
+      // Servicios / implementación / float / dongle
       "SSM0087": 1000.00,
       "SSM0033": 1320.00,
       "SSM0129": 150.00,
@@ -389,8 +413,6 @@
       "SSM0134": 425.00,
       "SSM0135": 575.00,
       "SSM0086": 3076.00,
-
-      // Wirecut licencias sueltas
       "SSM0132": 4360.00,
       "SSM0130": 2385.00,
 
@@ -445,15 +467,16 @@
       "SSA1005": { name: "DCAMCUT Professional (paquete)" },
       "SSA1013": { name: "DCAMCUT Standard (paquete)" },
       "SSA1021": { name: "Floating license fee DCAM" },
+      "SSA1027": { name: "Producto de prueba 1" },
       "SSM0087": { name: "Implementación CAM en sitio 8 hrs" },
       "SSM0033": { name: "Floating license fee SolidCAM" },
       "SSM0129": { name: "USB Dongle SolidCAM" }
     };
 
     const state = {
-      modules: [], // {code,name,lic,s1,s3,ls1,ls3,tr2,tr3,term,qty,included}
-      posts: [],   // {code,name,price,qty,included}
-      train: []    // {code,name,price,qty,included}
+      modules: [],
+      posts: [],
+      train: []
     };
 
     function fmt(v) {
@@ -507,8 +530,10 @@
         imold: document.getElementById("tec_imold").checked
       };
       const addImpl = document.getElementById("add_impl").checked;
+      const prodProfile = document.getElementById("prod_profile").value;
+      const priority = document.getElementById("priority").value;
 
-      return { n3, n4, n5, nt, nsw, w2, w4, tec, addImpl };
+      return { n3, n4, n5, nt, nsw, w2, w4, tec, addImpl, prodProfile, priority };
     }
 
     function buildRecommendation() {
@@ -519,33 +544,59 @@
       const extraMap = {};
 
       const totalMills = sel.n3 + sel.n4 + sel.n5;
+      const prod = sel.prodProfile;
+      const pri = sel.priority;
 
-      // Base Milling
+      const wantsSpeed = pri === "speed";
+      const wantsFinish = pri === "finish";
+      const wantsStd = pri === "std";
+
+      // Flags ajustados por perfil/prioridad
+      let needIMach = sel.tec.imach;
+      if (!needIMach && totalMills > 0 && (wantsSpeed || prod === "serie_media" || prod === "serie_alta")) {
+        needIMach = true;
+      }
+
+      let needHSR = sel.tec.hsr;
+      let needHSM = sel.tec.hsm;
+      let needHSS = sel.tec.hss;
+
+      if (totalMills > 0) {
+        if (wantsFinish || wantsStd) {
+          if (!needHSM) needHSM = true;
+        }
+        if (wantsFinish && prod !== "proto") {
+          if (!needHSS) needHSS = true;
+        }
+      }
+
+      let needOperators = sel.tec.operators;
+      if (wantsStd) needOperators = true;
+
+      // ---- BASE MILLING ----
       if (totalMills > 0) {
         addOrInc(modMap, "SSA1008", 1);
       }
 
       // iMachining
-      if (sel.tec.imach && totalMills > 0) {
+      if (needIMach && totalMills > 0) {
         addOrInc(modMap, "SSA1001", 1);
         trainMap["SSC0039"] = (trainMap["SSC0039"] || 0) + 1;
       }
 
-      // High Speed rough / finish
+      // HSR / HSM / HSS lógica combinada
       if (totalMills > 0) {
-        if (sel.tec.hsr && sel.tec.hsm) {
-          // Combo HSR + HSM en un solo código
+        if (needHSR && needHSM) {
           addOrInc(modMap, "SSA1002", 1);
-          trainMap["SSC0038"] = (trainMap["SSC0038"] || 0) + 1; // HSR
-        } else if (sel.tec.hsr && !sel.tec.hsm) {
-          addOrInc(modMap, "SSA1004", 1); // Sólo HSR
           trainMap["SSC0038"] = (trainMap["SSC0038"] || 0) + 1;
-        } else if (!sel.tec.hsr && sel.tec.hsm) {
-          // Sólo HSM → no hay SKU solo HSM, se recomienda 3D HSM module (incluye HSR)
+        } else if (needHSR && !needHSM) {
+          addOrInc(modMap, "SSA1004", 1);
+          trainMap["SSC0038"] = (trainMap["SSC0038"] || 0) + 1;
+        } else if (!needHSR && needHSM) {
           addOrInc(modMap, "SSA1002", 1);
         }
 
-        if (sel.tec.hss) {
+        if (needHSS) {
           addOrInc(modMap, "SSA1006", 1);
           trainMap["SSC0037"] = (trainMap["SSC0037"] || 0) + 1;
         }
@@ -574,7 +625,7 @@
       }
 
       // Operators
-      if (sel.tec.operators) {
+      if (needOperators) {
         addOrInc(modMap, "SSA1048", 1);
         addOrInc(modMap, "SSA1049", 1);
       }
@@ -616,8 +667,8 @@
         }
       }
 
-      // Servicios / extras
-      if (sel.addImpl) {
+      // Servicios / extras (perfil serie_alta o prioridad std fuerzan implementación sugerida)
+      if (sel.addImpl || prod === "serie_alta" || wantsStd) {
         extraMap["SSM0087"] = (extraMap["SSM0087"] || 0) + 1;
       }
       extraMap["SSM0129"] = (extraMap["SSM0129"] || 0) + 1;
@@ -641,7 +692,6 @@
       tbodyPosts.innerHTML = "";
       tbodyTrain.innerHTML = "";
 
-      // MÓDULOS
       state.modules.forEach((m, idx) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -664,7 +714,6 @@
         tbodyModules.appendChild(tr);
       });
 
-      // POSTS / SERVICIOS
       state.posts.forEach((p, idx) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -681,7 +730,6 @@
         tbodyPosts.appendChild(tr);
       });
 
-      // TRAINING
       state.train.forEach((t, idx) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -698,7 +746,6 @@
         tbodyTrain.appendChild(tr);
       });
 
-      // Listeners de checkboxes
       document.querySelectorAll(".toggle-row").forEach(cb => {
         cb.addEventListener("change", (e) => {
           const type = e.target.dataset.type;
@@ -806,6 +853,24 @@
     function buildExportText() {
       const lines = [];
       const desc = document.getElementById("client_desc").value.trim();
+      const sel = gatherSelections();
+
+      const profileLabel = {
+        "proto": "Prototipos / alta mezcla, bajo volumen",
+        "serie_media": "Series cortas / medias",
+        "serie_alta": "Alta producción"
+      }[sel.prodProfile] || sel.prodProfile;
+
+      const priorityLabel = {
+        "speed": "Velocidad / reducción de ciclo",
+        "finish": "Calidad superficial / precisión",
+        "std": "Estandarización / plantillas / operadores"
+      }[sel.priority] || sel.priority;
+
+      lines.push("Perfil de producción: " + profileLabel);
+      lines.push("Prioridad principal: " + priorityLabel);
+      lines.push("");
+
       if (desc) {
         lines.push("Descripción del cliente:");
         lines.push(desc);
@@ -846,6 +911,8 @@
       document.querySelectorAll(".tec-input").forEach(el => el.checked = false);
       document.getElementById("add_impl").checked = true;
       document.getElementById("client_desc").value = "";
+      document.getElementById("prod_profile").value = "proto";
+      document.getElementById("priority").value = "speed";
       state.modules = [];
       state.posts = [];
       state.train = [];
