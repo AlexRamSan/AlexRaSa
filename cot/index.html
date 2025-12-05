@@ -110,7 +110,7 @@
             </label>
             <label class="flex items-center gap-2">
               <input type="checkbox" id="wantIM3D" class="rounded border-slate-500 bg-base-900">
-              <span>iMachining 3D (troqueles, moldes, cavidades profundas)</span>
+              <span>iMachining 3D (roughing + rest + semiacabado 3D)</span>
             </label>
             <p class="text-xs text-slate-400 mt-1">
               Si activas 3D, se asume paquete iMachining 2D/3D completo.
@@ -121,15 +121,15 @@
             <p class="text-slate-300 mb-1 font-semibold">Moldes / superficies / alto acabado</p>
             <label class="flex items-center gap-2">
               <input type="checkbox" id="wantHSM3D" class="rounded border-slate-500 bg-base-900">
-              <span>3D HSM (acabado 3D de alta velocidad)</span>
+              <span>HSM 3D (acabado 3D global de la pieza)</span>
             </label>
             <label class="flex items-center gap-2">
               <input type="checkbox" id="wantHSS" class="rounded border-slate-500 bg-base-900">
-              <span>HSS (superficies locales / correcciones por zonas)</span>
+              <span>HSS (acabado local por superficies)</span>
             </label>
             <label class="flex items-center gap-2">
               <input type="checkbox" id="wantHSR" class="rounded border-slate-500 bg-base-900">
-              <span>HSR (rough 3D de alto volumen, sin HSM completo)</span>
+              <span>HSR (roughing 3D clásico con control manual)</span>
             </label>
           </div>
 
@@ -223,7 +223,7 @@
     <div class="mb-6 flex justify-between items-center gap-4">
       <button id="calcBtn"
         class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-accent-500 text-sm font-semibold shadow-lg shadow-accent-500/40 hover:bg-rose-600 transition">
-        Calcular módulos y costos
+        Calcular configuración
       </button>
       <p class="text-xs text-slate-400 max-w-xl">
         Calcula una estación CAM. Si usas más estaciones, multiplica los totales
@@ -353,16 +353,30 @@
           que elija el cliente.
         </p>
       </div>
+
+      <!-- Notas técnicas para discurso comercial -->
+      <div class="bg-base-800 rounded-xl p-4 md:p-5 shadow-lg shadow-black/30">
+        <h2 class="font-semibold mb-2 text-lg">Notas técnicas (para explicar al cliente)</h2>
+        <ul class="list-disc list-inside text-xs text-slate-300 space-y-1">
+          <li><span class="font-semibold">iMachining 2D/3D:</span> Roughing + rest roughing + semiacabado 3D con Technology Wizard. En la práctica reemplaza la mayoría de los roughings clásicos, reduce ciclo y extiende vida de herramienta.</li>
+          <li><span class="font-semibold">HSR:</span> Roughing 3D clásico cuando se busca control manual de estrategia y trayectorias (casos especiales o piezas legacy).</li>
+          <li><span class="font-semibold">HSM:</span> Acabado 3D global de toda la pieza (Constant Z, Spiral, Morphed, etc.).</li>
+          <li><span class="font-semibold">HSS:</span> Acabado local por superficies específicas (pulido de zonas críticas, correcciones, radios, chaflanes).</li>
+          <li><span class="font-semibold">Trade-in 2 años:</span>  = (Licencia + Subs 1Y) × (1 − 18.64%).</li>
+          <li><span class="font-semibold">Trade-in 3 años:</span>  = (Licencia + Subs 3Y) × (1 − 20.39%).</li>
+          <li><span class="font-semibold">Term License (12 meses):</span>  = 35% del valor del paquete Lic+Subs 1Y, renovable o convertible a licencia permanente con descuento.</li>
+        </ul>
+      </div>
     </section>
   </div>
 
   <script>
-    // --- Tabla de precios de módulos ---
-    // license, subs1, subs3, licSubs1, licSubs3 son precios de lista.
-    // Trade-in 2Y, 3Y y Term se calculan con las reglas:
+    // --- Tabla de precios de módulos (sólo precios de sistema) ---
+    // Trade-in y Term se calculan por fórmula:
     //  Trade2Y = Lic+Subs1Y * (1 - 0.1864)
     //  Trade3Y = Lic+Subs3Y * (1 - 0.2039)
     //  Term    = Lic+Subs1Y * 0.35
+
     const PRICE_TABLE = {
       milling_25d: {
         label: 'SolidCAM Milling (2.5D milling module)',
@@ -521,8 +535,8 @@
       dcam_standard: {
         label: 'DCAMCUT / Wirecut (referencial)',
         license: 5520, subs1: 715, subs3: 0,
-        licSubs1: 5520 + 715, licSubs3: 5520 + 715,
-        crmCodes: ['Wirecut (usa combos SSA9013/SSA9014, etc.)'],
+        licSubs1: 6235.00, licSubs3: 6235.00,
+        crmCodes: ['Wirecut (usa SSA9013/SSA9014, etc.)'],
         crmPrice: null
       },
       imold_mold: {
@@ -705,80 +719,79 @@
       };
     }
 
-    // Lógica de recomendación: base Milling o base Turning
+    // --- Lógica de recomendación de módulos ---
     function recommendModules(data) {
       const modules = new Set();
 
       const anyMill = data.hasMill3 || data.hasMill32 || data.hasMill5;
       const anyLathe = data.hasLathe2 || data.hasLatheY || data.hasSwiss || data.hasMultiTurret;
 
-      // Base Milling
+      // BASE MILLING
       if (anyMill) {
-        if (data.wantIM3D) {
+        const usingIM3D = data.wantIM3D;
+        const usingIM2D = data.wantIM2D && !data.wantIM3D;
+
+        if (usingIM3D) {
           modules.add('milling_imach2d3d');
-        } else if (data.wantIM2D) {
+        } else if (usingIM2D) {
           modules.add('milling_imach2d');
         } else {
           modules.add('milling_25d');
         }
 
-        if (data.wantHSM3D) {
-          modules.add('hsm3d');      // incluye HSR
-        } else if (data.wantHSR) {
-          modules.add('hsr');        // solo rough
+        // HSR se agrega siempre que lo marques, aunque haya iMachining 3D
+        if (data.wantHSR) {
+          modules.add('hsr');
         }
 
-        if (data.wantHSS) modules.add('hss');
+        // HSM / HSS para acabados
+        if (data.wantHSM3D) {
+          modules.add('hsm3d');
+        }
+        if (data.wantHSS) {
+          modules.add('hss');
+        }
 
+        // 4º eje indexado
         if (data.hasMill32) modules.add('sim4');
 
+        // 5 ejes simultáneo
         if (data.hasMill5 && data.fiveAxisLevel) {
           if (data.fiveAxisLevel === 'standard') modules.add('sim5_standard');
-          if (data.fiveAxisLevel === 'pro') modules.add('sim5_pro');
-          if (data.fiveAxisLevel === 'premium') modules.add('sim5_premium');
+          if (data.fiveAxisLevel === 'pro')       modules.add('sim5_pro');
+          if (data.fiveAxisLevel === 'premium')   modules.add('sim5_premium');
         }
 
+        // Rotary opcional
         if (data.wantRotary) modules.add('rotary');
       }
 
-      // Base Turning:
-      // - Si solo hay tornos ⇒ base SolidCAM Turning.
-      // - Si hay Milling + tornos ⇒ base Milling + módulo Turning (mill-turn).
+      // BASE TURNING (si hay tornos)
       if (anyLathe) {
-        if (!anyMill) {
-          modules.add('turning_core');      // solo torno
-        } else {
-          // Centros de maquinado + torno: Turning como add-on
-          modules.add('turning_core');      // mismo módulo de precio, pero conceptual mill-turn
-        }
-
-        if (data.hasSwiss) {
-          modules.add('swiss_type');
-        }
-        if (data.hasMultiTurret) {
-          modules.add('multi_turret');
-        }
+        modules.add('turning_core');
+        if (data.hasSwiss)       modules.add('swiss_type');
+        if (data.hasMultiTurret) modules.add('multi_turret');
       }
 
-      // Wirecut (solo para referencia)
+      // Wirecut (referencial)
       if (data.hasWire2 || data.hasWire4) {
         modules.add('dcam_standard');
       }
 
+      // Probe
       if (data.probeLevel === 'l1') modules.add('probe_l1');
       if (data.probeLevel === 'l2') modules.add('probe_l2');
 
+      // Extras
       if (data.wantMachineSim) modules.add('machine_sim');
-
       if (data.wantFeatureRec) modules.add('feature_rec');
-      if (data.wantCimco) modules.add('cimco');
+      if (data.wantCimco)      modules.add('cimco');
       if (data.wantOperators) {
         modules.add('operators_editor');
         modules.add('operators_sim');
       }
-      if (data.wantFloating) modules.add('floating_cam');
-
-      if (data.wantImoldMold) modules.add('imold_mold');
+      if (data.wantFloating)       modules.add('floating_cam');
+      if (data.wantImoldMold)      modules.add('imold_mold');
       if (data.wantImoldElectrode) modules.add('imold_electrode');
 
       return Array.from(modules);
@@ -787,9 +800,9 @@
     function recommendPosts(data) {
       const temp = [];
 
-      if (data.qtyMill3 > 0) temp.push({ key: 'mill3', qty: data.qtyMill3 });
+      if (data.qtyMill3 > 0)  temp.push({ key: 'mill3', qty: data.qtyMill3 });
       if (data.qtyMill32 > 0) temp.push({ key: 'mill4', qty: data.qtyMill32 });
-      if (data.qtyMill5 > 0) temp.push({ key: 'mill5', qty: data.qtyMill5 });
+      if (data.qtyMill5 > 0)  temp.push({ key: 'mill5', qty: data.qtyMill5 });
 
       if (data.qtyLathe2 > 0 || data.qtyLatheY > 0)
         temp.push({ key: 'turn', qty: data.qtyLathe2 + data.qtyLatheY });
