@@ -4,9 +4,8 @@ const PRECACHE = [
   "/proyectos/calculadoras/solidcam/",
   "/proyectos/calculadoras/solidcam/index.html",
   "/proyectos/calculadoras/solidcam/solidcam.webmanifest",
-  "/proyectos/calculadoras/solidcam/icons/icon-192.png",
-  "/proyectos/calculadoras/solidcam/icons/icon-256.png",
-  "/proyectos/calculadoras/solidcam/icons/icon-512.png",
+  '/android-chrome-192x192.png',
+  '/android-chrome-512x512.png',
   "/assets/hero-industrial.png",
   "/assets/logo.png"
 ];

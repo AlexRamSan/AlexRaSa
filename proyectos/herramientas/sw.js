@@ -8,9 +8,9 @@ const ASSETS = [
   './assets/js/dxf.js',
   './assets/js/webglPreview.js',
   './assets/js/presets.js',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/maskable-512.png'
+  '/android-chrome-192x192.png',
+  '/android-chrome-512x512.png',
+  '/pwa/calc-vibracion/icons/maskable-512.png'
 ];
 
 self.addEventListener('install', e => {

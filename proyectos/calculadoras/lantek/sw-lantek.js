@@ -8,10 +8,9 @@ const PRECACHE_URLS = [
   `${APP_SCOPE}`,
   `${APP_SCOPE}index.html`,
   `${APP_SCOPE}lantek.webmanifest`,
-  `${APP_SCOPE}icons/icon-192.png`,
-  `${APP_SCOPE}icons/icon-256.png`,
-  `${APP_SCOPE}icons/icon-512.png`,
-  `${APP_SCOPE}icons/maskable-512.png`,
+  '/android-chrome-192x192.png',
+  '/android-chrome-512x512.png',
+  '/pwa/calc-vibracion/icons/maskable-512.png',
   // activos compartidos de tu sitio
   `/assets/logo.png`,
   `/assets/hero-industrial.png`
