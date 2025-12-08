@@ -139,28 +139,38 @@
     </div>
 
     <!-- Menú Móvil -->
-    <div id="mobileBackdrop" class="fixed inset-0 z-40 hidden bg-black/40"></div>
-    <aside id="mobilePanel" class="fixed inset-y-0 right-0 z-50 w-[88%] max-w-sm translate-x-full transition-transform bg-white border-l border-gray-200 shadow-xl">
+        <div
+      id="mobileBackdrop"
+      class="fixed inset-0 lg:hidden bg-slate-900/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
+      style="z-index: 9998;">
+    </div>
+        <aside
+      id="mobilePanel"
+      class="fixed inset-y-0 right-0 lg:hidden w-[88%] max-w-sm translate-x-full transition-transform duration-300 ease-out bg-white border-l border-gray-200 shadow-xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobileMenuTitle"
+      style="z-index: 9999;">
       <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-        <span class="text-base font-semibold">Menú</span>
+        <span id="mobileMenuTitle" class="text-base font-semibold">Menú</span>
         <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar menú"><svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
       </div>
       <nav class="px-3 py-4 text-[15px]">
-        <a href="/#inicio" class="block px-3 py-2 rounded hover:bg-gray-100">Inicio</a>
+        <a href="/#inicio" class="mobile-link block px-3 py-2 rounded hover:bg-gray-100">Inicio</a>
         <div class="mt-1">
           <button id="mSolBtn" class="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100" aria-expanded="false" aria-controls="mSolPanel">
             <span>Soluciones</span>
             <svg id="mSolIcon" class="h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
           </button>
           <div id="mSolPanel" class="hidden ml-2 mt-1 rounded-lg border border-gray-200">
-            <a href="/SolidCAM/"  class="block px-3 py-2 hover:bg-gray-50">SolidCAM & iMachining</a>
-            <a href="/lantek/"    class="block px-3 py-2 hover:bg-gray-50">Lantek — Corte & Nesting</a>
+            <a href="/SolidCAM/"  class="mobile-link block px-3 py-2 hover:bg-gray-50">SolidCAM & iMachining</a>
+            <a href="/lantek/"    class="mobile-link block px-3 py-2 hover:bg-gray-50">Lantek — Corte & Nesting</a>
             <a href="/logopress/" class="block px-3 py-2 hover:bg-gray-50 font-medium" style="color:var(--lp-yellow)">Logopress — Troqueles</a>
           </div>
         </div>
-        <a href="/#servicios" class="block px-3 py-2 rounded hover:bg-gray-100 mt-1">Servicios</a>
-        <a href="/#recursos"  class="block px-3 py-2 rounded hover:bg-gray-100">Recursos</a>
-        <a href="/#contacto"  class="block px-3 py-2 rounded hover:bg-gray-100">Contacto</a>
+        <a href="/#servicios" class="mobile-link block px-3 py-2 rounded hover:bg-gray-100 mt-1">Servicios</a>
+        <a href="/#recursos"  class="mobile-link block px-3 py-2 rounded hover:bg-gray-100">Recursos</a>
+        <a href="/#contacto"  class="mobile-link block px-3 py-2 rounded hover:bg-gray-100">Contacto</a>
         <div class="mt-4 grid grid-cols-2 gap-2 px-1">
           <a href="/#soporte" class="px-3 py-2 text-center rounded-md border border-gray-300 hover:bg-gray-100">Soporte</a>
           <a href="/#agenda"  class="px-3 py-2 text-center rounded-md bg-blue-600 text-white hover:bg-blue-700">Agendar</a>
@@ -380,25 +390,41 @@
     document.addEventListener('click', () => closeSol(true));
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSol(true); });
 
-    // Menú móvil (off-canvas)
-    const mOpen = document.getElementById('mobileOpenBtn'), mClose = document.getElementById('mobileCloseBtn'),
-          mPanel = document.getElementById('mobilePanel'), mBg = document.getElementById('mobileBackdrop');
-    const openMobile = () => { mPanel?.classList.remove('translate-x-full'); mBg?.classList.remove('hidden'); document.body.style.overflow='hidden'; mOpen?.setAttribute('aria-expanded','true'); };
-    const closeMobile = () => { mPanel?.classList.add('translate-x-full'); mBg?.classList.add('hidden'); document.body.style.overflow=''; mOpen?.setAttribute('aria-expanded','false'); };
-    mOpen?.addEventListener('click', openMobile);
-    mClose?.addEventListener('click', closeMobile);
-    mBg?.addEventListener('click', closeMobile);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMobile(); });
+        // Menú móvil (off-canvas)
+    const mOpen = document.getElementById('mobileOpenBtn');
+    const mClose = document.getElementById('mobileCloseBtn');
+    const mPanel = document.getElementById('mobilePanel');
+    const mBg    = document.getElementById('mobileBackdrop');
+    const mLinks = document.querySelectorAll('.mobile-link');
 
-    // Acordeón móvil
-    const mSolBtn = document.getElementById('mSolBtn'), mSolPanel = document.getElementById('mSolPanel'), mSolIcon = document.getElementById('mSolIcon');
-    mSolBtn?.addEventListener('click', () => {
-      const open = mSolPanel.classList.toggle('hidden') === false;
-      mSolBtn.setAttribute('aria-expanded', String(open));
-      mSolIcon.classList.toggle('rotate-180', open);
-    });
+    function toggleMobile(open) {
+      if (open) {
+        mBg?.classList.remove('pointer-events-none', 'opacity-0');
+        mBg?.classList.add('pointer-events-auto', 'opacity-100');
 
-    // Sombra en header al hacer scroll
+        mPanel?.classList.remove('translate-x-full');
+        mPanel?.classList.add('translate-x-0');
+
+        document.body.style.overflow = 'hidden';
+        mOpen?.setAttribute('aria-expanded', 'true');
+      } else {
+        mBg?.classList.remove('pointer-events-auto', 'opacity-100');
+        mBg?.classList.add('pointer-events-none', 'opacity-0');
+
+        mPanel?.classList.remove('translate-x-0');
+        mPanel?.classList.add('translate-x-full');
+
+        document.body.style.overflow = '';
+        mOpen?.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    mOpen?.addEventListener('click', () => toggleMobile(true));
+    mClose?.addEventListener('click', () => toggleMobile(false));
+    mBg?.addEventListener('click', () => toggleMobile(false));
+    mLinks.forEach(link => link.addEventListener('click', () => toggleMobile(false)));
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMobile(false); });
+// Sombra en header al hacer scroll
     const siteHeader = document.getElementById('siteHeader');
     window.addEventListener('scroll', () => { siteHeader.classList.toggle('shadow', window.scrollY > 2); }, { passive: true });
 

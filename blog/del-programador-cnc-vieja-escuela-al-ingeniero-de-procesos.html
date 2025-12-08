@@ -215,11 +215,21 @@ slug: "del-programador-cnc-vieja-escuela-al-ingeniero-de-procesos"
       </div>
     </div>
 
-    <!-- Backdrop -->
-    <div id="mobileBackdrop" class="fixed inset-0 z-40 hidden bg-slate-900/70 backdrop-blur-sm"></div>
+                <!-- Backdrop -->
+    <div
+      id="mobileBackdrop"
+      class="fixed inset-0 lg:hidden bg-slate-900/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
+      style="z-index: 9998;">
+    </div>
 
-    <!-- Menú móvil -->
-    <aside id="mobilePanel" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle">
+    <!-- Menú móvil fullscreen -->
+    <aside
+      id="mobilePanel"
+      class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobileMenuTitle"
+      style="z-index: 9999;">
       <div class="absolute inset-0 bg-white flex flex-col">
         <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
           <span id="mobileMenuTitle" class="text-base font-semibold">Menú</span>
@@ -233,13 +243,13 @@ slug: "del-programador-cnc-vieja-escuela-al-ingeniero-de-procesos"
         <div class="flex-1 overflow-y-auto">
           <nav class="p-4">
             <ul class="space-y-1 text-[17px]">
-              <li><a href="/#sobre-mi"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Sobre mí</a></li>
-              <li><a href="/#soluciones"  class="block px-3 py-3 rounded-lg hover:bg-gray-100">Soluciones</a></li>
-              <li><a href="/#servicios"   class="block px-3 py-3 rounded-lg hover:bg-gray-100">Servicios</a></li>
-              <li><a href="/#recursos"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Recursos</a></li>
-              <li><a href="/#blog"        class="block px-3 py-3 rounded-lg hover:bg-gray-100">Blog</a></li>
-              <li><a href="/#agenda"      class="block px-3 py-3 rounded-lg hover:bg-gray-100">Agenda</a></li>
-              <li><a href="/#contacto"    class="block px-3 py-3 rounded-lg hover:bg-gray-100">Contacto</a></li>
+              <li><a href="/#sobre-mi"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Sobre mí</a></li>
+              <li><a href="/#soluciones"  class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Soluciones</a></li>
+              <li><a href="/#servicios"   class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Servicios</a></li>
+              <li><a href="/#recursos"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Recursos</a></li>
+              <li><a href="/#blog"        class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Blog</a></li>
+              <li><a href="/#agenda"      class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Agenda</a></li>
+              <li><a href="/#contacto"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Contacto</a></li>
             </ul>
 
             <div class="mt-6 grid grid-cols-2 gap-2 px-1">
@@ -348,30 +358,43 @@ slug: "del-programador-cnc-vieja-escuela-al-ingeniero-de-procesos"
     // Año
     document.getElementById('y').textContent = new Date().getFullYear();
 
-    // Menú móvil
+        // Menú móvil
     const mOpen  = document.getElementById('mobileOpenBtn');
     const mClose = document.getElementById('mobileCloseBtn');
     const mPanel = document.getElementById('mobilePanel');
     const mBg    = document.getElementById('mobileBackdrop');
-    function openM(){
-      mPanel.classList.remove('hidden');
-      mBg.classList.remove('hidden');
-      document.body.style.overflow='hidden';
-      setTimeout(()=>mClose?.focus(),0);
-    }
-    function closeM(){
-      mPanel.classList.add('hidden');
-      mBg.classList.add('hidden');
-      document.body.style.overflow='';
-      mOpen?.focus();
-    }
-    mOpen?.addEventListener('click', openM);
-    mClose?.addEventListener('click', closeM);
-    mBg?.addEventListener('click', closeM);
-    window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeM(); });
-    mPanel?.querySelectorAll('a[href]').forEach(a=>a.addEventListener('click',closeM));
+    const mLinks = document.querySelectorAll('.mobile-link');
 
-    // Header shadow
+    function toggleMenu(open) {
+      if (open) {
+        mBg?.classList.remove('pointer-events-none', 'opacity-0');
+        mBg?.classList.add('pointer-events-auto', 'opacity-100');
+
+        mPanel?.classList.remove('translate-x-full');
+        mPanel?.classList.add('translate-x-0');
+
+        document.body.style.overflow = 'hidden';
+      } else {
+        mBg?.classList.remove('pointer-events-auto', 'opacity-100');
+        mBg?.classList.add('pointer-events-none', 'opacity-0');
+
+        mPanel?.classList.remove('translate-x-0');
+        mPanel?.classList.add('translate-x-full');
+
+        document.body.style.overflow = '';
+      }
+    }
+
+    mOpen?.addEventListener('click', () => toggleMenu(true));
+    mClose?.addEventListener('click', () => toggleMenu(false));
+    mBg?.addEventListener('click', () => toggleMenu(false));
+
+    mLinks.forEach(link => link.addEventListener('click', () => toggleMenu(false)));
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleMenu(false);
+    });
+// Header shadow
     const siteHeader=document.getElementById('siteHeader');
     window.addEventListener('scroll',()=>siteHeader.classList.toggle('shadow',window.scrollY>2),{passive:true});
 
