@@ -55,6 +55,47 @@
       </div>
     </div>
   </header>
+  <div
+    id="mobileBackdrop"
+    class="fixed inset-0 lg:hidden bg-slate-900/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
+    style="z-index: 9998;">
+  </div>
+
+  <aside
+    id="mobilePanel"
+    class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mobileMenuTitle"
+    style="z-index: 9999;">
+    <div class="absolute inset-0 flex flex-col" style="background:#020617; color:#e5e7eb;">
+      <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800">
+        <span id="mobileMenuTitle" class="text-base font-semibold">Menú</span>
+        <button id="mobileCloseBtn" class="p-2 rounded hover:bg-slate-800" aria-label="Cerrar menú">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto">
+        <nav class="p-4">
+          <ul class="space-y-1 text-[17px]">
+            <li><a href="/"            class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Inicio</a></li>
+            <li><a href="/#soluciones" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Soluciones</a></li>
+            <li><a href="/#servicios"  class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Servicios</a></li>
+            <li><a href="/#recursos"   class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Recursos</a></li>
+            <li><a href="/#contacto"   class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Contacto</a></li>
+          </ul>
+
+          <div class="mt-6 grid grid-cols-2 gap-2 px-1">
+            <a href="/#soporte" class="px-3 py-2 text-center rounded-md border border-slate-700 hover:bg-slate-800">Soporte</a>
+            <a href="/#agenda"  class="px-3 py-2 text-center rounded-md bg-blue-600 text-white hover:bg-blue-700">Agendar</a>
+          </div>
+        </nav>
+      </div>
+    </div>
+  </aside>
   <!-- end header -->
   <!-- ===== HERO (copiado de la calculadora) ===== -->
 <section class="relative reveal">
@@ -189,6 +230,40 @@
   </main>
 
   <footer class="max-w-6xl mx-auto p-6 muted text-sm">© AlexRaSa — Ingeniería y soluciones para manufactura</footer>
+
+  <script>
+    const mOpen  = document.getElementById('mobileOpenBtn');
+    const mClose = document.getElementById('mobileCloseBtn');
+    const mPanel = document.getElementById('mobilePanel');
+    const mBg    = document.getElementById('mobileBackdrop');
+    const mLinks = document.querySelectorAll('.mobile-link');
+
+    function toggleMenu(open) {
+      if (open) {
+        mBg?.classList.remove('pointer-events-none', 'opacity-0');
+        mBg?.classList.add('pointer-events-auto', 'opacity-100');
+
+        mPanel?.classList.remove('translate-x-full');
+        mPanel?.classList.add('translate-x-0');
+
+        document.body.style.overflow = 'hidden';
+      } else {
+        mBg?.classList.remove('pointer-events-auto', 'opacity-100');
+        mBg?.classList.add('pointer-events-none', 'opacity-0');
+
+        mPanel?.classList.remove('translate-x-0');
+        mPanel?.classList.add('translate-x-full');
+
+        document.body.style.overflow = '';
+      }
+    }
+
+    mOpen?.addEventListener('click', () => toggleMenu(true));
+    mClose?.addEventListener('click', () => toggleMenu(false));
+    mBg?.addEventListener('click', () => toggleMenu(false));
+    mLinks.forEach(link => link.addEventListener('click', () => toggleMenu(false)));
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(false); });
+  </script>
 
   <!-- CORRECT PATH: relative to /toolform/index.html -->
   <script src="/toolform/js/tool-selection.js" defer></script>
