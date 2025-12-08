@@ -423,7 +423,16 @@
         const data = await resp.json();
         if(!resp.ok) throw new Error(data?.error || 'Error al publicar');
 
-        statusEl.innerHTML = `✔️ Publicado: <a class="text-sky-600 underline" href="${data.url}" target="_blank" rel="noopener">${data.url}</a>`;
+        statusEl.textContent = '✔️ Publicado';
+        if (data?.url) {
+          const link = document.createElement('a');
+          link.href = data.url;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.className = 'text-sky-600 underline ml-2';
+          link.textContent = data.url;
+          statusEl.appendChild(link);
+        }
       } catch(err){
         statusEl.textContent = 'Error: '+err.message;
         console.error(err);
