@@ -135,7 +135,6 @@
           <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-medium text-slate-200">Tipo de post</label>
             <select id="postTipo" class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
-              <!-- Opciones llenadas por JS -->
             </select>
           </div>
           <div class="flex-1 min-w-[160px]">
@@ -218,7 +217,6 @@
           <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-medium text-slate-200">Concepto</label>
             <select id="extraItem" class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
-              <!-- Opciones llenadas por JS -->
             </select>
           </div>
           <div class="w-24">
@@ -282,13 +280,11 @@
             <label class="block text-xs font-medium text-slate-200">Escenario base</label>
             <select id="escenarioBaseSelect"
               class="w-full bg-base-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-accent-500">
-              <!-- Se llena dinámicamente -->
             </select>
           </div>
           <div class="flex-1 min-w-[220px]">
             <span class="block text-[11px] font-medium text-slate-200">Escenarios a comparar (marca uno o varios)</span>
             <div id="escenariosCheckContainer" class="flex flex-wrap gap-2 mt-1 text-[11px]">
-              <!-- Checkboxes dinámicos -->
             </div>
           </div>
         </div>
@@ -410,11 +406,6 @@
       price: 1000
     };
 
-    // Agregados manuales: por ahora solo implementación 8h, se pueden añadir más códigos después.
-    const extrasCatalog = {
-      impl8h: { name: implementationItem.name, code: implementationItem.code, price: implementationItem.price }
-    };
-
     const axisOptionsByMachine = {
       cm: [
         { value: '3x', label: '3 ejes' },
@@ -470,10 +461,48 @@
       wire24: { name: 'Wirecut 2 axis + 4 axis SolidCAM', price: 4360, packageCode: 'SSM0132' },
     };
 
+    // Agregados manuales: catálogo dinámico con módulos, capacitaciones y servicios
+    let extrasCatalog = {};
+
+    function buildExtrasCatalog() {
+      extrasCatalog = {};
+
+      // Módulos
+      Object.entries(moduleCatalog).forEach(([key, def]) => {
+        extrasCatalog['mod:' + key] = {
+          type: 'module',
+          refKey: key,
+          name: 'Módulo: ' + def.name,
+          code: def.packageCode || '---',
+          price: def.price
+        };
+      });
+
+      // Capacitaciones
+      Object.entries(trainingCatalog).forEach(([key, def]) => {
+        extrasCatalog['cap:' + key] = {
+          type: 'training',
+          refKey: key,
+          name: 'Capacitación: ' + def.name,
+          code: def.code,
+          price: def.price
+        };
+      });
+
+      // Servicios / implementación
+      extrasCatalog['extra:impl8h'] = {
+        type: 'extra',
+        refKey: 'impl8h',
+        name: 'Servicio: ' + implementationItem.name,
+        code: implementationItem.code,
+        price: implementationItem.price
+      };
+    }
+
     // --------------------- Estado global ---------------------
 
-    const moduleOverrides = {};   // por máquina: { [machineId]: { [moduleKey]: 'forceOn'|'forceOff' } }
-    const trainingOverrides = {}; // global por tipo de capacitación
+    const moduleOverrides = {};
+    const trainingOverrides = {};
 
     let currentPosts = [];
     let extras = [];
@@ -985,8 +1014,8 @@
     const tablaExtrasBody = document.getElementById('tablaExtras');
 
     function calcular() {
-      // 1) Agregar módulos de todos los entornos
-      const moduleAgg = {}; // key -> { def, qty }
+      // 1) Módulos de todos los entornos
+      const moduleAgg = {};
 
       machines.forEach(m => {
         const card = machinesContainer.querySelector(`[data-machine-id="${m.id}"]`);
@@ -1213,7 +1242,6 @@
 
       const descripcion = (document.getElementById('descripcionProceso').value || '(sin descripción)').replace(/\n/g, '<br>');
 
-      // Entornos
       const entornoRows = [];
       machines.forEach(m => {
         const card = machinesContainer.querySelector(`[data-machine-id="${m.id}"]`);
@@ -1234,7 +1262,6 @@
         });
       });
 
-      // Módulos desde tabla ya calculada
       const modLines = [];
       tablaModulosBody.querySelectorAll('tr').forEach(tr => {
         const tds = tr.querySelectorAll('td');
@@ -1248,7 +1275,6 @@
         });
       });
 
-      // Posts
       const postLines = [];
       tablaPostsBody.querySelectorAll('tr').forEach(tr => {
         const tds = tr.querySelectorAll('td');
@@ -1263,7 +1289,6 @@
         });
       });
 
-      // Extras
       const extraLines = [];
       tablaExtrasBody.querySelectorAll('tr').forEach(tr => {
         const tds = tr.querySelectorAll('td');
@@ -1277,7 +1302,6 @@
         });
       });
 
-      // Escenarios
       const escenariosExport = [];
       tablaGlobalBody.querySelectorAll('tr').forEach(tr => {
         const tds = tr.querySelectorAll('td');
@@ -1503,11 +1527,13 @@ ${html}
       escenariosCheckContainer.innerHTML = '';
 
       addMachine();
+      calcular();
     });
 
     // --------------------- Init ---------------------
 
     fillPostTipoOptions();
+    buildExtrasCatalog();
     fillExtrasOptions();
     addMachine();
     calcular();
