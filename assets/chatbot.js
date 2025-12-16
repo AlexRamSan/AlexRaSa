@@ -9,11 +9,13 @@
   const state = {
     open: false,
     sending: false,
+    draft: "",          // <-- guarda lo que escribes
+    focusNext: false,   // <-- si true, enfocamos textarea tras render
     messages: [
       {
         role: "assistant",
         content:
-          "¿Cómo puedo asistirte hoy? Dime tu reto (tiempo de ciclo, set-up, scrap, vida de herramienta o estandarización) y el proceso.",
+          "¿Qué quieres mejorar hoy y en qué proceso? (CNC, lámina, troqueles, etc.)",
       },
     ],
     lastTicket: null,
@@ -25,9 +27,7 @@
     const n = document.createElement(tag);
 
     Object.entries(attrs).forEach(([k, v]) => {
-      // CLAVE: no pongas atributos con null/undefined/false
       if (v === null || v === undefined || v === false) return;
-
       if (k === "class") n.className = v;
       else if (k === "style") n.style.cssText = v;
       else if (k === "disabled") n.disabled = Boolean(v);
@@ -35,9 +35,7 @@
       else n.setAttribute(k, String(v));
     });
 
-    children.forEach((c) =>
-      n.appendChild(typeof c === "string" ? document.createTextNode(c) : c)
-    );
+    children.forEach((c) => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
     return n;
   }
 
@@ -81,6 +79,7 @@
           "fixed bottom-5 right-5 z-[9999] rounded-full px-4 py-3 bg-sky-600 text-white shadow-lg hover:bg-sky-700 transition text-sm",
         onclick: () => {
           state.open = !state.open;
+          state.focusNext = state.open; // al abrir, enfoca
           render();
         },
       },
@@ -92,10 +91,7 @@
 
     const header = el(
       "div",
-      {
-        class:
-          "flex items-start justify-between gap-3 px-4 py-3 border-b border-white/10 bg-black/40",
-      },
+      { class: "flex items-start justify-between gap-3 px-4 py-3 border-b border-white/10 bg-black/40" },
       [
         el("div", {}, [
           el("div", { class: "text-white font-semibold text-sm" }, [BOT_TITLE]),
@@ -118,7 +114,6 @@
 
     const msgs = el("div", {
       class: "px-4 py-3 space-y-3 overflow-auto",
-      // más alto para que no se vea “cerrado”
       style: "max-height: 60vh;",
     });
 
@@ -142,25 +137,31 @@
     const footer = el("div", { class: "p-3 border-t border-white/10 bg-black/30" });
 
     const input = el("textarea", {
+      id: "rasa-chat-input",
       class:
         "w-full rounded-xl border border-white/10 bg-white/5 text-white text-sm p-3 outline-none focus:ring-1 focus:ring-sky-500 resize-none",
-      rows: "3", // más grande
-      placeholder: "Ej: Planeado en CNC, quiero bajar 10% el ciclo. Hoy tarda 3:40.",
+      rows: "3",
+      placeholder: "¿Qué estás haciendo y qué quieres mejorar?",
+      oninput: (e) => {
+        state.draft = e.target.value; // <-- guarda borrador
+      },
       onkeydown: (e) => {
-        // Enter envía; Shift+Enter hace salto de línea
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();
-          send(input.value);
+          send(state.draft);
         }
       },
     });
+
+    // restaura borrador tras re-render
+    input.value = state.draft;
 
     const btn = el(
       "button",
       {
         class:
           "mt-2 w-full rounded-xl px-4 py-2 bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed",
-        onclick: () => send(input.value),
+        onclick: () => send(state.draft),
         disabled: state.sending,
       },
       [state.sending ? "Enviando…" : "Enviar"]
@@ -209,15 +210,40 @@
     );
 
     root.appendChild(panel);
+
+    // scroll al final
     msgs.scrollTop = msgs.scrollHeight;
+
+    // AUTOFOCUS (después de que el DOM ya existe)
+    if (state.focusNext) {
+      state.focusNext = false;
+      setTimeout(() => {
+        const ta = $("#rasa-chat-input");
+        if (ta) {
+          ta.focus();
+          // cursor al final
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+      }, 0);
+    }
   }
 
   async function send(text) {
     const t = (text || "").trim();
-    if (!t || state.sending) return;
+    if (!t || state.sending) {
+      // si está vacío, solo enfoca
+      state.focusNext = true;
+      render();
+      return;
+    }
 
     state.sending = true;
     state.messages.push({ role: "user", content: t });
+
+    // limpia borrador y asegura focus para seguir escribiendo sin click
+    state.draft = "";
+    state.focusNext = true;
+
     render();
 
     try {
@@ -230,6 +256,9 @@
       const data = await r.json().catch(() => ({}));
       const reply = (data?.text || "No pude responder. Intenta de nuevo.").trim();
       state.messages.push({ role: "assistant", content: reply });
+
+      // tras respuesta, vuelve a enfocar
+      state.focusNext = true;
 
       if (data?.ticket) {
         try {
@@ -254,11 +283,10 @@
       }
     } catch {
       state.messages.push({ role: "assistant", content: "Error de red. Reintenta." });
+      state.focusNext = true;
     } finally {
       state.sending = false;
       render();
-      const ta = document.querySelector("#rasa-chatbot-root textarea");
-      if (ta) ta.value = "";
     }
   }
 
