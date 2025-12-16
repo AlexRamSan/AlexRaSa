@@ -6,9 +6,11 @@
   const API_CHAT = "/api/chat";
   const API_SEND_LEAD = "/api/sendLead";
 
-  // Persistencia
-  const LS_MESSAGES = "rasa_messages_v3";
-  const LS_SESSION = "rasa_session_v3";
+  const LS_MESSAGES = "rasa_messages_v5";
+  const LS_SESSION = "rasa_session_v5";
+  const LS_LAST_SENT = "rasa_last_sent_hash_v2";
+
+  const AUTO_SEND_ENABLED = true;
 
   const state = {
     open: false,
@@ -39,10 +41,9 @@
   }
 
   // =========================
-  // WhatsApp avoidance (no tocar HTMLs)
+  // WhatsApp avoidance (encima, no al lado)
   // =========================
   function findWhatsBtn() {
-    // Ajusta/añade selectores si tu WA usa uno específico
     return (
       document.querySelector("#wa-btn") ||
       document.querySelector(".whatsapp-float") ||
@@ -54,19 +55,24 @@
 
   function getChatOffsets() {
     const wa = findWhatsBtn();
-    // default bottom-right
+
+    // default
     let bottom = 20;
     let right = 20;
 
     if (!wa) return { bottom, right };
 
     const r = wa.getBoundingClientRect();
-
-    // Si WA está cerca de la esquina inferior derecha, mueve el chatbot a la izquierda
     const nearBottom = r.bottom > window.innerHeight - 140;
     const nearRight = r.right > window.innerWidth - 140;
 
-    if (nearBottom && nearRight) right = 110; // separación del WA
+    // Si WA está en esquina inferior derecha: sube el chatbot ENCIMA del WA
+    if (nearBottom && nearRight) {
+      const waFromBottom = Math.max(0, window.innerHeight - r.top);
+      bottom = waFromBottom + 14; // coloca launcher arriba del WA
+      right = 20;
+    }
+
     return { bottom, right };
   }
 
@@ -89,6 +95,69 @@
     } catch {}
   }
 
+  // =========================
+  // Lead completeness + anti-dup
+  // =========================
+  function isLeadComplete(session) {
+    const opted = !!session?.optedInToRegister;
+    const c = session?.contacto || {};
+    const t = session?.tecnico || {};
+
+    // OBLIGATORIOS: WhatsApp + email
+    const hasWhatsapp = !!c.whatsapp;
+    const hasEmail = !!c.email;
+
+    const hasName = !!c.nombre;
+    const hasCompany = !!c.empresa;
+    const hasLocation = !!c.ciudad || !!c.estado;
+
+    const hasTech = !!t.operacion && !!t.maquina && !!t.control && !!t.meta;
+
+    return opted && hasWhatsapp && hasEmail && hasName && hasCompany && hasLocation && hasTech;
+  }
+
+  function fingerprint(session) {
+    const c = session?.contacto || {};
+    const t = session?.tecnico || {};
+    return [
+      location.pathname || "",
+      c.whatsapp || "",
+      c.email || "",
+      c.nombre || "",
+      c.empresa || "",
+      c.ciudad || "",
+      c.estado || "",
+      c.rol || "",
+      t.operacion || "",
+      t.maquina || "",
+      t.control || "",
+      t.meta || "",
+      session?.producto || "",
+      session?.track || "",
+      session?.comercial?.tipo_interes || "",
+    ]
+      .join("|")
+      .toLowerCase()
+      .trim();
+  }
+
+  function getLastSent() {
+    try {
+      return localStorage.getItem(LS_LAST_SENT) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function setLastSent(v) {
+    try {
+      localStorage.setItem(LS_LAST_SENT, v);
+    } catch {}
+  }
+
+  // =========================
+  // Mail fallback (opcional)
+  // =========================
   function escapeMail(s = "") {
     return encodeURIComponent(String(s).replace(/\r/g, ""));
   }
@@ -117,12 +186,34 @@
     return `mailto:${to}?subject=${escapeMail(subject)}&body=${escapeMail(body)}`;
   }
 
-  function shouldShowSendSummaryButton() {
-    const opted = !!state.session?.optedInToRegister;
-    const hasContact = !!state.session?.contacto?.email || !!state.session?.contacto?.whatsapp;
-    return opted && hasContact;
+  // =========================
+  // Auto-send trigger
+  // =========================
+  function maybeAutoSend() {
+    if (!AUTO_SEND_ENABLED) return;
+    if (state.sending) return;
+
+    if (!isLeadComplete(state.session)) return;
+
+    const fp = fingerprint(state.session);
+    if (!fp) return;
+
+    const last = getLastSent();
+    if (last && last === fp) return; // ya se mandó este mismo lead
+
+    // marca antes para evitar doble disparo por render/resize
+    setLastSent(fp);
+
+    // dispara finalize + send
+    finalizeAndSendLead({ silent: true }).catch(() => {
+      // si falló, permite reintento con un cambio mínimo (o borra LS manual)
+      // no revertimos el hash para evitar spam; si quieres reintento automático, se puede ajustar.
+    });
   }
 
+  // =========================
+  // UI
+  // =========================
   function render() {
     let root = $("#rasa-chatbot-root");
     if (!root) {
@@ -214,7 +305,6 @@
         }
       },
     });
-
     input.value = state.draft;
 
     const btnSend = el(
@@ -230,21 +320,6 @@
 
     const actions = el("div", { class: "mt-2 flex gap-2" });
 
-    const btnFinalize = el(
-      "button",
-      {
-        class:
-          "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition disabled:opacity-60 disabled:cursor-not-allowed",
-        onclick: finalizeAndSendLead,
-        disabled: state.sending || !shouldShowSendSummaryButton(),
-        style: shouldShowSendSummaryButton() ? "" : "display:none;",
-        title: "Genera resumen y lo registra",
-      },
-      ["Enviar resumen"]
-    );
-
-    actions.appendChild(btnFinalize);
-
     if (state.lastLeadPack) {
       actions.appendChild(
         el(
@@ -257,7 +332,6 @@
           ["Enviar por correo"]
         )
       );
-
       actions.appendChild(
         el(
           "button",
@@ -276,14 +350,13 @@
 
     footer.appendChild(input);
     footer.appendChild(btnSend);
-    footer.appendChild(actions);
+    if (state.lastLeadPack) footer.appendChild(actions);
 
     const panel = el(
       "div",
       {
         class:
           "fixed z-[999999] w-[420px] max-w-[94vw] rounded-2xl overflow-hidden border border-white/10 shadow-2xl backdrop-blur-md bg-[#0b1220]/95",
-        // panel arriba del launcher
         style: `bottom:${bottom + 70}px; right:${right}px;`,
       },
       [header, msgs, footer]
@@ -291,10 +364,8 @@
 
     root.appendChild(panel);
 
-    // scroll al final
     msgs.scrollTop = msgs.scrollHeight;
 
-    // autofocus
     if (state.focusNext) {
       state.focusNext = false;
       setTimeout(() => {
@@ -350,17 +421,19 @@
     } finally {
       state.sending = false;
       render();
+      // intenta auto-enviar cuando ya quedó completo
+      setTimeout(maybeAutoSend, 0);
     }
   }
 
-  async function finalizeAndSendLead() {
+  async function finalizeAndSendLead({ silent } = { silent: false }) {
     if (state.sending) return;
 
     state.sending = true;
     render();
 
     try {
-      // 1) Finalize (genera resumen interno)
+      // 1) Finalize
       const r1 = await fetch(API_CHAT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -371,12 +444,12 @@
           pagePath: location.pathname,
         }),
       });
-      const fin = await r1.json().catch(() => ({}));
 
+      const fin = await r1.json().catch(() => ({}));
       if (fin?.session) state.session = fin.session;
       savePersisted();
 
-      // 2) Enviar a GAS via proxy /api/sendLead
+      // 2) Send
       const payload = {
         pagePath: location.pathname,
         session: state.session,
@@ -392,21 +465,16 @@
 
       const sent = await r2.json().catch(() => ({}));
 
-      const summary = fin?.final?.summary_for_miguel || "";
-      const next = fin?.final?.next_best_step || "";
-
       state.lastLeadPack = { session: state.session, final: fin?.final || null };
 
-      if (summary) state.messages.push({ role: "assistant", content: `Resumen:\n${summary}` });
-      if (next) state.messages.push({ role: "assistant", content: `Siguiente paso sugerido:\n${next}` });
-
-      if (sent?.ok === false) state.messages.push({ role: "assistant", content: "Resumen listo. Usa “Enviar por correo”." });
-      else state.messages.push({ role: "assistant", content: "Quedó registrado para revisión." });
-
+      if (!silent) {
+        if (sent?.ok === false) state.messages.push({ role: "assistant", content: "Resumen listo. Si quieres, usa “Enviar por correo”." });
+        else state.messages.push({ role: "assistant", content: "Listo: quedó registrado para revisión." });
+      }
       savePersisted();
       state.focusNext = true;
     } catch {
-      state.messages.push({ role: "assistant", content: "No pude registrar el resumen. Intenta de nuevo." });
+      if (!silent) state.messages.push({ role: "assistant", content: "No pude registrar el resumen. Intenta de nuevo." });
       savePersisted();
       state.focusNext = true;
     } finally {
@@ -415,7 +483,6 @@
     }
   }
 
-  // Re-render cuando cambie tamaño (por WA o responsive)
   window.addEventListener("resize", () => {
     if (state.open) render();
   });
@@ -434,4 +501,7 @@
   }
 
   render();
+
+  // si ya abriste antes y quedó completo, intenta mandar
+  setTimeout(maybeAutoSend, 0);
 })();
