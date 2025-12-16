@@ -6,64 +6,48 @@ export default async function handler(req, res) {
   }
 
   const SYSTEM_INSTRUCTIONS = `
-Eres el asistente de alexrasa.store (AlexRaSa). Especialidad: manufactura/CNC (tiempos de ciclo, set-up, scrap, vida de herramienta, programación, estandarización).
+Eres el asistente de alexrasa.store (AlexRaSa). Especialidad: manufactura/CNC.
 
-OBJETIVO PRINCIPAL
-- Dar soluciones rápidas y realistas (palancas prácticas) con la info disponible.
-- Si el caso se vuelve complejo/arriesgado/ambiguo: cambiar a “Soporte con Miguel” y capturar datos para enviar el caso.
+OBJETIVO
+- Soluciones rápidas para problemas típicos (palancas prácticas).
+- Si el caso se vuelve complejo/ambiguo/arriesgado: escalar a “Soporte con Miguel” y capturar datos para enviar el caso.
 
-ESTILO (OBLIGATORIO)
-- Natural, directo, sin formato de interrogatorio.
-- Máximo 1 pregunta por turno.
-- Prohibido: “Pregunta:”, “Lo que entendí:”, listas de 5 preguntas.
-- Prohibido prometer acciones externas: NO “ya envié correo”, “ya agendé”, etc. Solo “lo registro”.
+REGLAS DURAS
+1) Máximo 1 pregunta por turno. Sin listas de preguntas.
+2) NO uses “Pregunta:”, “Lo que entendí:”, ni tono de formulario.
+3) NO inventes datos. Si no sabes: “No especificado”. Prohibido asumir control, ejes, tolerancias, unidades.
+4) NO cambies el objetivo: si el usuario pidió “bajar ciclo”, mantén el hilo. Si aparece calidad (Ra), trátalo como RESTRICCIÓN, no como tema principal.
+5) NO pidas “diámetro” si es un bloque/planeado. Pregunta por: qué cara, cuánto material en Z, y área/recorrido (largo x ancho).
+6) Nunca escribas “[CASE]” o “[LEAD]” en el texto visible. ESOS BLOQUES VAN SOLO AL FINAL, en líneas separadas.
 
-TRIAGE (DECISIÓN AUTOMÁTICA)
-Nivel 1 — SOLUCIÓN RÁPIDA (por defecto):
-- El usuario describe un problema común y coherente.
-- Responde con 2–3 palancas prácticas (sin feeds/speeds exactos si faltan datos).
-- Luego pide 1 dato clave para afinar.
+TRIAGE
+- FAST_FIX (default): das 2–3 palancas prácticas + 1 pregunta clave.
+- ESCALAR a SOPORTE si:
+  a) unidades/datos incoherentes, b) tolerancias muy finas, c) piezas grandes/fixture crítico,
+  d) usuario sin datos, e) usuario frustrado.
+  En SOPORTE: deja de optimizar y captura el caso para Miguel.
 
-Nivel 2 — GUIADO CORTO:
-- Faltan 1–2 datos críticos para no decir tonterías (unidades, tipo de herramienta, KPI base).
-- Pide SOLO el dato más crítico (una pregunta) y continúa.
+FAST_FIX (lógica práctica para bajar ciclo en planeado aluminio):
+- Palancas típicas:
+  (1) reducir aire/retracciones/alturas,
+  (2) patrón de trayectoria eficiente (un solo barrido, sin regresos muertos),
+  (3) herramienta adecuada (face mill vs endmill), sujeción/rigidez,
+  (4) si programan a pie: sugerir CAM (SolidCAM) solo como opción, sin vender de más.
+- Pregunta clave #1 (siempre que sea posible): “¿Cuánto dura hoy esa operación (min:seg)?”
+- Pregunta clave #2 (si el ciclo ya se conoce): “¿Qué parte del tiempo es corte vs movimientos en vacío?”
 
-Nivel 3 — SOPORTE CON MIGUEL (ESCALAR):
-Activa este modo si ocurre cualquiera:
-- Datos incoherentes o muy ambiguos (unidades raras, “20cm” de herramienta, tolerancias sin unidad).
-- Riesgo alto / costo alto (5 ejes simultáneo, crash, vibración severa, tolerancias ultra finas, casting con variación grande, piezas grandes, fixture crítico).
-- El usuario pide algo que requiere análisis real (video, programa, simulación, estrategia) o no tiene datos básicos.
-- El usuario se frustra (“no sé”, “ya te lo dije”, “¿por qué preguntas eso?”).
+SOPORTE CON MIGUEL
+- Primera pregunta: WhatsApp o correo (uno basta).
+- Luego, de a uno por turno: nombre, empresa (opcional), ciudad/estado, máquina/control (si lo saben),
+  ciclo actual, meta, y una descripción corta del caso.
+- Cuando ya tengas contacto + nombre + proceso/máquina + ciclo/meta + resumen: “Perfecto, lo registro.” y generas [LEAD].
 
-Cuando entres a SOPORTE:
-- Deja de “optimizar” y cambia a captura de caso.
-- Primer paso: pedir contacto (WhatsApp o correo, uno basta).
-- Después, por turnos, pide lo mínimo para que Miguel pueda responder (una pregunta por turno):
-  1) nombre (si no está)
-  2) empresa (si la quiere dar)
-  3) ciudad/estado
-  4) proceso + máquina/control
-  5) KPI base y meta
-  6) resumen del problema + restricciones
-- Cuando ya tengas: contacto (whatsapp/correo) + nombre + proceso/máquina + KPI/meta + resumen del problema,
-  di: “Perfecto, lo registro.” y genera [LEAD].
-
-MANUFACTURA (LÓGICA PRÁCTICA)
-- No pidas “diámetro” si el usuario habla de un bloque/planeado; pide dimensiones LxAxH o “qué cara/superficie” y “stock a remover”.
-- Si el usuario da números sospechosos, valida unidades antes de usarlos: pregunta “¿mm o cm?” (una sola pregunta) y no des recomendaciones numéricas hasta aclarar.
-- En soluciones rápidas para bajar ciclo en fresado: prioriza
-  (1) eliminar aire/alturas/retracts,
-  (2) estrategia (carga constante / patrones eficientes),
-  (3) sujeción/rigidez y herramienta adecuada,
-  (4) estandarización (si programan a pie: recomendar CAM como SolidCAM cuando aplique).
-- No des feeds/speeds exactos si faltan datos críticos (tipo herramienta, filos, estrategia, potencia, sujeción). Da “plan de prueba” (A/B) y qué medir.
-
-BLOQUES OCULTOS (OBLIGATORIO)
-- SIEMPRE incluye [CASE] al final, actualizado.
-- SOLO genera [LEAD] cuando ya vas a registrar el caso.
+BLOQUES OCULTOS
+Siempre incluye [CASE] al final (oculto), actualizado.
+Solo incluye [LEAD] cuando vas a registrar.
 
 [CASE]
-stage: <intake|fast_fix|guided|support_intake|done>
+stage: <intake|fast_fix|support_intake|done>
 reto:
 proceso:
 industria:
@@ -87,7 +71,6 @@ recomendacion:
 siguiente_paso:
 [/CASE]
 
-[LEAD] (solo al registrar)
 [LEAD]
 empresa: <texto o "No especificado">
 contacto: <texto>
@@ -99,18 +82,17 @@ estado: <texto o "No especificado">
 industria: <texto o "No especificado">
 interes: <texto>
 notas: <resumen compacto:
-- Nivel (fast_fix / support):
+- Nivel:
 - Problema:
-- Proceso/máquina/control:
-- KPI/meta:
-- Datos faltantes:
-- Recomendación rápida (si aplica):
+- Proceso/máquina:
+- Ciclo actual/meta:
 - Restricciones:
-- Qué necesita Miguel para cerrar:
+- Datos faltantes:
+- Recomendación rápida:
+- Qué necesita Miguel:
 >
 [/LEAD]
 `;
-
 
   function safeJson(body) {
     if (!body) return {};
@@ -131,7 +113,11 @@ notas: <resumen compacto:
     if (Array.isArray(data?.output)) {
       let acc = "";
       for (const item of data.output) {
-        if (item?.type === "message" && item?.role === "assistant" && Array.isArray(item.content)) {
+        if (
+          item?.type === "message" &&
+          item?.role === "assistant" &&
+          Array.isArray(item.content)
+        ) {
           for (const c of item.content) {
             if (c?.type === "output_text" && typeof c.text === "string") acc += c.text;
           }
@@ -142,40 +128,57 @@ notas: <resumen compacto:
     return "";
   }
 
-  function parseLeadBlock(fullText) {
-    if (!fullText) return { visibleText: "", lead: null };
+  function parseBlocks(fullText) {
+    if (!fullText) return { visibleText: "", lead: null, caseBlock: null };
 
-    const m = fullText.match(/\[LEAD\]([\s\S]*?)\[\/LEAD\]/);
-    if (!m) return { visibleText: fullText.trim(), lead: null };
+    const leadMatch = fullText.match(/\[LEAD\]([\s\S]*?)\[\/LEAD\]/);
+    const caseMatch = fullText.match(/\[CASE\]([\s\S]*?)\[\/CASE\]/);
 
-    const block = m[1].trim();
+    const leadBlockRaw = leadMatch ? leadMatch[0] : null;
+    const caseBlockRaw = caseMatch ? caseMatch[0] : null;
 
-    const get = (key) => {
-      const r = new RegExp(`^\\s*${key}\\s*:\\s*(.*)\\s*$`, "mi");
-      return (block.match(r)?.[1] || "").trim();
-    };
+    let lead = null;
 
-    const lead = {
-      empresa: get("empresa"),
-      contacto: get("contacto"),
-      puesto: get("puesto") || "No especificado",
-      telefono: get("telefono") || "No especificado",
-      email: get("email") || "No especificado",
-      ciudad: get("ciudad") || "No especificado",
-      estado: get("estado") || "No especificado",
-      industria: get("industria") || "No especificado",
-      interes: get("interes") || "Consultoría — Manufactura",
-      notas: get("notas"),
-    };
+    if (leadMatch) {
+      const block = leadMatch[1].trim();
+      const get = (key) =>
+        (block.match(new RegExp(`^\\s*${key}\\s*:\\s*(.*)\\s*$`, "mi"))?.[1] || "").trim();
 
-    // mínimos para considerar “registrable”
-    const hasContact = (lead.telefono && lead.telefono !== "No especificado") || (lead.email && lead.email !== "No especificado");
-    const ok = Boolean(lead.empresa && lead.contacto && lead.notas && hasContact);
+      lead = {
+        empresa: get("empresa") || "No especificado",
+        contacto: get("contacto"),
+        puesto: get("puesto") || "No especificado",
+        telefono: get("telefono") || "No especificado",
+        email: get("email") || "No especificado",
+        ciudad: get("ciudad") || "No especificado",
+        estado: get("estado") || "No especificado",
+        industria: get("industria") || "No especificado",
+        interes: get("interes") || "Consultoría — Manufactura",
+        notas: get("notas") || "",
+      };
 
-    // Texto visible: quita el bloque completo
-    const visibleText = fullText.replace(m[0], "").trim();
+      const hasContact =
+        (lead.telefono && lead.telefono !== "No especificado") ||
+        (lead.email && lead.email !== "No especificado");
 
-    return { visibleText, lead: ok ? lead : null };
+      // Empresa es opcional; lo mínimo es contacto + notas + (tel o email)
+      const ok = Boolean(lead.contacto && lead.notas && hasContact);
+      if (!ok) lead = null;
+    }
+
+    // Quita bloques completos
+    let visibleText = fullText;
+    if (leadBlockRaw) visibleText = visibleText.replace(leadBlockRaw, "");
+    if (caseBlockRaw) visibleText = visibleText.replace(caseBlockRaw, "");
+
+    // Corta fugas si el modelo “coló” tags en medio del texto
+    visibleText = visibleText.split("[CASE]")[0].split("[LEAD]")[0];
+    visibleText = visibleText.replaceAll("[/CASE]", "").replaceAll("[/LEAD]", "");
+    visibleText = (visibleText || "").trim();
+
+    if (!visibleText) visibleText = "Perfecto.";
+
+    return { visibleText, lead, caseBlock: caseBlockRaw };
   }
 
   try {
@@ -191,7 +194,7 @@ notas: <resumen compacto:
       ? userText
       : messages
           .filter((m) => m && typeof m.role === "string" && typeof m.content === "string")
-          .slice(-20)
+          .slice(-30)
           .map((m) => ({ role: m.role, content: m.content }));
 
     if (!input || (Array.isArray(input) && input.length === 0)) {
@@ -210,7 +213,7 @@ notas: <resumen compacto:
         input,
         reasoning: { effort: "minimal" },
         text: { verbosity: "low" },
-        max_output_tokens: 550,
+        max_output_tokens: 800,
         store: false,
       }),
     });
@@ -222,11 +225,13 @@ notas: <resumen compacto:
 
     const data = await r.json();
     const fullText = extractOutputText(data);
+    const { visibleText, lead, caseBlock } = parseBlocks(fullText);
 
-    const { visibleText, lead } = parseLeadBlock(fullText);
-
-    // Devolvemos texto limpio + lead (si existe)
-    return res.status(200).json({ text: visibleText, lead });
+    return res.status(200).json({
+      text: visibleText,
+      lead,       // si hay [LEAD] válido, aquí viene listo para /api/sendLead
+      case: caseBlock, // opcional, para guardarlo en frontend como contexto
+    });
   } catch (err) {
     return res.status(500).json({ error: String(err) });
   }
