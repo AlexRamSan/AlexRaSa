@@ -4,28 +4,30 @@
   const BOT_SUBTITLE = "Manufactura. Directo.";
 
   const API_CHAT = "/api/chat";
-  const API_SEND_TICKET = "/api/sendTicket";
+  const API_SEND_LEAD = "/api/sendLead";
+
+  // Persistencia
+  const LS_MESSAGES = "rasa_messages_v2";
+  const LS_SESSION = "rasa_session_v2";
 
   const state = {
     open: false,
     sending: false,
-    draft: "",          // <-- guarda lo que escribes
-    focusNext: false,   // <-- si true, enfocamos textarea tras render
-    messages: [
-      {
-        role: "assistant",
-        content:
-          "¿Qué quieres mejorar hoy y en qué proceso? (CNC, lámina, troqueles, etc.)",
-      },
-    ],
-    lastTicket: null,
+    draft: "",
+    focusNext: false,
+
+    // Persistibles
+    messages: [],
+    session: {},
+
+    // UI
+    lastLeadPack: null, // { session, final }
   };
 
   const $ = (sel) => document.querySelector(sel);
 
   function el(tag, attrs = {}, children = []) {
     const n = document.createElement(tag);
-
     Object.entries(attrs).forEach(([k, v]) => {
       if (v === null || v === undefined || v === false) return;
       if (k === "class") n.className = v;
@@ -34,34 +36,58 @@
       else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
       else n.setAttribute(k, String(v));
     });
-
     children.forEach((c) => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
     return n;
+  }
+
+  function loadPersisted() {
+    try {
+      const m = JSON.parse(localStorage.getItem(LS_MESSAGES) || "[]");
+      const s = JSON.parse(localStorage.getItem(LS_SESSION) || "{}");
+      if (Array.isArray(m)) state.messages = m.slice(-60);
+      if (s && typeof s === "object") state.session = s;
+    } catch {}
+  }
+
+  function savePersisted() {
+    try {
+      localStorage.setItem(LS_MESSAGES, JSON.stringify(state.messages.slice(-60)));
+      localStorage.setItem(LS_SESSION, JSON.stringify(state.session || {}));
+    } catch {}
   }
 
   function escapeMail(s = "") {
     return encodeURIComponent(String(s).replace(/\r/g, ""));
   }
 
-  function ticketToMailto(ticket) {
-    const subject = `Soporte manufactura — ${ticket.tema || "Caso"}`;
+  function leadToMailto(leadPack) {
+    const to = "ramirez.miguel.alejandro@gmail.com";
+    const subject = `Lead/RaSa — ${leadPack?.session?.contacto?.empresa || "Nuevo caso"}`;
+    const sum = leadPack?.final?.summary_for_miguel || "";
+    const missing = Array.isArray(leadPack?.final?.missing_info) ? leadPack.final.missing_info.join(", ") : "";
+    const next = leadPack?.final?.next_best_step || "";
+
     const body = [
-      `Nombre: ${ticket.nombre || "No especificado"}`,
-      `Empresa: ${ticket.empresa || "No especificado"}`,
-      `Email: ${ticket.email || "No especificado"}`,
-      `WhatsApp: ${ticket.whatsapp || "No especificado"}`,
-      `Ciudad/Estado: ${(ticket.ciudad || "No especificado")} / ${(ticket.estado || "No especificado")}`,
-      `Industria: ${ticket.industria || "No especificado"}`,
-      "",
       `Resumen:`,
-      ticket.resumen || "",
+      sum || "(sin resumen)",
       "",
-      `Datos técnicos:`,
-      ticket.datos_tecnicos || "",
+      `Siguiente paso:`,
+      next || "(sin sugerencia)",
+      "",
+      `Faltante:`,
+      missing || "(n/a)",
+      "",
+      `Session JSON:`,
+      JSON.stringify(leadPack?.session || {}, null, 2),
     ].join("\n");
 
-    const to = "ramirez.miguel.alejandro@gmail.com";
     return `mailto:${to}?subject=${escapeMail(subject)}&body=${escapeMail(body)}`;
+  }
+
+  function shouldShowSendSummaryButton() {
+    const opted = !!state.session?.optedInToRegister;
+    const hasContact = !!state.session?.contacto?.email || !!state.session?.contacto?.whatsapp;
+    return opted && hasContact;
   }
 
   function render() {
@@ -79,7 +105,7 @@
           "fixed bottom-5 right-5 z-[9999] rounded-full px-4 py-3 bg-sky-600 text-white shadow-lg hover:bg-sky-700 transition text-sm",
         onclick: () => {
           state.open = !state.open;
-          state.focusNext = state.open; // al abrir, enfoca
+          state.focusNext = state.open;
           render();
         },
       },
@@ -143,7 +169,7 @@
       rows: "3",
       placeholder: "¿Qué estás haciendo y qué quieres mejorar?",
       oninput: (e) => {
-        state.draft = e.target.value; // <-- guarda borrador
+        state.draft = e.target.value;
       },
       onkeydown: (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -153,10 +179,9 @@
       },
     });
 
-    // restaura borrador tras re-render
     input.value = state.draft;
 
-    const btn = el(
+    const btnSend = el(
       "button",
       {
         class:
@@ -167,19 +192,36 @@
       [state.sending ? "Enviando…" : "Enviar"]
     );
 
+    // Acciones: Enviar resumen (finalize + sendLead)
     const actions = el("div", { class: "mt-2 flex gap-2" });
-    if (state.lastTicket) {
+
+    const btnFinalize = el(
+      "button",
+      {
+        class:
+          "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition disabled:opacity-60 disabled:cursor-not-allowed",
+        onclick: finalizeAndSendLead,
+        disabled: state.sending || !shouldShowSendSummaryButton(),
+        style: shouldShowSendSummaryButton() ? "" : "display:none;",
+      },
+      ["Enviar resumen"]
+    );
+
+    actions.appendChild(btnFinalize);
+
+    if (state.lastLeadPack) {
       actions.appendChild(
         el(
           "a",
           {
             class:
               "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition",
-            href: ticketToMailto(state.lastTicket),
+            href: leadToMailto(state.lastLeadPack),
           },
           ["Enviar por correo"]
         )
       );
+
       actions.appendChild(
         el(
           "button",
@@ -187,7 +229,7 @@
             class:
               "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition",
             onclick: () => {
-              state.lastTicket = null;
+              state.lastLeadPack = null;
               render();
             },
           },
@@ -197,8 +239,8 @@
     }
 
     footer.appendChild(input);
-    footer.appendChild(btn);
-    if (state.lastTicket) footer.appendChild(actions);
+    footer.appendChild(btnSend);
+    footer.appendChild(actions);
 
     const panel = el(
       "div",
@@ -211,17 +253,14 @@
 
     root.appendChild(panel);
 
-    // scroll al final
     msgs.scrollTop = msgs.scrollHeight;
 
-    // AUTOFOCUS (después de que el DOM ya existe)
     if (state.focusNext) {
       state.focusNext = false;
       setTimeout(() => {
         const ta = $("#rasa-chat-input");
         if (ta) {
           ta.focus();
-          // cursor al final
           ta.setSelectionRange(ta.value.length, ta.value.length);
         }
       }, 0);
@@ -231,7 +270,6 @@
   async function send(text) {
     const t = (text || "").trim();
     if (!t || state.sending) {
-      // si está vacío, solo enfoca
       state.focusNext = true;
       render();
       return;
@@ -239,48 +277,31 @@
 
     state.sending = true;
     state.messages.push({ role: "user", content: t });
-
-    // limpia borrador y asegura focus para seguir escribiendo sin click
     state.draft = "";
     state.focusNext = true;
-
+    savePersisted();
     render();
 
     try {
       const r = await fetch(API_CHAT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: state.messages }),
+        body: JSON.stringify({
+          messages: state.messages,
+          input: t,
+          session: state.session,
+          pagePath: location.pathname,
+        }),
       });
 
       const data = await r.json().catch(() => ({}));
       const reply = (data?.text || "No pude responder. Intenta de nuevo.").trim();
       state.messages.push({ role: "assistant", content: reply });
 
-      // tras respuesta, vuelve a enfocar
-      state.focusNext = true;
+      if (data?.session) state.session = data.session;
 
-      if (data?.ticket) {
-        try {
-          await fetch(API_SEND_TICKET, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ticket: data.ticket }),
-          });
-          state.lastTicket = data.ticket;
-          state.messages.push({
-            role: "assistant",
-            content:
-              "Caso registrado. Si prefieres enviarlo tú desde tu correo, usa el botón “Enviar por correo”.",
-          });
-        } catch {
-          state.lastTicket = data.ticket;
-          state.messages.push({
-            role: "assistant",
-            content: "Tengo el caso listo. Usa “Enviar por correo” para mandarlo.",
-          });
-        }
-      }
+      savePersisted();
+      state.focusNext = true;
     } catch {
       state.messages.push({ role: "assistant", content: "Error de red. Reintenta." });
       state.focusNext = true;
@@ -288,6 +309,82 @@
       state.sending = false;
       render();
     }
+  }
+
+  async function finalizeAndSendLead() {
+    if (state.sending) return;
+
+    state.sending = true;
+    render();
+
+    try {
+      // 1) Finalize
+      const r1 = await fetch(API_CHAT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: state.messages,
+          session: state.session,
+          action: "finalize",
+          pagePath: location.pathname,
+        }),
+      });
+      const fin = await r1.json().catch(() => ({}));
+
+      if (fin?.session) state.session = fin.session;
+      savePersisted();
+
+      // 2) Send to GAS proxy
+      const payload = {
+        pagePath: location.pathname,
+        session: state.session,
+        final: fin?.final || null,
+        messages: state.messages.slice(-40),
+      };
+
+      const r2 = await fetch(API_SEND_LEAD, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const sent = await r2.json().catch(() => ({}));
+
+      // UI feedback (sin prometer cosas mágicas)
+      const summary = fin?.final?.summary_for_miguel || "";
+      const next = fin?.final?.next_best_step || "";
+
+      state.lastLeadPack = { session: state.session, final: fin?.final || null };
+
+      if (summary) state.messages.push({ role: "assistant", content: `Resumen:\n${summary}` });
+      if (next) state.messages.push({ role: "assistant", content: `Siguiente paso sugerido:\n${next}` });
+
+      if (sent?.ok === false) {
+        state.messages.push({ role: "assistant", content: "Resumen listo. Si quieres, usa “Enviar por correo”." });
+      } else {
+        state.messages.push({ role: "assistant", content: "Quedó registrado para revisión." });
+      }
+
+      savePersisted();
+    } catch {
+      state.messages.push({ role: "assistant", content: "No pude registrar el resumen. Intenta de nuevo." });
+      savePersisted();
+    } finally {
+      state.sending = false;
+      render();
+    }
+  }
+
+  // Init
+  loadPersisted();
+
+  if (!state.messages.length) {
+    state.messages = [
+      {
+        role: "assistant",
+        content: "¿Qué quieres mejorar hoy y en qué proceso? (CNC, lámina, troqueles, escaneo/impresión)",
+      },
+    ];
+    savePersisted();
   }
 
   render();
