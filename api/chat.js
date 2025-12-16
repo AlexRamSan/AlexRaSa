@@ -55,7 +55,11 @@ SALIDA INTERNA (oculta)
   function safeJson(body) {
     if (!body) return {};
     if (typeof body === "string") {
-      try { return JSON.parse(body); } catch { return {}; }
+      try {
+        return JSON.parse(body);
+      } catch {
+        return {};
+      }
     }
     return body;
   }
@@ -67,7 +71,11 @@ SALIDA INTERNA (oculta)
     if (Array.isArray(data?.output)) {
       let acc = "";
       for (const item of data.output) {
-        if (item?.type === "message" && item?.role === "assistant" && Array.isArray(item.content)) {
+        if (
+          item?.type === "message" &&
+          item?.role === "assistant" &&
+          Array.isArray(item.content)
+        ) {
           for (const c of item.content) {
             if (c?.type === "output_text" && typeof c.text === "string") acc += c.text;
           }
@@ -80,10 +88,19 @@ SALIDA INTERNA (oculta)
 
   // ---- Heurísticas de contexto (evita contradicciones) ----
   function detectCamStatus(messages) {
-    const all = messages.map(m => String(m?.content || "")).join("\n").toLowerCase();
+    const all = messages
+      .map((m) => String(m?.content || ""))
+      .join("\n")
+      .toLowerCase();
+
     const hasMastercam = all.includes("mastercam") || all.includes("master cam");
     const hasCamYes = /\b(tengo|uso|utilizo)\b.*\bcam\b/.test(all) || hasMastercam;
-    const hasCamNo = /\b(no tengo|sin)\b.*\bcam\b/.test(all) || all.includes("programo a pie");
+    const hasCamNo =
+      /\b(no tengo|sin)\b.*\bcam\b/.test(all) ||
+      all.includes("programo a pie") ||
+      all.includes("a pie de maquina") ||
+      all.includes("a pie de máquina");
+
     if (hasCamYes && !hasCamNo) return "si";
     if (hasCamNo && !hasCamYes) return "no";
     if (hasCamYes && hasCamNo) return "desconocido"; // conflicto, mejor no asumir
@@ -91,8 +108,10 @@ SALIDA INTERNA (oculta)
   }
 
   function userExplicitlyAskedForList(lastUserText = "") {
-    const t = lastUserText.toLowerCase();
-    return ["lista", "pasos", "plantilla", "checklist", "formato", "tabla"].some(w => t.includes(w));
+    const t = String(lastUserText || "").toLowerCase();
+    return ["lista", "pasos", "plantilla", "checklist", "formato", "tabla"].some((w) =>
+      t.includes(w)
+    );
   }
 
   // ---- Validación estilo/sentido ----
@@ -100,11 +119,20 @@ SALIDA INTERNA (oculta)
     const t = (txt || "").toLowerCase();
 
     // Encabezados prohibidos
-    const bannedHeads = ["pregunta:", "micro-solución", "solución rápida", "plan:", "siguiente paso:"];
-    if (bannedHeads.some(w => t.includes(w))) return true;
+    const bannedHeads = [
+      "pregunta:",
+      "micro-solución",
+      "solución rápida",
+      "plan:",
+      "siguiente paso:",
+      "preguntas:",
+      "pasos:",
+      "checklist:",
+    ];
+    if (bannedHeads.some((w) => t.includes(w))) return true;
 
-    // Listas numeradas
-    if (/\n\s*\d+\)/.test(txt)) return true;
+    // Listas numeradas: 1) o 1.
+    if (/\n\s*\d+\s*[\)\.]\s+/.test(txt)) return true;
 
     // Bullets no permitidos si el usuario no pidió lista
     if (!allowBullets && /\n\s*[-•]\s+/.test(txt)) return true;
@@ -114,15 +142,26 @@ SALIDA INTERNA (oculta)
     if (q > 1) return true;
 
     // Contradicción: si ya sabemos CAM=si, no puede decir "si no tienes cam"
-    if (camStatus === "si" && (t.includes("si no tienes cam") || t.includes("no tienes cam"))) return true;
+    if (
+      camStatus === "si" &&
+      (t.includes("si no tienes cam") || t.includes("no tienes cam"))
+    )
+      return true;
 
-    // Basura típica que has visto (“hello”, “solidsilk”)
+    // Basura típica
     if (t.includes("solidsilk") || t.includes(" hello")) return true;
 
     return false;
   }
 
-  async function repairToHouseStyle(openaiKey, originalAssistantText, allowBullets) {
+  async function repairToHouseStyle(openaiKey, originalAssistantText, { allowBullets, camStatus }) {
+    const camLine =
+      camStatus === "si"
+        ? "El usuario SÍ usa CAM: prohibido decir 'no tienes CAM' o 'si no tienes CAM'."
+        : camStatus === "no"
+        ? "El usuario NO tiene CAM: prohibido mencionar iMachining/HSR/HSM/post/simulación CAM."
+        : "CAM no confirmado: no afirmes que tiene o no tiene CAM.";
+
     const rr = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
@@ -137,13 +176,14 @@ Reescribe el texto del asistente cumpliendo:
 - Máximo 1 pregunta.
 - Sin “Pregunta/Plan/Micro-solución/Siguiente paso”.
 - Sin listas numeradas.
-- ${allowBullets ? "Bullets permitidos (máx 2) si ayudan." : "Sin bullets."}
+- ${allowBullets ? "Bullets permitidos (máx 2) SOLO si el usuario pidió lista." : "Sin bullets."}
 - No asumas datos no confirmados.
+- ${camLine}
 Devuelve solo el texto reescrito.`,
         input: [{ role: "user", content: originalAssistantText }],
         reasoning: { effort: "minimal" },
         text: { verbosity: "low" },
-        max_output_tokens: 260,
+        max_output_tokens: 220,
         store: false,
       }),
     });
@@ -160,13 +200,13 @@ Devuelve solo el texto reescrito.`,
     // 1) Bloque [STATE] ... [/STATE]
     let out = text.replace(/\[STATE\][\s\S]*?\[\/STATE\]/gi, "");
 
-    // 2) Inline tipo [STATE: ...] (tu caso real)
+    // 2) Inline tipo [STATE: ...]
     out = out.replace(/\[STATE:[^\]]*\]/gi, "");
 
     // 3) Cualquier línea que empiece con [STATE
     out = out
       .split("\n")
-      .filter(line => !line.trim().toUpperCase().startsWith("[STATE"))
+      .filter((line) => !line.trim().toUpperCase().startsWith("[STATE"))
       .join("\n");
 
     return out.trim();
@@ -218,6 +258,10 @@ Devuelve solo el texto reescrito.`,
     }
 
     const body = safeJson(req.body);
+
+    // Frontends comunes:
+    // - body.messages: historial [{role, content}]
+    // - body.input: último mensaje user (string)
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const userText = typeof body.input === "string" ? body.input.trim() : "";
 
@@ -226,20 +270,42 @@ Devuelve solo el texto reescrito.`,
       .slice(-30)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    const input = userText ? [{ role: "user", content: userText }] : history;
+    // Texto de usuario más reciente “real”
+    const finalUserText =
+      userText || (history.slice().reverse().find((m) => m.role === "user")?.content || "");
+
+    // Construye input SIEMPRE con historial + (si viene) último user
+    const input = [
+      ...history,
+      ...(userText ? [{ role: "user", content: userText }] : []),
+    ];
+
+    // Evita duplicar si el último mensaje en history ya es exactamente userText
+    if (
+      userText &&
+      history.length &&
+      history[history.length - 1].role === "user" &&
+      history[history.length - 1].content.trim() === userText
+    ) {
+      input.pop();
+    }
 
     if (!input || input.length === 0) {
       return res.status(400).json({ error: "Missing input/messages" });
     }
 
     const camStatus = detectCamStatus(history);
-    const lastUser = [...history].reverse().find(m => m.role === "user")?.content || userText || "";
-    const allowBullets = userExplicitlyAskedForList(lastUser);
+    const allowBullets = userExplicitlyAskedForList(finalUserText);
 
     // Inyección de “hechos confirmados” para evitar contradicción
     const CONTEXT = `Contexto confirmado (no inventar):
-- CAM: ${camStatus === "si" ? "El usuario SÍ tiene/usa CAM (ej. Mastercam). No digas 'no tienes CAM'." :
-          camStatus === "no" ? "El usuario NO tiene CAM." : "No está claro si tiene CAM."}`;
+- CAM: ${
+      camStatus === "si"
+        ? "El usuario SÍ tiene/usa CAM (ej. Mastercam). No digas 'no tienes CAM'."
+        : camStatus === "no"
+        ? "El usuario NO tiene CAM."
+        : "No está claro si tiene CAM."
+    }`;
 
     const r = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -250,13 +316,10 @@ Devuelve solo el texto reescrito.`,
       body: JSON.stringify({
         model: "gpt-5-nano",
         instructions: SYSTEM_INSTRUCTIONS,
-        input: [
-          { role: "system", content: CONTEXT },
-          ...input
-        ],
+        input: [{ role: "system", content: CONTEXT }, ...input],
         reasoning: { effort: "minimal" },
         text: { verbosity: "low" },
-        max_output_tokens: 700,
+        max_output_tokens: 280, // fuerza corto real
         store: false,
       }),
     });
@@ -271,7 +334,11 @@ Devuelve solo el texto reescrito.`,
 
     // Si viola reglas, lo reparamos a “1 pregunta + sin inventos”
     if (violatesStyle(fullText, { camStatus, allowBullets })) {
-      fullText = await repairToHouseStyle(process.env.OPENAI_API_KEY, fullText, allowBullets);
+      fullText = await repairToHouseStyle(
+        process.env.OPENAI_API_KEY,
+        fullText,
+        { allowBullets, camStatus }
+      );
     }
 
     const { visibleText, ticket } = parseTicket(fullText);
