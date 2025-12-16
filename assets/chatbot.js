@@ -6,9 +6,8 @@
   const API_CHAT = "/api/chat";
   const API_SEND_LEAD = "/api/sendLead";
 
-  // Persistencia
-  const LS_MESSAGES = "rasa_messages_v2";
-  const LS_SESSION = "rasa_session_v2";
+  const LS_MESSAGES = "rasa_messages_v3";
+  const LS_SESSION = "rasa_session_v3";
 
   const state = {
     open: false,
@@ -16,11 +15,9 @@
     draft: "",
     focusNext: false,
 
-    // Persistibles
     messages: [],
     session: {},
 
-    // UI
     lastLeadPack: null, // { session, final }
   };
 
@@ -192,7 +189,6 @@
       [state.sending ? "Enviando…" : "Enviar"]
     );
 
-    // Acciones: Enviar resumen (finalize + sendLead)
     const actions = el("div", { class: "mt-2 flex gap-2" });
 
     const btnFinalize = el(
@@ -203,6 +199,7 @@
         onclick: finalizeAndSendLead,
         disabled: state.sending || !shouldShowSendSummaryButton(),
         style: shouldShowSendSummaryButton() ? "" : "display:none;",
+        title: "Genera resumen y lo registra",
       },
       ["Enviar resumen"]
     );
@@ -277,6 +274,7 @@
 
     state.sending = true;
     state.messages.push({ role: "user", content: t });
+
     state.draft = "";
     state.focusNext = true;
     savePersisted();
@@ -334,7 +332,7 @@
       if (fin?.session) state.session = fin.session;
       savePersisted();
 
-      // 2) Send to GAS proxy
+      // 2) Send to GAS via proxy
       const payload = {
         pagePath: location.pathname,
         session: state.session,
@@ -347,9 +345,9 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const sent = await r2.json().catch(() => ({}));
 
-      // UI feedback (sin prometer cosas mágicas)
       const summary = fin?.final?.summary_for_miguel || "";
       const next = fin?.final?.next_best_step || "";
 
@@ -365,9 +363,11 @@
       }
 
       savePersisted();
+      state.focusNext = true;
     } catch {
       state.messages.push({ role: "assistant", content: "No pude registrar el resumen. Intenta de nuevo." });
       savePersisted();
+      state.focusNext = true;
     } finally {
       state.sending = false;
       render();
