@@ -6,6 +6,7 @@
   const API_CHAT = "/api/chat";
   const API_SEND_LEAD = "/api/sendLead";
 
+  // Persistencia
   const LS_MESSAGES = "rasa_messages_v3";
   const LS_SESSION = "rasa_session_v3";
 
@@ -37,6 +38,41 @@
     return n;
   }
 
+  // =========================
+  // WhatsApp avoidance (no tocar HTMLs)
+  // =========================
+  function findWhatsBtn() {
+    // Ajusta/añade selectores si tu WA usa uno específico
+    return (
+      document.querySelector("#wa-btn") ||
+      document.querySelector(".whatsapp-float") ||
+      document.querySelector(".wa-float") ||
+      document.querySelector('a[href*="wa.me"]') ||
+      document.querySelector('a[href*="whatsapp"]')
+    );
+  }
+
+  function getChatOffsets() {
+    const wa = findWhatsBtn();
+    // default bottom-right
+    let bottom = 20;
+    let right = 20;
+
+    if (!wa) return { bottom, right };
+
+    const r = wa.getBoundingClientRect();
+
+    // Si WA está cerca de la esquina inferior derecha, mueve el chatbot a la izquierda
+    const nearBottom = r.bottom > window.innerHeight - 140;
+    const nearRight = r.right > window.innerWidth - 140;
+
+    if (nearBottom && nearRight) right = 110; // separación del WA
+    return { bottom, right };
+  }
+
+  // =========================
+  // Persistencia
+  // =========================
   function loadPersisted() {
     try {
       const m = JSON.parse(localStorage.getItem(LS_MESSAGES) || "[]");
@@ -95,11 +131,14 @@
     }
     root.innerHTML = "";
 
+    const { bottom, right } = getChatOffsets();
+
     const launcher = el(
       "button",
       {
         class:
-          "fixed bottom-5 right-5 z-[9999] rounded-full px-4 py-3 bg-sky-600 text-white shadow-lg hover:bg-sky-700 transition text-sm",
+          "fixed z-[999999] rounded-full px-4 py-3 bg-sky-600 text-white shadow-lg hover:bg-sky-700 transition text-sm",
+        style: `bottom:${bottom}px; right:${right}px;`,
         onclick: () => {
           state.open = !state.open;
           state.focusNext = state.open;
@@ -243,15 +282,19 @@
       "div",
       {
         class:
-          "fixed bottom-20 right-5 z-[9999] w-[420px] max-w-[94vw] rounded-2xl overflow-hidden border border-white/10 shadow-2xl backdrop-blur-md bg-[#0b1220]/95",
+          "fixed z-[999999] w-[420px] max-w-[94vw] rounded-2xl overflow-hidden border border-white/10 shadow-2xl backdrop-blur-md bg-[#0b1220]/95",
+        // panel arriba del launcher
+        style: `bottom:${bottom + 70}px; right:${right}px;`,
       },
       [header, msgs, footer]
     );
 
     root.appendChild(panel);
 
+    // scroll al final
     msgs.scrollTop = msgs.scrollHeight;
 
+    // autofocus
     if (state.focusNext) {
       state.focusNext = false;
       setTimeout(() => {
@@ -277,6 +320,7 @@
 
     state.draft = "";
     state.focusNext = true;
+
     savePersisted();
     render();
 
@@ -316,7 +360,7 @@
     render();
 
     try {
-      // 1) Finalize
+      // 1) Finalize (genera resumen interno)
       const r1 = await fetch(API_CHAT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -332,7 +376,7 @@
       if (fin?.session) state.session = fin.session;
       savePersisted();
 
-      // 2) Send to GAS via proxy
+      // 2) Enviar a GAS via proxy /api/sendLead
       const payload = {
         pagePath: location.pathname,
         session: state.session,
@@ -356,11 +400,8 @@
       if (summary) state.messages.push({ role: "assistant", content: `Resumen:\n${summary}` });
       if (next) state.messages.push({ role: "assistant", content: `Siguiente paso sugerido:\n${next}` });
 
-      if (sent?.ok === false) {
-        state.messages.push({ role: "assistant", content: "Resumen listo. Si quieres, usa “Enviar por correo”." });
-      } else {
-        state.messages.push({ role: "assistant", content: "Quedó registrado para revisión." });
-      }
+      if (sent?.ok === false) state.messages.push({ role: "assistant", content: "Resumen listo. Usa “Enviar por correo”." });
+      else state.messages.push({ role: "assistant", content: "Quedó registrado para revisión." });
 
       savePersisted();
       state.focusNext = true;
@@ -373,6 +414,11 @@
       render();
     }
   }
+
+  // Re-render cuando cambie tamaño (por WA o responsive)
+  window.addEventListener("resize", () => {
+    if (state.open) render();
+  });
 
   // Init
   loadPersisted();
