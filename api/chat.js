@@ -12,13 +12,17 @@ export default async function handler(req, res) {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
   // =========================
-  // 1) System instructions
+  // 1) System instructions (Router + Captura)
   // =========================
   const SYSTEM_INSTRUCTIONS = `
-Eres RaSa Assistant (alexrasa.store): soporte experto en manufactura. Estilo directo, útil y comercial sin presión.
-Tu prioridad: dar una acción práctica y solo una pregunta. Solo recopila datos para registrar caso si el usuario lo pide o acepta explícitamente.
+Eres RaSa Assistant (alexrasa.store): asistente de diagnóstico y captación de oportunidades para Miguel.
+Estilo directo, útil y comercial sin presión.
 
-Oferta (elige lo que aplique según lo que el usuario pide):
+OBJETIVO
+- Clasificar intención (CAM / Ingeniería & Apps / Soporte) y recopilar datos mínimos para revisión.
+- NO dar soluciones técnicas detalladas dentro del chat. Puedes dar 1 frase de orientación de alto nivel si ayuda, pero tu prioridad es capturar datos y encaminar a diagnóstico.
+
+OFERTA (menciona solo si aplica)
 - Consultoría CNC (proceso, tiempos, estandarización en piso)
 - SolidCAM (solo si el usuario tiene/considera CAM; no inventes que lo tiene)
 - Lantek (corte/nesting lámina)
@@ -27,28 +31,28 @@ Oferta (elige lo que aplique según lo que el usuario pide):
 - 3D Systems (impresión 3D)
 
 REGLAS DURAS
-- NO inventes datos. No asumas material, herramienta, diámetros, tolerancias, ejes, CAM, módulos, estrategia o máquina. Si falta, pregunta 1 cosa.
+- NO inventes datos. No asumas material, herramienta, tolerancias, ejes, CAM, módulos, estrategia o máquina.
+- Por turno: 1–2 frases máximo + 1 sola pregunta (máximo 1).
+- Prohibido encabezados tipo “Pregunta/Plan/Micro-solución/Siguiente paso”.
+- Prohibido listas numeradas.
+- Prohibido bullets salvo que el usuario pida explícitamente “lista”, “pasos”, “plantilla”, “checklist”, “formato”.
+- Si el usuario da una unidad rara o incoherente (ej. m/s): pide aclaración de unidad con UNA pregunta (m/min, SFM, mm/min).
+- Nunca prometas acciones externas (“enviado”, “te contacto”, “PDF”, “agendado”, “te contactarán”).
+- No uses “dolor”; usa “reto” u “oportunidad”. Evita “demo”; usa “diagnóstico” o “revisión del proceso”.
+
+CAM (IMPORTANTE)
 - Nunca digas “si no tienes CAM” o “no tienes CAM” a menos que el usuario lo haya dicho explícitamente.
 - Si el usuario confirma que NO tiene CAM: prohibido mencionar iMachining, HSR/HSM, postprocesador o simulación CAM.
-  En ese caso guía con: alturas seguras, reducción de aire, orden de operaciones, offsets, ciclos del control, macros/subprogramas, buenas prácticas en máquina.
-- Formato por turno:
-  - 1–2 frases útiles aplicadas a lo que dijo.
-  - 1 sola pregunta (máximo 1).
-  - Prohibido encabezados tipo “Pregunta/Plan/Micro-solución/Siguiente paso”.
-  - Prohibido listas numeradas.
-  - Prohibido bullets salvo que el usuario pida explícitamente “lista”, “pasos”, “plantilla”, “checklist”.
-- Si el usuario da una unidad rara o incoherente (ej. m/s), pide aclaración de unidad con UNA pregunta (m/min, SFM, mm/min).
-- Nunca prometas acciones externas (“enviado”, “te contacto”, “PDF”, “agendado”, “te contactarán”). Solo: “puedo registrarlo” o “puedo ayudarte a prepararlo”.
-- No uses la palabra “dolor”; usa “reto” u “oportunidad”. Evita “demo”; usa “diagnóstico” o “revisión del proceso”.
 
-CAPTURA DE LEAD SIN FASTIDIAR
-- No pidas contacto si el usuario NO lo pidió y NO aceptó registrar el caso.
-- Si el usuario acepta registrar: pide solo 1 dato por turno, en este orden:
+CAPTURA DE LEAD (SIN FASTIDIAR)
+- Si opt-in=NO: NO pidas contacto.
+- Si opt-in=NO y el usuario pide precio/cotización/visita/curso: tu única pregunta debe ser permiso para registrar (sin pedir contacto aún).
+- Si opt-in=SÍ: pide solo 1 dato por turno, en este orden:
   1) contacto (correo o WhatsApp) si falta
   2) nombre
-  3) ciudad/estado
-  4) resumen técnico mínimo: operación + máquina + control + qué parte del ciclo se quiere mejorar + meta
-- Si el usuario dice “no” a registrar o a dar datos: deja de insistir y regresa a soporte.
+  3) empresa + ciudad/estado + rol
+  4) resumen técnico mínimo: operación + máquina + control + meta
+- Si el usuario dice “no” a registrar o a dar datos: deja de insistir y regresa a diagnóstico.
 `;
 
   // =========================
@@ -86,10 +90,7 @@ CAPTURA DE LEAD SIN FASTIDIAR
 
   function stripCodeFences(s) {
     const t = String(s || "").trim();
-    return t
-      .replace(/^```(?:json)?/i, "")
-      .replace(/```$/i, "")
-      .trim();
+    return t.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
   }
 
   function parseJsonLoose(s) {
@@ -133,15 +134,17 @@ CAPTURA DE LEAD SIN FASTIDIAR
       "visita",
       "agendar",
       "reservar",
+      "reunión",
       "propuesta",
       "comprar",
+      "diagnóstico",
     ].some((k) => t.includes(k));
   }
 
   function lastAssistantAskedRegister(history) {
     const lastA = history.slice().reverse().find((m) => m.role === "assistant")?.content || "";
     const t = lastA.toLowerCase();
-    return t.includes("¿quieres que lo registre") || t.includes("quieres que lo registre") || t.includes("puedo registrarlo");
+    return /registr(ar|o|arlo|arlo para|ar esto)/.test(t) || t.includes("¿quieres que lo registre");
   }
 
   function lastAssistantAskedContact(history) {
@@ -159,6 +162,14 @@ CAPTURA DE LEAD SIN FASTIDIAR
     if (hasCamNo && !hasCamYes) return "no";
     if (hasCamYes && hasCamNo) return "desconocido";
     return "desconocido";
+  }
+
+  function detectPageMode(path = "") {
+    const p = String(path || "").toLowerCase();
+    if (p.includes("/soluciones") || p.includes("solidcam") || p.includes("lantek") || p.includes("logopress")) return "CAM";
+    if (p.includes("/aplicaciones") || p.includes("/apps") || p.includes("powerbi") || p.includes("oee")) return "INGENIERIA_APPS";
+    if (p.includes("/soporte")) return "SOPORTE";
+    return "GENERAL";
   }
 
   function violatesStyle(txt, { camStatus, allowBullets }) {
@@ -190,10 +201,7 @@ CAPTURA DE LEAD SIN FASTIDIAR
   async function callOpenAIResponses({ model, instructions, input, max_output_tokens }) {
     const r = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_KEY}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
       body: JSON.stringify({
         model,
         instructions,
@@ -215,7 +223,7 @@ CAPTURA DE LEAD SIN FASTIDIAR
     return r.json();
   }
 
-  async function repairToHouseStyle(originalAssistantText, { allowBullets, camStatus, hasContact, optedIn }) {
+  async function repairToHouseStyle(originalAssistantText, { allowBullets, camStatus, hasContact, optedIn, stage }) {
     const camLine =
       camStatus === "si"
         ? "El usuario SÍ usa CAM: prohibido decir 'no tienes CAM' o 'si no tienes CAM'."
@@ -227,7 +235,9 @@ CAPTURA DE LEAD SIN FASTIDIAR
       ? hasContact
         ? "El usuario YA dio contacto: NO pedir correo/WhatsApp."
         : "El usuario aceptó registrar: puedes pedir correo o WhatsApp (UNA pregunta) si falta."
-      : "El usuario NO aceptó registrar: NO pidas contacto; solo soporte + 1 pregunta técnica.";
+      : stage === "ask_permission"
+      ? "El usuario NO aceptó registrar y pidió algo comercial: pregunta SOLO si quiere que lo registres para revisión (sin pedir contacto)."
+      : "El usuario NO aceptó registrar: NO pidas contacto; solo diagnóstico + 1 pregunta técnica.";
 
     const data = await callOpenAIResponses({
       model: "gpt-5-nano",
@@ -239,7 +249,7 @@ Reescribe el texto cumpliendo:
 - Sin listas numeradas.
 - ${allowBullets ? "Bullets permitidos (máx 2) SOLO si el usuario pidió lista." : "Sin bullets."}
 - No asumas datos no confirmados.
-- Prohibido prometer acciones externas (te contactarán / te contacto / enviado / agendado).
+- Prohibido prometer acciones externas.
 - ${camLine}
 - ${leadLine}
 Devuelve SOLO el texto reescrito.`,
@@ -267,7 +277,7 @@ Devuelve SOLO el texto reescrito.`,
     const data = await callOpenAIResponses({
       model: "gpt-5-nano",
       instructions: `
-Extrae/actualiza datos desde la conversación para uso interno (leads + soporte).
+Extrae/actualiza datos desde la conversación para uso interno (leads + diagnóstico).
 Devuelve SOLO JSON válido (sin texto extra).
 No inventes: si no está, usa null o "desconocido".
 optedInToRegister SOLO true si el usuario aceptó explícitamente registrar (ej. “sí, regístralo”).
@@ -277,7 +287,7 @@ Estructura guía: ${JSON.stringify(schemaHint)}`,
         ...history,
         { role: "user", content: `Último mensaje del usuario: ${String(lastUserText || "")}` },
       ],
-      max_output_tokens: 400,
+      max_output_tokens: 420,
     });
 
     const raw = extractOutputText(data);
@@ -312,11 +322,12 @@ No prometas acciones externas.`,
   try {
     const body = safeJson(req.body);
 
-    // Inputs del frontend esperados:
+    // Frontend:
     // - body.messages: historial [{role, content}]
-    // - body.input: último texto del user (string) (opcional si messages ya lo trae)
-    // - body.session: objeto persistido por tu UI (localStorage)
-    // - body.action: "finalize" para generar resumen final
+    // - body.input: último texto del user (opcional)
+    // - body.session: objeto persistido (localStorage)
+    // - body.action: "finalize"
+    // - body.pagePath: ruta actual
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const userText = typeof body.input === "string" ? body.input.trim() : "";
 
@@ -325,10 +336,8 @@ No prometas acciones externas.`,
       .slice(-40)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    // Construye input SIEMPRE con historial + (si viene) último user
     const input = [...history, ...(userText ? [{ role: "user", content: userText }] : [])];
 
-    // Evita duplicar si el último user del history ya es igual a userText
     if (
       userText &&
       history.length &&
@@ -338,47 +347,42 @@ No prometas acciones externas.`,
       input.pop();
     }
 
-    if (!input.length) {
-      return res.status(400).json({ error: "Missing input/messages" });
-    }
+    if (!input.length) return res.status(400).json({ error: "Missing input/messages" });
 
-    const finalUserText =
-      userText || (history.slice().reverse().find((m) => m.role === "user")?.content || "");
+    const finalUserText = userText || (history.slice().reverse().find((m) => m.role === "user")?.content || "");
 
     const prevSession = typeof body.session === "object" && body.session ? body.session : {};
+    const pagePath = String(body.pagePath || body.page || "");
+    const pageMode = detectPageMode(pagePath);
+
     const camStatus = detectCamStatus(history);
     const allowBullets = userExplicitlyAskedForList(finalUserText);
 
-    // ---- Opt-in logic (candado para que no insista) ----
     const assistantAskedRegister = lastAssistantAskedRegister(history);
     const assistantAskedContact = lastAssistantAskedContact(history);
     const userWantsEscalation = detectIntentToEscalate(finalUserText);
 
     let optedIn = Boolean(prevSession?.optedInToRegister);
 
-    // Si el usuario dijo NO cuando se le pidió registrar o contacto, cancela opt-in
     if (isNo(finalUserText) && (assistantAskedRegister || assistantAskedContact)) {
       optedIn = false;
     }
 
-    // Solo activa opt-in si el usuario dijo SÍ justo después de que el bot pidió registrar
     if (!optedIn && assistantAskedRegister && isYes(finalUserText)) {
       optedIn = true;
     }
 
-    // Si pidió cotización/precio/visita/etc, NO forzamos opt-in, pero permitimos pedir permiso en la conversación
-    // (esto lo controla el contexto duro abajo)
-    const hasContactFromSession =
-      Boolean(prevSession?.contacto?.whatsapp) || Boolean(prevSession?.contacto?.email);
+    const hasContactFromSession = Boolean(prevSession?.contacto?.whatsapp) || Boolean(prevSession?.contacto?.email);
 
-    // ---- Etapa interna sugerida (no se muestra) ----
+    // Stage (incluye ask_permission)
     let stage = String(prevSession?.stage || "support");
-    if (!optedIn) stage = "support";
+    if (!optedIn && userWantsEscalation) stage = "ask_permission";
+    else if (!optedIn) stage = "support";
     else if (!hasContactFromSession) stage = "collect_contact";
-    else if (stage === "collect_contact" || stage === "support") stage = "collect_name";
+    else if (stage === "collect_contact" || stage === "support" || stage === "ask_permission") stage = "collect_name";
 
-    // Contexto duro para mantener lógica
     const FLOW_CONTEXT = `Contexto confirmado (no inventar):
+- Página: ${pagePath || "no_proporcionado"} | Modo: ${pageMode}
 - CAM: ${
       camStatus === "si"
         ? "El usuario SÍ tiene/usa CAM. No digas 'no tienes CAM'."
@@ -387,30 +391,28 @@ No prometas acciones externas.`,
         : "No está claro si tiene CAM."
     }
 - Registro permitido (opt-in): ${optedIn ? "SÍ" : "NO"}
-- El usuario pidió algo comercial/escala (precio/cotización/visita/etc): ${userWantsEscalation ? "SÍ" : "NO"}
-Reglas de captura:
-- Si opt-in=NO: NO pidas contacto. Da soporte y SOLO una pregunta técnica.
-- Si opt-in=NO pero el usuario pide precio/cotización/visita: pide PERMISO para registrar (una pregunta) o da soporte (una pregunta), pero no interrogues.
-- Si opt-in=SÍ: pide 1 dato por turno según etapa. Etapa=${stage}.
-Prohibido prometer acciones externas: “te contactarán / te contacto / enviado / agendado”.`;
+- El usuario pidió algo comercial/escala: ${userWantsEscalation ? "SÍ" : "NO"}
+- Etapa interna: ${stage}
+Reglas:
+- Si etapa=ask_permission y opt-in=NO: pregunta SOLO permiso para registrar (sin pedir contacto).
+- Si etapa=support y opt-in=NO: NO pidas contacto; 1 pregunta técnica.
+- Si opt-in=SÍ: 1 dato por turno según orden.
+Prohibido prometer acciones externas.`;
 
     // =========================
     // (A) Finalize-only mode
     // =========================
     if (String(body.action || "").toLowerCase() === "finalize") {
-      // Actualiza sesión con extractor antes de resumir
       const extractedSession = await extractSlots(history, prevSession, finalUserText);
 
-      // Enforce opt-in gate (no dejar que el extractor lo “invente”)
       extractedSession.optedInToRegister = optedIn;
-
-      // Propaga stage (útil para UI)
       extractedSession.stage = stage;
+      extractedSession.page = { path: pagePath || null, mode: pageMode };
 
       const finalPack = await buildFinalSummary(extractedSession);
 
       return res.status(200).json({
-        text: "Listo.",
+        text: finalPack?.next_best_step || "Resumen listo.",
         session: extractedSession,
         final: finalPack,
       });
@@ -428,25 +430,22 @@ Prohibido prometer acciones externas: “te contactarán / te contacto / enviado
 
     let assistantText = extractOutputText(data);
 
-    // Arreglo de estilo si se pasa de lanza
-    const hasContact = hasContactFromSession; // solo para repair gate (antes de extractor)
+    const hasContact = hasContactFromSession;
     if (violatesStyle(assistantText, { camStatus, allowBullets })) {
       assistantText = await repairToHouseStyle(assistantText, {
         allowBullets,
         camStatus,
         hasContact,
         optedIn,
+        stage,
       });
     }
 
-    // Actualiza sesión con extractor (segunda llamada)
     const extractedSession = await extractSlots(history, prevSession, finalUserText);
 
-    // Enforce candado opt-in (solo por lógica local)
     extractedSession.optedInToRegister = optedIn;
-
-    // Conserva stage
     extractedSession.stage = stage;
+    extractedSession.page = { path: pagePath || null, mode: pageMode };
 
     return res.status(200).json({
       text: String(assistantText || "Perfecto.").trim(),
