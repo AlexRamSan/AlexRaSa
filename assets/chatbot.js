@@ -76,29 +76,43 @@
     if (state.open) setTimeout(() => input.focus(), 0);
   }
 
-  async function ask(text) {
-    const t = (text || "").trim();
-    if (!t || state.busy) return;
+ async function ask(text) {
+  const t = (text || "").trim();
+  if (!t || state.busy) return;
 
-    state.messages.push({ role: "user", content: t });
-    state.busy = true;
-    render();
+  state.messages.push({ role: "user", content: t });
+  state.busy = true;
+  render();
 
-    try {
-      const r = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: state.messages }),
+  try {
+    const r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: state.messages }),
+    });
+
+    const raw = await r.text();           // <-- lee como texto primero
+    let data = {};
+    try { data = JSON.parse(raw); } catch {}
+
+    if (!r.ok) {
+      state.messages.push({
+        role: "assistant",
+        content: `Backend error (${r.status}): ${data?.error || raw}`
       });
-      const data = await r.json();
-      state.messages.push({ role: "assistant", content: data.text || "No pude responder. Intenta otra vez." });
-    } catch {
-      state.messages.push({ role: "assistant", content: "Error de conexión. No eres tú… bueno, esta vez no." });
-    } finally {
-      state.busy = false;
-      render();
+    } else {
+      state.messages.push({
+        role: "assistant",
+        content: (data && data.text) ? data.text : `Respuesta vacía. RAW: ${raw}`
+      });
     }
+  } catch (e) {
+    state.messages.push({ role: "assistant", content: `Error de red: ${String(e)}` });
+  } finally {
+    state.busy = false;
+    render();
   }
+}
 
   btn.addEventListener("click", () => toggle());
   closeBtn.addEventListener("click", () => toggle(false));
