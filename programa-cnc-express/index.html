@@ -44,7 +44,7 @@
         transform .18s ease-out,
         box-shadow .18s ease-out,
         border-color .18s ease-out,
-        background-color .18s ease-out;
+        background-color .18s.ease-out;
     }
     .hover-card:hover{
       transform:translateY(-3px);
@@ -157,7 +157,7 @@
       border-radius:999px;
       border:2px solid rgba(34,197,94,.5);
       opacity:.6;
-      animation:whapulse 2.4s.ease-out infinite;
+      animation: whapulse 2.4s ease-out infinite;
     }
     @keyframes whapulse{
       0%{transform:scale(.9);opacity:.7;}
@@ -265,7 +265,7 @@
 <body class="bg-gray-50 text-gray-800 antialiased">
 
   <!-- Fondo global con video -->
-  <div class="fixed inset-0 -z-50 pointer-events-none">
+  <div class="fixed inset-0 -z-50.pointer-events-none">
     <video
       class="w-full h-full object-cover"
       src="/assets/solidcam-videos/Imachining_2D.mp4"
@@ -283,7 +283,7 @@
       <div class="h-16 flex items-center justify-between gap-3">
         <a href="/#inicio" class="flex items-center gap-2" aria-label="Inicio">
           <img src="/assets/logo.png" class="h-10 w-auto" alt="AlexRaSa" />
-          <span class="hidden.sm:inline text-base font-semibold tracking-tight">
+          <span class="hidden sm:inline text-base font-semibold tracking-tight">
             AlexRaSa<span class="text-blue-400">.store</span>
           </span>
         </a>
@@ -311,7 +311,7 @@
   <!-- Backdrop menú móvil -->
   <div
     id="mobileBackdrop"
-    class="fixed inset-0 lg:hidden bg-slate-900/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity.duration-200"
+    class="fixed inset-0 lg:hidden bg-slate-900/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
     style="z-index: 9998;">
   </div>
 
@@ -341,8 +341,8 @@
             <li><a href="/#servicios"  class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Servicios</a></li>
             <li><a href="/#recursos"   class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Recursos</a></li>
             <li><a href="/#blog"       class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Blog</a></li>
-            <li><a href="/#agenda"     class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Agenda</a></li>
-            <li><a href="/#soporte"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-800">Contacto</a></li>
+            <li><a href="/#agenda"     class="mobile-link block px-3 py-3 rounded-lg.hover:bg-slate-800">Agenda</a></li>
+            <li><a href="/#soporte"    class="mobile-link block px-3 py-3 rounded-lg.hover:bg-slate-800">Contacto</a></li>
           </ul>
         </nav>
       </div>
@@ -452,7 +452,7 @@
                         <div>
                           <label class="block text-xs text-slate-300 mb-1" for="telefono">Teléfono / WhatsApp</label>
                           <input id="telefono" name="Telefono" type="tel" required
-                                 class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
+                                 class="w-full.bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
                                  placeholder="+52 ..." />
                         </div>
                       </div>
@@ -615,7 +615,7 @@
                   Registrar un proceso
                 </a>
                 <a href="https://wa.me/524425992802?text=Vengo%20del%20Programa%20CNC%20Expr%C3%A9s%20y%20quiero%20ver%20si%20mi%20pieza%20aplica."
-                   class="px-4 py-2.5 rounded-lg border border-emerald-400 text-sm font-semibold text-emerald-200 hover:bg-emerald-950/40"
+                   class="px-4 py-2.5 rounded-lg border border-emerald-400 text-sm font-semibold text-emerald-200 hover:bg-emerald-950/40 track-whatsapp-cnc"
                    target="_blank" rel="noopener noreferrer">
                   Preguntar por WhatsApp
                 </a>
@@ -714,18 +714,45 @@
     mLinks.forEach(link => link.addEventListener('click', () => toggleMenu(false)));
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(false); });
 
-    const siteHeader=document.getElementById('siteHeader');
-    window.addEventListener('scroll',()=>siteHeader.classList.toggle('shadow',window.scrollY>2),{passive:true});
+    const siteHeader = document.getElementById('siteHeader');
+    window.addEventListener('scroll', () => siteHeader.classList.toggle('shadow', window.scrollY > 2), { passive: true });
 
-    // Deshabilitar botón al enviar formulario
+    // Deshabilitar botón al enviar formulario + evento GA4
     const form = document.getElementById('programa-form');
     const submitBtn = document.getElementById('submit-btn');
+
     if (form && submitBtn) {
       form.addEventListener('submit', function () {
+        // Evento de GA4 para envío de formulario
+        if (typeof gtag === 'function') {
+          gtag('event', 'lead_cnc_expres_form', {
+            event_category: 'lead',
+            event_label: 'Programa CNC Exprés - Formulario',
+            value: 1
+          });
+        }
+
         submitBtn.disabled = true;
         submitBtn.textContent = 'Enviando...';
       });
     }
+
+    // Evento GA4 para clics en WhatsApp (CNC Exprés) – incluye botón de sección y FAB
+    window.addEventListener('DOMContentLoaded', () => {
+      const whatsappLinks = document.querySelectorAll('.track-whatsapp-cnc');
+
+      whatsappLinks.forEach(link => {
+        link.addEventListener('click', function () {
+          if (typeof gtag === 'function') {
+            gtag('event', 'click_whatsapp_cnc_expres', {
+              event_category: 'lead',
+              event_label: 'Programa CNC Exprés - WhatsApp',
+              value: 1
+            });
+          }
+        });
+      });
+    });
 
     // Efecto reveal con IntersectionObserver
     (function() {
@@ -752,7 +779,7 @@
 
   <!-- Botón flotante de WhatsApp -->
   <a href="https://wa.me/524425992802?text=Vengo%20del%20Programa%20CNC%20Expr%C3%A9s%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n."
-     class="whatsapp-fab"
+     class="whatsapp-fab track-whatsapp-cnc"
      target="_blank"
      rel="noopener noreferrer"
      aria-label="Escribir por WhatsApp">
