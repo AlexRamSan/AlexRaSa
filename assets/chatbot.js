@@ -6,8 +6,9 @@
   const API_CHAT = "/api/chat";
   const API_SEND_LEAD = "/api/sendLead";
 
-  const LS_MESSAGES = "rasa_messages_v5";
-  const LS_SESSION = "rasa_session_v5";
+  // IMPORTANTE:
+  // - Para que al hacer refresh NO siga la conversación, NO persistimos mensajes/sesión.
+  // - Solo conservamos el hash anti-duplicado del lead para evitar spam.
   const LS_LAST_SENT = "rasa_last_sent_hash_v2";
 
   const AUTO_SEND_ENABLED = true;
@@ -41,6 +42,34 @@
   }
 
   // =========================
+  // NEW SESSION PER PAGE LOAD (refresh = sesión nueva)
+  // =========================
+  function uuid() {
+    try {
+      if (crypto?.randomUUID) return crypto.randomUUID();
+    } catch {}
+    return "sess_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  function resetConversation() {
+    state.session = {
+      _clientSessionId: uuid(),
+      _clientReset: true, // flag para que el backend NO “arrastre” contexto anterior
+    };
+
+    state.messages = [
+      {
+        role: "assistant",
+        content: "¿Qué quieres mejorar hoy y en qué proceso? (CNC, lámina, troqueles, escaneo/impresión)",
+      },
+    ];
+
+    state.draft = "";
+    state.lastLeadPack = null;
+    state.focusNext = false;
+  }
+
+  // =========================
   // WhatsApp avoidance (encima, no al lado)
   // =========================
   function findWhatsBtn() {
@@ -70,30 +99,11 @@
     // Si WA está en esquina inferior derecha: sube el chatbot ENCIMA del WA
     if (nearBottom && nearRight) {
       const waFromBottom = Math.max(0, window.innerHeight - r.top);
-      bottom = waFromBottom + 14; // coloca launcher arriba del WA
+      bottom = waFromBottom + 14;
       right = 20;
     }
 
     return { bottom, right };
-  }
-
-  // =========================
-  // Persistencia
-  // =========================
-  function loadPersisted() {
-    try {
-      const m = JSON.parse(localStorage.getItem(LS_MESSAGES) || "[]");
-      const s = JSON.parse(localStorage.getItem(LS_SESSION) || "{}");
-      if (Array.isArray(m)) state.messages = m.slice(-60);
-      if (s && typeof s === "object") state.session = s;
-    } catch {}
-  }
-
-  function savePersisted() {
-    try {
-      localStorage.setItem(LS_MESSAGES, JSON.stringify(state.messages.slice(-60)));
-      localStorage.setItem(LS_SESSION, JSON.stringify(state.session || {}));
-    } catch {}
   }
 
   // =========================
@@ -200,15 +210,13 @@
     if (!fp) return;
 
     const last = getLastSent();
-    if (last && last === fp) return; // ya se mandó este mismo lead
+    if (last && last === fp) return;
 
     // marca antes para evitar doble disparo por render/resize
     setLastSent(fp);
 
-    // dispara finalize + send
     finalizeAndSendLead({ silent: true }).catch(() => {
-      // si falló, permite reintento con un cambio mínimo (o borra LS manual)
-      // no revertimos el hash para evitar spam; si quieres reintento automático, se puede ajustar.
+      // No revertimos el hash para evitar spam.
     });
   }
 
@@ -295,7 +303,7 @@
       class:
         "w-full rounded-xl border border-white/10 bg-white/5 text-white text-sm p-3 outline-none focus:ring-1 focus:ring-sky-500 resize-none",
       rows: "3",
-      placeholder: "¿Qué estás haciendo y qué quieres mejorar?",
+      placeholder: "Describe tu caso (sin rodeos): máquina, material, operación, objetivo…",
       oninput: (e) => {
         state.draft = e.target.value;
       },
@@ -393,7 +401,6 @@
     state.draft = "";
     state.focusNext = true;
 
-    savePersisted();
     render();
 
     try {
@@ -405,6 +412,13 @@
           input: t,
           session: state.session,
           pagePath: location.pathname,
+
+          // Flags para que el backend NO se ponga a “dar clases” ni recomiende otros softwares:
+          uiPolicy: {
+            captureOnly: true, // capturar y escalar a Miguel
+            noAltSoftware: true, // no sugerir "usa X software"
+            noStepByStepTraining: true, // evitar tutoriales de terceros
+          },
         }),
       });
 
@@ -414,7 +428,9 @@
 
       if (data?.session) state.session = data.session;
 
-      savePersisted();
+      // Consumimos el reset flag una vez que ya respondió el backend.
+      if (state.session && state.session._clientReset) delete state.session._clientReset;
+
       state.focusNext = true;
     } catch {
       state.messages.push({ role: "assistant", content: "Error de red. Reintenta." });
@@ -422,7 +438,6 @@
     } finally {
       state.sending = false;
       render();
-      // intenta auto-enviar cuando ya quedó completo
       setTimeout(maybeAutoSend, 0);
     }
   }
@@ -443,12 +458,16 @@
           session: state.session,
           action: "finalize",
           pagePath: location.pathname,
+          uiPolicy: {
+            captureOnly: true,
+            noAltSoftware: true,
+            noStepByStepTraining: true,
+          },
         }),
       });
 
       const fin = await r1.json().catch(() => ({}));
       if (fin?.session) state.session = fin.session;
-      savePersisted();
 
       // 2) Send
       const payload = {
@@ -469,14 +488,14 @@
       state.lastLeadPack = { session: state.session, final: fin?.final || null };
 
       if (!silent) {
-        if (sent?.ok === false) state.messages.push({ role: "assistant", content: "Resumen listo. Si quieres, usa “Enviar por correo”." });
+        if (sent?.ok === false)
+          state.messages.push({ role: "assistant", content: "Resumen listo. Si quieres, usa “Enviar por correo”." });
         else state.messages.push({ role: "assistant", content: "Listo: quedó registrado para revisión." });
       }
-      savePersisted();
+
       state.focusNext = true;
     } catch {
       if (!silent) state.messages.push({ role: "assistant", content: "No pude registrar el resumen. Intenta de nuevo." });
-      savePersisted();
       state.focusNext = true;
     } finally {
       state.sending = false;
@@ -488,21 +507,10 @@
     if (state.open) render();
   });
 
-  // Init
-  loadPersisted();
-
-  if (!state.messages.length) {
-    state.messages = [
-      {
-        role: "assistant",
-        content: "¿Qué quieres mejorar hoy y en qué proceso? (CNC, lámina, troqueles, escaneo/impresión)",
-      },
-    ];
-    savePersisted();
-  }
-
+  // Init: siempre conversación nueva (refresh = nueva)
+  resetConversation();
   render();
 
-  // si ya abriste antes y quedó completo, intenta mandar
+  // Auto-send si el backend ya completó datos en el mismo page-load
   setTimeout(maybeAutoSend, 0);
 })();
