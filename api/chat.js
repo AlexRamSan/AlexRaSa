@@ -1,72 +1,86 @@
-// Vercel Serverless Function
-// Endpoint: POST /api/chat
+// /api/chat.js
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
-const SYSTEM_INSTRUCTIONS = `
+  const SYSTEM_INSTRUCTIONS = `
 Eres el asistente del sitio alexrasa.store (AlexRaSa).
-El sitio es sobre consultoría e ingeniería para manufactura (CNC, mejora de procesos, estandarización, reducción de tiempos de ciclo, vida de herramienta, scrap/OEE, digitalización práctica, implementación CAM cuando aplique).
+El sitio es sobre consultoría/ingeniería para manufactura (CNC, mejora de procesos, reducción de tiempos de ciclo, set-up, vida de herramienta, scrap/OEE, estandarización y digitalización práctica).
 
 Objetivo:
-1) Responder dudas técnicas de manufactura y consultoría.
-2) Calificar el contexto (proceso, tipo de piezas, máquinas/controles, materiales, volumen, KPI actual, objetivo).
-3) Proponer el siguiente paso (diagnóstico, visita, reunión técnica) con claridad.
+1) Responder dudas de manufactura.
+2) Entender contexto con pocas preguntas.
+3) Si el usuario quiere que lo contacten, registrar su solicitud (como el formulario /form).
 
-Restricciones críticas (OBLIGATORIAS):
-- No inventes acciones. No digas “ya envié correo”, “te marqué”, “agendé”, “cotización enviada”, etc.
-- No puedes enviar correos, hacer llamadas ni agendar automáticamente. En su lugar:
-  - Ofrece generar un borrador de correo listo para copiar/pegar, o
-  - Indica que el usuario debe enviar el correo desde su cliente.
-- Si piden algo fuera de la web (pagos, envíos, correos), responde: “Puedo prepararte el texto y los pasos”.
+Restricciones CRÍTICAS:
+- No inventes acciones. No digas “ya envié correo”, “te marqué”, “agendé”, etc.
+- El sistema sí puede REGISTRAR la solicitud (como el formulario). Solo di “registré tu solicitud” si el usuario aceptó y tú generaste el bloque [LEAD].
+
+Consentimiento:
+- Antes de registrar, pregunta: “¿Quieres que registre tu solicitud para que Miguel te contacte?” y espera un “sí”.
+
+Formato obligatorio para registrar:
+Devuelve EXACTAMENTE un bloque con esta estructura (sin JSON):
+[LEAD]
+empresa: <texto>
+contacto: <texto>
+puesto: <texto o "No especificado">
+telefono: <texto o "No especificado">
+email: <texto o "No especificado">
+ciudad: <texto o "No especificado">
+estado: <texto o "No especificado">
+industria: <texto o "No especificado">
+interes: <texto>  (ej: "Consultoría — Reducción de tiempo de ciclo")
+notas: <resumen del problema + objetivo + datos técnicos relevantes>
+[/LEAD]
+
+Reglas:
+- Si falta empresa o contacto, pídelo.
+- Necesitas al menos 1 medio de contacto: teléfono o email (ideal ambos).
+- Mantén 'notas' corto y técnico.
 
 Estilo:
-- Directo, breve, profesional. Enfocado a manufactura.
-- Evita hablar de marketing/leads/CRM salvo que el usuario lo pida explícitamente.
-
-Primera interacción:
-- Pregunta qué reto de manufactura quieren resolver (tiempo de ciclo, scrap, set-up, tool life, programación, calidad).
+- Directo, breve y profesional.
+- Nada de marketing/leads/CRM.
 `;
 
-function safeJson(req) {
-  if (!req?.body) return {};
-  if (typeof req.body === "string") {
-    try { return JSON.parse(req.body); } catch { return {}; }
+  function safeJson(body) {
+    if (!body) return {};
+    if (typeof body === "string") {
+      try { return JSON.parse(body); } catch { return {}; }
+    }
+    return body;
   }
-  return req.body;
-}
 
-function extractOutputText(data) {
-  // 1) Camino fácil
-  let text = (data?.output_text || "").trim();
-  if (text) return text;
+  function extractOutputText(data) {
+    let text = (data?.output_text || "").trim();
+    if (text) return text;
 
-  // 2) Fallback: recorre data.output[] buscando output_text
-  if (Array.isArray(data?.output)) {
-    let acc = "";
-    for (const item of data.output) {
-      if (item?.type === "message" && item?.role === "assistant" && Array.isArray(item.content)) {
-        for (const c of item.content) {
-          if (c?.type === "output_text" && typeof c.text === "string") {
-            acc += c.text;
+    if (Array.isArray(data?.output)) {
+      let acc = "";
+      for (const item of data.output) {
+        if (item?.type === "message" && item?.role === "assistant" && Array.isArray(item.content)) {
+          for (const c of item.content) {
+            if (c?.type === "output_text" && typeof c.text === "string") acc += c.text;
           }
         }
       }
+      return (acc || "").trim();
     }
-    text = (acc || "").trim();
+    return "";
   }
-  return text;
-}
 
-module.exports = async (req, res) => {
   try {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
+    }
 
-    const body = safeJson(req);
-
+    const body = safeJson(req.body);
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const userText = typeof body.input === "string" ? body.input.trim() : "";
 
-    // Soporta:
-    // 1) { input: "hola" }
-    // 2) { messages: [{role, content}, ...] }
     const input = userText
       ? userText
       : messages
@@ -76,10 +90,6 @@ module.exports = async (req, res) => {
 
     if (!input || (Array.isArray(input) && input.length === 0)) {
       return res.status(400).json({ error: "Missing input/messages" });
-    }
-
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: "Missing OPENAI_API_KEY in server environment" });
     }
 
     const r = await fetch("https://api.openai.com/v1/responses", {
@@ -92,31 +102,22 @@ module.exports = async (req, res) => {
         model: "gpt-5-nano",
         instructions: SYSTEM_INSTRUCTIONS,
         input,
-        // Para chat rápido/corto
         reasoning: { effort: "minimal" },
         text: { verbosity: "low" },
-        max_output_tokens: 350,
+        max_output_tokens: 450,
         store: false,
       }),
     });
 
-    // Si OpenAI falla, devuelve el error real (no lo escondas)
     if (!r.ok) {
-      let detail;
-      try { detail = await r.json(); }
-      catch { detail = { raw: await r.text() }; }
-
-      return res.status(r.status).json({
-        error: "OpenAI request failed",
-        detail,
-      });
+      const raw = await r.text();
+      return res.status(r.status).json({ error: "OpenAI request failed", detail: raw });
     }
 
     const data = await r.json();
     const text = extractOutputText(data);
-
     return res.status(200).json({ text });
-  } catch (e) {
-    return res.status(500).json({ error: "Server error", detail: String(e) });
+  } catch (err) {
+    return res.status(500).json({ error: String(err) });
   }
-};
+}
