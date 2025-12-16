@@ -1,5 +1,5 @@
 (() => {
-  const SEND_LEAD_URL = "/api/sendLead"; // tu endpoint existente
+  const SEND_LEAD_URL = "/api/sendLead";
 
   const state = {
     open: false,
@@ -9,7 +9,6 @@
     ],
   };
 
-  // Evita doble envío si el modelo repite el bloque
   const sentLeadFingerprints = new Set();
 
   const css = `
@@ -44,7 +43,7 @@
     <div class="ar-chat-head">
       <div>
         <div class="ar-chat-title">RaSa Assistant</div>
-        <div style="opacity:.8;font-size:12px">Manufactura. Directo. Sin prometer humo.</div>
+        <div style="opacity:.8;font-size:12px">Manufactura. Directo.</div>
       </div>
       <button class="ar-chat-close" aria-label="Cerrar">×</button>
     </div>
@@ -63,7 +62,7 @@
 
   function render() {
     log.innerHTML = "";
-    state.messages.forEach(m => {
+    state.messages.forEach((m) => {
       const b = document.createElement("div");
       b.className = `ar-bubble ${m.role === "user" ? "ar-u" : "ar-a"}`;
       b.textContent = m.content;
@@ -83,37 +82,7 @@
 
   function transcriptText(maxMsgs = 20) {
     const slice = state.messages.slice(-maxMsgs);
-    return slice.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n").slice(0, 8000);
-  }
-
-  function parseLeadBlock(text) {
-    if (!text) return null;
-    const m = text.match(/\[LEAD\]([\s\S]*?)\[\/LEAD\]/);
-    if (!m) return null;
-
-    const block = m[1].trim();
-
-    const get = (key) => {
-      const r = new RegExp(`^\\s*${key}\\s*:\\s*(.*)\\s*$`, "mi");
-      return (block.match(r)?.[1] || "").trim();
-    };
-
-    const lead = {
-      empresa: get("empresa"),
-      contacto: get("contacto"),
-      puesto: get("puesto") || "No especificado",
-      telefono: get("telefono") || "No especificado",
-      email: get("email") || "No especificado",
-      ciudad: get("ciudad") || "No especificado",
-      estado: get("estado") || "No especificado",
-      industria: get("industria") || "No especificado",
-      interes: get("interes") || "Consultoría — Manufactura",
-      notas: get("notas"),
-    };
-
-    // mínimos
-    if (!lead.empresa || !lead.contacto || !lead.notas) return null;
-    return lead;
+    return slice.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n").slice(0, 8000);
   }
 
   function uuid() {
@@ -136,55 +105,49 @@
     return { ok: r.ok && (data.ok !== false), status: r.status, data };
   }
 
-  async function autoSendLeadIfPresent() {
-    const lastAssistant = [...state.messages].reverse().find(m => m.role === "assistant");
-    if (!lastAssistant) return;
+  async function sendLeadIfProvided(lead) {
+    if (!lead) return;
 
-    const parsed = parseLeadBlock(lastAssistant.content);
-    if (!parsed) return;
-
-    const fp = JSON.stringify(parsed);
+    const fp = JSON.stringify(lead);
     if (sentLeadFingerprints.has(fp)) return;
 
-    // Payload igual al form
-    const lead = {
+    const payload = {
       id: uuid(),
       fecha: todayEsMX(),
       createdAt: new Date().toISOString(),
-      empresa: parsed.empresa,
-      contacto: parsed.contacto,
-      puesto: parsed.puesto,
-      telefono: parsed.telefono,
-      email: parsed.email,
-      ciudad: parsed.ciudad,
-      estado: parsed.estado,
-      industria: parsed.industria,
-      interes: parsed.interes,
+      empresa: lead.empresa,
+      contacto: lead.contacto,
+      puesto: lead.puesto || "No especificado",
+      telefono: lead.telefono || "No especificado",
+      email: lead.email || "No especificado",
+      ciudad: lead.ciudad || "No especificado",
+      estado: lead.estado || "No especificado",
+      industria: lead.industria || "No especificado",
+      interes: lead.interes || "Consultoría — Manufactura",
       maquinas: "",
       origen: "Chatbot",
       nextDate: "",
-      notas: `${parsed.notas}\n\n---\nTranscript:\n${transcriptText()}`,
+      notas: `${lead.notas || ""}\n\n---\nTranscript:\n${transcriptText()}`,
     };
 
-    state.busy = true; render();
     try {
-      const { ok, status, data } = await postJSON(SEND_LEAD_URL, lead);
+      const { ok, status, data } = await postJSON(SEND_LEAD_URL, payload);
       if (ok) {
         sentLeadFingerprints.add(fp);
         state.messages.push({
           role: "assistant",
-          content: "Listo: tu solicitud quedó registrada (igual que el formulario). Miguel la revisa y te contacta."
+          content: "Listo: registré tu solicitud para que Miguel te contacte."
         });
       } else {
         state.messages.push({
           role: "assistant",
-          content: `No pude registrar la solicitud (HTTP ${status}). ${data?.error || "Revisa /api/sendLead y tu Apps Script."}`
+          content: `No pude registrar la solicitud (HTTP ${status}). ${data?.error || "Revisa /api/sendLead."}`
         });
       }
     } catch (e) {
       state.messages.push({ role: "assistant", content: `Error registrando la solicitud: ${String(e)}` });
     } finally {
-      state.busy = false; render();
+      render();
     }
   }
 
@@ -195,6 +158,8 @@
     state.messages.push({ role: "user", content: t });
     state.busy = true;
     render();
+
+    let leadFromServer = null;
 
     try {
       const r = await fetch("/api/chat", {
@@ -208,10 +173,11 @@
       try { data = JSON.parse(raw); } catch {}
 
       if (!r.ok) {
-        const msg = data?.detail?.error?.message || data?.error || raw || `HTTP ${r.status}`;
+        const msg = data?.detail || data?.error || raw || `HTTP ${r.status}`;
         state.messages.push({ role: "assistant", content: `Backend error (${r.status}): ${msg}` });
       } else {
-        const answer = (data && typeof data.text === "string") ? data.text.trim() : "";
+        const answer = typeof data?.text === "string" ? data.text.trim() : "";
+        leadFromServer = data?.lead || null;
         state.messages.push({ role: "assistant", content: answer || "Respuesta vacía del modelo." });
       }
     } catch (e) {
@@ -219,7 +185,8 @@
     } finally {
       state.busy = false;
       render();
-      await autoSendLeadIfPresent();
+      // Si el server detectó un lead, se registra (sin mostrar nada raro)
+      await sendLeadIfProvided(leadFromServer);
     }
   }
 
