@@ -8,8 +8,8 @@
   };
 
   const css = `
-  .ar-chat-btn{position:fixed;right:18px;bottom:96px;z-index:9999;border:0;border-radius:999px;padding:12px 14px;cursor:pointer;box-shadow:0 10px 25px rgba(0,0,0,.25);font:600 14px system-ui}
-  .ar-chat-box{position:fixed;right:18px;bottom:150px;width:360px;max-width:calc(100vw - 36px);height:520px;max-height:calc(100vh - 110px);background:#0b1220;color:#e5e7eb;border:1px solid rgba(255,255,255,.12);border-radius:16px;z-index:9999;display:none;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;font:14px system-ui}
+  .ar-chat-btn{position:fixed;right:18px;bottom:18px;z-index:9999;border:0;border-radius:999px;padding:12px 14px;cursor:pointer;box-shadow:0 10px 25px rgba(0,0,0,.25);font:600 14px system-ui}
+  .ar-chat-box{position:fixed;right:18px;bottom:72px;width:360px;max-width:calc(100vw - 36px);height:520px;max-height:calc(100vh - 110px);background:#0b1220;color:#e5e7eb;border:1px solid rgba(255,255,255,.12);border-radius:16px;z-index:9999;display:none;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;font:14px system-ui}
   .ar-chat-box.open{display:flex;flex-direction:column}
   .ar-chat-head{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-between}
   .ar-chat-title{font-weight:700}
@@ -76,43 +76,43 @@
     if (state.open) setTimeout(() => input.focus(), 0);
   }
 
- async function ask(text) {
-  const t = (text || "").trim();
-  if (!t || state.busy) return;
+  async function ask(text) {
+    const t = (text || "").trim();
+    if (!t || state.busy) return;
 
-  state.messages.push({ role: "user", content: t });
-  state.busy = true;
-  render();
-
-  try {
-    const r = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: state.messages }),
-    });
-
-    const raw = await r.text();           // <-- lee como texto primero
-    let data = {};
-    try { data = JSON.parse(raw); } catch {}
-
-    if (!r.ok) {
-      state.messages.push({
-        role: "assistant",
-        content: `Backend error (${r.status}): ${data?.error || raw}`
-      });
-    } else {
-      state.messages.push({
-        role: "assistant",
-        content: (data && data.text) ? data.text : `Respuesta vacía. RAW: ${raw}`
-      });
-    }
-  } catch (e) {
-    state.messages.push({ role: "assistant", content: `Error de red: ${String(e)}` });
-  } finally {
-    state.busy = false;
+    state.messages.push({ role: "user", content: t });
+    state.busy = true;
     render();
+
+    try {
+      // Mandamos messages para mantener contexto (y el backend las recorta)
+      const r = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: state.messages }),
+      });
+
+      const raw = await r.text();
+      let data = {};
+      try { data = JSON.parse(raw); } catch {}
+
+      if (!r.ok) {
+        const msg = data?.detail?.error?.message || data?.error || raw || `HTTP ${r.status}`;
+        state.messages.push({ role: "assistant", content: `Backend error (${r.status}): ${msg}` });
+      } else {
+        const answer = (data && typeof data.text === "string") ? data.text.trim() : "";
+        state.messages.push({
+          role: "assistant",
+          content: answer || `Respuesta vacía. RAW: ${raw.slice(0, 200)}`
+        });
+      }
+    } catch (e) {
+      state.messages.push({ role: "assistant", content: `Error de red: ${String(e)}` });
+    } finally {
+      state.busy = false;
+      render();
+    }
   }
-}
 
   btn.addEventListener("click", () => toggle());
   closeBtn.addEventListener("click", () => toggle(false));
