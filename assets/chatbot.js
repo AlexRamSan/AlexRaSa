@@ -48,6 +48,7 @@
       document.querySelector("#wa-btn") ||
       document.querySelector(".whatsapp-float") ||
       document.querySelector(".wa-float") ||
+      document.querySelector(".whatsapp-fab") ||
       document.querySelector('a[href*="wa.me"]') ||
       document.querySelector('a[href*="whatsapp"]')
     );
