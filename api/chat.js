@@ -5,13 +5,22 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
+  }
+
+  const OPENAI_KEY = process.env.OPENAI_API_KEY;
+
+  // =========================
+  // 1) System instructions
+  // =========================
   const SYSTEM_INSTRUCTIONS = `
 Eres RaSa Assistant (alexrasa.store): soporte experto en manufactura. Estilo directo, útil y comercial sin presión.
-Meta: resolver rápido. Si hay intención o el caso requiere detalle, pedir permiso para registrar el caso para Miguel.
+Tu prioridad: dar una acción práctica y solo una pregunta. Solo recopila datos para registrar caso si el usuario lo pide o acepta explícitamente.
 
-Soluciones disponibles:
+Oferta (elige lo que aplique según lo que el usuario pide):
 - Consultoría CNC (proceso, tiempos, estandarización en piso)
-- SolidCAM (solo si el usuario tiene/considera CAM; nunca inventar que lo tiene)
+- SolidCAM (solo si el usuario tiene/considera CAM; no inventes que lo tiene)
 - Lantek (corte/nesting lámina)
 - Logopress (troqueles)
 - Artec 3D (escaneo)
@@ -25,33 +34,26 @@ REGLAS DURAS
 - Formato por turno:
   - 1–2 frases útiles aplicadas a lo que dijo.
   - 1 sola pregunta (máximo 1).
-  - Prohibido “Pregunta/Plan/Micro-solución/Siguiente paso”.
+  - Prohibido encabezados tipo “Pregunta/Plan/Micro-solución/Siguiente paso”.
   - Prohibido listas numeradas.
   - Prohibido bullets salvo que el usuario pida explícitamente “lista”, “pasos”, “plantilla”, “checklist”.
 - Si el usuario da una unidad rara o incoherente (ej. m/s), pide aclaración de unidad con UNA pregunta (m/min, SFM, mm/min).
-- Nunca prometas acciones externas (“enviado”, “te contacto”, “PDF”, “agendado”). Solo: “puedo registrarlo” o “puedo ayudarte a prepararlo”.
+- Nunca prometas acciones externas (“enviado”, “te contacto”, “PDF”, “agendado”, “te contactarán”). Solo: “puedo registrarlo” o “puedo ayudarte a prepararlo”.
 - No uses la palabra “dolor”; usa “reto” u “oportunidad”. Evita “demo”; usa “diagnóstico” o “revisión del proceso”.
-- PROHIBIDO mostrar al usuario: “lead”, “ticket”, “[STATE]”, “[TICKET]”. Esos bloques son internos.
 
-ESCALAR A SOPORTE DIRECTO cuando:
-- El usuario lo pide (“más soporte”, “no me sirve”, “envía correo”, “cotización”, “precio”, “implementación”, “curso”, “visita”).
-- Faltan datos críticos y el usuario no los tiene.
-- Riesgo: colisión, tolerancias finas, scrap caro, paro de línea.
-
-SOPORTE DIRECTO (flujo)
-- Primero pide contacto (correo o WhatsApp) en UNA pregunta.
-- Luego (uno por uno): nombre, empresa (opcional), ciudad/estado.
-- Luego resumen técnico mínimo en UNA pregunta: operación principal + máquina + control + qué parte del ciclo se quiere mejorar + meta.
-- Cuando exista contacto + resumen, genera [TICKET] interno (NO lo menciones al usuario).
-
-CAPTURA SUAVE
-- Después de dar ayuda útil y si hay intención: “¿Quieres que lo registre para que Miguel lo revise contigo? Déjame tu correo o WhatsApp.”
-
-SALIDA INTERNA (oculta)
-- Al final de cada respuesta incluye un bloque [STATE] ... [/STATE] (pero el sistema lo ocultará).
-- Incluye [TICKET] ... [/TICKET] solo cuando ya exista contacto + resumen técnico.
+CAPTURA DE LEAD SIN FASTIDIAR
+- No pidas contacto si el usuario NO lo pidió y NO aceptó registrar el caso.
+- Si el usuario acepta registrar: pide solo 1 dato por turno, en este orden:
+  1) contacto (correo o WhatsApp) si falta
+  2) nombre
+  3) ciudad/estado
+  4) resumen técnico mínimo: operación + máquina + control + qué parte del ciclo se quiere mejorar + meta
+- Si el usuario dice “no” a registrar o a dar datos: deja de insistir y regresa a soporte.
 `;
 
+  // =========================
+  // 2) Utilities
+  // =========================
   function safeJson(body) {
     if (!body) return {};
     if (typeof body === "string") {
@@ -71,11 +73,7 @@ SALIDA INTERNA (oculta)
     if (Array.isArray(data?.output)) {
       let acc = "";
       for (const item of data.output) {
-        if (
-          item?.type === "message" &&
-          item?.role === "assistant" &&
-          Array.isArray(item.content)
-        ) {
+        if (item?.type === "message" && item?.role === "assistant" && Array.isArray(item.content)) {
           for (const c of item.content) {
             if (c?.type === "output_text" && typeof c.text === "string") acc += c.text;
           }
@@ -86,75 +84,138 @@ SALIDA INTERNA (oculta)
     return "";
   }
 
-  // ---- Heurísticas de contexto (evita contradicciones) ----
-  function detectCamStatus(messages) {
-    const all = messages
-      .map((m) => String(m?.content || ""))
-      .join("\n")
-      .toLowerCase();
+  function stripCodeFences(s) {
+    const t = String(s || "").trim();
+    return t
+      .replace(/^```(?:json)?/i, "")
+      .replace(/```$/i, "")
+      .trim();
+  }
 
+  function parseJsonLoose(s) {
+    const t = stripCodeFences(s);
+    try {
+      return JSON.parse(t);
+    } catch {
+      return null;
+    }
+  }
+
+  function userExplicitlyAskedForList(text = "") {
+    const t = String(text || "").toLowerCase();
+    return ["lista", "pasos", "plantilla", "checklist", "formato", "tabla"].some((w) => t.includes(w));
+  }
+
+  function isYes(text = "") {
+    const t = String(text || "").trim().toLowerCase();
+    return t === "si" || t === "sí" || t.startsWith("si ") || t.startsWith("sí ") || t.includes("ok") || t.includes("va");
+  }
+
+  function isNo(text = "") {
+    const t = String(text || "").trim().toLowerCase();
+    return t === "no" || t.startsWith("no ");
+  }
+
+  function detectIntentToEscalate(text = "") {
+    const t = String(text || "").toLowerCase();
+    return [
+      "más soporte",
+      "no me sirve",
+      "envía correo",
+      "enviar correo",
+      "cotización",
+      "cotizar",
+      "precio",
+      "costo",
+      "coste",
+      "implementación",
+      "curso",
+      "visita",
+      "agendar",
+      "reservar",
+      "propuesta",
+      "comprar",
+    ].some((k) => t.includes(k));
+  }
+
+  function lastAssistantAskedRegister(history) {
+    const lastA = history.slice().reverse().find((m) => m.role === "assistant")?.content || "";
+    const t = lastA.toLowerCase();
+    return t.includes("¿quieres que lo registre") || t.includes("quieres que lo registre") || t.includes("puedo registrarlo");
+  }
+
+  function lastAssistantAskedContact(history) {
+    const lastA = history.slice().reverse().find((m) => m.role === "assistant")?.content || "";
+    const t = lastA.toLowerCase();
+    return t.includes("correo") || t.includes("whatsapp");
+  }
+
+  function detectCamStatus(messages) {
+    const all = messages.map((m) => String(m?.content || "")).join("\n").toLowerCase();
     const hasMastercam = all.includes("mastercam") || all.includes("master cam");
     const hasCamYes = /\b(tengo|uso|utilizo)\b.*\bcam\b/.test(all) || hasMastercam;
-    const hasCamNo =
-      /\b(no tengo|sin)\b.*\bcam\b/.test(all) ||
-      all.includes("programo a pie") ||
-      all.includes("a pie de maquina") ||
-      all.includes("a pie de máquina");
-
+    const hasCamNo = /\b(no tengo|sin)\b.*\bcam\b/.test(all) || all.includes("programo a pie");
     if (hasCamYes && !hasCamNo) return "si";
     if (hasCamNo && !hasCamYes) return "no";
-    if (hasCamYes && hasCamNo) return "desconocido"; // conflicto, mejor no asumir
+    if (hasCamYes && hasCamNo) return "desconocido";
     return "desconocido";
   }
 
-  function userExplicitlyAskedForList(lastUserText = "") {
-    const t = String(lastUserText || "").toLowerCase();
-    return ["lista", "pasos", "plantilla", "checklist", "formato", "tabla"].some((w) =>
-      t.includes(w)
-    );
-  }
-
-  // ---- Validación estilo/sentido ----
   function violatesStyle(txt, { camStatus, allowBullets }) {
-    const t = (txt || "").toLowerCase();
+    const t = String(txt || "").toLowerCase();
 
-    // Encabezados prohibidos
-    const bannedHeads = [
-      "pregunta:",
-      "micro-solución",
-      "solución rápida",
-      "plan:",
-      "siguiente paso:",
-      "preguntas:",
-      "pasos:",
-      "checklist:",
-    ];
+    const bannedHeads = ["pregunta:", "micro-solución", "solución rápida", "plan:", "siguiente paso:", "pasos:", "checklist:"];
     if (bannedHeads.some((w) => t.includes(w))) return true;
 
-    // Listas numeradas: 1) o 1.
+    // listas numeradas 1) o 1.
     if (/\n\s*\d+\s*[\)\.]\s+/.test(txt)) return true;
 
-    // Bullets no permitidos si el usuario no pidió lista
+    // bullets sin permiso
     if (!allowBullets && /\n\s*[-•]\s+/.test(txt)) return true;
 
-    // Muchas preguntas (más de 1 "?")
-    const q = (txt.match(/\?/g) || []).length;
+    // máximo 1 pregunta
+    const q = (String(txt).match(/\?/g) || []).length;
     if (q > 1) return true;
 
-    // Contradicción: si ya sabemos CAM=si, no puede decir "si no tienes cam"
-    if (
-      camStatus === "si" &&
-      (t.includes("si no tienes cam") || t.includes("no tienes cam"))
-    )
-      return true;
+    // contradicción CAM
+    if (camStatus === "si" && (t.includes("si no tienes cam") || t.includes("no tienes cam"))) return true;
 
-    // Basura típica
-    if (t.includes("solidsilk") || t.includes(" hello")) return true;
+    // promesas externas prohibidas
+    const bannedPromises = ["te contactarán", "te contacto", "te voy a contactar", "enviado", "agendado", "te llamo", "te marcaré"];
+    if (bannedPromises.some((p) => t.includes(p))) return true;
 
     return false;
   }
 
-  async function repairToHouseStyle(openaiKey, originalAssistantText, { allowBullets, camStatus }) {
+  async function callOpenAIResponses({ model, instructions, input, max_output_tokens }) {
+    const r = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        instructions,
+        input,
+        reasoning: { effort: "minimal" },
+        text: { verbosity: "low" },
+        max_output_tokens,
+        store: false,
+      }),
+    });
+
+    if (!r.ok) {
+      const raw = await r.text();
+      const err = new Error("OpenAI request failed");
+      err.status = r.status;
+      err.detail = raw;
+      throw err;
+    }
+    return r.json();
+  }
+
+  async function repairToHouseStyle(originalAssistantText, { allowBullets, camStatus, hasContact, optedIn }) {
     const camLine =
       camStatus === "si"
         ? "El usuario SÍ usa CAM: prohibido decir 'no tienes CAM' o 'si no tienes CAM'."
@@ -162,125 +223,112 @@ SALIDA INTERNA (oculta)
         ? "El usuario NO tiene CAM: prohibido mencionar iMachining/HSR/HSM/post/simulación CAM."
         : "CAM no confirmado: no afirmes que tiene o no tiene CAM.";
 
-    const rr = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-5-nano",
-        instructions: `
-Reescribe el texto del asistente cumpliendo:
+    const leadLine = optedIn
+      ? hasContact
+        ? "El usuario YA dio contacto: NO pedir correo/WhatsApp."
+        : "El usuario aceptó registrar: puedes pedir correo o WhatsApp (UNA pregunta) si falta."
+      : "El usuario NO aceptó registrar: NO pidas contacto; solo soporte + 1 pregunta técnica.";
+
+    const data = await callOpenAIResponses({
+      model: "gpt-5-nano",
+      instructions: `
+Reescribe el texto cumpliendo:
 - 1–2 frases útiles.
 - Máximo 1 pregunta.
-- Sin “Pregunta/Plan/Micro-solución/Siguiente paso”.
+- Sin encabezados tipo “Pregunta/Plan/Micro-solución/Siguiente paso”.
 - Sin listas numeradas.
 - ${allowBullets ? "Bullets permitidos (máx 2) SOLO si el usuario pidió lista." : "Sin bullets."}
 - No asumas datos no confirmados.
+- Prohibido prometer acciones externas (te contactarán / te contacto / enviado / agendado).
 - ${camLine}
-Devuelve solo el texto reescrito.`,
-        input: [{ role: "user", content: originalAssistantText }],
-        reasoning: { effort: "minimal" },
-        text: { verbosity: "low" },
-        max_output_tokens: 220,
-        store: false,
-      }),
+- ${leadLine}
+Devuelve SOLO el texto reescrito.`,
+      input: [{ role: "user", content: String(originalAssistantText || "") }],
+      max_output_tokens: 220,
     });
 
-    const rdata = await rr.json().catch(() => ({}));
-    const fixed = (rdata?.output_text || "").trim();
-    return fixed || originalAssistantText;
+    const fixed = (extractOutputText(data) || "").trim();
+    return fixed || String(originalAssistantText || "");
   }
 
-  // ---- Parse de ticket + limpieza de STATE ----
-  function stripAnyState(text) {
-    if (!text) return "";
-
-    // 1) Bloque [STATE] ... [/STATE]
-    let out = text.replace(/\[STATE\][\s\S]*?\[\/STATE\]/gi, "");
-
-    // 2) Inline tipo [STATE: ...]
-    out = out.replace(/\[STATE:[^\]]*\]/gi, "");
-
-    // 3) Cualquier línea que empiece con [STATE
-    out = out
-      .split("\n")
-      .filter((line) => !line.trim().toUpperCase().startsWith("[STATE"))
-      .join("\n");
-
-    return out.trim();
-  }
-
-  function parseTicket(fullText) {
-    const ticketMatch = fullText.match(/\[TICKET\]([\s\S]*?)\[\/TICKET\]/i);
-    const ticketRaw = ticketMatch ? ticketMatch[0] : null;
-
-    const getKey = (block, key) => {
-      const r = new RegExp(`^\\s*${key}\\s*:\\s*(.*)\\s*$`, "mi");
-      return (block.match(r)?.[1] || "").trim();
+  // =========================
+  // 3) Slot extraction + final summary
+  // =========================
+  async function extractSlots(history, prevSession, lastUserText) {
+    const schemaHint = {
+      track: "CAM|INGENIERIA|SOPORTE|DESCONOCIDO",
+      producto: "SolidCAM|Lantek|Logopress|Artec3D|3DSystems|DESCONOCIDO",
+      optedInToRegister: "boolean",
+      contacto: { whatsapp: "string|null", email: "string|null", nombre: "string|null", empresa: "string|null", ciudad: "string|null", estado: "string|null", rol: "string|null" },
+      tecnico: { proceso: "CNC|LAMINA|TROQUELES|ESCANEO|IMPRESION|DESCONOCIDO", maquina: "string|null", control: "string|null", material: "string|null", operacion: "string|null", meta: "string|null", volumen: "string|null", riesgo: "bajo|medio|alto|desconocido" },
+      comercial: { tiene_cam: "si|no|desconocido", software_actual: "string|null", horizonte: "string|null", tipo_interes: "info|cotizacion|visita|curso|soporte|desconocido" },
     };
 
-    let ticket = null;
-    if (ticketMatch) {
-      const block = ticketMatch[1].trim();
-      ticket = {
-        nombre: getKey(block, "nombre") || "No especificado",
-        empresa: getKey(block, "empresa") || "No especificado",
-        email: getKey(block, "email") || "No especificado",
-        whatsapp: getKey(block, "whatsapp") || "No especificado",
-        ciudad: getKey(block, "ciudad") || "No especificado",
-        estado: getKey(block, "estado") || "No especificado",
-        industria: getKey(block, "industria") || "No especificado",
-        tema: getKey(block, "tema") || "Soporte manufactura",
-        resumen: getKey(block, "resumen") || "",
-        datos_tecnicos: getKey(block, "datos_tecnicos") || "",
-      };
+    const data = await callOpenAIResponses({
+      model: "gpt-5-nano",
+      instructions: `
+Extrae/actualiza datos desde la conversación para uso interno (leads + soporte).
+Devuelve SOLO JSON válido (sin texto extra).
+No inventes: si no está, usa null o "desconocido".
+optedInToRegister SOLO true si el usuario aceptó explícitamente registrar (ej. “sí, regístralo”).
+Estructura guía: ${JSON.stringify(schemaHint)}`,
+      input: [
+        { role: "system", content: `Sesión previa JSON: ${JSON.stringify(prevSession || {})}` },
+        ...history,
+        { role: "user", content: `Último mensaje del usuario: ${String(lastUserText || "")}` },
+      ],
+      max_output_tokens: 400,
+    });
 
-      const hasContact =
-        (ticket.email && ticket.email !== "No especificado") ||
-        (ticket.whatsapp && ticket.whatsapp !== "No especificado");
-
-      const ok = hasContact && (ticket.resumen || ticket.datos_tecnicos);
-      if (!ok) ticket = null;
-    }
-
-    let visibleText = fullText;
-    if (ticketRaw) visibleText = visibleText.replace(ticketRaw, "");
-    visibleText = stripAnyState(visibleText);
-
-    return { visibleText: visibleText || "Perfecto.", ticket };
+    const raw = extractOutputText(data);
+    const parsed = parseJsonLoose(raw);
+    return parsed || (prevSession || {});
   }
 
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
-    }
+  async function buildFinalSummary(session) {
+    const data = await callOpenAIResponses({
+      model: "gpt-5-nano",
+      instructions: `
+Genera un resumen interno para Miguel basado SOLO en el JSON.
+Devuelve SOLO JSON válido con:
+{
+  "summary_for_miguel": "string corto (comercial + técnico)",
+  "missing_info": ["..."],
+  "next_best_step": "string"
+}
+No prometas acciones externas.`,
+      input: [{ role: "user", content: JSON.stringify(session || {}) }],
+      max_output_tokens: 260,
+    });
 
+    const raw = extractOutputText(data);
+    const parsed = parseJsonLoose(raw);
+    return parsed || { summary_for_miguel: "", missing_info: [], next_best_step: "" };
+  }
+
+  // =========================
+  // 4) Main flow
+  // =========================
+  try {
     const body = safeJson(req.body);
 
-    // Frontends comunes:
+    // Inputs del frontend esperados:
     // - body.messages: historial [{role, content}]
-    // - body.input: último mensaje user (string)
+    // - body.input: último texto del user (string) (opcional si messages ya lo trae)
+    // - body.session: objeto persistido por tu UI (localStorage)
+    // - body.action: "finalize" para generar resumen final
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const userText = typeof body.input === "string" ? body.input.trim() : "";
 
     const history = messages
       .filter((m) => m && typeof m.role === "string" && typeof m.content === "string")
-      .slice(-30)
+      .slice(-40)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    // Texto de usuario más reciente “real”
-    const finalUserText =
-      userText || (history.slice().reverse().find((m) => m.role === "user")?.content || "");
-
     // Construye input SIEMPRE con historial + (si viene) último user
-    const input = [
-      ...history,
-      ...(userText ? [{ role: "user", content: userText }] : []),
-    ];
+    const input = [...history, ...(userText ? [{ role: "user", content: userText }] : [])];
 
-    // Evita duplicar si el último mensaje en history ya es exactamente userText
+    // Evita duplicar si el último user del history ya es igual a userText
     if (
       userText &&
       history.length &&
@@ -290,61 +338,124 @@ Devuelve solo el texto reescrito.`,
       input.pop();
     }
 
-    if (!input || input.length === 0) {
+    if (!input.length) {
       return res.status(400).json({ error: "Missing input/messages" });
     }
 
+    const finalUserText =
+      userText || (history.slice().reverse().find((m) => m.role === "user")?.content || "");
+
+    const prevSession = typeof body.session === "object" && body.session ? body.session : {};
     const camStatus = detectCamStatus(history);
     const allowBullets = userExplicitlyAskedForList(finalUserText);
 
-    // Inyección de “hechos confirmados” para evitar contradicción
-    const CONTEXT = `Contexto confirmado (no inventar):
+    // ---- Opt-in logic (candado para que no insista) ----
+    const assistantAskedRegister = lastAssistantAskedRegister(history);
+    const assistantAskedContact = lastAssistantAskedContact(history);
+    const userWantsEscalation = detectIntentToEscalate(finalUserText);
+
+    let optedIn = Boolean(prevSession?.optedInToRegister);
+
+    // Si el usuario dijo NO cuando se le pidió registrar o contacto, cancela opt-in
+    if (isNo(finalUserText) && (assistantAskedRegister || assistantAskedContact)) {
+      optedIn = false;
+    }
+
+    // Solo activa opt-in si el usuario dijo SÍ justo después de que el bot pidió registrar
+    if (!optedIn && assistantAskedRegister && isYes(finalUserText)) {
+      optedIn = true;
+    }
+
+    // Si pidió cotización/precio/visita/etc, NO forzamos opt-in, pero permitimos pedir permiso en la conversación
+    // (esto lo controla el contexto duro abajo)
+    const hasContactFromSession =
+      Boolean(prevSession?.contacto?.whatsapp) || Boolean(prevSession?.contacto?.email);
+
+    // ---- Etapa interna sugerida (no se muestra) ----
+    let stage = String(prevSession?.stage || "support");
+    if (!optedIn) stage = "support";
+    else if (!hasContactFromSession) stage = "collect_contact";
+    else if (stage === "collect_contact" || stage === "support") stage = "collect_name";
+
+    // Contexto duro para mantener lógica
+    const FLOW_CONTEXT = `Contexto confirmado (no inventar):
 - CAM: ${
       camStatus === "si"
-        ? "El usuario SÍ tiene/usa CAM (ej. Mastercam). No digas 'no tienes CAM'."
+        ? "El usuario SÍ tiene/usa CAM. No digas 'no tienes CAM'."
         : camStatus === "no"
         ? "El usuario NO tiene CAM."
         : "No está claro si tiene CAM."
-    }`;
+    }
+- Registro permitido (opt-in): ${optedIn ? "SÍ" : "NO"}
+- El usuario pidió algo comercial/escala (precio/cotización/visita/etc): ${userWantsEscalation ? "SÍ" : "NO"}
+Reglas de captura:
+- Si opt-in=NO: NO pidas contacto. Da soporte y SOLO una pregunta técnica.
+- Si opt-in=NO pero el usuario pide precio/cotización/visita: pide PERMISO para registrar (una pregunta) o da soporte (una pregunta), pero no interrogues.
+- Si opt-in=SÍ: pide 1 dato por turno según etapa. Etapa=${stage}.
+Prohibido prometer acciones externas: “te contactarán / te contacto / enviado / agendado”.`;
 
-    const r = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-5-nano",
-        instructions: SYSTEM_INSTRUCTIONS,
-        input: [{ role: "system", content: CONTEXT }, ...input],
-        reasoning: { effort: "minimal" },
-        text: { verbosity: "low" },
-        max_output_tokens: 280, // fuerza corto real
-        store: false,
-      }),
+    // =========================
+    // (A) Finalize-only mode
+    // =========================
+    if (String(body.action || "").toLowerCase() === "finalize") {
+      // Actualiza sesión con extractor antes de resumir
+      const extractedSession = await extractSlots(history, prevSession, finalUserText);
+
+      // Enforce opt-in gate (no dejar que el extractor lo “invente”)
+      extractedSession.optedInToRegister = optedIn;
+
+      // Propaga stage (útil para UI)
+      extractedSession.stage = stage;
+
+      const finalPack = await buildFinalSummary(extractedSession);
+
+      return res.status(200).json({
+        text: "Listo.",
+        session: extractedSession,
+        final: finalPack,
+      });
+    }
+
+    // =========================
+    // (B) Normal reply mode
+    // =========================
+    const data = await callOpenAIResponses({
+      model: "gpt-5-nano",
+      instructions: SYSTEM_INSTRUCTIONS,
+      input: [{ role: "system", content: FLOW_CONTEXT }, ...input],
+      max_output_tokens: 280,
     });
 
-    if (!r.ok) {
-      const raw = await r.text();
-      return res.status(r.status).json({ error: "OpenAI request failed", detail: raw });
+    let assistantText = extractOutputText(data);
+
+    // Arreglo de estilo si se pasa de lanza
+    const hasContact = hasContactFromSession; // solo para repair gate (antes de extractor)
+    if (violatesStyle(assistantText, { camStatus, allowBullets })) {
+      assistantText = await repairToHouseStyle(assistantText, {
+        allowBullets,
+        camStatus,
+        hasContact,
+        optedIn,
+      });
     }
 
-    const data = await r.json();
-    let fullText = extractOutputText(data);
+    // Actualiza sesión con extractor (segunda llamada)
+    const extractedSession = await extractSlots(history, prevSession, finalUserText);
 
-    // Si viola reglas, lo reparamos a “1 pregunta + sin inventos”
-    if (violatesStyle(fullText, { camStatus, allowBullets })) {
-      fullText = await repairToHouseStyle(
-        process.env.OPENAI_API_KEY,
-        fullText,
-        { allowBullets, camStatus }
-      );
-    }
+    // Enforce candado opt-in (solo por lógica local)
+    extractedSession.optedInToRegister = optedIn;
 
-    const { visibleText, ticket } = parseTicket(fullText);
+    // Conserva stage
+    extractedSession.stage = stage;
 
-    return res.status(200).json({ text: visibleText, ticket });
+    return res.status(200).json({
+      text: String(assistantText || "Perfecto.").trim(),
+      session: extractedSession,
+    });
   } catch (err) {
+    if (err && err.status) {
+      return res.status(err.status).json({ error: "OpenAI request failed", detail: err.detail });
+    }
     return res.status(500).json({ error: String(err) });
   }
 }
