@@ -1,15 +1,20 @@
 (() => {
+  const SEND_LEAD_URL = "/api/sendLead"; // tu endpoint existente
+
   const state = {
     open: false,
     busy: false,
     messages: [
-      { role: "assistant", content: "¿Qué quieres lograr hoy: más leads, soporte, o agendar una llamada?" }
+      { role: "assistant", content: "¿Qué reto quieres atacar: tiempo de ciclo, set-up, scrap, vida de herramienta, o estandarización?" }
     ],
   };
 
+  // Evita doble envío si el modelo repite el bloque
+  const sentLeadFingerprints = new Set();
+
   const css = `
   .ar-chat-btn{position:fixed;right:18px;bottom:18px;z-index:9999;border:0;border-radius:999px;padding:12px 14px;cursor:pointer;box-shadow:0 10px 25px rgba(0,0,0,.25);font:600 14px system-ui}
-  .ar-chat-box{position:fixed;right:18px;bottom:72px;width:360px;max-width:calc(100vw - 36px);height:520px;max-height:calc(100vh - 110px);background:#0b1220;color:#e5e7eb;border:1px solid rgba(255,255,255,.12);border-radius:16px;z-index:9999;display:none;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;font:14px system-ui}
+  .ar-chat-box{position:fixed;right:18px;bottom:72px;width:360px;max-width:calc(100vw - 36px);height:560px;max-height:calc(100vh - 110px);background:#0b1220;color:#e5e7eb;border:1px solid rgba(255,255,255,.12);border-radius:16px;z-index:9999;display:none;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden;font:14px system-ui}
   .ar-chat-box.open{display:flex;flex-direction:column}
   .ar-chat-head{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:space-between}
   .ar-chat-title{font-weight:700}
@@ -38,8 +43,8 @@
   box.innerHTML = `
     <div class="ar-chat-head">
       <div>
-        <div class="ar-chat-title">AlexRaSa Assistant</div>
-        <div style="opacity:.8;font-size:12px">Rápido, directo, sin novela.</div>
+        <div class="ar-chat-title">RaSa Assistant</div>
+        <div style="opacity:.8;font-size:12px">Manufactura. Directo. Sin prometer humo.</div>
       </div>
       <button class="ar-chat-close" aria-label="Cerrar">×</button>
     </div>
@@ -76,6 +81,113 @@
     if (state.open) setTimeout(() => input.focus(), 0);
   }
 
+  function transcriptText(maxMsgs = 20) {
+    const slice = state.messages.slice(-maxMsgs);
+    return slice.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n").slice(0, 8000);
+  }
+
+  function parseLeadBlock(text) {
+    if (!text) return null;
+    const m = text.match(/\[LEAD\]([\s\S]*?)\[\/LEAD\]/);
+    if (!m) return null;
+
+    const block = m[1].trim();
+
+    const get = (key) => {
+      const r = new RegExp(`^\\s*${key}\\s*:\\s*(.*)\\s*$`, "mi");
+      return (block.match(r)?.[1] || "").trim();
+    };
+
+    const lead = {
+      empresa: get("empresa"),
+      contacto: get("contacto"),
+      puesto: get("puesto") || "No especificado",
+      telefono: get("telefono") || "No especificado",
+      email: get("email") || "No especificado",
+      ciudad: get("ciudad") || "No especificado",
+      estado: get("estado") || "No especificado",
+      industria: get("industria") || "No especificado",
+      interes: get("interes") || "Consultoría — Manufactura",
+      notas: get("notas"),
+    };
+
+    // mínimos
+    if (!lead.empresa || !lead.contacto || !lead.notas) return null;
+    return lead;
+  }
+
+  function uuid() {
+    if (crypto?.randomUUID) return crypto.randomUUID();
+    return "id-" + Math.random().toString(16).slice(2) + "-" + Date.now();
+  }
+
+  function todayEsMX() {
+    try { return new Date().toLocaleDateString("es-MX"); }
+    catch { return new Date().toISOString().slice(0, 10); }
+  }
+
+  async function postJSON(url, payload) {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json().catch(() => ({}));
+    return { ok: r.ok && (data.ok !== false), status: r.status, data };
+  }
+
+  async function autoSendLeadIfPresent() {
+    const lastAssistant = [...state.messages].reverse().find(m => m.role === "assistant");
+    if (!lastAssistant) return;
+
+    const parsed = parseLeadBlock(lastAssistant.content);
+    if (!parsed) return;
+
+    const fp = JSON.stringify(parsed);
+    if (sentLeadFingerprints.has(fp)) return;
+
+    // Payload igual al form
+    const lead = {
+      id: uuid(),
+      fecha: todayEsMX(),
+      createdAt: new Date().toISOString(),
+      empresa: parsed.empresa,
+      contacto: parsed.contacto,
+      puesto: parsed.puesto,
+      telefono: parsed.telefono,
+      email: parsed.email,
+      ciudad: parsed.ciudad,
+      estado: parsed.estado,
+      industria: parsed.industria,
+      interes: parsed.interes,
+      maquinas: "",
+      origen: "Chatbot",
+      nextDate: "",
+      notas: `${parsed.notas}\n\n---\nTranscript:\n${transcriptText()}`,
+    };
+
+    state.busy = true; render();
+    try {
+      const { ok, status, data } = await postJSON(SEND_LEAD_URL, lead);
+      if (ok) {
+        sentLeadFingerprints.add(fp);
+        state.messages.push({
+          role: "assistant",
+          content: "Listo: tu solicitud quedó registrada (igual que el formulario). Miguel la revisa y te contacta."
+        });
+      } else {
+        state.messages.push({
+          role: "assistant",
+          content: `No pude registrar la solicitud (HTTP ${status}). ${data?.error || "Revisa /api/sendLead y tu Apps Script."}`
+        });
+      }
+    } catch (e) {
+      state.messages.push({ role: "assistant", content: `Error registrando la solicitud: ${String(e)}` });
+    } finally {
+      state.busy = false; render();
+    }
+  }
+
   async function ask(text) {
     const t = (text || "").trim();
     if (!t || state.busy) return;
@@ -85,7 +197,6 @@
     render();
 
     try {
-      // Mandamos messages para mantener contexto (y el backend las recorta)
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,16 +212,14 @@
         state.messages.push({ role: "assistant", content: `Backend error (${r.status}): ${msg}` });
       } else {
         const answer = (data && typeof data.text === "string") ? data.text.trim() : "";
-        state.messages.push({
-          role: "assistant",
-          content: answer || `Respuesta vacía. RAW: ${raw.slice(0, 200)}`
-        });
+        state.messages.push({ role: "assistant", content: answer || "Respuesta vacía del modelo." });
       }
     } catch (e) {
       state.messages.push({ role: "assistant", content: `Error de red: ${String(e)}` });
     } finally {
       state.busy = false;
       render();
+      await autoSendLeadIfPresent();
     }
   }
 
