@@ -13,7 +13,7 @@
       {
         role: "assistant",
         content:
-          "Dime el proceso y el objetivo. Ejemplo: “planeado en CNC, quiero bajar 12% el ciclo”.",
+          "¿Cómo puedo asistirte hoy? Dime tu reto (tiempo de ciclo, set-up, scrap, vida de herramienta o estandarización) y el proceso.",
       },
     ],
     lastTicket: null,
@@ -23,12 +23,21 @@
 
   function el(tag, attrs = {}, children = []) {
     const n = document.createElement(tag);
+
     Object.entries(attrs).forEach(([k, v]) => {
+      // CLAVE: no pongas atributos con null/undefined/false
+      if (v === null || v === undefined || v === false) return;
+
       if (k === "class") n.className = v;
+      else if (k === "style") n.style.cssText = v;
+      else if (k === "disabled") n.disabled = Boolean(v);
       else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
-      else n.setAttribute(k, v);
+      else n.setAttribute(k, String(v));
     });
-    children.forEach((c) => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+
+    children.forEach((c) =>
+      n.appendChild(typeof c === "string" ? document.createTextNode(c) : c)
+    );
     return n;
   }
 
@@ -53,7 +62,6 @@
       ticket.datos_tecnicos || "",
     ].join("\n");
 
-    // A quién le mandan el correo (tú)
     const to = "ramirez.miguel.alejandro@gmail.com";
     return `mailto:${to}?subject=${escapeMail(subject)}&body=${escapeMail(body)}`;
   }
@@ -64,7 +72,6 @@
       root = el("div", { id: "rasa-chatbot-root" });
       document.body.appendChild(root);
     }
-
     root.innerHTML = "";
 
     const launcher = el(
@@ -79,56 +86,56 @@
       },
       [state.open ? "Cerrar" : "Soporte"]
     );
-
     root.appendChild(launcher);
 
     if (!state.open) return;
 
-    const header = el("div", { class: "flex items-start justify-between gap-3 px-4 py-3 border-b border-white/10 bg-black/40" }, [
-      el("div", {}, [
-        el("div", { class: "text-white font-semibold text-sm" }, [BOT_TITLE]),
-        el("div", { class: "text-gray-300 text-xs" }, [BOT_SUBTITLE]),
-      ]),
-      el(
-        "button",
-        {
-          class: "text-gray-300 hover:text-white text-sm",
-          onclick: () => {
-            state.open = false;
-            render();
+    const header = el(
+      "div",
+      {
+        class:
+          "flex items-start justify-between gap-3 px-4 py-3 border-b border-white/10 bg-black/40",
+      },
+      [
+        el("div", {}, [
+          el("div", { class: "text-white font-semibold text-sm" }, [BOT_TITLE]),
+          el("div", { class: "text-gray-300 text-xs" }, [BOT_SUBTITLE]),
+        ]),
+        el(
+          "button",
+          {
+            class: "text-gray-300 hover:text-white text-lg leading-none",
+            onclick: () => {
+              state.open = false;
+              render();
+            },
+            "aria-label": "Cerrar",
           },
-          "aria-label": "Cerrar",
-        },
-        ["×"]
-      ),
-    ]);
+          ["×"]
+        ),
+      ]
+    );
 
     const msgs = el("div", {
-      class:
-        "px-4 py-3 space-y-3 overflow-auto",
-      style: "max-height: 52vh;",
+      class: "px-4 py-3 space-y-3 overflow-auto",
+      // más alto para que no se vea “cerrado”
+      style: "max-height: 60vh;",
     });
 
     state.messages.forEach((m) => {
       const isUser = m.role === "user";
       msgs.appendChild(
-        el(
-          "div",
-          { class: `flex ${isUser ? "justify-end" : "justify-start"}` },
-          [
-            el(
-              "div",
-              {
-                class:
-                  (isUser
-                    ? "bg-sky-600 text-white"
-                    : "bg-white/10 text-gray-100") +
-                  " rounded-2xl px-3 py-2 text-sm max-w-[85%] whitespace-pre-wrap",
-              },
-              [m.content]
-            ),
-          ]
-        )
+        el("div", { class: `flex ${isUser ? "justify-end" : "justify-start"}` }, [
+          el(
+            "div",
+            {
+              class:
+                (isUser ? "bg-sky-600 text-white" : "bg-white/10 text-gray-100") +
+                " rounded-2xl px-3 py-2 text-sm max-w-[88%] whitespace-pre-wrap",
+            },
+            [m.content]
+          ),
+        ])
       );
     });
 
@@ -136,9 +143,16 @@
 
     const input = el("textarea", {
       class:
-        "w-full rounded-xl border border-white/10 bg-white/5 text-white text-sm p-3 outline-none focus:ring-1 focus:ring-sky-500",
-      rows: "2",
-      placeholder: "Escribe aquí…",
+        "w-full rounded-xl border border-white/10 bg-white/5 text-white text-sm p-3 outline-none focus:ring-1 focus:ring-sky-500 resize-none",
+      rows: "3", // más grande
+      placeholder: "Ej: Planeado en CNC, quiero bajar 10% el ciclo. Hoy tarda 3:40.",
+      onkeydown: (e) => {
+        // Enter envía; Shift+Enter hace salto de línea
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          send(input.value);
+        }
+      },
     });
 
     const btn = el(
@@ -147,39 +161,38 @@
         class:
           "mt-2 w-full rounded-xl px-4 py-2 bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed",
         onclick: () => send(input.value),
-        disabled: state.sending ? "true" : null,
+        disabled: state.sending,
       },
       [state.sending ? "Enviando…" : "Enviar"]
     );
 
     const actions = el("div", { class: "mt-2 flex gap-2" });
-
     if (state.lastTicket) {
-      const mailBtn = el(
-        "a",
-        {
-          class:
-            "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition",
-          href: ticketToMailto(state.lastTicket),
-        },
-        ["Enviar por correo"]
-      );
-
-      const clearBtn = el(
-        "button",
-        {
-          class:
-            "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition",
-          onclick: () => {
-            state.lastTicket = null;
-            render();
+      actions.appendChild(
+        el(
+          "a",
+          {
+            class:
+              "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition",
+            href: ticketToMailto(state.lastTicket),
           },
-        },
-        ["Ocultar acciones"]
+          ["Enviar por correo"]
+        )
       );
-
-      actions.appendChild(mailBtn);
-      actions.appendChild(clearBtn);
+      actions.appendChild(
+        el(
+          "button",
+          {
+            class:
+              "flex-1 text-center rounded-xl px-4 py-2 bg-white/10 text-white text-sm hover:bg-white/15 transition",
+            onclick: () => {
+              state.lastTicket = null;
+              render();
+            },
+          },
+          ["Ocultar acciones"]
+        )
+      );
     }
 
     footer.appendChild(input);
@@ -190,14 +203,12 @@
       "div",
       {
         class:
-          "fixed bottom-20 right-5 z-[9999] w-[360px] max-w-[92vw] rounded-2xl overflow-hidden border border-white/10 shadow-2xl backdrop-blur-md bg-[#0b1220]/95",
+          "fixed bottom-20 right-5 z-[9999] w-[420px] max-w-[94vw] rounded-2xl overflow-hidden border border-white/10 shadow-2xl backdrop-blur-md bg-[#0b1220]/95",
       },
       [header, msgs, footer]
     );
 
     root.appendChild(panel);
-
-    // auto scroll al final
     msgs.scrollTop = msgs.scrollHeight;
   }
 
@@ -218,11 +229,9 @@
 
       const data = await r.json().catch(() => ({}));
       const reply = (data?.text || "No pude responder. Intenta de nuevo.").trim();
-
       state.messages.push({ role: "assistant", content: reply });
 
       if (data?.ticket) {
-        // Enviar caso a tu correo vía Apps Script (como el form)
         try {
           await fetch(API_SEND_TICKET, {
             method: "POST",
@@ -230,11 +239,17 @@
             body: JSON.stringify({ ticket: data.ticket }),
           });
           state.lastTicket = data.ticket;
-          // Nota: sin promesas externas; solo confirmación de registro
-          state.messages.push({ role: "assistant", content: "Caso registrado. Si quieres, también puedes mandarlo por correo con el botón." });
+          state.messages.push({
+            role: "assistant",
+            content:
+              "Caso registrado. Si prefieres enviarlo tú desde tu correo, usa el botón “Enviar por correo”.",
+          });
         } catch {
           state.lastTicket = data.ticket;
-          state.messages.push({ role: "assistant", content: "Tengo el caso listo. Si quieres, mándalo por correo con el botón." });
+          state.messages.push({
+            role: "assistant",
+            content: "Tengo el caso listo. Usa “Enviar por correo” para mandarlo.",
+          });
         }
       }
     } catch {
@@ -242,12 +257,10 @@
     } finally {
       state.sending = false;
       render();
-      // limpiar input
       const ta = document.querySelector("#rasa-chatbot-root textarea");
       if (ta) ta.value = "";
     }
   }
 
-  // Render inicial
   render();
 })();
