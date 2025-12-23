@@ -1,0 +1,457 @@
+<!--
+---
+title: "IA que aprende tus parámetros reales de corte"
+description: "Modelos que ajustan avance, RPM y engagement con datos reales de tu CNC. Menos ciclo, menos scrap y más vida de herramienta (sin “valores de catálogo”)."
+image: "/assets/blog/ia-que-aprende-tus-parametros-reales-de-corte.png"
+date: "2025-12-23"
+author: "Miguel Ramírez"
+slug: "ia-que-aprende-tus-parametros-reales-de-corte"
+---
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IA que aprende tus parámetros reales de corte — Blog | AlexRaSa</title>
+  <meta name="description" content="Modelos que ajustan avance, RPM y engagement con datos reales de tu CNC. Menos ciclo, menos scrap y más vida de herramienta (sin “valores de catálogo”)." />
+  <meta name="theme-color" content="#020617" />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://alexrasa.store/blog/ia-que-aprende-tus-parametros-reales-de-corte.html" />
+  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/blog/ia-que-aprende-tus-parametros-reales-de-corte.html" />
+  <link rel="alternate" hreflang="es" href="https://alexrasa.store/blog/ia-que-aprende-tus-parametros-reales-de-corte.html" />
+  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/blog/ia-que-aprende-tus-parametros-reales-de-corte.html" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:title" content="IA que aprende tus parámetros reales de corte — Blog | AlexRaSa" />
+  <meta property="og:description" content="Modelos que ajustan avance, RPM y engagement con datos reales de tu CNC. Menos ciclo, menos scrap y más vida de herramienta (sin “valores de catálogo”)." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://alexrasa.store/blog/ia-que-aprende-tus-parametros-reales-de-corte.html" />
+  <meta property="og:image" content="/assets/blog/ia-que-aprende-tus-parametros-reales-de-corte.png" />
+  <meta property="og:site_name" content="AlexRaSa" />
+  <meta property="og:locale" content="es_MX" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Tailwind -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html{scroll-behavior:smooth}
+    .safe-top{padding-top:env(safe-area-inset-top)}
+    .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+    .reveal.show{opacity:1;transform:none}
+    #mobileBackdrop{transition:opacity .25s ease}
+    #mobileBackdrop.hidden{opacity:0;pointer-events:none}
+    #mobileBackdrop:not(.hidden){opacity:1}
+
+    /* MODO OSCURO GLOBAL (igual filosofía que la home) */
+    :root{color-scheme:dark;}
+    body{
+      background:#020617;
+      color:#e5e7eb;
+    }
+    .bg-gray-50{background-color:transparent !important;}
+    .bg-white{background-color:transparent !important;}
+    .bg-gray-100{background-color:transparent !important;}
+    .bg-gray-200{background-color:transparent !important;}
+    .bg-white\/90{background-color:rgba(15,23,42,0.96) !important;}
+    .bg-white\/80{background-color:rgba(15,23,42,0.92) !important;}
+    .border-gray-200{border-color:#1f2937 !important;}
+    .border-gray-300{border-color:#334155 !important;}
+    .border-gray-100{border-color:#1f2937 !important;}
+
+    .text-gray-900{color:#f9fafb !important;}
+    .text-gray-800{color:#e5e7eb !important;}
+    .text-gray-700{color:#cbd5f5 !important;}
+    .text-gray-600{color:#9ca3af !important;}
+    .text-gray-500{color:#9ca3af !important;}
+    .text-gray-400{color:#94a3b8 !important;}
+
+    footer.bg-gray-100{
+      background-color:#020617 !important;
+      border-color:#1f2937 !important;
+    }
+
+    /* Tarjeta de hero estilo “vidrio” */
+    .hero-card{
+      border-radius:1.75rem;
+      background:rgba(2,6,23,0.86);
+      border:1px solid rgba(148,163,184,0.4);
+      box-shadow:0 30px 70px rgba(15,23,42,0.9);
+      backdrop-filter:blur(18px);
+    }
+
+    .hero-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      padding:.25rem .75rem;
+      border-radius:999px;
+      font-size:.7rem;
+      letter-spacing:.03em;
+      text-transform:uppercase;
+      background:rgba(15,23,42,.8);
+      border:1px solid rgba(148,163,184,.7);
+      backdrop-filter:blur(8px);
+      color:#e5e7eb;
+    }
+    .hero-badge span{font-weight:600}
+
+    .pill-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:.25rem;
+      padding:.15rem .5rem;
+      border-radius:999px;
+      font-size:.7rem;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      background:rgba(15,23,42,0.4);
+      color:#e5e7eb;
+      border:1px solid rgba(148,163,184,0.4);
+    }
+
+    /* Contenido del post en modo oscuro */
+    .prose{
+      max-width:72ch;
+    }
+    .prose :where(h1,h2,h3,h4){
+      font-weight:800;
+      color:#e5e7eb;
+      margin:1.25rem 0 .5rem;
+    }
+    .prose h2{font-size:1.35rem;}
+    .prose h3{font-size:1.1rem;}
+    .prose p{
+      margin:.9rem 0;
+      line-height:1.75;
+      color:#cbd5f5;
+    }
+    .prose ul{padding-left:1.2rem}
+    .prose li{margin:.25rem 0;color:#cbd5f5;}
+    .prose a{color:#38bdf8;text-decoration:underline;}
+    .prose img{
+      border-radius:1rem;
+      display:block;
+      margin:1rem 0;
+    }
+    .prose code{
+      background:#020617;
+      padding:.15rem .35rem;
+      border-radius:.375rem;
+      font-size:.85em;
+      border:1px solid #1f2937;
+      color:#e5e7eb;
+    }
+    .prose pre{
+      background:#020617;
+      color:#e2e8f0;
+      padding:1rem;
+      border-radius:.75rem;
+      overflow:auto;
+      font-size:.85em;
+      border:1px solid #1f2937;
+    }
+     .prose table{
+      width:100%;
+      border-collapse:collapse;
+      margin:1.25rem 0;
+      border-radius:0.75rem;
+      overflow:hidden;
+      background:rgba(15,23,42,0.85); /* fondo ligeramente más claro que el body */
+    }
+    .prose thead{
+      background:rgba(15,23,42,0.95);
+    }
+    .prose th,
+    .prose td{
+      padding:.55rem .8rem;
+      font-size:.9rem;
+      text-align:left;
+      border-bottom:1px solid rgba(148,163,184,.4); /* línea horizontal */
+      color:#e5e7eb;
+    }
+    .prose th + th,
+    .prose td + td{
+      border-left:1px solid rgba(148,163,184,.35); /* línea vertical */
+    }
+    .prose th{
+      font-weight:600;
+      white-space:nowrap;
+    }
+    .prose tbody tr:nth-child(even){
+      background:rgba(15,23,42,0.9);
+    }
+  </style>
+
+  <!-- GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
+  <script>
+    window.dataLayer=window.dataLayer||[];
+    function gtag(){dataLayer.push(arguments)}
+    gtag('js', new Date());
+    gtag('config','G-GDQ8NN6T6Q');
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+  <!-- Fondo global del sitio -->
+  <div class="fixed inset-0 -z-50 pointer-events-none">
+    <video
+      class="w-full h-full object-cover"
+      src="/assets/solidcam-videos/Imachining_2D.mp4"
+      autoplay
+      muted
+      loop
+      playsinline
+    ></video>
+  </div>
+  <div class="fixed inset-0 -z-40 pointer-events-none bg-slate-950/70"></div>
+
+  <!-- HEADER -->
+  <header id="siteHeader" class="safe-top sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="h-16 flex items-center justify-between gap-3">
+        <a href="/#inicio" class="flex items-center gap-2" aria-label="Inicio">
+          <img src="/assets/logo.png" class="h-10 w-auto" alt="AlexRaSa" />
+          <span class="hidden sm:inline text-base font-semibold tracking-tight">
+            AlexRaSa<span class="text-blue-400">.store</span>
+          </span>
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-6 text-sm">
+          <a href="/#sobre-mi"   class="hover:text-blue-400">Sobre mí</a>
+          <a href="/#soluciones" class="hover:text-blue-400">Soluciones</a>
+          <a href="/#servicios"  class="hover:text-blue-400">Servicios</a>
+          <a href="/#recursos"   class="hover:text-blue-400">Recursos</a>
+          <a href="/#blog"       class="hover:text-blue-400">Blog</a>
+          <a href="/#agenda"     class="hover:text-blue-400">Agenda</a>
+          <a href="/#contacto"   class="hover:text-blue-400">Contacto</a>
+        </nav>
+
+        <div class="hidden md:flex items-center gap-2">
+          <a href="/#soporte" class="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-sm">Soporte</a>
+          <a href="/#agenda" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Agendar cita</a>
+        </div>
+
+        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú" aria-haspopup="dialog" aria-controls="mobilePanel">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+                <!-- Backdrop -->
+    <div
+      id="mobileBackdrop"
+      class="fixed inset-0 lg:hidden bg-slate-900/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
+      style="z-index: 9998;">
+    </div>
+
+    <!-- Menú móvil fullscreen -->
+    <aside
+      id="mobilePanel"
+      class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobileMenuTitle"
+      style="z-index: 9999;">
+      <div class="absolute inset-0 bg-white flex flex-col">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+          <span id="mobileMenuTitle" class="text-base font-semibold">Menú</span>
+          <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar menú">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <nav class="p-4">
+            <ul class="space-y-1 text-[17px]">
+              <li><a href="/#sobre-mi"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Sobre mí</a></li>
+              <li><a href="/#soluciones"  class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Soluciones</a></li>
+              <li><a href="/#servicios"   class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Servicios</a></li>
+              <li><a href="/#recursos"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Recursos</a></li>
+              <li><a href="/#blog"        class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Blog</a></li>
+              <li><a href="/#agenda"      class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Agenda</a></li>
+              <li><a href="/#contacto"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Contacto</a></li>
+            </ul>
+
+            <div class="mt-6 grid grid-cols-2 gap-2 px-1">
+              <a href="/#soporte" class="px-3 py-2 text-center rounded-md border border-gray-300 hover:bg-gray-100">Soporte</a>
+              <a href="/#agenda"  class="px-3 py-2 text-center rounded-md bg-blue-600 text-white hover:bg-blue-700">Agendar</a>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </aside>
+  </header>
+
+  <!-- HERO DEL POST (compacto, mismo ancho que contenido) -->
+  <section id="inicio" class="relative overflow-hidden">
+    <div class="absolute inset-0 -z-10">
+      <video
+        class="w-full h-full object-cover"
+        src="/assets/solidcam-videos/Imachining_Cutting.m4v"
+        autoplay
+        muted
+        loop
+        playsinline
+      ></video>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-900/45 via-slate-900/65 to-slate-950/90"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="pt-8 pb-10 md:pt-10 md:pb-12">
+        <div class="hero-card px-5 py-6 md:px-8 md:py-7">
+          <div class="space-y-4 text-slate-50">
+            <div class="flex flex-wrap items-center gap-3 text-[11px] tracking-wide">
+              <span class="hero-badge">
+                <span>Blog</span> Manufactura CNC
+              </span>
+              <span class="hidden sm:inline text-sky-200/80 uppercase">
+                Casos reales · SolidCAM · Lantek · Logopress
+              </span>
+            </div>
+
+            <div class="space-y-2">
+              <p class="text-xs sm:text-[11px] flex flex-wrap items-center gap-2 text-slate-300">
+                <a href="/blog/" class="underline decoration-slate-400 hover:text-sky-300">Blog</a>
+                <span class="h-1 w-1 rounded-full bg-slate-400 inline-block"></span>
+                <span>2025-12-23</span>
+                <span class="h-1 w-1 rounded-full bg-slate-400 inline-block"></span>
+                <span>Miguel Ramírez</span>
+              </p>
+
+              <h1 class="text-2xl md:text-[2.15rem] font-extrabold leading-tight max-w-3xl">
+                IA que aprende tus parámetros reales de corte
+              </h1>
+
+              <p class="text-sm sm:text-[0.95rem] text-slate-100/90 max-w-3xl">
+                Modelos que ajustan avance, RPM y engagement con datos reales de tu CNC. Menos ciclo, menos scrap y más vida de herramienta (sin “valores de catálogo”).
+              </p>
+            </div>
+
+            
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENIDO -->
+  <main class="max-w-4xl mx-auto px-4 pb-14">
+    <div class="bg-slate-950/90 rounded-2xl shadow-[0_28px_70px_rgba(0,0,0,0.85)] border border-slate-700 px-5 md:px-8 py-7 md:py-8">
+      <figure class="mb-6 -mx-5 md:-mx-8" id="postCover" hidden>
+        <img id="postCoverImg" class="w-full max-h-[420px] object-cover rounded-t-2xl md:rounded-2xl" alt="">
+      </figure>
+      <article class="prose" id="postBody">
+        <h1>Modelos que aprenden de tus parámetros reales (no del catálogo)</h1><p>Los parámetros “de catálogo” (SFM, chip load, avances sugeridos) son un punto de partida… pero rara vez representan <strong>tu realidad</strong>: tu máquina, tu rigidez, tu herramental, tu portaherramientas, tu refrigerante, tu fijación y tus tolerancias.</p><p>Por eso, el salto de productividad no viene de “copiar feeds &amp; speeds”, sino de <strong>modelos que aprenden del desempeño real</strong> y recomiendan ajustes con un enfoque de ROI: menos tiempo de ciclo, menos scrap y más vida de herramienta.</p><h2>El problema: catálogo ≠ tu taller</h2><p>En la práctica, dos talleres con “el mismo material” pueden requerir parámetros muy distintos por:</p><ul><li><p><strong>Rigidez del conjunto</strong> (máquina + soporte + herramienta + fijación)</p></li><li><p><strong>Condición del husillo y guías</strong></p></li><li><p><strong>Runout / concentricidad</strong> y calidad del portaherramientas</p></li><li><p><strong>Estrategia CAM</strong> (engagement real, entradas, rampas, stepdown/stepover)</p></li><li><p><strong>Objetivo</strong> (acabado, tolerancia, MRR, vida de herramienta, ruido/vibración)</p></li></ul><p>El resultado típico: programas “seguros” que dejan dinero en la mesa o programas “agresivos” que elevan riesgo de chatter, desgaste prematuro y scrap.</p><h2>Qué es un modelo “de parámetros reales”</h2><p>Un modelo práctico no “adivina”. <strong>Aprende</strong> con tus datos históricos:</p><ul><li><p><strong>Entradas (features):</strong> material real, herramienta, recubrimiento, diámetro, longitud, portaherramientas, estrategia CAM, engagement, RPM, avance, refrigeración, operación, máquina, fixture, etc.</p></li><li><p><strong>Señales de proceso:</strong> carga de husillo, potencia, vibración, audio, corriente, temperatura, alarmas, feed override, paros, tiempo real por operación.</p></li><li><p><strong>Salidas (targets):</strong> tiempo de ciclo por feature, estabilidad (chatter/no chatter), vida de herramienta, tasa de scrap, calidad (rugosidad / tolerancia).</p></li></ul><h3>Tabla: lo que “mide” vs lo que “recomienda”</h3><table><thead><tr><th><p>Bloque</p></th><th><p>Datos típicos</p></th><th><p>Qué optimiza</p></th><th><p>Impacto directo</p></th></tr></thead><tbody><tr><td><p>Máquina</p></td><td><p>carga/potencia, alarmas, overrides</p></td><td><p>estabilidad + MRR</p></td><td><p>menos paros, menos variación</p></td></tr><tr><td><p>Herramental</p></td><td><p>runout, preset, desgaste, cambios</p></td><td><p>vida de herramienta</p></td><td><p>menos costo/herramienta</p></td></tr><tr><td><p>CAM</p></td><td><p>engagement, stepdown/stepover, entry</p></td><td><p>tiempo de ciclo</p></td><td><p>+piezas/turno</p></td></tr><tr><td><p>Calidad</p></td><td><p>retrabajos, scrap, inspección</p></td><td><p>capacidad real</p></td><td><p>menos pérdida oculta</p></td></tr></tbody></table><h2>El “truco” ROI: aprender con límites de seguridad</h2><p>En manufactura no basta con “optimizar”; hay que hacerlo <strong>dentro de un sobre seguro</strong>:</p><ul><li><p>Límites por herramienta (torque/potencia, deflexión)</p></li><li><p>Límites de vibración/chatter</p></li><li><p>Reglas por operación (desbaste vs acabado)</p></li><li><p>“Guardrails” para no exceder engagement crítico</p></li></ul><p>Así el modelo funciona como <strong>copiloto</strong>: recomienda y prioriza, pero la aprobación puede seguir siendo del programador/ingeniero al inicio.</p><h2>Ejemplo numérico (ROI realista en 60–90 días)</h2><p>Supongamos una celda con estas condiciones:</p><ul><li><p>Producción mensual: <strong>2,000 piezas</strong></p></li><li><p>Tiempo actual de maquinado por pieza: <strong>18 min</strong> (0.30 h)</p></li><li><p>Tarifa interna de máquina (todo incluido): <strong>$85 USD/h</strong></p></li><li><p>Scrap actual: <strong>0.8%</strong></p></li><li><p>Scrap objetivo con estabilidad + parámetros reales: <strong>0.3%</strong></p></li><li><p>Costo promedio por pieza scrap (material + proceso): <strong>$45 USD</strong></p></li></ul><p><strong>1) Ahorro por reducción de ciclo (12%)</strong></p><ul><li><p>Nuevo ciclo: 18 min × (1 − 0.12) = <strong>15.84 min</strong> (0.264 h)</p></li><li><p>Ahorro por pieza: 0.30 − 0.264 = <strong>0.036 h</strong></p></li><li><p>Ahorro mensual: 2,000 × 0.036 = <strong>72 h/mes</strong></p></li><li><p>Ahorro $: 72 × 85 = <strong>$6,120 USD/mes</strong></p></li></ul><p><strong>2) Ahorro por scrap</strong></p><ul><li><p>Scrap antes: 2,000 × 0.008 = <strong>16 piezas</strong></p></li><li><p>Scrap después: 2,000 × 0.003 = <strong>6 piezas</strong></p></li><li><p>Piezas salvadas: 10 × 45 = <strong>$450 USD/mes</strong></p></li></ul><p>✅ <strong>Total ahorro estimado: $6,570 USD/mes</strong></p><p>Si implementar el sistema (integración + modelo + despliegue) cuesta <strong>$15,000 USD</strong>, el payback es:</p><p>15,000 / 6,570 = <strong>2.28 meses</strong></p><blockquote><p>Nota: lo valioso es que el modelo no solo baja ciclo: también <strong>reduce variación</strong>, que es la raíz del scrap y de los “feeds con miedo”.</p></blockquote><h2>Cómo aterrizarlo en tu flujo CAM (SolidCAM / iMachining)</h2><p>Aquí es donde se vuelve “usable” por el taller:</p><h3>1) Estandariza plantillas en CAM</h3><ul><li><p>En SolidCAM, define operaciones base con parámetros controlados (herramientas, estrategias, entradas/salidas).</p></li><li><p>Congela lo que no debe cambiar (por ejemplo: límites de acabado, tolerancias, orden de operaciones).</p></li></ul><h3>2) iMachining como base + corrección con datos reales</h3><p>iMachining ya calcula condiciones “inteligentes” a partir de material/herramienta. El modelo <strong>no lo reemplaza</strong>:</p><ul><li><p>Aprende cuándo tu máquina permite <strong>subir agresividad</strong> (o cuándo conviene bajar para evitar chatter).</p></li><li><p>Recomienda ajustes de <strong>engagement real</strong>, rampas, stepdown/stepover y avances según tu historial.</p></li></ul><h3>3) Loop cerrado: del CNC a tu biblioteca</h3><p>Cada corrida alimenta una “memoria industrial”:</p><ul><li><p>qué parámetros funcionaron,</p></li><li><p>con qué fixture,</p></li><li><p>en qué máquina,</p></li><li><p>con qué herramienta,</p></li><li><p>y qué resultado dieron (ciclo/calidad/herramienta).</p></li></ul><h2>Checklist de implementación (sin humo)</h2><h3>Semana 1–2: “baseline”</h3><ul><li><p>Top 10 piezas por horas máquina</p></li><li><p>Medir: ciclo real por operación, scrap/retrabajo, cambios de herramienta, overrides</p></li></ul><h3>Semana 3–6: instrumentación y dataset</h3><ul><li><p>Extraer señales (MTConnect/OPC UA o registros del control)</p></li><li><p>Unificar con CAM (parámetros + estrategia + herramienta)</p></li></ul><h3>Semana 7–10: modelo v1 (recomendador)</h3><ul><li><p>Predice: riesgo de chatter, tiempo por operación, vida esperada</p></li><li><p>Sugiere: avance/RPM/engagement dentro de límites</p></li></ul><h3>Semana 11–12: despliegue con A/B</h3><ul><li><p>Comparar 20–30 corridas: ciclo, estabilidad, scrap y herramienta</p></li><li><p>Ajustar guardrails y publicar “plantillas ganadoras” en CAM</p></li></ul><h2>Errores típicos (y cómo evitarlos)</h2><ul><li><p><strong>Querer empezar por todo:</strong> inicia con 1 material + 1 máquina + 3 herramientas.</p></li><li><p><strong>No ligar CAM con la realidad:</strong> si no capturas engagement/estrategia, el modelo “aprende mal”.</p></li><li><p><strong>Optimizar solo MRR:</strong> si ignoras variación, pagas con scrap y paros.</p></li><li><p><strong>Sin gobernanza:</strong> define quién aprueba cambios, cuándo se actualizan plantillas y cómo se audita.</p></li></ul><div contenteditable="false"><hr></div><h2>Call to Action</h2><p>Si quieres implementar un enfoque <strong>closed-loop</strong> (CAM → CNC → aprendizaje → CAM) para bajar ciclo y scrap con datos reales, visita <strong>alexrasa.store</strong> y solicita una cotización o explora soluciones de optimización CNC y SolidCAM/iMachining: <strong><a href="https://www.alexrasa.store/">https://www.alexrasa.store/</a></strong></p>
+      </article>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-100 py-6 border-t border-gray-300 mt-16 text-center">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
+      <div class="flex items-center gap-3">
+        <img src="/assets/logo.png" alt="AlexRaSa" class="h-8 w-auto" loading="lazy" />
+        <p class="text-sm text-gray-600">
+          © <span id="y"></span> AlexRaSa — Ingeniería, innovación y eficiencia.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
+        <a href="/SolidCAM/" class="hover:underline">SolidCAM</a><span>·</span>
+        <a href="/lantek/" class="hover:underline">Lantek</a><span>·</span>
+        <a href="/logopress/" class="hover:underline">Logopress</a><span>·</span>
+        <a href="/artec" class="hover:underline">Artec 3D</a><span>·</span>
+        <a href="/3dsystems" class="hover:underline">3D Systems</a>
+      </div>
+      <a href="#siteHeader" class="inline-block mt-3 px-5 py-2 bg-blue-600 text-white text-sm rounded-full shadow hover:bg-blue-700 transition">
+        ↑ Volver al inicio
+      </a>
+    </div>
+    <p class="text-[11px] text-gray-400 mt-2 max-w-4xl mx-auto px-4 leading-tight">
+      SolidCAM, Lantek, Logopress, Artec y 3D Systems son marcas registradas de sus respectivos propietarios.
+      Su uso en este sitio es informativo y no implica afiliación, patrocinio o aprobación directa.
+    </p>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Año
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+        // Menú móvil
+    const mOpen  = document.getElementById('mobileOpenBtn');
+    const mClose = document.getElementById('mobileCloseBtn');
+    const mPanel = document.getElementById('mobilePanel');
+    const mBg    = document.getElementById('mobileBackdrop');
+    const mLinks = document.querySelectorAll('.mobile-link');
+
+    function toggleMenu(open) {
+      if (open) {
+        mBg?.classList.remove('pointer-events-none', 'opacity-0');
+        mBg?.classList.add('pointer-events-auto', 'opacity-100');
+
+        mPanel?.classList.remove('translate-x-full');
+        mPanel?.classList.add('translate-x-0');
+
+        document.body.style.overflow = 'hidden';
+      } else {
+        mBg?.classList.remove('pointer-events-auto', 'opacity-100');
+        mBg?.classList.add('pointer-events-none', 'opacity-0');
+
+        mPanel?.classList.remove('translate-x-0');
+        mPanel?.classList.add('translate-x-full');
+
+        document.body.style.overflow = '';
+      }
+    }
+
+    mOpen?.addEventListener('click', () => toggleMenu(true));
+    mClose?.addEventListener('click', () => toggleMenu(false));
+    mBg?.addEventListener('click', () => toggleMenu(false));
+
+    mLinks.forEach(link => link.addEventListener('click', () => toggleMenu(false)));
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleMenu(false);
+    });
+// Header shadow
+    const siteHeader=document.getElementById('siteHeader');
+    window.addEventListener('scroll',()=>siteHeader.classList.toggle('shadow',window.scrollY>2),{passive:true});
+
+    // Portada y conversión texto plano → HTML
+    (function(){
+      const src = "/assets/blog/ia-que-aprende-tus-parametros-reales-de-corte.png";
+      if (src && src !== "/og-image.png") {
+        const fig = document.getElementById('postCover');
+        const img = document.getElementById('postCoverImg');
+        if (fig && img){
+          img.src = src;
+          img.alt = "IA que aprende tus parámetros reales de corte";
+          fig.hidden = false;
+        }
+      }
+      const body = document.getElementById('postBody');
+      const html = body.innerHTML.trim();
+      if (html && !html.match(/<\/?[a-z][\s\S]*>/i)) {
+        body.innerHTML = '<p>'+body.textContent.trim()
+          .replace(/\n{2,}/g,'</p><p>')
+          .replace(/\n/g,'<br>')+'</p>';
+      }
+    })();
+  </script>
+  <script src="/assets/js/cnc-express-popup.js" defer></script>
+
+<script src="/assets/chatbot.js"></script>
+</body>
+</html>
