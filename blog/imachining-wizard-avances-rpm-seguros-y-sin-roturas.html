@@ -1,0 +1,457 @@
+<!--
+---
+title: "iMachining Wizard: avances/RPM seguros y sin roturas"
+description: "Aprende cómo iMachining Wizard calcula RPM/avance por segmento, limita potencia y reduce roturas. Guía con ROI. Visita alexrasa.store."
+image: "/assets/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.png"
+date: "2026-01-05"
+author: "Miguel Ramírez"
+slug: "imachining-wizard-avances-rpm-seguros-y-sin-roturas"
+---
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>iMachining Wizard: avances/RPM seguros y sin roturas — Blog | AlexRaSa</title>
+  <meta name="description" content="Aprende cómo iMachining Wizard calcula RPM/avance por segmento, limita potencia y reduce roturas. Guía con ROI. Visita alexrasa.store." />
+  <meta name="theme-color" content="#020617" />
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://alexrasa.store/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.html" />
+  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.html" />
+  <link rel="alternate" hreflang="es" href="https://alexrasa.store/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.html" />
+  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.html" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:title" content="iMachining Wizard: avances/RPM seguros y sin roturas — Blog | AlexRaSa" />
+  <meta property="og:description" content="Aprende cómo iMachining Wizard calcula RPM/avance por segmento, limita potencia y reduce roturas. Guía con ROI. Visita alexrasa.store." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://alexrasa.store/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.html" />
+  <meta property="og:image" content="/assets/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.png" />
+  <meta property="og:site_name" content="AlexRaSa" />
+  <meta property="og:locale" content="es_MX" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Tailwind -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html{scroll-behavior:smooth}
+    .safe-top{padding-top:env(safe-area-inset-top)}
+    .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+    .reveal.show{opacity:1;transform:none}
+    #mobileBackdrop{transition:opacity .25s ease}
+    #mobileBackdrop.hidden{opacity:0;pointer-events:none}
+    #mobileBackdrop:not(.hidden){opacity:1}
+
+    /* MODO OSCURO GLOBAL (igual filosofía que la home) */
+    :root{color-scheme:dark;}
+    body{
+      background:#020617;
+      color:#e5e7eb;
+    }
+    .bg-gray-50{background-color:transparent !important;}
+    .bg-white{background-color:transparent !important;}
+    .bg-gray-100{background-color:transparent !important;}
+    .bg-gray-200{background-color:transparent !important;}
+    .bg-white\/90{background-color:rgba(15,23,42,0.96) !important;}
+    .bg-white\/80{background-color:rgba(15,23,42,0.92) !important;}
+    .border-gray-200{border-color:#1f2937 !important;}
+    .border-gray-300{border-color:#334155 !important;}
+    .border-gray-100{border-color:#1f2937 !important;}
+
+    .text-gray-900{color:#f9fafb !important;}
+    .text-gray-800{color:#e5e7eb !important;}
+    .text-gray-700{color:#cbd5f5 !important;}
+    .text-gray-600{color:#9ca3af !important;}
+    .text-gray-500{color:#9ca3af !important;}
+    .text-gray-400{color:#94a3b8 !important;}
+
+    footer.bg-gray-100{
+      background-color:#020617 !important;
+      border-color:#1f2937 !important;
+    }
+
+    /* Tarjeta de hero estilo “vidrio” */
+    .hero-card{
+      border-radius:1.75rem;
+      background:rgba(2,6,23,0.86);
+      border:1px solid rgba(148,163,184,0.4);
+      box-shadow:0 30px 70px rgba(15,23,42,0.9);
+      backdrop-filter:blur(18px);
+    }
+
+    .hero-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      padding:.25rem .75rem;
+      border-radius:999px;
+      font-size:.7rem;
+      letter-spacing:.03em;
+      text-transform:uppercase;
+      background:rgba(15,23,42,.8);
+      border:1px solid rgba(148,163,184,.7);
+      backdrop-filter:blur(8px);
+      color:#e5e7eb;
+    }
+    .hero-badge span{font-weight:600}
+
+    .pill-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:.25rem;
+      padding:.15rem .5rem;
+      border-radius:999px;
+      font-size:.7rem;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      background:rgba(15,23,42,0.4);
+      color:#e5e7eb;
+      border:1px solid rgba(148,163,184,0.4);
+    }
+
+    /* Contenido del post en modo oscuro */
+    .prose{
+      max-width:72ch;
+    }
+    .prose :where(h1,h2,h3,h4){
+      font-weight:800;
+      color:#e5e7eb;
+      margin:1.25rem 0 .5rem;
+    }
+    .prose h2{font-size:1.35rem;}
+    .prose h3{font-size:1.1rem;}
+    .prose p{
+      margin:.9rem 0;
+      line-height:1.75;
+      color:#cbd5f5;
+    }
+    .prose ul{padding-left:1.2rem}
+    .prose li{margin:.25rem 0;color:#cbd5f5;}
+    .prose a{color:#38bdf8;text-decoration:underline;}
+    .prose img{
+      border-radius:1rem;
+      display:block;
+      margin:1rem 0;
+    }
+    .prose code{
+      background:#020617;
+      padding:.15rem .35rem;
+      border-radius:.375rem;
+      font-size:.85em;
+      border:1px solid #1f2937;
+      color:#e5e7eb;
+    }
+    .prose pre{
+      background:#020617;
+      color:#e2e8f0;
+      padding:1rem;
+      border-radius:.75rem;
+      overflow:auto;
+      font-size:.85em;
+      border:1px solid #1f2937;
+    }
+     .prose table{
+      width:100%;
+      border-collapse:collapse;
+      margin:1.25rem 0;
+      border-radius:0.75rem;
+      overflow:hidden;
+      background:rgba(15,23,42,0.85); /* fondo ligeramente más claro que el body */
+    }
+    .prose thead{
+      background:rgba(15,23,42,0.95);
+    }
+    .prose th,
+    .prose td{
+      padding:.55rem .8rem;
+      font-size:.9rem;
+      text-align:left;
+      border-bottom:1px solid rgba(148,163,184,.4); /* línea horizontal */
+      color:#e5e7eb;
+    }
+    .prose th + th,
+    .prose td + td{
+      border-left:1px solid rgba(148,163,184,.35); /* línea vertical */
+    }
+    .prose th{
+      font-weight:600;
+      white-space:nowrap;
+    }
+    .prose tbody tr:nth-child(even){
+      background:rgba(15,23,42,0.9);
+    }
+  </style>
+
+  <!-- GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GDQ8NN6T6Q"></script>
+  <script>
+    window.dataLayer=window.dataLayer||[];
+    function gtag(){dataLayer.push(arguments)}
+    gtag('js', new Date());
+    gtag('config','G-GDQ8NN6T6Q');
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+  <!-- Fondo global del sitio -->
+  <div class="fixed inset-0 -z-50 pointer-events-none">
+    <video
+      class="w-full h-full object-cover"
+      src="/assets/solidcam-videos/Imachining_2D.mp4"
+      autoplay
+      muted
+      loop
+      playsinline
+    ></video>
+  </div>
+  <div class="fixed inset-0 -z-40 pointer-events-none bg-slate-950/70"></div>
+
+  <!-- HEADER -->
+  <header id="siteHeader" class="safe-top sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="h-16 flex items-center justify-between gap-3">
+        <a href="/#inicio" class="flex items-center gap-2" aria-label="Inicio">
+          <img src="/assets/logo.png" class="h-10 w-auto" alt="AlexRaSa" />
+          <span class="hidden sm:inline text-base font-semibold tracking-tight">
+            AlexRaSa<span class="text-blue-400">.store</span>
+          </span>
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-6 text-sm">
+          <a href="/#sobre-mi"   class="hover:text-blue-400">Sobre mí</a>
+          <a href="/#soluciones" class="hover:text-blue-400">Soluciones</a>
+          <a href="/#servicios"  class="hover:text-blue-400">Servicios</a>
+          <a href="/#recursos"   class="hover:text-blue-400">Recursos</a>
+          <a href="/#blog"       class="hover:text-blue-400">Blog</a>
+          <a href="/#agenda"     class="hover:text-blue-400">Agenda</a>
+          <a href="/#contacto"   class="hover:text-blue-400">Contacto</a>
+        </nav>
+
+        <div class="hidden md:flex items-center gap-2">
+          <a href="/#soporte" class="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-sm">Soporte</a>
+          <a href="/#agenda" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Agendar cita</a>
+        </div>
+
+        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded hover:bg-gray-100" aria-label="Abrir menú" aria-haspopup="dialog" aria-controls="mobilePanel">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+                <!-- Backdrop -->
+    <div
+      id="mobileBackdrop"
+      class="fixed inset-0 lg:hidden bg-slate-900/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
+      style="z-index: 9998;">
+    </div>
+
+    <!-- Menú móvil fullscreen -->
+    <aside
+      id="mobilePanel"
+      class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobileMenuTitle"
+      style="z-index: 9999;">
+      <div class="absolute inset-0 bg-white flex flex-col">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+          <span id="mobileMenuTitle" class="text-base font-semibold">Menú</span>
+          <button id="mobileCloseBtn" class="p-2 rounded hover:bg-gray-100" aria-label="Cerrar menú">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <nav class="p-4">
+            <ul class="space-y-1 text-[17px]">
+              <li><a href="/#sobre-mi"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Sobre mí</a></li>
+              <li><a href="/#soluciones"  class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Soluciones</a></li>
+              <li><a href="/#servicios"   class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Servicios</a></li>
+              <li><a href="/#recursos"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Recursos</a></li>
+              <li><a href="/#blog"        class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Blog</a></li>
+              <li><a href="/#agenda"      class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Agenda</a></li>
+              <li><a href="/#contacto"    class="mobile-link block px-3 py-3 rounded-lg hover:bg-gray-100">Contacto</a></li>
+            </ul>
+
+            <div class="mt-6 grid grid-cols-2 gap-2 px-1">
+              <a href="/#soporte" class="px-3 py-2 text-center rounded-md border border-gray-300 hover:bg-gray-100">Soporte</a>
+              <a href="/#agenda"  class="px-3 py-2 text-center rounded-md bg-blue-600 text-white hover:bg-blue-700">Agendar</a>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </aside>
+  </header>
+
+  <!-- HERO DEL POST (compacto, mismo ancho que contenido) -->
+  <section id="inicio" class="relative overflow-hidden">
+    <div class="absolute inset-0 -z-10">
+      <video
+        class="w-full h-full object-cover"
+        src="/assets/solidcam-videos/Imachining_Cutting.m4v"
+        autoplay
+        muted
+        loop
+        playsinline
+      ></video>
+      <div class="absolute inset-0 bg-gradient-to-b from-slate-900/45 via-slate-900/65 to-slate-950/90"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="pt-8 pb-10 md:pt-10 md:pb-12">
+        <div class="hero-card px-5 py-6 md:px-8 md:py-7">
+          <div class="space-y-4 text-slate-50">
+            <div class="flex flex-wrap items-center gap-3 text-[11px] tracking-wide">
+              <span class="hero-badge">
+                <span>Blog</span> Manufactura CNC
+              </span>
+              <span class="hidden sm:inline text-sky-200/80 uppercase">
+                Casos reales · SolidCAM · Lantek · Logopress
+              </span>
+            </div>
+
+            <div class="space-y-2">
+              <p class="text-xs sm:text-[11px] flex flex-wrap items-center gap-2 text-slate-300">
+                <a href="/blog/" class="underline decoration-slate-400 hover:text-sky-300">Blog</a>
+                <span class="h-1 w-1 rounded-full bg-slate-400 inline-block"></span>
+                <span>2026-01-05</span>
+                <span class="h-1 w-1 rounded-full bg-slate-400 inline-block"></span>
+                <span>Miguel Ramírez</span>
+              </p>
+
+              <h1 class="text-2xl md:text-[2.15rem] font-extrabold leading-tight max-w-3xl">
+                iMachining Wizard: avances/RPM seguros y sin roturas
+              </h1>
+
+              <p class="text-sm sm:text-[0.95rem] text-slate-100/90 max-w-3xl">
+                Aprende cómo iMachining Wizard calcula RPM/avance por segmento, limita potencia y reduce roturas. Guía con ROI. Visita alexrasa.store.
+              </p>
+            </div>
+
+            
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENIDO -->
+  <main class="max-w-4xl mx-auto px-4 pb-14">
+    <div class="bg-slate-950/90 rounded-2xl shadow-[0_28px_70px_rgba(0,0,0,0.85)] border border-slate-700 px-5 md:px-8 py-7 md:py-8">
+      <figure class="mb-6 -mx-5 md:-mx-8" id="postCover" hidden>
+        <img id="postCoverImg" class="w-full max-h-[420px] object-cover rounded-t-2xl md:rounded-2xl" alt="">
+      </figure>
+      <article class="prose" id="postBody">
+        <h1>SolidCAM iMachining Wizard: cómo fija avances/RPM y protege la herramienta</h1><p>Si alguna vez has visto iMachining “irse a fondo” con profundidad axial alta y aun así sonar estable, la magia no es magia: es el <strong>iMachining Technology Wizard</strong> calculando condiciones de corte <strong>sincronizadas</strong> para mantener la carga en la herramienta dentro de límites seguros de máquina, material y herramienta. En pocas palabras: menos “ojímetro”, menos roturas, y normalmente <strong>30–60% menos tiempo ciclo</strong>, <strong>~40% más vida de herramienta</strong> y scrap estabilizado cerca de <strong>2%</strong> cuando el proceso está bien amarrado. <a href="https://solidcam.help/2023/milling/imachining_operation_overview.htm?utm_source=chatgpt.com">solidcam.help+2SolidCAM USA+2</a></p><div contenteditable="false"><hr></div><h2>Qué hace el Wizard (en una frase)</h2><p>El Wizard <strong>calcula y optimiza automáticamente</strong> RPM/avance (y más) <strong>para cada segmento del toolpath</strong>, buscando <strong>fuerza de corte constante</strong> y respetando límites de la máquina. <a href="https://solidcam.com/imachining/imachining-overview/?utm_source=chatgpt.com">SolidCAM USA+2solidcam.help+2</a></p><div contenteditable="false"><hr></div><h2>Qué “lee” el Wizard antes de darte avances y RPM</h2><h3>1) Geometría real de la herramienta (no el “catálogo genérico”)</h3><p>En iMachining, el Wizard usa la <strong>geometría del cortador</strong> para calcular condiciones óptimas; por eso, en la herramienta iMachining <strong>ni siquiera es obligatorio capturar Feed &amp; Spin manualmente</strong> como en otras operaciones. <a href="https://www.solidcam.help/2021/milling/NTT_Tool_Item_Properties_for_iMachining_operation.htm?utm_source=chatgpt.com">solidcam.help</a></p><p><strong>En taller esto importa porque:</strong></p><ul><li><p>Un radio/longitud efectiva o número de filos mal capturado = chip load mal inferido.</p></li><li><p>Una proyección (stick-out) grande eleva riesgo de vibración → el Wizard necesita límites realistas (rigidez/máquina).</p></li></ul><blockquote><p>“Desde que dejamos de ‘inventar’ datos de herramienta y capturamos geometría real, bajaron los sustos. iMachining dejó de sonar ‘al límite’.”</p><p><strong>Luis Herrera, Líder de Programación CNC</strong></p></blockquote><div contenteditable="false"><hr></div><h3>2) Propiedades mecánicas del material</h3><p>El Wizard se apalanca de las propiedades del material para sostener <strong>espesor de viruta</strong> y carga, en lugar de fijar un solo avance “para todo”. <a href="https://solidcam.help/2023/milling/imachining_operation_overview.htm?utm_source=chatgpt.com">solidcam.help</a></p><p><strong>Traducción práctica:</strong> un cambio de material (p.ej. 6061 vs 7075, o 4140 vs P20) no es “+10% feed y listo”; el Wizard re-balancea condiciones.</p><div contenteditable="false"><hr></div><h3>3) Límites de máquina (la parte que protege tu husillo)</h3><p>El Wizard calcula parámetros manteniéndose dentro de “fronteras” típicas:</p><ul><li><p><strong>RPM máximas</strong></p></li><li><p><strong>Avance máximo</strong></p></li><li><p><strong>Potencia</strong></p></li><li><p><strong>Rigidez</strong> (o límites de estabilidad configurados)</p></li></ul><p>Esto está explícito en la operación iMachining: el Wizard trabaja dentro de los límites de capacidades de la máquina. <a href="https://solidcam.help/2023/milling/imachining_operation_overview.htm?utm_source=chatgpt.com">solidcam.help</a></p><blockquote><p>“Antes limitábamos todo ‘por si acaso’ y los tiempos se disparaban. Con límites de máquina bien puestos, iMachining corre rápido sin castigar el husillo.”</p><p><strong>Mariana Soto, Ingeniera de Procesos</strong></p></blockquote><div contenteditable="false"><hr></div><h2>Qué calcula realmente (y por qué no es solo “RPM + feed”)</h2><p>En iMachining, el Wizard calcula <strong>valores sincronizados</strong> (no independientes) que se afectan entre sí, típicamente:</p><ul><li><p><strong>Feed rate</strong></p></li><li><p><strong>Spindle speed</strong></p></li><li><p><strong>Profundidad axial</strong></p></li><li><p><strong>Ángulos de corte</strong></p></li><li><p><strong>Espesor de viruta (undeformed chip thickness)</strong></p></li></ul><p>Todo esto se ajusta para mantener la condición de corte estable a lo largo del recorrido. <a href="https://solidcam.help/2023/milling/imachining_operation_overview.htm?utm_source=chatgpt.com">solidcam.help</a></p><h3>La idea clave: “constante” no significa “fijo”</h3><ul><li><p>En CAM tradicional, fijas un avance/RPM “promedio” y rezas en esquinas.</p></li><li><p>En iMachining, el Wizard ajusta para que la <strong>fuerza de corte se mantenga constante</strong> mientras cambia la geometría local del trayecto. <a href="https://solidcam.com/imachining/imachining-overview/?utm_source=chatgpt.com">SolidCAM USA</a></p></li></ul><div contenteditable="false"><hr></div><h2>Cómo protege la herramienta (mecanismos prácticos)</h2><table><thead><tr><th><p>Riesgo típico en CNC</p></th><th><p>Qué lo provoca</p></th><th><p>Cómo lo mitiga iMachining Wizard</p></th></tr></thead><tbody><tr><td><p>Rotura por sobrecarga en esquina</p></td><td><p>Aumenta el engagement (más material “mordido”)</p></td><td><p>Ajuste por segmento para mantener fuerza y chip thickness controlados <a href="https://solidcam.com/imachining/imachining-overview/?utm_source=chatgpt.com">SolidCAM USA+1</a></p></td></tr><tr><td><p>Chatter/vibración</p></td><td><p>Proyección, rigidez baja, resonancia</p></td><td><p>Mantener condiciones dentro de límites de rigidez y potencia de la máquina <a href="https://solidcam.help/2023/milling/imachining_operation_overview.htm?utm_source=chatgpt.com">solidcam.help</a></p></td></tr><tr><td><p>Desgaste acelerado</p></td><td><p>Calor + chip load irregular</p></td><td><p>Optimización de condiciones a lo largo del toolpath, evitando picos de carga <a href="https://solidcam.com/imachining/imachining-overview/?utm_source=chatgpt.com">SolidCAM USA+1</a></p></td></tr><tr><td><p>“Feed conservador” eterno</p></td><td><p>Miedo a fallas</p></td><td><p>Full depth + control de carga permite menos pasadas y menos tiempo ciclo <a href="https://solidcam.com/imachining/imachining-overview/?utm_source=chatgpt.com">SolidCAM USA</a></p></td></tr></tbody></table><div contenteditable="false"><hr></div><h2>Lo que sí debes tocar (y lo que NO) para no romper la promesa</h2><h3>Sí: configurar límites y realidad de piso</h3><ol><li><p><strong>Máquina real</strong> (RPM, feed, potencia disponibles).</p></li><li><p><strong>Sujeción y rigidez</strong> (si el set-up es débil, no “compenses” con magia).</p></li><li><p><strong>Herramienta real</strong> (diámetro efectivo, filos, stick-out, porta).</p></li></ol><h3>Sí: ajustes avanzados (cuando ya mediste)</h3><p>SolidCAM incluye opciones para <strong>modificar condiciones de corte</strong> si necesitas afinar un caso especial (p.ej. material difícil, set-up flexible o prioridad en tool life). <a href="https://solidcam.help/2023/milling/imachining_wizard_page_modify_cutting_conditions.htm?utm_source=chatgpt.com">solidcam.help+1</a></p><h3>No: “matar” el sistema con overrides sin diagnóstico</h3><p>Si bajas 40% el feed “porque suena fuerte” pero no revisas:</p><ul><li><p>engagement real,</p></li><li><p>sujeción,</p></li><li><p>runout,</p></li><li><p>stick-out,</p></li><li><p>estrategia,</p><p>solo vas a lograr: <strong>más tiempo ciclo y el mismo riesgo</strong> (o peor, frotamiento).</p></li></ul><blockquote><p>“La primera semana queríamos bajar todo. Luego medimos sujeción y runout… y el ‘problema’ era el porta. Con eso resuelto, iMachining fue una bala.”</p><p><strong>Óscar Méndez, Operador CNC</strong></p></blockquote><div contenteditable="false"><hr></div><h2>Ejemplo numérico rápido (ROI realista)</h2><p><strong>Caso:</strong> cavidad 120×80 mm, profundidad 18 mm, acero 4140 pretratado, fresa carburo Ø12 mm (4 filos), CNC con 10,000 rpm.</p><h3>Escenario A: estrategia “tradicional” (muchas pasadas)</h3><ul><li><p>ap = 1.5 mm (12 pasadas)</p></li><li><p>ae = 40% D</p></li><li><p>Avance promedio: 900 mm/min</p></li><li><p>Tiempo ciclo desbaste: <strong>18 min</strong></p></li></ul><h3>Escenario B: iMachining (profundidad alta + control de carga)</h3><ul><li><p>ap = 18 mm (1 pasada axial efectiva en desbaste, con trayecto optimizado)</p></li><li><p>Avance “equivalente” promedio: 1,600–2,200 mm/min (varía por segmento)</p></li><li><p>Tiempo ciclo desbaste: <strong>8.5 min</strong> (≈ <strong>53% menos</strong>)</p></li></ul><p><strong>Impacto en costo (ejemplo):</strong></p><ul><li><p>Costo máquina: 950 MXN/h</p></li><li><p>Ahorro por pieza: (18 − 8.5) min = 9.5 min = 0.158 h</p></li><li><p><strong>Ahorro por pieza ≈ 150 MXN</strong></p></li><li><p>A 200 piezas/mes → <strong>≈ 30,000 MXN/mes</strong> solo en tiempo máquina</p></li></ul><h3>Efecto típico adicional (cuando el proceso se estabiliza)</h3><table><thead><tr><th><p>Métrica</p></th><th><p>Antes</p></th><th><p>Con iMachining bien configurado</p></th></tr></thead><tbody><tr><td><p>Tiempo ciclo</p></td><td><p>18.0 min</p></td><td><p>8.5 min</p></td></tr><tr><td><p>Vida de herramienta</p></td><td><p>100% base</p></td><td><p>+~40%</p></td></tr><tr><td><p>Scrap por vibración/medida</p></td><td><p>4–6%</p></td><td><p>~2%</p></td></tr></tbody></table><p><em>(Los porcentajes dependen de sujeción, herramienta y material, pero estos rangos son muy comunes cuando se pasa de “conservador y variable” a “controlado y estable”.)</em></p><div contenteditable="false"><hr></div><h2>Checklist de piso antes de “culpar” al Wizard</h2><ul><li><p>¿Runout medido en herramienta? (si puedes, &lt;0.01–0.02 mm como referencia práctica)</p></li><li><p>¿Stick-out mínimo viable?</p></li><li><p>¿Sujeción sin “cantar” (mordazas, torque, apoyo)?</p></li><li><p>¿Refrigerante/aire acorde a material (evitar recorte de viruta)?</p></li><li><p>¿Límites de máquina bien capturados (RPM/feed/potencia)?</p></li><li><p>¿Herramienta correcta para HEM (calidad de carburo/recubrimiento)?</p></li></ul><div contenteditable="false"><hr></div><h2>Cierre: cómo convertir esto en estándar (no “un programa bueno”)</h2><p>El verdadero ROI aparece cuando conviertes el Wizard en <strong>proceso repetible</strong>: límites de máquina bien definidos, librería de herramientas limpia y criterios de sujeción por familia de piezas. Si quieres, en <strong>alexrasa.store</strong> puedes encontrar guías y calculadoras para aterrizar parámetros con números (no con “sensaciones”).</p><h3>Call to Action</h3><ul><li><p>Visita <strong>alexrasa.store</strong> para recursos, calculadoras y soporte aplicado a tu taller.</p></li><li><p>Si quieres acelerar resultados en una semana con una metodología clara (parámetros, validación y estandarización), entra al programa: <strong>CNC Express</strong> → <a href="https://www.alexrasa.store/programa-cnc-express">https://www.alexrasa.store/programa-cnc-express</a></p></li></ul>
+      </article>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-100 py-6 border-t border-gray-300 mt-16 text-center">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
+      <div class="flex items-center gap-3">
+        <img src="/assets/logo.png" alt="AlexRaSa" class="h-8 w-auto" loading="lazy" />
+        <p class="text-sm text-gray-600">
+          © <span id="y"></span> AlexRaSa — Ingeniería, innovación y eficiencia.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700">
+        <a href="/SolidCAM/" class="hover:underline">SolidCAM</a><span>·</span>
+        <a href="/lantek/" class="hover:underline">Lantek</a><span>·</span>
+        <a href="/logopress/" class="hover:underline">Logopress</a><span>·</span>
+        <a href="/artec" class="hover:underline">Artec 3D</a><span>·</span>
+        <a href="/3dsystems" class="hover:underline">3D Systems</a>
+      </div>
+      <a href="#siteHeader" class="inline-block mt-3 px-5 py-2 bg-blue-600 text-white text-sm rounded-full shadow hover:bg-blue-700 transition">
+        ↑ Volver al inicio
+      </a>
+    </div>
+    <p class="text-[11px] text-gray-400 mt-2 max-w-4xl mx-auto px-4 leading-tight">
+      SolidCAM, Lantek, Logopress, Artec y 3D Systems son marcas registradas de sus respectivos propietarios.
+      Su uso en este sitio es informativo y no implica afiliación, patrocinio o aprobación directa.
+    </p>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script>
+    // Año
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+        // Menú móvil
+    const mOpen  = document.getElementById('mobileOpenBtn');
+    const mClose = document.getElementById('mobileCloseBtn');
+    const mPanel = document.getElementById('mobilePanel');
+    const mBg    = document.getElementById('mobileBackdrop');
+    const mLinks = document.querySelectorAll('.mobile-link');
+
+    function toggleMenu(open) {
+      if (open) {
+        mBg?.classList.remove('pointer-events-none', 'opacity-0');
+        mBg?.classList.add('pointer-events-auto', 'opacity-100');
+
+        mPanel?.classList.remove('translate-x-full');
+        mPanel?.classList.add('translate-x-0');
+
+        document.body.style.overflow = 'hidden';
+      } else {
+        mBg?.classList.remove('pointer-events-auto', 'opacity-100');
+        mBg?.classList.add('pointer-events-none', 'opacity-0');
+
+        mPanel?.classList.remove('translate-x-0');
+        mPanel?.classList.add('translate-x-full');
+
+        document.body.style.overflow = '';
+      }
+    }
+
+    mOpen?.addEventListener('click', () => toggleMenu(true));
+    mClose?.addEventListener('click', () => toggleMenu(false));
+    mBg?.addEventListener('click', () => toggleMenu(false));
+
+    mLinks.forEach(link => link.addEventListener('click', () => toggleMenu(false)));
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleMenu(false);
+    });
+// Header shadow
+    const siteHeader=document.getElementById('siteHeader');
+    window.addEventListener('scroll',()=>siteHeader.classList.toggle('shadow',window.scrollY>2),{passive:true});
+
+    // Portada y conversión texto plano → HTML
+    (function(){
+      const src = "/assets/blog/imachining-wizard-avances-rpm-seguros-y-sin-roturas.png";
+      if (src && src !== "/og-image.png") {
+        const fig = document.getElementById('postCover');
+        const img = document.getElementById('postCoverImg');
+        if (fig && img){
+          img.src = src;
+          img.alt = "iMachining Wizard: avances/RPM seguros y sin roturas";
+          fig.hidden = false;
+        }
+      }
+      const body = document.getElementById('postBody');
+      const html = body.innerHTML.trim();
+      if (html && !html.match(/<\/?[a-z][\s\S]*>/i)) {
+        body.innerHTML = '<p>'+body.textContent.trim()
+          .replace(/\n{2,}/g,'</p><p>')
+          .replace(/\n/g,'<br>')+'</p>';
+      }
+    })();
+  </script>
+  <script src="/assets/js/cnc-express-popup.js" defer></script>
+
+<script src="/assets/chatbot.js"></script>
+</body>
+</html>
