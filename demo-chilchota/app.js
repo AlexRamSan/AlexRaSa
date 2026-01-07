@@ -1,15 +1,10 @@
-/* Chilchota Demo — v6
-   NUEVO (Siguiente paso):
-   - Clientes + Listas de precios + Precio especial por cliente/producto
-   - Al seleccionar Cliente + Producto en Pedido: se carga PRECIO BASE calculado:
-       1) Precio del producto
-       2) Descuento por lista de precios del cliente (si aplica)
-       3) Override especial por cliente+producto (si existe)
-   - El vendedor aún puede aplicar descuento/override, pero si cambia el precio vs base calculada:
-     MOTIVO obligatorio.
+/* Chilchota Demo — v7
+  A) Lista por canal con vigencia (si cliente no tiene lista fija)
+  B) Descuentos por volumen con vigencia
+  C) Workflow de aprobación para baja de precio (seller) => pedido PENDING_APPROVAL, admin aprueba/deniega
 */
 
-const STORAGE_KEY = "chilchota_demo_v4"; // mantenemos para no perder datos existentes
+const STORAGE_KEY = "chilchota_demo_v4";
 
 const $ = (sel) => document.querySelector(sel);
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
@@ -26,6 +21,12 @@ function daysAgoISO(days) {
   d.setDate(d.getDate() - days);
   const pad = (x) => String(x).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function isDateInRange(dateISO, startISO, endISO) {
+  const d = dateISO || todayISO();
+  const s = startISO || "0000-01-01";
+  const e = endISO || "9999-12-31";
+  return d >= s && d <= e;
 }
 
 // ---------- Seed ----------
@@ -84,28 +85,44 @@ function seedData() {
     });
   }
 
-  // NUEVO: listas de precios
+  // Listas
   const priceLists = [
     { id: "PL-STD", name: "Lista estándar", discountPct: 0 },
     { id: "PL-MAY", name: "Mayoreo", discountPct: 8 },
     { id: "PL-KEY", name: "Cuenta clave", discountPct: 12 },
   ];
 
-  // NUEVO: clientes
+  // Clientes (con canal). Ojo: priceListId fijo es opcional. Si está vacío => se usa regla por canal vigente.
   const customers = [
-    { id: "C-001", name: "Tienda Centro", priceListId: "PL-STD" },
-    { id: "C-002", name: "Distribuidor Bajío", priceListId: "PL-MAY" },
-    { id: "C-003", name: "Cuenta Clave QRO", priceListId: "PL-KEY" },
+    { id: "C-001", name: "Tienda Centro", channel: "TIENDA", priceListId: "PL-STD" },
+    { id: "C-002", name: "Distribuidor Bajío", channel: "DISTRIBUIDOR", priceListId: "PL-MAY" },
+    { id: "C-003", name: "Cuenta Clave QRO", channel: "CLAVE", priceListId: "" }, // usa canal schedule
   ];
 
-  // NUEVO: override por cliente+producto (precio base especial)
-  // Ejemplo: Cuenta Clave QRO tiene precio especial en Jocoque
+  // Overrides base por cliente+producto (pactado). Admin los define.
   const customerPriceOverrides = [
     { id: uid(), customerId: "C-003", productId: products[2].id, basePrice: 52.00, reason: "Contrato anual", updatedAt: new Date().toISOString(), userId: "U-ADMIN" }
   ];
 
+  // A) Schedules por canal (vigencia). Se usan cuando cliente.priceListId está vacío.
+  const channelPriceSchedules = [
+    { id: uid(), channel: "TIENDA",       priceListId: "PL-STD", startDate: "2025-01-01", endDate: "2026-12-31" },
+    { id: uid(), channel: "DISTRIBUIDOR", priceListId: "PL-MAY", startDate: "2025-01-01", endDate: "2026-12-31" },
+    { id: uid(), channel: "CLAVE",        priceListId: "PL-KEY", startDate: "2025-01-01", endDate: "2026-12-31" },
+  ];
+
+  // B) Reglas por volumen (tiers) con vigencia
+  // minBoxes: umbral por cajas (usando PPB del producto); productId vacío => aplica a todos
+  const volumeRules = [
+    { id: uid(), productId: "", minBoxes: 5, discountPct: 2.0, startDate: "2025-01-01", endDate: "2026-12-31" },
+    { id: uid(), productId: "", minBoxes: 10, discountPct: 4.0, startDate: "2025-01-01", endDate: "2026-12-31" },
+  ];
+
+  // C) Cola de aprobaciones (solicitudes de precio). Seller genera; Admin decide.
+  const priceOverrideRequests = [];
+
   return {
-    meta: { createdAt: new Date().toISOString(), version: 6 },
+    meta: { createdAt: new Date().toISOString(), version: 7 },
     org: { name: "Chilchota (Demo)" },
     branches: [{ id: branchId, name: "Sucursal 1" }],
     warehouses: [{ id: warehouseId, branchId, name: "Almacén 1" }],
@@ -115,6 +132,7 @@ function seedData() {
       { id: "U-VEND", name: "Vendedor", role: "SELLER" },
     ],
     currentUserId: "U-ADMIN",
+
     products,
     stockMoves,
     purchaseOrders: [],
@@ -122,17 +140,21 @@ function seedData() {
     competitorPrices: [],
     physicalCounts: [],
 
-    // NUEVO
     priceLists,
     customers,
     customerPriceOverrides,
+
+    channelPriceSchedules,
+    volumeRules,
+    priceOverrideRequests,
   };
 }
 
 function migrateDB(db) {
   if (!db) return seedData();
-  db.meta = db.meta || { createdAt: new Date().toISOString(), version: 6 };
-  db.meta.version = 6;
+
+  db.meta = db.meta || { createdAt: new Date().toISOString(), version: 7 };
+  db.meta.version = 7;
 
   db.products = db.products || [];
   db.stockMoves = db.stockMoves || [];
@@ -140,6 +162,8 @@ function migrateDB(db) {
   db.salesOrders = db.salesOrders || [];
   db.competitorPrices = db.competitorPrices || [];
   db.physicalCounts = db.physicalCounts || [];
+  db.users = db.users && db.users.length ? db.users : seedData().users;
+  if (!db.currentUserId) db.currentUserId = db.users[0].id;
 
   db.products.forEach(p => {
     if (!p.piecesPerBox || num(p.piecesPerBox) <= 0) p.piecesPerBox = 12;
@@ -148,22 +172,32 @@ function migrateDB(db) {
     if (p.cost == null) p.cost = 0;
   });
 
-  if (!db.users || !db.users.length) db.users = seedData().users;
-  if (!db.currentUserId) db.currentUserId = db.users[0].id;
-
-  // NUEVO: inicializar si no existe (migración suave)
+  // v6 fields
   if (!db.priceLists || !db.priceLists.length) db.priceLists = seedData().priceLists;
   if (!db.customers || !db.customers.length) db.customers = seedData().customers;
   if (!db.customerPriceOverrides) db.customerPriceOverrides = seedData().customerPriceOverrides;
 
-  // asegurar priceListId válido
-  const plIds = new Set(db.priceLists.map(x => x.id));
-  db.customers.forEach(c => { if (!plIds.has(c.priceListId)) c.priceListId = "PL-STD"; });
+  // v7 fields
+  if (!db.channelPriceSchedules) db.channelPriceSchedules = seedData().channelPriceSchedules;
+  if (!db.volumeRules) db.volumeRules = seedData().volumeRules;
+  if (!db.priceOverrideRequests) db.priceOverrideRequests = [];
 
-  // compat: pedidos viejos traían customer string
+  // customer.channel default
+  db.customers.forEach(c => { if (!c.channel) c.channel = "TIENDA"; if (c.priceListId == null) c.priceListId = ""; });
+
+  // asegurar priceListId válido si no está vacío
+  const plIds = new Set(db.priceLists.map(x => x.id));
+  db.customers.forEach(c => { if (c.priceListId && !plIds.has(c.priceListId)) c.priceListId = ""; });
+
+  // compat pedidos viejos
   db.salesOrders.forEach(so => {
     if (!so.customer && so.customerName) so.customer = so.customerName;
     if (!so.customer && so.customerId) so.customer = (db.customers.find(c => c.id === so.customerId)?.name) || "Cliente";
+    if (!so.status) so.status = "OPEN";
+    if (!so.lines) so.lines = [];
+    so.lines.forEach(l => {
+      if (!l.approvalStatus) l.approvalStatus = "NONE"; // NONE | PENDING | APPROVED | DENIED
+    });
   });
 
   return db;
@@ -200,7 +234,7 @@ const PERMS = {
   sales: ["ADMIN","WAREHOUSE","SELLER"],
   waste: ["ADMIN","WAREHOUSE","SELLER"],
   benchmark: ["ADMIN","SELLER"],
-  pricing: ["ADMIN"], // NUEVO
+  pricing: ["ADMIN"],
   reports: ["ADMIN"]
 };
 
@@ -217,7 +251,7 @@ function canAction(action) {
     SALES_FULFILL: ["ADMIN","WAREHOUSE"],
     WASTE: ["ADMIN","WAREHOUSE","SELLER"],
     BENCHMARK: ["ADMIN","SELLER"],
-    MANAGE_PRICING: ["ADMIN"], // NUEVO
+    MANAGE_PRICING: ["ADMIN"],
     REPORTS: ["ADMIN"]
   };
   return (rules[action] || []).includes(role());
@@ -235,28 +269,105 @@ function toPieces(boxes, pieces, productId) { return (num(boxes) * ppb(productId
 
 function customerById(id) { return db.customers.find(c => c.id === id); }
 function priceListById(id) { return db.priceLists.find(p => p.id === id); }
-
 function getCustomerOverride(customerId, productId) {
   return db.customerPriceOverrides.find(o => o.customerId === customerId && o.productId === productId) || null;
 }
 
-/* Devuelve precio base calculado y trazabilidad (para mostrar y para auditar en línea de pedido) */
-function getBasePriceForCustomer(customerId, productId) {
-  const p = productById(productId);
-  if (!p) return { basePrice: 0, source: "NONE", listDiscountPct: 0, overrideId: null };
+// A) Precio lista por canal+vigencia (si cliente no trae lista fija)
+function resolvePriceListForCustomer(customerId, orderDateISO) {
+  const c = customerById(customerId);
+  if (!c) return { priceListId: "PL-STD", source: "DEFAULT" };
 
-  const customer = customerById(customerId);
-  const pl = customer ? priceListById(customer.priceListId) : null;
+  // si cliente trae lista fija, gana
+  if (c.priceListId) return { priceListId: c.priceListId, source: "CUSTOMER_FIXED" };
+
+  const active = db.channelPriceSchedules
+    .filter(s => s.channel === c.channel && isDateInRange(orderDateISO, s.startDate, s.endDate))
+    .sort((a,b) => (b.startDate || "").localeCompare(a.startDate || ""))[0];
+
+  if (active) return { priceListId: active.priceListId, source: "CHANNEL_SCHEDULE", scheduleId: active.id };
+  return { priceListId: "PL-STD", source: "DEFAULT" };
+}
+
+// B) Regla por volumen (elige el mayor descuento que califica)
+function resolveVolumeDiscount(productId, qtyPieces, orderDateISO) {
+  const p = productById(productId);
+  if (!p) return { discountPct: 0, ruleId: null };
+
+  const candidates = db.volumeRules
+    .filter(r => isDateInRange(orderDateISO, r.startDate, r.endDate))
+    .filter(r => (!r.productId || r.productId === "" || r.productId === productId));
+
+  const boxes = qtyPieces / ppb(productId);
+
+  let best = { discountPct: 0, ruleId: null, minBoxes: 0 };
+  for (const r of candidates) {
+    const minBoxes = num(r.minBoxes);
+    if (minBoxes > 0 && boxes >= minBoxes) {
+      if (num(r.discountPct) > best.discountPct) {
+        best = { discountPct: num(r.discountPct), ruleId: r.id, minBoxes };
+      }
+    }
+  }
+  return best;
+}
+
+// Precio base calculado (producto -> lista -> override cliente+producto -> volumen)
+function getComputedPrice(customerId, productId, qtyPieces, orderDateISO) {
+  const p = productById(productId);
+  if (!p) return { computedPrice: 0, trace: { source: "NONE" } };
+
+  const plInfo = resolvePriceListForCustomer(customerId, orderDateISO);
+  const pl = priceListById(plInfo.priceListId) || priceListById("PL-STD");
   const listDiscountPct = pl ? num(pl.discountPct) : 0;
 
-  const override = customer ? getCustomerOverride(customer.id, productId) : null;
-  if (override && num(override.basePrice) > 0) {
-    return { basePrice: num(override.basePrice), source: "CUSTOM_OVERRIDE", listDiscountPct, overrideId: override.id };
+  // Base por producto
+  let base = num(p.price || 0);
+  let source = "PRODUCT";
+
+  // Lista por canal/cliente
+  if (listDiscountPct > 0) {
+    base = Math.max(0, base * (1 - listDiscountPct / 100));
+    source = "PRICELIST";
   }
 
-  const base = num(p.price || 0);
-  const discounted = Math.max(0, base * (1 - (listDiscountPct / 100)));
-  return { basePrice: discounted, source: listDiscountPct > 0 ? "PRICELIST" : "PRODUCT", listDiscountPct, overrideId: null };
+  // Override pactado cliente+producto (Admin)
+  const custOv = getCustomerOverride(customerId, productId);
+  if (custOv && num(custOv.basePrice) > 0) {
+    base = num(custOv.basePrice);
+    source = "CUSTOM_OVERRIDE";
+  }
+
+  // Volumen
+  const vol = resolveVolumeDiscount(productId, qtyPieces, orderDateISO);
+  let afterVol = base;
+  if (vol.discountPct > 0) {
+    afterVol = Math.max(0, base * (1 - vol.discountPct / 100));
+  }
+
+  return {
+    computedPrice: afterVol,
+    trace: {
+      source,
+      productPrice: num(p.price || 0),
+      priceListId: pl?.id || "PL-STD",
+      priceListDiscountPct: listDiscountPct,
+      priceListSource: plInfo.source,
+      customerOverrideId: custOv ? custOv.id : null,
+      customerOverrideReason: custOv ? custOv.reason : null,
+      volumeRuleId: vol.ruleId,
+      volumeDiscountPct: vol.discountPct,
+      qtyPieces,
+      orderDateISO
+    }
+  };
+}
+
+// C) aprobación: si vendedor baja precio vs computedPrice => requiere aprobación
+function needsApprovalForPriceChange(userRole, computedPrice, finalPrice) {
+  if (userRole === "ADMIN") return false;
+  // solo si baja
+  return num(finalPrice) < num(computedPrice) - 0.0001;
 }
 
 // ---------- Stock / Costos ----------
@@ -267,7 +378,6 @@ function calcOnHand(branchId, warehouseId) {
     .forEach(m => map.set(m.productId, (map.get(m.productId) || 0) + num(m.qty)));
   return map;
 }
-
 function calcAvgDailySales(productId, days = 14, branchId="BR-001", warehouseId="WH-001") {
   const fromDate = daysAgoISO(days);
   const moves = db.stockMoves.filter(m =>
@@ -280,7 +390,6 @@ function calcAvgDailySales(productId, days = 14, branchId="BR-001", warehouseId=
   const sold = -moves.reduce((acc, m) => acc + num(m.qty), 0);
   return sold / days;
 }
-
 function calcWeightedAvgCost(productId, branchId="BR-001", warehouseId="WH-001") {
   const entries = db.stockMoves.filter(m =>
     m.productId === productId &&
@@ -416,7 +525,7 @@ const TABS = [
   { id: "sales", label: "Pedidos" },
   { id: "waste", label: "Merma" },
   { id: "benchmark", label: "Benchmark" },
-  { id: "pricing", label: "Clientes/Precios" }, // NUEVO
+  { id: "pricing", label: "Clientes/Precios" },
   { id: "reports", label: "Reportes" },
 ];
 
@@ -454,15 +563,9 @@ function renderUserSelect() {
     db.currentUserId = sel.value;
     saveDB(db);
 
-    if (!canView(currentTab)) currentTab = "sales";
-    if (!canView(currentTab)) currentTab = "purchases";
-    if (!canView(currentTab)) currentTab = "waste";
-    if (!canView(currentTab)) currentTab = "benchmark";
-    if (!canView(currentTab)) currentTab = "inventory";
-    if (!canView(currentTab)) currentTab = "products";
-    if (!canView(currentTab)) currentTab = "pricing";
-    if (!canView(currentTab)) currentTab = "dashboard";
-
+    // fallback a una pestaña accesible
+    const fallback = ["sales","purchases","waste","benchmark","inventory","products","pricing","dashboard"];
+    for (const t of fallback) { if (canView(t)) { currentTab = t; break; } }
     render();
   };
 
@@ -507,7 +610,7 @@ function render() {
   if (currentTab === "sales") view.appendChild(viewSales());
   if (currentTab === "waste") view.appendChild(viewWaste());
   if (currentTab === "benchmark") view.appendChild(viewBenchmark());
-  if (currentTab === "pricing") view.appendChild(viewPricing()); // NUEVO
+  if (currentTab === "pricing") view.appendChild(viewPricing());
   if (currentTab === "reports") view.appendChild(viewReports());
 }
 
@@ -527,6 +630,8 @@ function viewDashboard() {
   const from7 = daysAgoISO(7);
   const shipMoves = db.stockMoves.filter(m => m.type === "SHIP" && m.date >= from7);
   const shippedUnits = -shipMoves.reduce((acc,m)=>acc+num(m.qty),0);
+
+  const pendingReq = db.priceOverrideRequests.filter(r => r.status === "PENDING").length;
 
   const risks = db.products.map(p => {
     const avg = calcAvgDailySales(p.id, 14, branchId, warehouseId);
@@ -571,20 +676,25 @@ function viewDashboard() {
     </table>
   `));
 
-  wrap.appendChild(card("Nuevo: Precios por cliente", `
-    <div class="muted small">
-      Ya puedes asignar una lista por cliente y un precio especial por producto.
-      En Pedidos, el precio base se calcula solo.
-    </div>
+  wrap.appendChild(card("Precio inteligente (A+B+C)", `
     <ul class="small">
-      <li><b>PRODUCT:</b> precio del producto.</li>
-      <li><b>PRICELIST:</b> precio del producto con descuento % de lista.</li>
-      <li><b>CUSTOM_OVERRIDE:</b> precio especial cliente+producto (gana sobre todo).</li>
+      <li><b>A:</b> Lista por canal con vigencia (si el cliente no tiene lista fija).</li>
+      <li><b>B:</b> Descuento por volumen (tiers) automático.</li>
+      <li><b>C:</b> Si el vendedor baja el precio, se genera solicitud; Admin aprueba.</li>
     </ul>
+    <div class="hr"></div>
+    <div class="kpi">
+      <div class="v">${pendingReq}</div>
+      <div class="k">Solicitudes de precio pendientes</div>
+    </div>
   `));
 
   return wrap;
 }
+
+// --- Productos / Inventario / Compras / Merma / Benchmark / Reportes
+// Para mantener esto manejable, dejo estos módulos como estaban funcionalmente en v6.
+// (No cambia lógica base, solo se apoya en db ampliado.)
 
 function viewProducts() {
   const allowed = canAction("MANAGE_PRODUCTS");
@@ -725,63 +835,57 @@ function viewInventory() {
   el.appendChild(table);
 
   setTimeout(() => {
-    const scanBtn = $("#inv_scan");
-    if (scanBtn) {
-      scanBtn.onclick = async () => {
-        if (!allowed) return;
-        await openBarcodeScanner({
-          onCode: (code) => {
-            const p = productByBarcode(code);
-            if (!p) return alert(`No se encontró producto con barcode: ${code}`);
-            $("#inv_prod").value = p.id;
-          }
-        });
-      };
-    }
-
-    const addBtn = $("#inv_add");
-    if (addBtn) {
-      addBtn.onclick = () => {
-        if (!allowed) return;
-
-        const productId = $("#inv_prod").value;
-        const type = $("#inv_type").value;
-        const qty = num($("#inv_qty").value);
-        const unitCost = $("#inv_cost").value === "" ? null : num($("#inv_cost").value);
-        const note = $("#inv_note").value.trim();
-
-        if (!productId) return alert("Selecciona producto.");
-        if (!Number.isFinite(qty) || qty === 0) return alert("Cantidad debe ser distinta de 0.");
-
-        if (type === "COUNT") {
-          db.physicalCounts.push({
-            id: uid(),
-            date: todayISO(),
-            productId,
-            countedQty: qty,
-            branchId, warehouseId,
-            userId: db.currentUserId
-          });
-        } else {
-          db.stockMoves.push({
-            id: uid(),
-            ts: new Date().toISOString(),
-            date: todayISO(),
-            type: "ADJ",
-            productId,
-            qty,
-            unitCost: qty > 0 ? (unitCost ?? calcWeightedAvgCost(productId, branchId, warehouseId)) : null,
-            note: note || "Ajuste",
-            branchId, warehouseId,
-            userId: db.currentUserId,
-            ref: null
-          });
+    $("#inv_scan").onclick = async () => {
+      if (!allowed) return;
+      await openBarcodeScanner({
+        onCode: (code) => {
+          const p = productByBarcode(code);
+          if (!p) return alert(`No se encontró producto con barcode: ${code}`);
+          $("#inv_prod").value = p.id;
         }
+      });
+    };
 
-        saveDB(db);
-        render();
-      };
-    }
+    $("#inv_add").onclick = () => {
+      if (!allowed) return;
+
+      const productId = $("#inv_prod").value;
+      const type = $("#inv_type").value;
+      const qty = num($("#inv_qty").value);
+      const unitCost = $("#inv_cost").value === "" ? null : num($("#inv_cost").value);
+      const note = $("#inv_note").value.trim();
+
+      if (!productId) return alert("Selecciona producto.");
+      if (!Number.isFinite(qty) || qty === 0) return alert("Cantidad debe ser distinta de 0.");
+
+      if (type === "COUNT") {
+        db.physicalCounts.push({
+          id: uid(),
+          date: todayISO(),
+          productId,
+          countedQty: qty,
+          branchId, warehouseId,
+          userId: db.currentUserId
+        });
+      } else {
+        db.stockMoves.push({
+          id: uid(),
+          ts: new Date().toISOString(),
+          date: todayISO(),
+          type: "ADJ",
+          productId,
+          qty,
+          unitCost: qty > 0 ? (unitCost ?? calcWeightedAvgCost(productId, branchId, warehouseId)) : null,
+          note: note || "Ajuste",
+          branchId, warehouseId,
+          userId: db.currentUserId,
+          ref: null
+        });
+      }
+
+      saveDB(db);
+      render();
+    };
   }, 0);
 
   return el;
@@ -835,8 +939,7 @@ function viewPurchases() {
       <tbody>
         ${db.purchaseOrders.map(po => {
           const total = po.lines.reduce((acc,l)=>acc + (num(l.qtyPieces)*num(l.unitCost)), 0);
-          const disabled = allowed ? "" : "disabled title='Sin permiso'";
-          const canReceive = po.status !== "RECEIVED";
+          const canReceive = allowed && po.status !== "RECEIVED";
           return `<tr>
             <td>${po.code}</td>
             <td>${po.vendor}</td>
@@ -845,14 +948,13 @@ function viewPurchases() {
             <td>${money(total)}</td>
             <td>
               ${canReceive
-                ? `<button class="btn secondary" data-recv-fast="${po.id}" ${disabled}>Recepción rápida</button>`
-                : `<span class="badge ok">OK</span>`}
+                ? `<button class="btn secondary" data-recv-fast="${po.id}">Recepción rápida</button>`
+                : (po.status === "RECEIVED" ? `<span class="badge ok">OK</span>` : `<span class="badge warn">—</span>`)}
             </td>
           </tr>`;
         }).join("")}
       </tbody>
     </table>
-    <div class="muted small">Recepción rápida: captura cajas+pzas por renglón + costo editable.</div>
   `);
 
   el.appendChild(form);
@@ -893,20 +995,10 @@ function viewPurchases() {
     openModal({
       title: `Recepción rápida — ${po.code}`,
       bodyHTML: `
-        <div class="muted small">Captura lo recibido. Se clampa a lo pendiente. El costo puede variar por renglón.</div>
+        <div class="muted small">Captura lo recibido. Se clampa a lo pendiente. Costo editable por renglón.</div>
         <table class="table" style="margin-top:12px">
           <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Pedido (pzas)</th>
-              <th>Recibido</th>
-              <th>Pendiente</th>
-              <th>PPB</th>
-              <th>Cajas</th>
-              <th>Pzas</th>
-              <th>Total recibido</th>
-              <th>Costo / pza</th>
-            </tr>
+            <tr><th>Producto</th><th>Pedido</th><th>Recibido</th><th>Pendiente</th><th>PPB</th><th>Cajas</th><th>Pzas</th><th>Total</th><th>Costo/pza</th></tr>
           </thead>
           <tbody>
             ${rows.map((r,i)=>`
@@ -925,14 +1017,8 @@ function viewPurchases() {
           </tbody>
         </table>
       `,
-      actionsHTML: `
-        <button class="btn" id="rx_cancel">Cancelar</button>
-        <button class="btn primary" id="rx_apply">Aplicar recepción</button>
-      `,
+      actionsHTML: `<button class="btn" id="rx_cancel">Cancelar</button><button class="btn primary" id="rx_apply">Aplicar recepción</button>`,
       onMount: ({ root, close }) => {
-        const apply = root.querySelector("#rx_apply");
-        const cancel = root.querySelector("#rx_cancel");
-
         function recalcRow(i) {
           const b = num(root.querySelector(`[data-rx-boxes="${i}"]`).value);
           const s = num(root.querySelector(`[data-rx-pieces="${i}"]`).value);
@@ -940,15 +1026,14 @@ function viewPurchases() {
           const total = Math.max(0, toPieces(b, s, productId));
           root.querySelector(`[data-rx-total="${i}"]`).textContent = String(total);
         }
-
         rows.forEach((_,i)=>{
           root.querySelector(`[data-rx-boxes="${i}"]`).addEventListener("input", ()=>recalcRow(i));
           root.querySelector(`[data-rx-pieces="${i}"]`).addEventListener("input", ()=>recalcRow(i));
         });
 
-        cancel.onclick = () => close();
+        root.querySelector("#rx_cancel").onclick = () => close();
 
-        apply.onclick = () => {
+        root.querySelector("#rx_apply").onclick = () => {
           if (!allowed) return;
 
           rows.forEach((r,i)=>{
@@ -1000,10 +1085,8 @@ function viewPurchases() {
       if (!p) return;
       $("#po_cost").value = num(p.cost || 0).toFixed(2);
     }
-    if ($("#po_prod")) {
-      $("#po_prod").onchange = loadDefaultCost;
-      loadDefaultCost();
-    }
+    $("#po_prod").onchange = loadDefaultCost;
+    loadDefaultCost();
 
     $("#po_scan").onclick = async () => {
       if (!allowed) return;
@@ -1061,10 +1144,7 @@ function viewPurchases() {
     };
 
     el.querySelectorAll("button[data-recv-fast]").forEach(btn => {
-      btn.onclick = () => {
-        if (!allowed) return;
-        openReceiveFast(btn.getAttribute("data-recv-fast"));
-      };
+      btn.onclick = () => openReceiveFast(btn.getAttribute("data-recv-fast"));
     });
 
   }, 0);
@@ -1072,13 +1152,15 @@ function viewPurchases() {
   return el;
 }
 
-/* ---------- Pedidos (cambio importante: cliente select + base price por cliente) ---------- */
+/* ---------- PEDIDOS (A+B+C aquí) ---------- */
 function viewSales() {
   const canCreate = canAction("SALES_CREATE");
   const canFulfill = canAction("SALES_FULFILL");
   const branchId = "BR-001";
   const warehouseId = "WH-001";
   const onHand = calcOnHand(branchId, warehouseId);
+
+  const CHANNEL_LABELS = { TIENDA: "Tienda", DISTRIBUIDOR: "Distribuidor", CLAVE: "Cuenta clave" };
 
   const el = document.createElement("div");
   el.className = "grid cols2";
@@ -1088,7 +1170,11 @@ function viewSales() {
       <div class="field">
         <label>Cliente</label>
         <select id="so_customer" ${canCreate ? "" : "disabled"}>
-          ${db.customers.map(c => `<option value="${c.id}">${c.name} (${c.priceListId})</option>`).join("")}
+          ${db.customers.map(c => {
+            const ch = CHANNEL_LABELS[c.channel] || c.channel;
+            const fixed = c.priceListId ? `• lista fija ${c.priceListId}` : `• lista por canal`;
+            return `<option value="${c.id}">${c.name} (${ch} ${fixed})</option>`;
+          }).join("")}
         </select>
       </div>
       <div class="field"><label>Fecha</label><input id="so_date" type="date" value="${todayISO()}" ${canCreate ? "" : "disabled"} /></div>
@@ -1113,17 +1199,29 @@ function viewSales() {
 
     <div class="row">
       <div class="field">
-        <label>Precio base (pza)</label>
+        <label>Precio calculado (pza)</label>
         <input id="so_price" type="number" step="0.01" ${canCreate ? "" : "disabled"} readonly />
-        <div class="muted small" id="so_price_src" style="margin-top:6px">—</div>
+        <div class="muted small" id="so_price_trace" style="margin-top:6px">—</div>
       </div>
-      <div class="field"><label>Descuento %</label><input id="so_disc_pct" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
-      <div class="field"><label>Descuento $</label><input id="so_disc_amt" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field">
+        <label>Volumen</label>
+        <input id="so_vol" ${canCreate ? "" : "disabled"} readonly />
+        <div class="muted small" id="so_vol_hint" style="margin-top:6px">—</div>
+      </div>
     </div>
 
     <div class="row">
-      <div class="field"><label>Override (precio especial)</label><input id="so_override" type="number" step="0.01" placeholder="Vacío = no" ${canCreate ? "" : "disabled"} /></div>
-      <div class="field" style="flex:2"><label>Motivo (obligatorio si cambia el precio)</label><input id="so_reason" placeholder="Ej: promo, volumen, ajuste por competencia..." ${canCreate ? "" : "disabled"} /></div>
+      <div class="field"><label>Descuento % (manual)</label><input id="so_disc_pct" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field"><label>Descuento $ (manual)</label><input id="so_disc_amt" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field"><label>Override (precio especial manual)</label><input id="so_override" type="number" step="0.01" placeholder="Vacío = no" ${canCreate ? "" : "disabled"} /></div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:2">
+        <label>Motivo (obligatorio si cambia el precio)</label>
+        <input id="so_reason" placeholder="Ej: promo, volumen extra, ajuste por competencia..." ${canCreate ? "" : "disabled"} />
+        <div class="muted small" id="so_approval_note" style="margin-top:6px">—</div>
+      </div>
       <div class="field"><label>Precio final</label><input id="so_final" ${canCreate ? "" : "disabled"} readonly /></div>
     </div>
 
@@ -1145,21 +1243,34 @@ function viewSales() {
           const ordered = (so.lines || []).reduce((acc,l)=>acc+num(l.qtyPieces),0);
           const shipped = (so.shipLines||[]).reduce((acc,l)=>acc+num(l.qtyShipped),0);
           const pct = ordered>0 ? Math.round((shipped/ordered)*100) : 0;
-          const btn = (so.status !== "SHIPPED" && canFulfill)
+
+          const hasPending = (so.lines||[]).some(l => l.approvalStatus === "PENDING");
+          const statusBadge =
+            so.status === "PENDING_APPROVAL" || hasPending ? `<span class="badge warn">PENDING_APPROVAL</span>` :
+            so.status === "SHIPPED" ? `<span class="badge ok">SHIPPED</span>` :
+            so.status === "PARTIAL" ? `<span class="badge warn">PARTIAL</span>` :
+            `<span class="badge warn">OPEN</span>`;
+
+          const canDeliver = canFulfill && !hasPending && so.status !== "SHIPPED";
+          const btn = canDeliver
             ? `<button class="btn secondary" data-fulfill="${so.id}">Surtir / Entregar</button>`
-            : (so.status === "SHIPPED" ? `<span class="badge ok">OK</span>` : `<span class="badge warn">Pendiente</span>`);
+            : (hasPending ? `<span class="muted small">Esperando aprobación</span>` : `<span class="muted small">—</span>`);
+
           return `<tr>
             <td>${so.code}</td>
             <td>${so.customer || "Cliente"}</td>
             <td>${so.date}</td>
-            <td>${so.status}</td>
+            <td>${statusBadge}</td>
             <td>${pct}%</td>
             <td>${btn}</td>
           </tr>`;
         }).join("")}
       </tbody>
     </table>
-    <div class="muted small">El pedido no descuenta stock. La entrega (surtido) sí descuenta y puede ser parcial.</div>
+    <div class="muted small">
+      El pedido no descuenta stock. La entrega sí descuenta y puede ser parcial.
+      Si hay <b>PENDING_APPROVAL</b>, no se puede surtir.
+    </div>
   `);
 
   el.appendChild(form);
@@ -1167,32 +1278,32 @@ function viewSales() {
 
   let tempLines = [];
 
-  function computeFinalPrice(base, discPct, discAmt, override) {
-    const b = Math.max(0, num(base));
-    const ov = (override === "" || override == null) ? null : num(override);
+  function computeFinalPrice(computed, discPct, discAmt, overrideRaw) {
+    const base = Math.max(0, num(computed));
+    const ov = (overrideRaw === "" || overrideRaw == null) ? null : num(overrideRaw);
     if (ov != null && Number.isFinite(ov) && ov > 0) return ov;
 
     const p = Math.max(0, num(discPct));
     const a = Math.max(0, num(discAmt));
-    const afterPct = b * (1 - (p / 100));
+    const afterPct = base * (1 - (p / 100));
     const final = afterPct - a;
     return Math.max(0, final);
   }
-
-  function priceChanged(base, final) {
-    return Math.abs(num(base) - num(final)) > 0.0001;
-  }
+  function priceChanged(a, b) { return Math.abs(num(a) - num(b)) > 0.0001; }
 
   function paintLines() {
     const host = $("#so_lines");
     host.innerHTML = tempLines.length
       ? `<ul>${tempLines.map(l => {
           const p = productById(l.productId);
+          const st =
+            l.approvalStatus === "PENDING" ? ` <span class="badge warn">PENDING</span>` :
+            l.approvalStatus === "APPROVED" ? ` <span class="badge ok">APPROVED</span>` :
+            l.approvalStatus === "DENIED" ? ` <span class="badge bad">DENIED</span>` : "";
           const reason = l.reason ? ` <span class="muted">(${l.reason})</span>` : "";
-          const src = l.baseSource ? ` <span class="muted">[${l.baseSource}]</span>` : "";
           return `<li>
-            <b>${p.sku}</b>: ${l.boxes} caja(s) + ${l.pieces} pza(s) = <b>${l.qtyPieces}</b> pzas |
-            Base ${money(l.basePrice)} → Final <b>${money(l.finalPrice)}</b> / pza${src}${reason}
+            <b>${p.sku}</b>: ${l.boxes} caja(s) + ${l.pieces} pza(s) = <b>${l.qtyPieces}</b> |
+            Calculado ${money(l.computedPrice)} → Final <b>${money(l.finalPrice)}</b> / pza${st}${reason}
           </li>`;
         }).join("")}</ul>`
       : `<span class="muted">Sin líneas</span>`;
@@ -1210,12 +1321,9 @@ function viewSales() {
       const p = productById(line.productId);
       const shipped = shippedSum(so, line.productId);
       const remaining = Math.max(0, num(line.qtyPieces) - shipped);
-
       const pp = ppb(line.productId);
       const defBoxes = Math.floor(Math.min(remaining, num(onHand.get(line.productId)||0)) / pp);
-      const defPieces = 0;
-
-      return { line, p, shipped, remaining, pp, defBoxes, defPieces, onhand: num(onHand.get(line.productId)||0) };
+      return { line, p, shipped, remaining, pp, defBoxes, onhand: num(onHand.get(line.productId)||0) };
     });
 
     openModal({
@@ -1223,19 +1331,7 @@ function viewSales() {
       bodyHTML: `
         <div class="muted small">Captura lo entregado. Se clampa a “pendiente” y al stock disponible.</div>
         <table class="table" style="margin-top:12px">
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Pedido</th>
-              <th>Entregado</th>
-              <th>Pendiente</th>
-              <th>Stock</th>
-              <th>PPB</th>
-              <th>Cajas</th>
-              <th>Pzas</th>
-              <th>Total a entregar</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Producto</th><th>Pedido</th><th>Entregado</th><th>Pendiente</th><th>Stock</th><th>PPB</th><th>Cajas</th><th>Pzas</th><th>Total</th></tr></thead>
           <tbody>
             ${rows.map((r,i)=>`
               <tr>
@@ -1246,17 +1342,14 @@ function viewSales() {
                 <td>${r.onhand}</td>
                 <td>${r.pp}</td>
                 <td><input data-sh-boxes="${i}" type="number" step="1" value="${r.defBoxes}" /></td>
-                <td><input data-sh-pieces="${i}" type="number" step="1" value="${r.defPieces}" /></td>
+                <td><input data-sh-pieces="${i}" type="number" step="1" value="0" /></td>
                 <td><span data-sh-total="${i}">0</span></td>
               </tr>
             `).join("")}
           </tbody>
         </table>
       `,
-      actionsHTML: `
-        <button class="btn" id="sh_cancel">Cancelar</button>
-        <button class="btn primary" id="sh_apply">Aplicar entrega</button>
-      `,
+      actionsHTML: `<button class="btn" id="sh_cancel">Cancelar</button><button class="btn primary" id="sh_apply">Aplicar entrega</button>`,
       onMount: ({ root, close }) => {
         function recalc(i) {
           const b = num(root.querySelector(`[data-sh-boxes="${i}"]`).value);
@@ -1275,6 +1368,11 @@ function viewSales() {
 
         root.querySelector("#sh_apply").onclick = () => {
           if (!canFulfill) return;
+
+          // bloquear si hay pending approvals (doble seguro)
+          if ((so.lines||[]).some(l => l.approvalStatus === "PENDING")) {
+            return alert("Este pedido tiene líneas pendientes de aprobación.");
+          }
 
           rows.forEach((r,i)=>{
             const b = num(root.querySelector(`[data-sh-boxes="${i}"]`).value);
@@ -1323,45 +1421,82 @@ function viewSales() {
   setTimeout(() => {
     paintLines();
 
-    function setBasePriceFromCustomer() {
+    function calcQtyPiecesUI() {
+      const productId = $("#so_prod").value;
+      const boxes = num($("#so_boxes").value);
+      const pieces = num($("#so_pieces").value);
+      return toPieces(boxes, pieces, productId);
+    }
+
+    function refreshComputed() {
       const customerId = $("#so_customer").value;
       const productId = $("#so_prod").value;
+      const date = $("#so_date").value || todayISO();
+      const qtyPieces = Math.max(1, calcQtyPiecesUI());
 
-      const info = getBasePriceForCustomer(customerId, productId);
-      $("#so_price").value = num(info.basePrice).toFixed(2);
+      const computed = getComputedPrice(customerId, productId, qtyPieces, date);
+      $("#so_price").value = num(computed.computedPrice).toFixed(2);
 
-      const srcLabel =
-        info.source === "CUSTOM_OVERRIDE" ? "CUSTOM_OVERRIDE (precio especial)" :
-        info.source === "PRICELIST" ? `PRICELIST (-${num(info.listDiscountPct).toFixed(0)}%)` :
-        info.source === "PRODUCT" ? "PRODUCT (precio producto)" : "—";
+      const src =
+        computed.trace.source === "CUSTOM_OVERRIDE" ? "CUSTOM_OVERRIDE" :
+        computed.trace.source === "PRICELIST" ? "PRICELIST" :
+        computed.trace.source === "PRODUCT" ? "PRODUCT" : "—";
 
-      $("#so_price_src").textContent = `Fuente: ${srcLabel}`;
+      const plSrc =
+        computed.trace.priceListSource === "CUSTOMER_FIXED" ? "cliente (fija)" :
+        computed.trace.priceListSource === "CHANNEL_SCHEDULE" ? "canal (vigente)" :
+        "default";
 
-      // reset descuentos/override por seguridad (evita “heredar” cosas raras)
+      const volTxt = computed.trace.volumeDiscountPct > 0 ? `-${computed.trace.volumeDiscountPct.toFixed(2)}%` : "—";
+      $("#so_vol").value = volTxt;
+      $("#so_vol_hint").textContent = computed.trace.volumeRuleId
+        ? `Regla volumen aplicada (tier).`
+        : `Sin regla por volumen aplicable.`;
+
+      $("#so_price_trace").textContent =
+        `Fuente: ${src} | Lista: ${computed.trace.priceListId} (${plSrc}, -${computed.trace.priceListDiscountPct.toFixed(2)}%)` +
+        (computed.trace.customerOverrideId ? ` | Pactado: sí` : ``);
+
+      // reset manual (para no “arrastrar” descuentos al cambiar cosas clave)
       $("#so_disc_pct").value = "0";
       $("#so_disc_amt").value = "0";
       $("#so_override").value = "";
       $("#so_reason").value = "";
 
-      updateFinal();
+      updateFinalAndApproval();
     }
 
-    function updateFinal() {
-      const base = num($("#so_price").value);
+    function updateFinalAndApproval() {
+      const computed = num($("#so_price").value);
       const discPct = num($("#so_disc_pct").value);
       const discAmt = num($("#so_disc_amt").value);
-      const override = $("#so_override").value;
-      const final = computeFinalPrice(base, discPct, discAmt, override);
+      const overrideRaw = $("#so_override").value;
+
+      const final = computeFinalPrice(computed, discPct, discAmt, overrideRaw);
       $("#so_final").value = money(final);
+
+      const changed = priceChanged(computed, final);
+      const needs = needsApprovalForPriceChange(role(), computed, final);
+
+      const note = $("#so_approval_note");
+      if (!changed) {
+        note.textContent = "Sin cambio manual de precio.";
+      } else if (needs) {
+        note.textContent = "Baja de precio: requerirá aprobación de Admin (se genera solicitud).";
+      } else {
+        note.textContent = "Cambio manual sin baja (no requiere aprobación).";
+      }
     }
 
-    $("#so_customer").onchange = setBasePriceFromCustomer;
-    $("#so_prod").onchange = setBasePriceFromCustomer;
-    setBasePriceFromCustomer();
+    $("#so_customer").onchange = refreshComputed;
+    $("#so_prod").onchange = refreshComputed;
+    $("#so_date").onchange = refreshComputed;
+    $("#so_boxes").oninput = refreshComputed;  // volumen depende de cantidad
+    $("#so_pieces").oninput = refreshComputed; // volumen depende de cantidad
 
-    $("#so_disc_pct").oninput = updateFinal;
-    $("#so_disc_amt").oninput = updateFinal;
-    $("#so_override").oninput = updateFinal;
+    $("#so_disc_pct").oninput = updateFinalAndApproval;
+    $("#so_disc_amt").oninput = updateFinalAndApproval;
+    $("#so_override").oninput = updateFinalAndApproval;
 
     $("#so_scan").onclick = async () => {
       if (!canCreate) return;
@@ -1370,10 +1505,12 @@ function viewSales() {
           const p = productByBarcode(code);
           if (!p) return alert(`No se encontró producto con barcode: ${code}`);
           $("#so_prod").value = p.id;
-          setBasePriceFromCustomer();
+          refreshComputed();
         }
       });
     };
+
+    refreshComputed();
 
     $("#so_add_line").onclick = () => {
       if (!canCreate) return;
@@ -1387,35 +1524,83 @@ function viewSales() {
       if (!customerId) return alert("Selecciona cliente.");
       if (!productId || qtyPieces <= 0) return alert("Producto y cantidad > 0.");
 
-      const baseInfo = getBasePriceForCustomer(customerId, productId);
-      const basePrice = num($("#so_price").value); // ya calculado
+      const date = $("#so_date").value || todayISO();
+      const computedObj = getComputedPrice(customerId, productId, qtyPieces, date);
+      const computedPrice = computedObj.computedPrice;
+
       const discPct = num($("#so_disc_pct").value);
       const discAmt = num($("#so_disc_amt").value);
       const overrideRaw = $("#so_override").value;
       const overridePrice = (overrideRaw === "" ? null : num(overrideRaw));
-      const finalPrice = computeFinalPrice(basePrice, discPct, discAmt, overrideRaw);
+      const finalPrice = computeFinalPrice(computedPrice, discPct, discAmt, overrideRaw);
 
       if (finalPrice <= 0) return alert("Precio final inválido.");
 
-      const changed = priceChanged(basePrice, finalPrice);
+      const changed = priceChanged(computedPrice, finalPrice);
       const reason = $("#so_reason").value.trim();
-      if (changed && !reason) return alert("Si cambias el precio (descuento u override), el motivo es obligatorio.");
+      if (changed && !reason) return alert("Si cambias el precio, el motivo es obligatorio.");
+
+      const approvalNeeded = needsApprovalForPriceChange(role(), computedPrice, finalPrice);
+
+      // si requiere aprobación, se crea request en cola
+      let approvalStatus = "NONE";
+      let requestId = null;
+
+      if (approvalNeeded) {
+        approvalStatus = "PENDING";
+        requestId = uid();
+
+        db.priceOverrideRequests.push({
+          id: requestId,
+          createdAt: new Date().toISOString(),
+          status: "PENDING", // PENDING | APPROVED | DENIED
+          requestedByUserId: db.currentUserId,
+
+          customerId,
+          customerName: customer?.name || "Cliente",
+          productId,
+          productSku: productById(productId)?.sku || "",
+          qtyPieces,
+          orderDate: date,
+
+          computedPrice: num(computedPrice),
+          requestedFinalPrice: num(finalPrice),
+          reason,
+
+          manual: {
+            discountPct: discPct,
+            discountAmt: discAmt,
+            overridePrice
+          },
+
+          decision: { decidedByUserId: null, decidedAt: null, note: "" },
+
+          // se ligará a pedido cuando se cree
+          salesOrderId: null,
+          salesOrderLineId: null,
+        });
+      }
 
       tempLines.push({
+        id: uid(),
         customerId,
         productId,
         boxes,
         pieces,
         qtyPieces,
-        basePrice,
-        baseSource: baseInfo.source,
-        baseListDiscountPct: baseInfo.listDiscountPct,
-        baseOverrideId: baseInfo.overrideId,
+
+        computedPrice: num(computedPrice),
+        computedTrace: computedObj.trace,
+
         discountPct: discPct,
         discountAmt: discAmt,
         overridePrice,
-        finalPrice,
-        reason: changed ? reason : ""
+
+        finalPrice: num(finalPrice),
+        reason: changed ? reason : "",
+
+        approvalStatus,
+        approvalRequestId: requestId
       });
 
       paintLines();
@@ -1433,13 +1618,26 @@ function viewSales() {
       const soId = uid();
       const code = `SO-${String(db.salesOrders.length + 1).padStart(5, "0")}`;
 
+      // ligar requests pendientes al pedido
+      tempLines.forEach(l => {
+        if (l.approvalStatus === "PENDING" && l.approvalRequestId) {
+          const req = db.priceOverrideRequests.find(r => r.id === l.approvalRequestId);
+          if (req) {
+            req.salesOrderId = soId;
+            req.salesOrderLineId = l.id;
+          }
+        }
+      });
+
+      const hasPending = tempLines.some(l => l.approvalStatus === "PENDING");
+
       db.salesOrders.push({
         id: soId,
         code,
         customerId,
         customer: customerName,
         date,
-        status: "OPEN",
+        status: hasPending ? "PENDING_APPROVAL" : "OPEN",
         branchId,
         warehouseId,
         userId: db.currentUserId,
@@ -1641,20 +1839,37 @@ function viewBenchmark() {
   return el;
 }
 
-/* ---------- NUEVO: Clientes/Precios (Admin) ---------- */
+/* ---------- PRICING (Admin): A + B + C) ---------- */
 function viewPricing() {
   const allowed = canAction("MANAGE_PRICING");
+  const CHANNELS = [
+    { id: "TIENDA", label: "Tienda" },
+    { id: "DISTRIBUIDOR", label: "Distribuidor" },
+    { id: "CLAVE", label: "Cuenta clave" }
+  ];
+
+  const pending = db.priceOverrideRequests
+    .filter(r => r.status === "PENDING")
+    .sort((a,b)=> (b.createdAt||"").localeCompare(a.createdAt||""));
+
   const el = document.createElement("div");
   el.className = "grid cols2";
 
-  const plCard = card("Listas de precios", `
-    <div class="muted small">Cada cliente tiene 1 lista. La lista aplica un descuento % sobre el precio del producto.</div>
-    <div class="row" style="margin-top:10px">
-      <div class="field"><label>Nombre</label><input id="pl_name" placeholder="Ej: Mayoreo" ${allowed ? "" : "disabled"} /></div>
+  const listsCard = card("Listas + Canales (A)", `
+    <div class="muted small">
+      Si el cliente tiene <b>lista fija</b>, gana. Si no, se usa <b>canal schedule</b> vigente por fecha del pedido.
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <div class="field"><label>Nueva lista</label><input id="pl_name" placeholder="Ej: Mayoreo 2" ${allowed ? "" : "disabled"} /></div>
       <div class="field"><label>Descuento %</label><input id="pl_disc" type="number" step="0.01" value="0" ${allowed ? "" : "disabled"} /></div>
       <button class="btn primary" id="pl_add" ${allowed ? "" : "disabled"}>Crear</button>
     </div>
+
     <div class="hr"></div>
+
     <table class="table">
       <thead><tr><th>ID</th><th>Nombre</th><th>Desc %</th></tr></thead>
       <tbody>
@@ -1667,31 +1882,87 @@ function viewPricing() {
         `).join("")}
       </tbody>
     </table>
+
+    <div class="hr"></div>
+
+    <div class="muted small"><b>Canal schedules</b> (vigencia)</div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <label>Canal</label>
+        <select id="cs_channel" ${allowed ? "" : "disabled"}>
+          ${CHANNELS.map(c => `<option value="${c.id}">${c.label}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label>Lista</label>
+        <select id="cs_pl" ${allowed ? "" : "disabled"}>
+          ${db.priceLists.map(pl => `<option value="${pl.id}">${pl.id} — ${pl.name}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field"><label>Inicio</label><input id="cs_start" type="date" value="${todayISO()}" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Fin</label><input id="cs_end" type="date" value="2026-12-31" ${allowed ? "" : "disabled"} /></div>
+      <button class="btn primary" id="cs_add" ${allowed ? "" : "disabled"}>Agregar</button>
+    </div>
+
+    <table class="table" style="margin-top:10px">
+      <thead><tr><th>Canal</th><th>Lista</th><th>Inicio</th><th>Fin</th><th></th></tr></thead>
+      <tbody>
+        ${db.channelPriceSchedules.map(s => `
+          <tr>
+            <td>${s.channel}</td>
+            <td>${s.priceListId}</td>
+            <td>${s.startDate || "—"}</td>
+            <td>${s.endDate || "—"}</td>
+            <td><button class="btn danger" data-cs-del="${s.id}" ${allowed ? "" : "disabled"}>X</button></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
   `);
 
-  const custCard = card("Clientes + precio especial", `
-    <div class="muted small">
-      Precio especial (override) gana sobre lista/producto. Úsalo solo cuando de verdad sea “precio pactado”.
-    </div>
+  const customersCard = card("Clientes + Pactados + Volumen + Aprobaciones (B+C)", `
+    <div class="muted small"><b>Clientes</b> (canal + lista fija opcional)</div>
 
     <div class="row" style="margin-top:10px">
       <div class="field"><label>Nuevo cliente</label><input id="c_name" placeholder="Ej: Tienda Norte" ${allowed ? "" : "disabled"} /></div>
       <div class="field">
-        <label>Lista</label>
+        <label>Canal</label>
+        <select id="c_channel" ${allowed ? "" : "disabled"}>
+          ${CHANNELS.map(c => `<option value="${c.id}">${c.label}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label>Lista fija (opcional)</label>
         <select id="c_pl" ${allowed ? "" : "disabled"}>
+          <option value="">(usar canal schedule)</option>
           ${db.priceLists.map(pl => `<option value="${pl.id}">${pl.id} — ${pl.name}</option>`).join("")}
         </select>
       </div>
       <button class="btn primary" id="c_add" ${allowed ? "" : "disabled"}>Agregar</button>
     </div>
 
+    <table class="table" style="margin-top:10px">
+      <thead><tr><th>Cliente</th><th>Canal</th><th>Lista fija</th></tr></thead>
+      <tbody>
+        ${db.customers.map(c => `
+          <tr>
+            <td>${c.name}</td>
+            <td class="muted">${c.channel}</td>
+            <td class="muted">${c.priceListId ? c.priceListId : "(canal schedule)"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+
     <div class="hr"></div>
 
-    <div class="row">
+    <div class="muted small"><b>Pactado cliente+producto</b> (override base)</div>
+    <div class="row" style="margin-top:10px">
       <div class="field">
         <label>Cliente</label>
         <select id="ov_customer" ${allowed ? "" : "disabled"}>
-          ${db.customers.map(c => `<option value="${c.id}">${c.name} (${c.priceListId})</option>`).join("")}
+          ${db.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join("")}
         </select>
       </div>
       <div class="field">
@@ -1703,14 +1974,12 @@ function viewPricing() {
     </div>
 
     <div class="row">
-      <div class="field"><label>Precio especial (pza)</label><input id="ov_price" type="number" step="0.01" placeholder="Ej: 52.00" ${allowed ? "" : "disabled"} /></div>
-      <div class="field" style="flex:2"><label>Motivo</label><input id="ov_reason" placeholder="Ej: contrato, volumen, negociación..." ${allowed ? "" : "disabled"} /></div>
-      <button class="btn primary" id="ov_save" ${allowed ? "" : "disabled"}>Guardar override</button>
+      <div class="field"><label>Precio pactado (pza)</label><input id="ov_price" type="number" step="0.01" ${allowed ? "" : "disabled"} /></div>
+      <div class="field" style="flex:2"><label>Motivo</label><input id="ov_reason" ${allowed ? "" : "disabled"} /></div>
+      <button class="btn primary" id="ov_save" ${allowed ? "" : "disabled"}>Guardar pactado</button>
     </div>
 
-    <div class="hr"></div>
-    <div class="muted small">Overrides actuales:</div>
-    <table class="table">
+    <table class="table" style="margin-top:10px">
       <thead><tr><th>Cliente</th><th>Producto</th><th>Precio</th><th>Motivo</th><th></th></tr></thead>
       <tbody>
         ${db.customerPriceOverrides.map(o => {
@@ -1726,51 +1995,131 @@ function viewPricing() {
         }).join("")}
       </tbody>
     </table>
+
+    <div class="hr"></div>
+
+    <div class="muted small"><b>Reglas por volumen</b> (tiers) (B)</div>
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <label>Producto</label>
+        <select id="vr_prod" ${allowed ? "" : "disabled"}>
+          <option value="">(todos)</option>
+          ${db.products.map(p => `<option value="${p.id}">${p.sku}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field"><label>Min cajas</label><input id="vr_min_boxes" type="number" step="1" value="5" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Desc %</label><input id="vr_disc" type="number" step="0.01" value="2.0" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Inicio</label><input id="vr_start" type="date" value="${todayISO()}" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Fin</label><input id="vr_end" type="date" value="2026-12-31" ${allowed ? "" : "disabled"} /></div>
+      <button class="btn primary" id="vr_add" ${allowed ? "" : "disabled"}>Agregar regla</button>
+    </div>
+
+    <table class="table" style="margin-top:10px">
+      <thead><tr><th>Producto</th><th>Min cajas</th><th>Desc %</th><th>Inicio</th><th>Fin</th><th></th></tr></thead>
+      <tbody>
+        ${db.volumeRules.map(r => {
+          const p = r.productId ? productById(r.productId) : null;
+          return `<tr>
+            <td class="muted">${p ? p.sku : "(todos)"}</td>
+            <td>${num(r.minBoxes)}</td>
+            <td>${num(r.discountPct).toFixed(2)}%</td>
+            <td>${r.startDate || "—"}</td>
+            <td>${r.endDate || "—"}</td>
+            <td><button class="btn danger" data-vr-del="${r.id}" ${allowed ? "" : "disabled"}>X</button></td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+
+    <div class="hr"></div>
+
+    <div class="muted small"><b>Solicitudes de precio</b> (C)</div>
+    <div class="muted small">Si apruebas, el pedido sale de PENDING_APPROVAL automáticamente.</div>
+
+    <table class="table" style="margin-top:10px">
+      <thead><tr><th>Fecha</th><th>Pedido</th><th>Cliente</th><th>SKU</th><th>Cant</th><th>Calc</th><th>Solic</th><th>Motivo</th><th>Acción</th></tr></thead>
+      <tbody>
+        ${pending.length ? pending.map(r => {
+          const so = r.salesOrderId ? db.salesOrders.find(x => x.id === r.salesOrderId) : null;
+          const soCode = so ? so.code : "—";
+          return `<tr>
+            <td class="muted">${(r.createdAt||"").slice(0,10)}</td>
+            <td>${soCode}</td>
+            <td>${r.customerName}</td>
+            <td>${r.productSku}</td>
+            <td>${r.qtyPieces}</td>
+            <td>${money(r.computedPrice)}</td>
+            <td><b>${money(r.requestedFinalPrice)}</b></td>
+            <td class="muted">${r.reason}</td>
+            <td>
+              <button class="btn primary" data-req-approve="${r.id}">Aprobar</button>
+              <button class="btn danger" data-req-deny="${r.id}">Denegar</button>
+            </td>
+          </tr>`;
+        }).join("") : `<tr><td colspan="9" class="muted">Sin pendientes.</td></tr>`}
+      </tbody>
+    </table>
   `);
 
-  el.appendChild(plCard);
-  el.appendChild(custCard);
+  el.appendChild(listsCard);
+  el.appendChild(customersCard);
 
   setTimeout(() => {
+    // listas
     $("#pl_add").onclick = () => {
       if (!allowed) return;
       const name = $("#pl_name").value.trim();
       const disc = num($("#pl_disc").value);
       if (!name) return alert("Nombre requerido.");
       if (disc < 0 || disc > 80) return alert("Descuento fuera de rango (0–80%).");
-
       const next = `PL-${String(db.priceLists.length + 1).padStart(3, "0")}`;
       db.priceLists.push({ id: next, name, discountPct: disc });
-      saveDB(db);
-      render();
+      saveDB(db); render();
     };
 
+    // canal schedules
+    $("#cs_add").onclick = () => {
+      if (!allowed) return;
+      const channel = $("#cs_channel").value;
+      const priceListId = $("#cs_pl").value;
+      const startDate = $("#cs_start").value || todayISO();
+      const endDate = $("#cs_end").value || "9999-12-31";
+      db.channelPriceSchedules.push({ id: uid(), channel, priceListId, startDate, endDate });
+      saveDB(db); render();
+    };
+    document.querySelectorAll("button[data-cs-del]").forEach(btn => {
+      btn.onclick = () => {
+        if (!allowed) return;
+        const id = btn.getAttribute("data-cs-del");
+        db.channelPriceSchedules = db.channelPriceSchedules.filter(x => x.id !== id);
+        saveDB(db); render();
+      };
+    });
+
+    // clientes
     $("#c_add").onclick = () => {
       if (!allowed) return;
       const name = $("#c_name").value.trim();
-      const pl = $("#c_pl").value;
+      const channel = $("#c_channel").value;
+      const priceListId = $("#c_pl").value || "";
       if (!name) return alert("Nombre de cliente requerido.");
-      if (!pl) return alert("Selecciona lista.");
-
       const next = `C-${String(db.customers.length + 1).padStart(3, "0")}`;
-      db.customers.push({ id: next, name, priceListId: pl });
-      saveDB(db);
-      render();
+      db.customers.push({ id: next, name, channel, priceListId });
+      saveDB(db); render();
     };
 
+    // pactados
     $("#ov_save").onclick = () => {
       if (!allowed) return;
-
       const customerId = $("#ov_customer").value;
       const productId = $("#ov_prod").value;
       const price = num($("#ov_price").value);
       const reason = $("#ov_reason").value.trim();
-
       if (!customerId || !productId) return alert("Selecciona cliente y producto.");
-      if (price <= 0) return alert("Precio especial inválido.");
-      if (!reason) return alert("Motivo requerido (auditoría).");
+      if (price <= 0) return alert("Precio pactado inválido.");
+      if (!reason) return alert("Motivo requerido.");
 
-      const existing = getCustomerOverride(customerId, productId);
+      const existing = db.customerPriceOverrides.find(o => o.customerId === customerId && o.productId === productId);
       if (existing) {
         existing.basePrice = price;
         existing.reason = reason;
@@ -1779,26 +2128,106 @@ function viewPricing() {
       } else {
         db.customerPriceOverrides.push({
           id: uid(),
-          customerId,
-          productId,
-          basePrice: price,
-          reason,
+          customerId, productId, basePrice: price, reason,
           updatedAt: new Date().toISOString(),
           userId: db.currentUserId
         });
       }
-
-      saveDB(db);
-      render();
+      saveDB(db); render();
     };
-
     document.querySelectorAll("button[data-ov-del]").forEach(btn => {
       btn.onclick = () => {
         if (!allowed) return;
         const id = btn.getAttribute("data-ov-del");
         db.customerPriceOverrides = db.customerPriceOverrides.filter(x => x.id !== id);
-        saveDB(db);
-        render();
+        saveDB(db); render();
+      };
+    });
+
+    // volumen
+    $("#vr_add").onclick = () => {
+      if (!allowed) return;
+      const productId = $("#vr_prod").value || "";
+      const minBoxes = Math.max(1, num($("#vr_min_boxes").value));
+      const discountPct = num($("#vr_disc").value);
+      const startDate = $("#vr_start").value || todayISO();
+      const endDate = $("#vr_end").value || "9999-12-31";
+      if (discountPct <= 0 || discountPct > 50) return alert("Descuento volumen fuera de rango (0–50%).");
+      db.volumeRules.push({ id: uid(), productId, minBoxes, discountPct, startDate, endDate });
+      saveDB(db); render();
+    };
+    document.querySelectorAll("button[data-vr-del]").forEach(btn => {
+      btn.onclick = () => {
+        if (!allowed) return;
+        const id = btn.getAttribute("data-vr-del");
+        db.volumeRules = db.volumeRules.filter(x => x.id !== id);
+        saveDB(db); render();
+      };
+    });
+
+    // aprobaciones
+    function finalizeOrderStatusIfReady(salesOrderId) {
+      const so = db.salesOrders.find(x => x.id === salesOrderId);
+      if (!so) return;
+      const hasPending = (so.lines||[]).some(l => l.approvalStatus === "PENDING");
+      if (!hasPending && so.status === "PENDING_APPROVAL") so.status = "OPEN";
+    }
+
+    document.querySelectorAll("button[data-req-approve]").forEach(btn => {
+      btn.onclick = () => {
+        if (!allowed) return;
+        const id = btn.getAttribute("data-req-approve");
+        const req = db.priceOverrideRequests.find(r => r.id === id);
+        if (!req) return;
+
+        req.status = "APPROVED";
+        req.decision = { decidedByUserId: db.currentUserId, decidedAt: new Date().toISOString(), note: "Aprobado" };
+
+        // aplicar al pedido/linea
+        const so = req.salesOrderId ? db.salesOrders.find(x => x.id === req.salesOrderId) : null;
+        if (so) {
+          const line = (so.lines||[]).find(l => l.id === req.salesOrderLineId);
+          if (line) {
+            line.finalPrice = num(req.requestedFinalPrice);
+            line.approvalStatus = "APPROVED";
+            line.approvedByUserId = db.currentUserId;
+            line.approvedAt = req.decision.decidedAt;
+          }
+          finalizeOrderStatusIfReady(so.id);
+        }
+
+        saveDB(db); render();
+      };
+    });
+
+    document.querySelectorAll("button[data-req-deny]").forEach(btn => {
+      btn.onclick = () => {
+        if (!allowed) return;
+        const id = btn.getAttribute("data-req-deny");
+        const req = db.priceOverrideRequests.find(r => r.id === id);
+        if (!req) return;
+
+        req.status = "DENIED";
+        req.decision = { decidedByUserId: db.currentUserId, decidedAt: new Date().toISOString(), note: "Denegado" };
+
+        const so = req.salesOrderId ? db.salesOrders.find(x => x.id === req.salesOrderId) : null;
+        if (so) {
+          const line = (so.lines||[]).find(l => l.id === req.salesOrderLineId);
+          if (line) {
+            // revertir a precio calculado y limpiar manuales (para que no “siga” el descuento)
+            line.finalPrice = num(req.computedPrice);
+            line.discountPct = 0;
+            line.discountAmt = 0;
+            line.overridePrice = null;
+            line.reason = `${line.reason} (DENIED: revertido a calculado)`.slice(0, 200);
+            line.approvalStatus = "DENIED";
+            line.deniedByUserId = db.currentUserId;
+            line.deniedAt = req.decision.decidedAt;
+          }
+          finalizeOrderStatusIfReady(so.id);
+        }
+
+        saveDB(db); render();
       };
     });
 
@@ -1911,13 +2340,7 @@ function viewReports() {
 
 // ---------- Init ----------
 (function init() {
-  if (!canView(currentTab)) currentTab = "sales";
-  if (!canView(currentTab)) currentTab = "purchases";
-  if (!canView(currentTab)) currentTab = "waste";
-  if (!canView(currentTab)) currentTab = "benchmark";
-  if (!canView(currentTab)) currentTab = "inventory";
-  if (!canView(currentTab)) currentTab = "products";
-  if (!canView(currentTab)) currentTab = "pricing";
-  if (!canView(currentTab)) currentTab = "dashboard";
+  const fallback = ["sales","purchases","waste","benchmark","inventory","products","pricing","dashboard"];
+  for (const t of fallback) { if (canView(t)) { currentTab = t; break; } }
   render();
 })();
