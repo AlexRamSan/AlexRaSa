@@ -1,12 +1,12 @@
-/* Chilchota Demo — v5
-   ROLES:
-   - SELLER (Vendedor): Pedidos + Órdenes de compra + Merma (con escaneo)
-   - WAREHOUSE (Almacén): Ajustes inventario + control de movimientos + surtido/entrega
-   - ADMIN: ve TODO + KPIs (Dashboard/Reportes)
-
-   PRECIOS EN PEDIDOS:
-   - Al seleccionar producto: se carga PRECIO BASE automáticamente
-   - Si aplica descuento u override: se captura el precio final y el MOTIVO (obligatorio si cambia el precio)
+/* Chilchota Demo — v6
+   NUEVO (Siguiente paso):
+   - Clientes + Listas de precios + Precio especial por cliente/producto
+   - Al seleccionar Cliente + Producto en Pedido: se carga PRECIO BASE calculado:
+       1) Precio del producto
+       2) Descuento por lista de precios del cliente (si aplica)
+       3) Override especial por cliente+producto (si existe)
+   - El vendedor aún puede aplicar descuento/override, pero si cambia el precio vs base calculada:
+     MOTIVO obligatorio.
 */
 
 const STORAGE_KEY = "chilchota_demo_v4"; // mantenemos para no perder datos existentes
@@ -84,8 +84,28 @@ function seedData() {
     });
   }
 
+  // NUEVO: listas de precios
+  const priceLists = [
+    { id: "PL-STD", name: "Lista estándar", discountPct: 0 },
+    { id: "PL-MAY", name: "Mayoreo", discountPct: 8 },
+    { id: "PL-KEY", name: "Cuenta clave", discountPct: 12 },
+  ];
+
+  // NUEVO: clientes
+  const customers = [
+    { id: "C-001", name: "Tienda Centro", priceListId: "PL-STD" },
+    { id: "C-002", name: "Distribuidor Bajío", priceListId: "PL-MAY" },
+    { id: "C-003", name: "Cuenta Clave QRO", priceListId: "PL-KEY" },
+  ];
+
+  // NUEVO: override por cliente+producto (precio base especial)
+  // Ejemplo: Cuenta Clave QRO tiene precio especial en Jocoque
+  const customerPriceOverrides = [
+    { id: uid(), customerId: "C-003", productId: products[2].id, basePrice: 52.00, reason: "Contrato anual", updatedAt: new Date().toISOString(), userId: "U-ADMIN" }
+  ];
+
   return {
-    meta: { createdAt: new Date().toISOString(), version: 5 },
+    meta: { createdAt: new Date().toISOString(), version: 6 },
     org: { name: "Chilchota (Demo)" },
     branches: [{ id: branchId, name: "Sucursal 1" }],
     warehouses: [{ id: warehouseId, branchId, name: "Almacén 1" }],
@@ -100,14 +120,19 @@ function seedData() {
     purchaseOrders: [],
     salesOrders: [],
     competitorPrices: [],
-    physicalCounts: []
+    physicalCounts: [],
+
+    // NUEVO
+    priceLists,
+    customers,
+    customerPriceOverrides,
   };
 }
 
 function migrateDB(db) {
   if (!db) return seedData();
-  db.meta = db.meta || { createdAt: new Date().toISOString(), version: 5 };
-  db.meta.version = 5;
+  db.meta = db.meta || { createdAt: new Date().toISOString(), version: 6 };
+  db.meta.version = 6;
 
   db.products = db.products || [];
   db.stockMoves = db.stockMoves || [];
@@ -125,6 +150,21 @@ function migrateDB(db) {
 
   if (!db.users || !db.users.length) db.users = seedData().users;
   if (!db.currentUserId) db.currentUserId = db.users[0].id;
+
+  // NUEVO: inicializar si no existe (migración suave)
+  if (!db.priceLists || !db.priceLists.length) db.priceLists = seedData().priceLists;
+  if (!db.customers || !db.customers.length) db.customers = seedData().customers;
+  if (!db.customerPriceOverrides) db.customerPriceOverrides = seedData().customerPriceOverrides;
+
+  // asegurar priceListId válido
+  const plIds = new Set(db.priceLists.map(x => x.id));
+  db.customers.forEach(c => { if (!plIds.has(c.priceListId)) c.priceListId = "PL-STD"; });
+
+  // compat: pedidos viejos traían customer string
+  db.salesOrders.forEach(so => {
+    if (!so.customer && so.customerName) so.customer = so.customerName;
+    if (!so.customer && so.customerId) so.customer = (db.customers.find(c => c.id === so.customerId)?.name) || "Cliente";
+  });
 
   return db;
 }
@@ -152,12 +192,6 @@ let db = loadDB();
 function getUser() { return db.users.find(u => u.id === db.currentUserId) || db.users[0]; }
 function role() { return getUser().role; }
 
-/*
-Requerimiento:
-- Vendedor: pedidos + órdenes de compra + merma (escaneando)
-- Warehouse: ajustar inventarios + controlar movimientos (+ surtido/entrega)
-- Admin: todo + KPIs (dashboard/reportes)
-*/
 const PERMS = {
   dashboard: ["ADMIN"],
   products: ["ADMIN"],
@@ -166,6 +200,7 @@ const PERMS = {
   sales: ["ADMIN","WAREHOUSE","SELLER"],
   waste: ["ADMIN","WAREHOUSE","SELLER"],
   benchmark: ["ADMIN","SELLER"],
+  pricing: ["ADMIN"], // NUEVO
   reports: ["ADMIN"]
 };
 
@@ -182,12 +217,13 @@ function canAction(action) {
     SALES_FULFILL: ["ADMIN","WAREHOUSE"],
     WASTE: ["ADMIN","WAREHOUSE","SELLER"],
     BENCHMARK: ["ADMIN","SELLER"],
+    MANAGE_PRICING: ["ADMIN"], // NUEVO
     REPORTS: ["ADMIN"]
   };
   return (rules[action] || []).includes(role());
 }
 
-// ---------- Productos / Conversiones ----------
+// ---------- Productos / Clientes / Precios ----------
 function productById(id) { return db.products.find(p => p.id === id); }
 function productByBarcode(code) {
   const c = String(code || "").trim();
@@ -196,6 +232,32 @@ function productByBarcode(code) {
 }
 function ppb(productId) { return Math.max(1, num(productById(productId)?.piecesPerBox || 1)); }
 function toPieces(boxes, pieces, productId) { return (num(boxes) * ppb(productId)) + num(pieces); }
+
+function customerById(id) { return db.customers.find(c => c.id === id); }
+function priceListById(id) { return db.priceLists.find(p => p.id === id); }
+
+function getCustomerOverride(customerId, productId) {
+  return db.customerPriceOverrides.find(o => o.customerId === customerId && o.productId === productId) || null;
+}
+
+/* Devuelve precio base calculado y trazabilidad (para mostrar y para auditar en línea de pedido) */
+function getBasePriceForCustomer(customerId, productId) {
+  const p = productById(productId);
+  if (!p) return { basePrice: 0, source: "NONE", listDiscountPct: 0, overrideId: null };
+
+  const customer = customerById(customerId);
+  const pl = customer ? priceListById(customer.priceListId) : null;
+  const listDiscountPct = pl ? num(pl.discountPct) : 0;
+
+  const override = customer ? getCustomerOverride(customer.id, productId) : null;
+  if (override && num(override.basePrice) > 0) {
+    return { basePrice: num(override.basePrice), source: "CUSTOM_OVERRIDE", listDiscountPct, overrideId: override.id };
+  }
+
+  const base = num(p.price || 0);
+  const discounted = Math.max(0, base * (1 - (listDiscountPct / 100)));
+  return { basePrice: discounted, source: listDiscountPct > 0 ? "PRICELIST" : "PRODUCT", listDiscountPct, overrideId: null };
+}
 
 // ---------- Stock / Costos ----------
 function calcOnHand(branchId, warehouseId) {
@@ -354,6 +416,7 @@ const TABS = [
   { id: "sales", label: "Pedidos" },
   { id: "waste", label: "Merma" },
   { id: "benchmark", label: "Benchmark" },
+  { id: "pricing", label: "Clientes/Precios" }, // NUEVO
   { id: "reports", label: "Reportes" },
 ];
 
@@ -390,13 +453,16 @@ function renderUserSelect() {
   sel.onchange = () => {
     db.currentUserId = sel.value;
     saveDB(db);
-    if (!canView(currentTab)) currentTab = "sales"; // default sensato para no-admin
+
+    if (!canView(currentTab)) currentTab = "sales";
     if (!canView(currentTab)) currentTab = "purchases";
     if (!canView(currentTab)) currentTab = "waste";
     if (!canView(currentTab)) currentTab = "benchmark";
     if (!canView(currentTab)) currentTab = "inventory";
     if (!canView(currentTab)) currentTab = "products";
+    if (!canView(currentTab)) currentTab = "pricing";
     if (!canView(currentTab)) currentTab = "dashboard";
+
     render();
   };
 
@@ -441,6 +507,7 @@ function render() {
   if (currentTab === "sales") view.appendChild(viewSales());
   if (currentTab === "waste") view.appendChild(viewWaste());
   if (currentTab === "benchmark") view.appendChild(viewBenchmark());
+  if (currentTab === "pricing") view.appendChild(viewPricing()); // NUEVO
   if (currentTab === "reports") view.appendChild(viewReports());
 }
 
@@ -504,11 +571,15 @@ function viewDashboard() {
     </table>
   `));
 
-  wrap.appendChild(card("Reglas de roles (demo)", `
+  wrap.appendChild(card("Nuevo: Precios por cliente", `
+    <div class="muted small">
+      Ya puedes asignar una lista por cliente y un precio especial por producto.
+      En Pedidos, el precio base se calcula solo.
+    </div>
     <ul class="small">
-      <li><b>Seller:</b> crea <b>Pedidos</b>, crea <b>OC</b> y registra <b>Merma</b> (scan).</li>
-      <li><b>Warehouse:</b> Ajustes/Conteos y movimientos; además puede <b>Surtir/Entregar</b>.</li>
-      <li><b>Admin:</b> todo + <b>KPIs</b> (Dashboard/Reportes).</li>
+      <li><b>PRODUCT:</b> precio del producto.</li>
+      <li><b>PRICELIST:</b> precio del producto con descuento % de lista.</li>
+      <li><b>CUSTOM_OVERRIDE:</b> precio especial cliente+producto (gana sobre todo).</li>
     </ul>
   `));
 
@@ -1001,6 +1072,7 @@ function viewPurchases() {
   return el;
 }
 
+/* ---------- Pedidos (cambio importante: cliente select + base price por cliente) ---------- */
 function viewSales() {
   const canCreate = canAction("SALES_CREATE");
   const canFulfill = canAction("SALES_FULFILL");
@@ -1013,7 +1085,12 @@ function viewSales() {
 
   const form = card("Crear pedido (no mueve inventario)", `
     <div class="row">
-      <div class="field"><label>Cliente</label><input id="so_customer" placeholder="Ej: Cliente 1" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field">
+        <label>Cliente</label>
+        <select id="so_customer" ${canCreate ? "" : "disabled"}>
+          ${db.customers.map(c => `<option value="${c.id}">${c.name} (${c.priceListId})</option>`).join("")}
+        </select>
+      </div>
       <div class="field"><label>Fecha</label><input id="so_date" type="date" value="${todayISO()}" ${canCreate ? "" : "disabled"} /></div>
     </div>
 
@@ -1035,7 +1112,11 @@ function viewSales() {
     </div>
 
     <div class="row">
-      <div class="field"><label>Precio base (pza)</label><input id="so_price" type="number" step="0.01" ${canCreate ? "" : "disabled"} readonly /></div>
+      <div class="field">
+        <label>Precio base (pza)</label>
+        <input id="so_price" type="number" step="0.01" ${canCreate ? "" : "disabled"} readonly />
+        <div class="muted small" id="so_price_src" style="margin-top:6px">—</div>
+      </div>
       <div class="field"><label>Descuento %</label><input id="so_disc_pct" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
       <div class="field"><label>Descuento $</label><input id="so_disc_amt" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
     </div>
@@ -1069,7 +1150,7 @@ function viewSales() {
             : (so.status === "SHIPPED" ? `<span class="badge ok">OK</span>` : `<span class="badge warn">Pendiente</span>`);
           return `<tr>
             <td>${so.code}</td>
-            <td>${so.customer}</td>
+            <td>${so.customer || "Cliente"}</td>
             <td>${so.date}</td>
             <td>${so.status}</td>
             <td>${pct}%</td>
@@ -1108,9 +1189,10 @@ function viewSales() {
       ? `<ul>${tempLines.map(l => {
           const p = productById(l.productId);
           const reason = l.reason ? ` <span class="muted">(${l.reason})</span>` : "";
+          const src = l.baseSource ? ` <span class="muted">[${l.baseSource}]</span>` : "";
           return `<li>
             <b>${p.sku}</b>: ${l.boxes} caja(s) + ${l.pieces} pza(s) = <b>${l.qtyPieces}</b> pzas |
-            Base ${money(l.basePrice)} → Final <b>${money(l.finalPrice)}</b> / pza${reason}
+            Base ${money(l.basePrice)} → Final <b>${money(l.finalPrice)}</b> / pza${src}${reason}
           </li>`;
         }).join("")}</ul>`
       : `<span class="muted">Sin líneas</span>`;
@@ -1241,14 +1323,26 @@ function viewSales() {
   setTimeout(() => {
     paintLines();
 
-    function loadBasePrice() {
-      const p = productById($("#so_prod").value);
-      if (!p) return;
-      $("#so_price").value = num(p.price || 0).toFixed(2);
+    function setBasePriceFromCustomer() {
+      const customerId = $("#so_customer").value;
+      const productId = $("#so_prod").value;
+
+      const info = getBasePriceForCustomer(customerId, productId);
+      $("#so_price").value = num(info.basePrice).toFixed(2);
+
+      const srcLabel =
+        info.source === "CUSTOM_OVERRIDE" ? "CUSTOM_OVERRIDE (precio especial)" :
+        info.source === "PRICELIST" ? `PRICELIST (-${num(info.listDiscountPct).toFixed(0)}%)` :
+        info.source === "PRODUCT" ? "PRODUCT (precio producto)" : "—";
+
+      $("#so_price_src").textContent = `Fuente: ${srcLabel}`;
+
+      // reset descuentos/override por seguridad (evita “heredar” cosas raras)
       $("#so_disc_pct").value = "0";
       $("#so_disc_amt").value = "0";
       $("#so_override").value = "";
       $("#so_reason").value = "";
+
       updateFinal();
     }
 
@@ -1261,10 +1355,9 @@ function viewSales() {
       $("#so_final").value = money(final);
     }
 
-    if ($("#so_prod")) {
-      $("#so_prod").onchange = loadBasePrice;
-      loadBasePrice();
-    }
+    $("#so_customer").onchange = setBasePriceFromCustomer;
+    $("#so_prod").onchange = setBasePriceFromCustomer;
+    setBasePriceFromCustomer();
 
     $("#so_disc_pct").oninput = updateFinal;
     $("#so_disc_amt").oninput = updateFinal;
@@ -1277,7 +1370,7 @@ function viewSales() {
           const p = productByBarcode(code);
           if (!p) return alert(`No se encontró producto con barcode: ${code}`);
           $("#so_prod").value = p.id;
-          loadBasePrice();
+          setBasePriceFromCustomer();
         }
       });
     };
@@ -1285,13 +1378,17 @@ function viewSales() {
     $("#so_add_line").onclick = () => {
       if (!canCreate) return;
 
+      const customerId = $("#so_customer").value;
+      const customer = customerById(customerId);
       const productId = $("#so_prod").value;
       const boxes = num($("#so_boxes").value);
       const pieces = num($("#so_pieces").value);
       const qtyPieces = toPieces(boxes, pieces, productId);
+      if (!customerId) return alert("Selecciona cliente.");
       if (!productId || qtyPieces <= 0) return alert("Producto y cantidad > 0.");
 
-      const basePrice = num($("#so_price").value);
+      const baseInfo = getBasePriceForCustomer(customerId, productId);
+      const basePrice = num($("#so_price").value); // ya calculado
       const discPct = num($("#so_disc_pct").value);
       const discAmt = num($("#so_disc_amt").value);
       const overrideRaw = $("#so_override").value;
@@ -1299,17 +1396,21 @@ function viewSales() {
       const finalPrice = computeFinalPrice(basePrice, discPct, discAmt, overrideRaw);
 
       if (finalPrice <= 0) return alert("Precio final inválido.");
-      const changed = priceChanged(basePrice, finalPrice);
 
+      const changed = priceChanged(basePrice, finalPrice);
       const reason = $("#so_reason").value.trim();
       if (changed && !reason) return alert("Si cambias el precio (descuento u override), el motivo es obligatorio.");
 
       tempLines.push({
+        customerId,
         productId,
         boxes,
         pieces,
         qtyPieces,
         basePrice,
+        baseSource: baseInfo.source,
+        baseListDiscountPct: baseInfo.listDiscountPct,
+        baseOverrideId: baseInfo.overrideId,
         discountPct: discPct,
         discountAmt: discAmt,
         overridePrice,
@@ -1323,7 +1424,9 @@ function viewSales() {
     $("#so_create").onclick = () => {
       if (!canCreate) return;
 
-      const customer = $("#so_customer").value.trim() || "Cliente";
+      const customerId = $("#so_customer").value;
+      const customer = customerById(customerId);
+      const customerName = customer ? customer.name : "Cliente";
       const date = $("#so_date").value || todayISO();
       if (tempLines.length === 0) return alert("Agrega al menos 1 línea.");
 
@@ -1333,7 +1436,8 @@ function viewSales() {
       db.salesOrders.push({
         id: soId,
         code,
-        customer,
+        customerId,
+        customer: customerName,
         date,
         status: "OPEN",
         branchId,
@@ -1537,6 +1641,172 @@ function viewBenchmark() {
   return el;
 }
 
+/* ---------- NUEVO: Clientes/Precios (Admin) ---------- */
+function viewPricing() {
+  const allowed = canAction("MANAGE_PRICING");
+  const el = document.createElement("div");
+  el.className = "grid cols2";
+
+  const plCard = card("Listas de precios", `
+    <div class="muted small">Cada cliente tiene 1 lista. La lista aplica un descuento % sobre el precio del producto.</div>
+    <div class="row" style="margin-top:10px">
+      <div class="field"><label>Nombre</label><input id="pl_name" placeholder="Ej: Mayoreo" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Descuento %</label><input id="pl_disc" type="number" step="0.01" value="0" ${allowed ? "" : "disabled"} /></div>
+      <button class="btn primary" id="pl_add" ${allowed ? "" : "disabled"}>Crear</button>
+    </div>
+    <div class="hr"></div>
+    <table class="table">
+      <thead><tr><th>ID</th><th>Nombre</th><th>Desc %</th></tr></thead>
+      <tbody>
+        ${db.priceLists.map(pl => `
+          <tr>
+            <td class="muted">${pl.id}</td>
+            <td>${pl.name}</td>
+            <td>${num(pl.discountPct).toFixed(2)}%</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `);
+
+  const custCard = card("Clientes + precio especial", `
+    <div class="muted small">
+      Precio especial (override) gana sobre lista/producto. Úsalo solo cuando de verdad sea “precio pactado”.
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field"><label>Nuevo cliente</label><input id="c_name" placeholder="Ej: Tienda Norte" ${allowed ? "" : "disabled"} /></div>
+      <div class="field">
+        <label>Lista</label>
+        <select id="c_pl" ${allowed ? "" : "disabled"}>
+          ${db.priceLists.map(pl => `<option value="${pl.id}">${pl.id} — ${pl.name}</option>`).join("")}
+        </select>
+      </div>
+      <button class="btn primary" id="c_add" ${allowed ? "" : "disabled"}>Agregar</button>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <div class="field">
+        <label>Cliente</label>
+        <select id="ov_customer" ${allowed ? "" : "disabled"}>
+          ${db.customers.map(c => `<option value="${c.id}">${c.name} (${c.priceListId})</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label>Producto</label>
+        <select id="ov_prod" ${allowed ? "" : "disabled"}>
+          ${db.products.map(p => `<option value="${p.id}">${p.sku} — ${p.name}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label>Precio especial (pza)</label><input id="ov_price" type="number" step="0.01" placeholder="Ej: 52.00" ${allowed ? "" : "disabled"} /></div>
+      <div class="field" style="flex:2"><label>Motivo</label><input id="ov_reason" placeholder="Ej: contrato, volumen, negociación..." ${allowed ? "" : "disabled"} /></div>
+      <button class="btn primary" id="ov_save" ${allowed ? "" : "disabled"}>Guardar override</button>
+    </div>
+
+    <div class="hr"></div>
+    <div class="muted small">Overrides actuales:</div>
+    <table class="table">
+      <thead><tr><th>Cliente</th><th>Producto</th><th>Precio</th><th>Motivo</th><th></th></tr></thead>
+      <tbody>
+        ${db.customerPriceOverrides.map(o => {
+          const c = customerById(o.customerId);
+          const p = productById(o.productId);
+          return `<tr>
+            <td>${c ? c.name : o.customerId}</td>
+            <td>${p ? p.sku : o.productId}</td>
+            <td>${money(o.basePrice)}</td>
+            <td class="muted">${o.reason || "—"}</td>
+            <td><button class="btn danger" data-ov-del="${o.id}" ${allowed ? "" : "disabled"}>X</button></td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+  `);
+
+  el.appendChild(plCard);
+  el.appendChild(custCard);
+
+  setTimeout(() => {
+    $("#pl_add").onclick = () => {
+      if (!allowed) return;
+      const name = $("#pl_name").value.trim();
+      const disc = num($("#pl_disc").value);
+      if (!name) return alert("Nombre requerido.");
+      if (disc < 0 || disc > 80) return alert("Descuento fuera de rango (0–80%).");
+
+      const next = `PL-${String(db.priceLists.length + 1).padStart(3, "0")}`;
+      db.priceLists.push({ id: next, name, discountPct: disc });
+      saveDB(db);
+      render();
+    };
+
+    $("#c_add").onclick = () => {
+      if (!allowed) return;
+      const name = $("#c_name").value.trim();
+      const pl = $("#c_pl").value;
+      if (!name) return alert("Nombre de cliente requerido.");
+      if (!pl) return alert("Selecciona lista.");
+
+      const next = `C-${String(db.customers.length + 1).padStart(3, "0")}`;
+      db.customers.push({ id: next, name, priceListId: pl });
+      saveDB(db);
+      render();
+    };
+
+    $("#ov_save").onclick = () => {
+      if (!allowed) return;
+
+      const customerId = $("#ov_customer").value;
+      const productId = $("#ov_prod").value;
+      const price = num($("#ov_price").value);
+      const reason = $("#ov_reason").value.trim();
+
+      if (!customerId || !productId) return alert("Selecciona cliente y producto.");
+      if (price <= 0) return alert("Precio especial inválido.");
+      if (!reason) return alert("Motivo requerido (auditoría).");
+
+      const existing = getCustomerOverride(customerId, productId);
+      if (existing) {
+        existing.basePrice = price;
+        existing.reason = reason;
+        existing.updatedAt = new Date().toISOString();
+        existing.userId = db.currentUserId;
+      } else {
+        db.customerPriceOverrides.push({
+          id: uid(),
+          customerId,
+          productId,
+          basePrice: price,
+          reason,
+          updatedAt: new Date().toISOString(),
+          userId: db.currentUserId
+        });
+      }
+
+      saveDB(db);
+      render();
+    };
+
+    document.querySelectorAll("button[data-ov-del]").forEach(btn => {
+      btn.onclick = () => {
+        if (!allowed) return;
+        const id = btn.getAttribute("data-ov-del");
+        db.customerPriceOverrides = db.customerPriceOverrides.filter(x => x.id !== id);
+        saveDB(db);
+        render();
+      };
+    });
+
+  }, 0);
+
+  return el;
+}
+
 function viewReports() {
   const branchId = "BR-001";
   const warehouseId = "WH-001";
@@ -1647,6 +1917,7 @@ function viewReports() {
   if (!canView(currentTab)) currentTab = "benchmark";
   if (!canView(currentTab)) currentTab = "inventory";
   if (!canView(currentTab)) currentTab = "products";
+  if (!canView(currentTab)) currentTab = "pricing";
   if (!canView(currentTab)) currentTab = "dashboard";
   render();
 })();
