@@ -1,12 +1,15 @@
-/* Chilchota Demo — v3
-   - Branding + roles con UI habilitada/deshabilitada
-   - Pzas por caja (piecesPerBox)
-   - Compras/Pedidos: cajas + pzas sueltas => pzas totales
-   - Recepción rápida (modal)
-   - Barcode scan (modal cámara si soporta BarcodeDetector; fallback manual)
+/* Chilchota Demo — v5
+   ROLES:
+   - SELLER (Vendedor): Pedidos + Órdenes de compra + Merma (con escaneo)
+   - WAREHOUSE (Almacén): Ajustes inventario + control de movimientos + surtido/entrega
+   - ADMIN: ve TODO + KPIs (Dashboard/Reportes)
+
+   PRECIOS EN PEDIDOS:
+   - Al seleccionar producto: se carga PRECIO BASE automáticamente
+   - Si aplica descuento u override: se captura el precio final y el MOTIVO (obligatorio si cambia el precio)
 */
 
-const STORAGE_KEY = "chilchota_demo_v3";
+const STORAGE_KEY = "chilchota_demo_v4"; // mantenemos para no perder datos existentes
 
 const $ = (sel) => document.querySelector(sel);
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
@@ -16,13 +19,13 @@ const num = (n) => Number(n || 0);
 function todayISO() {
   const d = new Date();
   const pad = (x) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 function daysAgoISO(days) {
   const d = new Date();
   d.setDate(d.getDate() - days);
   const pad = (x) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 // ---------- Seed ----------
@@ -30,7 +33,6 @@ function seedData() {
   const branchId = "BR-001";
   const warehouseId = "WH-001";
 
-  // Catálogo demo (puedes ajustar nombres, SKUs y barcodes)
   const products = [
     { id: uid(), sku: "CHI-LEC-1L",  name: "Leche Entera 1L", unit: "pza", piecesPerBox: 12, cost: 16.50, price: 24.00, barcode: "750000000001" },
     { id: uid(), sku: "CHI-CRE-250", name: "Crema 250 ml", unit: "pza", piecesPerBox: 12, cost: 22.00, price: 34.00, barcode: "750000000002" },
@@ -39,7 +41,6 @@ function seedData() {
     { id: uid(), sku: "CHI-MAN-225", name: "Mantequilla Untable 225g", unit: "pza", piecesPerBox: 12, cost: 24.50, price: 39.00, barcode: "750000000005" },
   ];
 
-  // Inventario inicial
   const stockMoves = [];
   products.forEach((p, i) => {
     stockMoves.push({
@@ -48,7 +49,7 @@ function seedData() {
       date: todayISO(),
       type: "INIT",
       productId: p.id,
-      qty: 20 + i * 5, // pzas
+      qty: 20 + i * 5,
       unitCost: p.cost,
       note: "Inventario inicial",
       branchId,
@@ -58,9 +59,8 @@ function seedData() {
     });
   });
 
-  // Ventas históricas mini (para reabasto)
   for (let d = 1; d <= 14; d++) {
-    const soId = uid();
+    const shipId = uid();
     const lines = [
       { productId: products[0].id, qtyPieces: (d % 3) + 1 },
       { productId: products[2].id, qtyPieces: (d % 2) }
@@ -71,21 +71,21 @@ function seedData() {
         id: uid(),
         ts: new Date().toISOString(),
         date: daysAgoISO(d),
-        type: "SALE",
+        type: "SHIP",
         productId: l.productId,
         qty: -l.qtyPieces,
         unitCost: null,
-        note: `Pedido ${String(soId).slice(-6)}`,
+        note: `Entrega demo ${String(shipId).slice(-6)}`,
         branchId,
         warehouseId,
-        userId: "U-VEND",
-        ref: soId
+        userId: "U-WH",
+        ref: shipId
       });
     });
   }
 
   return {
-    meta: { createdAt: new Date().toISOString(), version: 3 },
+    meta: { createdAt: new Date().toISOString(), version: 5 },
     org: { name: "Chilchota (Demo)" },
     branches: [{ id: branchId, name: "Sucursal 1" }],
     warehouses: [{ id: warehouseId, branchId, name: "Almacén 1" }],
@@ -98,9 +98,35 @@ function seedData() {
     products,
     stockMoves,
     purchaseOrders: [],
+    salesOrders: [],
     competitorPrices: [],
     physicalCounts: []
   };
+}
+
+function migrateDB(db) {
+  if (!db) return seedData();
+  db.meta = db.meta || { createdAt: new Date().toISOString(), version: 5 };
+  db.meta.version = 5;
+
+  db.products = db.products || [];
+  db.stockMoves = db.stockMoves || [];
+  db.purchaseOrders = db.purchaseOrders || [];
+  db.salesOrders = db.salesOrders || [];
+  db.competitorPrices = db.competitorPrices || [];
+  db.physicalCounts = db.physicalCounts || [];
+
+  db.products.forEach(p => {
+    if (!p.piecesPerBox || num(p.piecesPerBox) <= 0) p.piecesPerBox = 12;
+    if (!p.unit) p.unit = "pza";
+    if (p.price == null) p.price = 0;
+    if (p.cost == null) p.cost = 0;
+  });
+
+  if (!db.users || !db.users.length) db.users = seedData().users;
+  if (!db.currentUserId) db.currentUserId = db.users[0].id;
+
+  return db;
 }
 
 function loadDB() {
@@ -110,8 +136,9 @@ function loadDB() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     return db;
   }
-  try { return JSON.parse(raw); }
-  catch {
+  try {
+    return migrateDB(JSON.parse(raw));
+  } catch {
     const db = seedData();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     return db;
@@ -121,19 +148,25 @@ function saveDB(db) { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
 
 let db = loadDB();
 
-// ---------- Permisos ----------
+// ---------- Roles / Permisos ----------
 function getUser() { return db.users.find(u => u.id === db.currentUserId) || db.users[0]; }
 function role() { return getUser().role; }
 
+/*
+Requerimiento:
+- Vendedor: pedidos + órdenes de compra + merma (escaneando)
+- Warehouse: ajustar inventarios + controlar movimientos (+ surtido/entrega)
+- Admin: todo + KPIs (dashboard/reportes)
+*/
 const PERMS = {
-  dashboard: ["ADMIN","WAREHOUSE","SELLER"],
+  dashboard: ["ADMIN"],
   products: ["ADMIN"],
   inventory: ["ADMIN","WAREHOUSE"],
-  purchases: ["ADMIN","WAREHOUSE"],
-  sales: ["ADMIN","WAREHOUSE","SELLER"],  // demo: el vendedor puede vender; warehouse también puede mover por surtido
-  waste: ["ADMIN","WAREHOUSE"],
+  purchases: ["ADMIN","WAREHOUSE","SELLER"],
+  sales: ["ADMIN","WAREHOUSE","SELLER"],
+  waste: ["ADMIN","WAREHOUSE","SELLER"],
   benchmark: ["ADMIN","SELLER"],
-  reports: ["ADMIN","WAREHOUSE"]
+  reports: ["ADMIN"]
 };
 
 function canView(tabId) {
@@ -141,15 +174,15 @@ function canView(tabId) {
   return allowed.includes(role());
 }
 function canAction(action) {
-  // Acciones finas (mismo enfoque)
   const rules = {
     MANAGE_PRODUCTS: ["ADMIN"],
     STOCK_MOVES: ["ADMIN","WAREHOUSE"],
-    PURCHASES: ["ADMIN","WAREHOUSE"],
-    SALES: ["ADMIN","SELLER","WAREHOUSE"],
-    WASTE: ["ADMIN","WAREHOUSE"],
+    PURCHASES: ["ADMIN","WAREHOUSE","SELLER"],
+    SALES_CREATE: ["ADMIN","SELLER"],
+    SALES_FULFILL: ["ADMIN","WAREHOUSE"],
+    WASTE: ["ADMIN","WAREHOUSE","SELLER"],
     BENCHMARK: ["ADMIN","SELLER"],
-    REPORTS: ["ADMIN","WAREHOUSE"]
+    REPORTS: ["ADMIN"]
   };
   return (rules[action] || []).includes(role());
 }
@@ -176,7 +209,7 @@ function calcOnHand(branchId, warehouseId) {
 function calcAvgDailySales(productId, days = 14, branchId="BR-001", warehouseId="WH-001") {
   const fromDate = daysAgoISO(days);
   const moves = db.stockMoves.filter(m =>
-    m.type === "SALE" &&
+    (m.type === "SHIP") &&
     m.productId === productId &&
     m.branchId === branchId &&
     m.warehouseId === warehouseId &&
@@ -217,9 +250,7 @@ function openModal({ title, bodyHTML, actionsHTML, onMount }) {
   `;
   document.body.appendChild(backdrop);
 
-  function close() {
-    backdrop.remove();
-  }
+  function close() { backdrop.remove(); }
   backdrop.querySelector("#modalClose").onclick = close;
   backdrop.onclick = (e) => { if (e.target === backdrop) close(); };
 
@@ -227,12 +258,11 @@ function openModal({ title, bodyHTML, actionsHTML, onMount }) {
   return { close };
 }
 
-// Barcode scan modal (cámara si se puede; si no, input manual)
 async function openBarcodeScanner({ onCode }) {
   const supported = "BarcodeDetector" in window;
   const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 
-  const modal = openModal({
+  openModal({
     title: "Escanear código de barras",
     bodyHTML: `
       <div class="grid cols2">
@@ -261,10 +291,8 @@ async function openBarcodeScanner({ onCode }) {
     `,
     actionsHTML: `<button class="btn secondary" id="scanStop">Detener</button>`,
     onMount: async ({ root, close }) => {
-      const manualOk = root.querySelector("#manualOk");
-      const manualCode = root.querySelector("#manualCode");
-      manualOk.onclick = () => {
-        const code = manualCode.value.trim();
+      root.querySelector("#manualOk").onclick = () => {
+        const code = root.querySelector("#manualCode").value.trim();
         if (!code) return alert("Ingresa un código.");
         onCode(code);
         close();
@@ -279,10 +307,7 @@ async function openBarcodeScanner({ onCode }) {
 
       async function stopAll() {
         if (interval) { clearInterval(interval); interval = null; }
-        if (stream) {
-          stream.getTracks().forEach(t => t.stop());
-          stream = null;
-        }
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
         status.textContent = "Detenido.";
       }
       stopBtn.onclick = stopAll;
@@ -311,17 +336,13 @@ async function openBarcodeScanner({ onCode }) {
                 close();
               }
             }
-          } catch {
-            // ignore detect errors
-          }
+          } catch {}
         }, 350);
-      } catch (e) {
+      } catch {
         status.textContent = "No se pudo acceder a la cámara. Usa el campo manual.";
       }
     }
   });
-
-  return modal;
 }
 
 // ---------- UI ----------
@@ -341,16 +362,12 @@ let currentTab = "dashboard";
 function renderTabs() {
   const tabsEl = $("#tabs");
   tabsEl.innerHTML = "";
-
   TABS.forEach(t => {
     const allowed = canView(t.id);
     const btn = document.createElement("button");
     btn.className = "tab" + (currentTab === t.id ? " active" : "");
     btn.textContent = t.label;
-    if (!allowed) {
-      btn.disabled = true;
-      btn.title = "Sin permiso para este módulo";
-    }
+    if (!allowed) { btn.disabled = true; btn.title = "Sin permiso para este módulo"; }
     btn.onclick = () => {
       if (!allowed) return;
       currentTab = t.id;
@@ -373,8 +390,12 @@ function renderUserSelect() {
   sel.onchange = () => {
     db.currentUserId = sel.value;
     saveDB(db);
-
-    // si el tab actual no se puede ver, regresa a dashboard
+    if (!canView(currentTab)) currentTab = "sales"; // default sensato para no-admin
+    if (!canView(currentTab)) currentTab = "purchases";
+    if (!canView(currentTab)) currentTab = "waste";
+    if (!canView(currentTab)) currentTab = "benchmark";
+    if (!canView(currentTab)) currentTab = "inventory";
+    if (!canView(currentTab)) currentTab = "products";
     if (!canView(currentTab)) currentTab = "dashboard";
     render();
   };
@@ -409,9 +430,7 @@ function render() {
   view.innerHTML = "";
 
   if (!canView(currentTab)) {
-    view.appendChild(card("Sin acceso", `
-      <div class="muted">Tu rol (${role()}) no tiene permiso para este módulo.</div>
-    `));
+    view.appendChild(card("Sin acceso", `<div class="muted">Tu rol (${role()}) no tiene permiso para este módulo.</div>`));
     return;
   }
 
@@ -439,8 +458,8 @@ function viewDashboard() {
   const wasteUnits = -wasteMoves.reduce((acc,m)=>acc+num(m.qty),0);
 
   const from7 = daysAgoISO(7);
-  const salesMoves = db.stockMoves.filter(m => m.type === "SALE" && m.date >= from7);
-  const soldUnits = -salesMoves.reduce((acc,m)=>acc+num(m.qty),0);
+  const shipMoves = db.stockMoves.filter(m => m.type === "SHIP" && m.date >= from7);
+  const shippedUnits = -shipMoves.reduce((acc,m)=>acc+num(m.qty),0);
 
   const risks = db.products.map(p => {
     const avg = calcAvgDailySales(p.id, 14, branchId, warehouseId);
@@ -455,7 +474,7 @@ function viewDashboard() {
     <div class="grid cols3">
       <div class="kpi"><div class="v">${totalSKUs}</div><div class="k">Productos</div></div>
       <div class="kpi"><div class="v">${totalUnits}</div><div class="k">Pzas en stock (teórico)</div></div>
-      <div class="kpi"><div class="v">${soldUnits}</div><div class="k">Pzas vendidas (7 días)</div></div>
+      <div class="kpi"><div class="v">${shippedUnits}</div><div class="k">Pzas entregadas (7 días)</div></div>
     </div>
     <div class="hr"></div>
     <div class="grid cols3">
@@ -466,7 +485,7 @@ function viewDashboard() {
   `));
 
   wrap.appendChild(card("Riesgo de quiebre (estimado)", `
-    <div class="muted small">Consumo promedio 14 días vs stock teórico.</div>
+    <div class="muted small">Consumo promedio 14 días (entregas) vs stock teórico.</div>
     <table class="table">
       <thead><tr><th>Producto</th><th>Stock</th><th>Consumo/día</th><th>Días cobertura</th><th>Estado</th></tr></thead>
       <tbody>
@@ -485,11 +504,11 @@ function viewDashboard() {
     </table>
   `));
 
-  wrap.appendChild(card("Roles (reglas demo)", `
+  wrap.appendChild(card("Reglas de roles (demo)", `
     <ul class="small">
-      <li><b>ADMIN:</b> todo.</li>
-      <li><b>WAREHOUSE:</b> inventario, compras/recepciones, merma, reportes.</li>
-      <li><b>SELLER:</b> pedidos y benchmark. (No puede inventario/compras/merma/reportes)</li>
+      <li><b>Seller:</b> crea <b>Pedidos</b>, crea <b>OC</b> y registra <b>Merma</b> (scan).</li>
+      <li><b>Warehouse:</b> Ajustes/Conteos y movimientos; además puede <b>Surtir/Entregar</b>.</li>
+      <li><b>Admin:</b> todo + <b>KPIs</b> (Dashboard/Reportes).</li>
     </ul>
   `));
 
@@ -503,25 +522,25 @@ function viewProducts() {
 
   const form = card("Alta de producto", `
     <div class="row">
-      <div class="field"><label>SKU</label><input id="p_sku" placeholder="EJ: CHI-..." ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Nombre</label><input id="p_name" placeholder="EJ: Jocoque Jarro" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>SKU</label><input id="p_sku" placeholder="EJ: CHI-..." ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Nombre</label><input id="p_name" placeholder="EJ: Jocoque Jarro" ${allowed ? "" : "disabled"} /></div>
     </div>
     <div class="row">
       <div class="field">
         <label>Unidad</label>
-        <select id="p_unit" ${allowed?"":"disabled"}>
+        <select id="p_unit" ${allowed ? "" : "disabled"}>
           <option value="pza">pza</option>
         </select>
       </div>
-      <div class="field"><label>Pzas por caja</label><input id="p_ppb" type="number" step="1" value="12" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Costo</label><input id="p_cost" type="number" step="0.01" placeholder="0.00" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Precio</label><input id="p_price" type="number" step="0.01" placeholder="0.00" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Barcode</label><input id="p_bar" placeholder="EAN/UPC" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Pzas por caja</label><input id="p_ppb" type="number" step="1" value="12" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Costo</label><input id="p_cost" type="number" step="0.01" placeholder="0.00" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Precio</label><input id="p_price" type="number" step="0.01" placeholder="0.00" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Barcode</label><input id="p_bar" placeholder="EAN/UPC" ${allowed ? "" : "disabled"} /></div>
     </div>
     <div class="row">
-      <button class="btn primary" id="p_add" ${allowed?"":"disabled title='Sin permiso'"}>Agregar</button>
+      <button class="btn primary" id="p_add" ${allowed ? "" : "disabled title='Sin permiso'"}>Agregar</button>
     </div>
-    <div class="muted small">Nota: al crear producto no crea stock. Para stock usa Inventario → Ajuste.</div>
+    <div class="muted small">Crear producto no crea stock. Para stock usa Inventario → Ajuste.</div>
   `);
 
   const list = card("Productos", `
@@ -585,29 +604,29 @@ function viewInventory() {
     <div class="row">
       <div class="field">
         <label>Producto</label>
-        <select id="inv_prod" ${allowed?"":"disabled"}>
+        <select id="inv_prod" ${allowed ? "" : "disabled"}>
           ${db.products.map(p => `<option value="${p.id}">${p.sku} — ${p.name}</option>`).join("")}
         </select>
       </div>
       <div class="field">
         <label>Tipo</label>
-        <select id="inv_type" ${allowed?"":"disabled"}>
+        <select id="inv_type" ${allowed ? "" : "disabled"}>
           <option value="ADJ">Ajuste (mueve stock)</option>
           <option value="COUNT">Conteo (físico, no mueve)</option>
         </select>
       </div>
       <div class="field">
         <label>Escanear</label>
-        <button class="btn secondary" id="inv_scan" ${allowed?"":"disabled"}>Escanear</button>
+        <button class="btn secondary" id="inv_scan" ${allowed ? "" : "disabled"}>Escanear</button>
       </div>
     </div>
     <div class="row">
-      <div class="field"><label>Cantidad (pzas)</label><input id="inv_qty" type="number" step="1" placeholder="Ej: 5 o -3" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Costo unitario (solo entradas)</label><input id="inv_cost" type="number" step="0.01" placeholder="0.00" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Nota</label><input id="inv_note" placeholder="Motivo" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Cantidad (pzas)</label><input id="inv_qty" type="number" step="1" placeholder="Ej: 5 o -3" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Costo unitario (solo entradas)</label><input id="inv_cost" type="number" step="0.01" placeholder="0.00" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Nota</label><input id="inv_note" placeholder="Motivo" ${allowed ? "" : "disabled"} /></div>
     </div>
     <div class="row">
-      <button class="btn primary" id="inv_add" ${allowed?"":"disabled title='Sin permiso'"}>Registrar</button>
+      <button class="btn primary" id="inv_add" ${allowed ? "" : "disabled title='Sin permiso'"}>Registrar</button>
     </div>
     <div class="muted small">Conteo guarda “real” para comparar en Reportes.</div>
   `);
@@ -707,31 +726,31 @@ function viewPurchases() {
 
   const form = card("Orden de Compra (OC)", `
     <div class="row">
-      <div class="field"><label>Proveedor</label><input id="po_vendor" placeholder="Ej: Proveedor A" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Fecha</label><input id="po_date" type="date" value="${todayISO()}" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Proveedor</label><input id="po_vendor" placeholder="Ej: Proveedor A" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Fecha</label><input id="po_date" type="date" value="${todayISO()}" ${allowed ? "" : "disabled"} /></div>
     </div>
 
     <div class="row">
       <div class="field">
         <label>Producto</label>
-        <select id="po_prod" ${allowed?"":"disabled"}>
+        <select id="po_prod" ${allowed ? "" : "disabled"}>
           ${db.products.map(p => `<option value="${p.id}">${p.sku} — ${p.name}</option>`).join("")}
         </select>
       </div>
 
       <div class="field">
         <label>Escanear</label>
-        <button class="btn secondary" id="po_scan" ${allowed?"":"disabled"}>Escanear</button>
+        <button class="btn secondary" id="po_scan" ${allowed ? "" : "disabled"}>Escanear</button>
       </div>
 
-      <div class="field"><label>Cajas</label><input id="po_boxes" type="number" step="1" value="1" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Pzas sueltas</label><input id="po_pieces" type="number" step="1" value="0" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Costo unitario (pza)</label><input id="po_cost" type="number" step="0.01" placeholder="0.00" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Cajas</label><input id="po_boxes" type="number" step="1" value="1" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Pzas sueltas</label><input id="po_pieces" type="number" step="1" value="0" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Costo unitario (pza)</label><input id="po_cost" type="number" step="0.01" placeholder="0.00" ${allowed ? "" : "disabled"} /></div>
     </div>
 
     <div class="row">
-      <button class="btn" id="po_add_line" ${allowed?"":"disabled title='Sin permiso'"}>Agregar línea</button>
-      <button class="btn primary" id="po_create" ${allowed?"":"disabled title='Sin permiso'"}>Crear OC</button>
+      <button class="btn" id="po_add_line" ${allowed ? "" : "disabled title='Sin permiso'"}>Agregar línea</button>
+      <button class="btn primary" id="po_create" ${allowed ? "" : "disabled title='Sin permiso'"}>Crear OC</button>
     </div>
 
     <div class="hr"></div>
@@ -762,7 +781,7 @@ function viewPurchases() {
         }).join("")}
       </tbody>
     </table>
-    <div class="muted small">Recepción rápida: captura cajas+pzas por renglón y entra a inventario en pzas.</div>
+    <div class="muted small">Recepción rápida: captura cajas+pzas por renglón + costo editable.</div>
   `);
 
   el.appendChild(form);
@@ -794,19 +813,16 @@ function viewPurchases() {
       const p = productById(line.productId);
       const got = receivedSum(po, line.productId);
       const remaining = Math.max(0, num(line.qtyPieces) - got);
-
-      // default: propone recibir lo restante (en cajas + pzas)
       const pp = ppb(line.productId);
       const defBoxes = Math.floor(remaining / pp);
       const defPieces = remaining % pp;
-
       return { line, p, got, remaining, pp, defBoxes, defPieces };
     });
 
     openModal({
       title: `Recepción rápida — ${po.code}`,
       bodyHTML: `
-        <div class="muted small">Captura lo recibido. Se clampa a lo pendiente (no entra más de lo pedido).</div>
+        <div class="muted small">Captura lo recibido. Se clampa a lo pendiente. El costo puede variar por renglón.</div>
         <table class="table" style="margin-top:12px">
           <thead>
             <tr>
@@ -818,6 +834,7 @@ function viewPurchases() {
               <th>Cajas</th>
               <th>Pzas</th>
               <th>Total recibido</th>
+              <th>Costo / pza</th>
             </tr>
           </thead>
           <tbody>
@@ -831,6 +848,7 @@ function viewPurchases() {
                 <td><input data-rx-boxes="${i}" type="number" step="1" value="${r.defBoxes}" /></td>
                 <td><input data-rx-pieces="${i}" type="number" step="1" value="${r.defPieces}" /></td>
                 <td><span data-rx-total="${i}">${r.remaining}</span></td>
+                <td><input data-rx-cost="${i}" type="number" step="0.01" value="${num(r.line.unitCost).toFixed(2)}" /></td>
               </tr>
             `).join("")}
           </tbody>
@@ -867,12 +885,13 @@ function viewPurchases() {
             const s = num(root.querySelector(`[data-rx-pieces="${i}"]`).value);
             let recTotal = Math.max(0, toPieces(b, s, r.line.productId));
             if (recTotal <= 0) return;
-
-            // clamp a pendiente
             recTotal = Math.min(recTotal, r.remaining);
 
+            const cost = num(root.querySelector(`[data-rx-cost="${i}"]`).value || r.line.unitCost || 0);
+            if (cost <= 0) return alert(`Costo inválido en ${r.p.sku}.`);
+
             po.receivedLines = po.receivedLines || [];
-            po.receivedLines.push({ productId: r.line.productId, qtyReceived: recTotal, unitCost: r.line.unitCost });
+            po.receivedLines.push({ productId: r.line.productId, qtyReceived: recTotal, unitCost: cost });
 
             db.stockMoves.push({
               id: uid(),
@@ -881,7 +900,7 @@ function viewPurchases() {
               type: "RECEIVE",
               productId: r.line.productId,
               qty: recTotal,
-              unitCost: r.line.unitCost,
+              unitCost: cost,
               note: `Recepción ${po.code}`,
               branchId, warehouseId,
               userId: db.currentUserId,
@@ -889,7 +908,6 @@ function viewPurchases() {
             });
           });
 
-          // status
           const receivedMap = new Map();
           (po.receivedLines || []).forEach(rr => receivedMap.set(rr.productId, (receivedMap.get(rr.productId)||0) + num(rr.qtyReceived)));
           const allDone = po.lines.every(l => (receivedMap.get(l.productId)||0) >= num(l.qtyPieces));
@@ -906,75 +924,75 @@ function viewPurchases() {
   setTimeout(() => {
     paintLines();
 
-    const scanBtn = $("#po_scan");
-    if (scanBtn) {
-      scanBtn.onclick = async () => {
-        if (!allowed) return;
-        await openBarcodeScanner({
-          onCode: (code) => {
-            const p = productByBarcode(code);
-            if (!p) return alert(`No se encontró producto con barcode: ${code}`);
-            $("#po_prod").value = p.id;
-          }
-        });
-      };
+    function loadDefaultCost() {
+      const p = productById($("#po_prod").value);
+      if (!p) return;
+      $("#po_cost").value = num(p.cost || 0).toFixed(2);
+    }
+    if ($("#po_prod")) {
+      $("#po_prod").onchange = loadDefaultCost;
+      loadDefaultCost();
     }
 
-    const addLine = $("#po_add_line");
-    if (addLine) {
-      addLine.onclick = () => {
-        if (!allowed) return;
+    $("#po_scan").onclick = async () => {
+      if (!allowed) return;
+      await openBarcodeScanner({
+        onCode: (code) => {
+          const p = productByBarcode(code);
+          if (!p) return alert(`No se encontró producto con barcode: ${code}`);
+          $("#po_prod").value = p.id;
+          $("#po_cost").value = num(p.cost || 0).toFixed(2);
+        }
+      });
+    };
 
-        const productId = $("#po_prod").value;
-        const boxes = num($("#po_boxes").value);
-        const pieces = num($("#po_pieces").value);
-        const qtyPieces = toPieces(boxes, pieces, productId);
-        const unitCost = num($("#po_cost").value || (productById(productId)?.cost ?? 0));
+    $("#po_add_line").onclick = () => {
+      if (!allowed) return;
 
-        if (!productId || qtyPieces <= 0) return alert("Producto y cantidad > 0 (cajas o pzas).");
+      const productId = $("#po_prod").value;
+      const boxes = num($("#po_boxes").value);
+      const pieces = num($("#po_pieces").value);
+      const qtyPieces = toPieces(boxes, pieces, productId);
+      const unitCost = num($("#po_cost").value || (productById(productId)?.cost ?? 0));
+      if (!productId || qtyPieces <= 0) return alert("Producto y cantidad > 0 (cajas o pzas).");
+      if (unitCost <= 0) return alert("Costo unitario inválido.");
 
-        tempLines.push({ productId, boxes, pieces, qtyPieces, unitCost });
-        paintLines();
-      };
-    }
+      tempLines.push({ productId, boxes, pieces, qtyPieces, unitCost });
+      paintLines();
+    };
 
-    const create = $("#po_create");
-    if (create) {
-      create.onclick = () => {
-        if (!allowed) return;
+    $("#po_create").onclick = () => {
+      if (!allowed) return;
 
-        const vendor = $("#po_vendor").value.trim() || "Proveedor";
-        const date = $("#po_date").value || todayISO();
-        if (tempLines.length === 0) return alert("Agrega al menos 1 línea.");
+      const vendor = $("#po_vendor").value.trim() || "Proveedor";
+      const date = $("#po_date").value || todayISO();
+      if (tempLines.length === 0) return alert("Agrega al menos 1 línea.");
 
-        const poId = uid();
-        const code = `OC-${String(db.purchaseOrders.length+1).padStart(4,"0")}`;
+      const poId = uid();
+      const code = `OC-${String(db.purchaseOrders.length + 1).padStart(4, "0")}`;
 
-        db.purchaseOrders.push({
-          id: poId,
-          code,
-          vendor,
-          date,
-          status: "OPEN",
-          branchId,
-          warehouseId,
-          userId: db.currentUserId,
-          lines: tempLines,
-          receivedLines: []
-        });
+      db.purchaseOrders.push({
+        id: poId,
+        code,
+        vendor,
+        date,
+        status: "OPEN",
+        branchId,
+        warehouseId,
+        userId: db.currentUserId,
+        lines: tempLines,
+        receivedLines: []
+      });
 
-        tempLines = [];
-        saveDB(db);
-        render();
-      };
-    }
+      tempLines = [];
+      saveDB(db);
+      render();
+    };
 
-    // botones de recepción rápida
     el.querySelectorAll("button[data-recv-fast]").forEach(btn => {
       btn.onclick = () => {
         if (!allowed) return;
-        const poId = btn.getAttribute("data-recv-fast");
-        openReceiveFast(poId);
+        openReceiveFast(btn.getAttribute("data-recv-fast"));
       };
     });
 
@@ -984,40 +1002,53 @@ function viewPurchases() {
 }
 
 function viewSales() {
-  const allowed = canAction("SALES");
+  const canCreate = canAction("SALES_CREATE");
+  const canFulfill = canAction("SALES_FULFILL");
   const branchId = "BR-001";
   const warehouseId = "WH-001";
+  const onHand = calcOnHand(branchId, warehouseId);
 
   const el = document.createElement("div");
   el.className = "grid cols2";
 
-  const form = card("Crear pedido (venta)", `
+  const form = card("Crear pedido (no mueve inventario)", `
     <div class="row">
-      <div class="field"><label>Cliente</label><input id="so_customer" placeholder="Ej: Cliente 1" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Fecha</label><input id="so_date" type="date" value="${todayISO()}" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Cliente</label><input id="so_customer" placeholder="Ej: Cliente 1" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field"><label>Fecha</label><input id="so_date" type="date" value="${todayISO()}" ${canCreate ? "" : "disabled"} /></div>
     </div>
 
     <div class="row">
       <div class="field">
         <label>Producto</label>
-        <select id="so_prod" ${allowed?"":"disabled"}>
+        <select id="so_prod" ${canCreate ? "" : "disabled"}>
           ${db.products.map(p => `<option value="${p.id}">${p.sku} — ${p.name}</option>`).join("")}
         </select>
       </div>
 
       <div class="field">
         <label>Escanear</label>
-        <button class="btn secondary" id="so_scan" ${allowed?"":"disabled"}>Escanear</button>
+        <button class="btn secondary" id="so_scan" ${canCreate ? "" : "disabled"}>Escanear</button>
       </div>
 
-      <div class="field"><label>Cajas</label><input id="so_boxes" type="number" step="1" value="0" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Pzas sueltas</label><input id="so_pieces" type="number" step="1" value="1" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Precio (pza)</label><input id="so_price" type="number" step="0.01" placeholder="0.00" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Cajas</label><input id="so_boxes" type="number" step="1" value="0" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field"><label>Pzas sueltas</label><input id="so_pieces" type="number" step="1" value="1" ${canCreate ? "" : "disabled"} /></div>
     </div>
 
     <div class="row">
-      <button class="btn" id="so_add_line" ${allowed?"":"disabled title='Sin permiso'"}>Agregar línea</button>
-      <button class="btn primary" id="so_create" ${allowed?"":"disabled title='Sin permiso'"}>Crear pedido</button>
+      <div class="field"><label>Precio base (pza)</label><input id="so_price" type="number" step="0.01" ${canCreate ? "" : "disabled"} readonly /></div>
+      <div class="field"><label>Descuento %</label><input id="so_disc_pct" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field"><label>Descuento $</label><input id="so_disc_amt" type="number" step="0.01" value="0" ${canCreate ? "" : "disabled"} /></div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label>Override (precio especial)</label><input id="so_override" type="number" step="0.01" placeholder="Vacío = no" ${canCreate ? "" : "disabled"} /></div>
+      <div class="field" style="flex:2"><label>Motivo (obligatorio si cambia el precio)</label><input id="so_reason" placeholder="Ej: promo, volumen, ajuste por competencia..." ${canCreate ? "" : "disabled"} /></div>
+      <div class="field"><label>Precio final</label><input id="so_final" ${canCreate ? "" : "disabled"} readonly /></div>
+    </div>
+
+    <div class="row">
+      <button class="btn" id="so_add_line" ${canCreate ? "" : "disabled title='Sin permiso'"}>Agregar línea</button>
+      <button class="btn primary" id="so_create" ${canCreate ? "" : "disabled title='Sin permiso'"}>Crear pedido</button>
     </div>
 
     <div class="hr"></div>
@@ -1025,105 +1056,302 @@ function viewSales() {
     <div id="so_lines" class="small"></div>
   `);
 
-  const list = card("Últimas salidas por venta (movimientos)", `
+  const orders = card("Pedidos y surtidos", `
     <table class="table">
-      <thead><tr><th>Fecha</th><th>Producto</th><th>Qty (pzas)</th><th>Nota</th><th>Usuario</th></tr></thead>
+      <thead><tr><th>Pedido</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th>Progreso</th><th>Acciones</th></tr></thead>
       <tbody>
-        ${db.stockMoves
-          .filter(m => m.type === "SALE")
-          .slice(-25)
-          .reverse()
-          .map(m => {
-            const p = productById(m.productId);
-            const u = db.users.find(x => x.id === m.userId);
-            return `<tr>
-              <td>${m.date}</td>
-              <td>${p ? `${p.sku} — ${p.name}` : "—"}</td>
-              <td>${Math.abs(num(m.qty))}</td>
-              <td class="muted">${m.note || "—"}</td>
-              <td class="muted">${u ? u.name : "—"}</td>
-            </tr>`;
-          }).join("")
-        }
+        ${db.salesOrders.slice().reverse().map(so => {
+          const ordered = (so.lines || []).reduce((acc,l)=>acc+num(l.qtyPieces),0);
+          const shipped = (so.shipLines||[]).reduce((acc,l)=>acc+num(l.qtyShipped),0);
+          const pct = ordered>0 ? Math.round((shipped/ordered)*100) : 0;
+          const btn = (so.status !== "SHIPPED" && canFulfill)
+            ? `<button class="btn secondary" data-fulfill="${so.id}">Surtir / Entregar</button>`
+            : (so.status === "SHIPPED" ? `<span class="badge ok">OK</span>` : `<span class="badge warn">Pendiente</span>`);
+          return `<tr>
+            <td>${so.code}</td>
+            <td>${so.customer}</td>
+            <td>${so.date}</td>
+            <td>${so.status}</td>
+            <td>${pct}%</td>
+            <td>${btn}</td>
+          </tr>`;
+        }).join("")}
       </tbody>
     </table>
+    <div class="muted small">El pedido no descuenta stock. La entrega (surtido) sí descuenta y puede ser parcial.</div>
   `);
 
   el.appendChild(form);
-  el.appendChild(list);
+  el.appendChild(orders);
 
   let tempLines = [];
+
+  function computeFinalPrice(base, discPct, discAmt, override) {
+    const b = Math.max(0, num(base));
+    const ov = (override === "" || override == null) ? null : num(override);
+    if (ov != null && Number.isFinite(ov) && ov > 0) return ov;
+
+    const p = Math.max(0, num(discPct));
+    const a = Math.max(0, num(discAmt));
+    const afterPct = b * (1 - (p / 100));
+    const final = afterPct - a;
+    return Math.max(0, final);
+  }
+
+  function priceChanged(base, final) {
+    return Math.abs(num(base) - num(final)) > 0.0001;
+  }
+
   function paintLines() {
     const host = $("#so_lines");
     host.innerHTML = tempLines.length
       ? `<ul>${tempLines.map(l => {
           const p = productById(l.productId);
-          return `<li><b>${p.sku}</b>: ${l.boxes} caja(s) + ${l.pieces} pza(s) = <b>${l.qtyPieces}</b> pzas | ${money(l.price)} / pza</li>`;
+          const reason = l.reason ? ` <span class="muted">(${l.reason})</span>` : "";
+          return `<li>
+            <b>${p.sku}</b>: ${l.boxes} caja(s) + ${l.pieces} pza(s) = <b>${l.qtyPieces}</b> pzas |
+            Base ${money(l.basePrice)} → Final <b>${money(l.finalPrice)}</b> / pza${reason}
+          </li>`;
         }).join("")}</ul>`
       : `<span class="muted">Sin líneas</span>`;
+  }
+
+  function shippedSum(so, productId) {
+    return (so.shipLines || []).filter(r => r.productId === productId).reduce((acc,r)=>acc+num(r.qtyShipped),0);
+  }
+
+  function openFulfillModal(soId) {
+    const so = db.salesOrders.find(x => x.id === soId);
+    if (!so) return;
+
+    const rows = (so.lines || []).map(line => {
+      const p = productById(line.productId);
+      const shipped = shippedSum(so, line.productId);
+      const remaining = Math.max(0, num(line.qtyPieces) - shipped);
+
+      const pp = ppb(line.productId);
+      const defBoxes = Math.floor(Math.min(remaining, num(onHand.get(line.productId)||0)) / pp);
+      const defPieces = 0;
+
+      return { line, p, shipped, remaining, pp, defBoxes, defPieces, onhand: num(onHand.get(line.productId)||0) };
+    });
+
+    openModal({
+      title: `Surtir / Entregar — ${so.code}`,
+      bodyHTML: `
+        <div class="muted small">Captura lo entregado. Se clampa a “pendiente” y al stock disponible.</div>
+        <table class="table" style="margin-top:12px">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Pedido</th>
+              <th>Entregado</th>
+              <th>Pendiente</th>
+              <th>Stock</th>
+              <th>PPB</th>
+              <th>Cajas</th>
+              <th>Pzas</th>
+              <th>Total a entregar</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r,i)=>`
+              <tr>
+                <td><b>${r.p.sku}</b><div class="muted small">${r.p.name}</div></td>
+                <td>${r.line.qtyPieces}</td>
+                <td>${r.shipped}</td>
+                <td><span class="badge ${r.remaining>0?'warn':'ok'}">${r.remaining}</span></td>
+                <td>${r.onhand}</td>
+                <td>${r.pp}</td>
+                <td><input data-sh-boxes="${i}" type="number" step="1" value="${r.defBoxes}" /></td>
+                <td><input data-sh-pieces="${i}" type="number" step="1" value="${r.defPieces}" /></td>
+                <td><span data-sh-total="${i}">0</span></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `,
+      actionsHTML: `
+        <button class="btn" id="sh_cancel">Cancelar</button>
+        <button class="btn primary" id="sh_apply">Aplicar entrega</button>
+      `,
+      onMount: ({ root, close }) => {
+        function recalc(i) {
+          const b = num(root.querySelector(`[data-sh-boxes="${i}"]`).value);
+          const s = num(root.querySelector(`[data-sh-pieces="${i}"]`).value);
+          const productId = rows[i].line.productId;
+          const total = Math.max(0, toPieces(b, s, productId));
+          root.querySelector(`[data-sh-total="${i}"]`).textContent = String(total);
+        }
+        rows.forEach((_,i)=>{
+          root.querySelector(`[data-sh-boxes="${i}"]`).addEventListener("input", ()=>recalc(i));
+          root.querySelector(`[data-sh-pieces="${i}"]`).addEventListener("input", ()=>recalc(i));
+          recalc(i);
+        });
+
+        root.querySelector("#sh_cancel").onclick = () => close();
+
+        root.querySelector("#sh_apply").onclick = () => {
+          if (!canFulfill) return;
+
+          rows.forEach((r,i)=>{
+            const b = num(root.querySelector(`[data-sh-boxes="${i}"]`).value);
+            const s = num(root.querySelector(`[data-sh-pieces="${i}"]`).value);
+            let qty = Math.max(0, toPieces(b, s, r.line.productId));
+            if (qty <= 0) return;
+
+            qty = Math.min(qty, r.remaining);
+
+            const nowOnHand = calcOnHand(branchId, warehouseId);
+            const available = num(nowOnHand.get(r.line.productId) || 0);
+            qty = Math.min(qty, available);
+            if (qty <= 0) return;
+
+            so.shipLines = so.shipLines || [];
+            so.shipLines.push({ productId: r.line.productId, qtyShipped: qty });
+
+            db.stockMoves.push({
+              id: uid(),
+              ts: new Date().toISOString(),
+              date: todayISO(),
+              type: "SHIP",
+              productId: r.line.productId,
+              qty: -qty,
+              unitCost: null,
+              note: `Entrega ${so.code} — ${so.customer}`,
+              branchId, warehouseId,
+              userId: db.currentUserId,
+              ref: so.id
+            });
+          });
+
+          const shippedMap = new Map();
+          (so.shipLines || []).forEach(x => shippedMap.set(x.productId, (shippedMap.get(x.productId)||0) + num(x.qtyShipped)));
+          const allDone = (so.lines || []).every(l => (shippedMap.get(l.productId)||0) >= num(l.qtyPieces));
+          so.status = allDone ? "SHIPPED" : "PARTIAL";
+
+          saveDB(db);
+          close();
+          render();
+        };
+      }
+    });
   }
 
   setTimeout(() => {
     paintLines();
 
-    const scanBtn = $("#so_scan");
-    if (scanBtn) {
-      scanBtn.onclick = async () => {
-        if (!allowed) return;
-        await openBarcodeScanner({
-          onCode: (code) => {
-            const p = productByBarcode(code);
-            if (!p) return alert(`No se encontró producto con barcode: ${code}`);
-            $("#so_prod").value = p.id;
-          }
-        });
-      };
+    function loadBasePrice() {
+      const p = productById($("#so_prod").value);
+      if (!p) return;
+      $("#so_price").value = num(p.price || 0).toFixed(2);
+      $("#so_disc_pct").value = "0";
+      $("#so_disc_amt").value = "0";
+      $("#so_override").value = "";
+      $("#so_reason").value = "";
+      updateFinal();
     }
 
+    function updateFinal() {
+      const base = num($("#so_price").value);
+      const discPct = num($("#so_disc_pct").value);
+      const discAmt = num($("#so_disc_amt").value);
+      const override = $("#so_override").value;
+      const final = computeFinalPrice(base, discPct, discAmt, override);
+      $("#so_final").value = money(final);
+    }
+
+    if ($("#so_prod")) {
+      $("#so_prod").onchange = loadBasePrice;
+      loadBasePrice();
+    }
+
+    $("#so_disc_pct").oninput = updateFinal;
+    $("#so_disc_amt").oninput = updateFinal;
+    $("#so_override").oninput = updateFinal;
+
+    $("#so_scan").onclick = async () => {
+      if (!canCreate) return;
+      await openBarcodeScanner({
+        onCode: (code) => {
+          const p = productByBarcode(code);
+          if (!p) return alert(`No se encontró producto con barcode: ${code}`);
+          $("#so_prod").value = p.id;
+          loadBasePrice();
+        }
+      });
+    };
+
     $("#so_add_line").onclick = () => {
-      if (!allowed) return;
+      if (!canCreate) return;
 
       const productId = $("#so_prod").value;
       const boxes = num($("#so_boxes").value);
       const pieces = num($("#so_pieces").value);
       const qtyPieces = toPieces(boxes, pieces, productId);
-      const price = num($("#so_price").value || (productById(productId)?.price ?? 0));
-
       if (!productId || qtyPieces <= 0) return alert("Producto y cantidad > 0.");
 
-      tempLines.push({ productId, boxes, pieces, qtyPieces, price });
+      const basePrice = num($("#so_price").value);
+      const discPct = num($("#so_disc_pct").value);
+      const discAmt = num($("#so_disc_amt").value);
+      const overrideRaw = $("#so_override").value;
+      const overridePrice = (overrideRaw === "" ? null : num(overrideRaw));
+      const finalPrice = computeFinalPrice(basePrice, discPct, discAmt, overrideRaw);
+
+      if (finalPrice <= 0) return alert("Precio final inválido.");
+      const changed = priceChanged(basePrice, finalPrice);
+
+      const reason = $("#so_reason").value.trim();
+      if (changed && !reason) return alert("Si cambias el precio (descuento u override), el motivo es obligatorio.");
+
+      tempLines.push({
+        productId,
+        boxes,
+        pieces,
+        qtyPieces,
+        basePrice,
+        discountPct: discPct,
+        discountAmt: discAmt,
+        overridePrice,
+        finalPrice,
+        reason: changed ? reason : ""
+      });
+
       paintLines();
     };
 
     $("#so_create").onclick = () => {
-      if (!allowed) return;
+      if (!canCreate) return;
 
       const customer = $("#so_customer").value.trim() || "Cliente";
       const date = $("#so_date").value || todayISO();
       if (tempLines.length === 0) return alert("Agrega al menos 1 línea.");
 
       const soId = uid();
+      const code = `SO-${String(db.salesOrders.length + 1).padStart(5, "0")}`;
 
-      tempLines.forEach(line => {
-        db.stockMoves.push({
-          id: uid(),
-          ts: new Date().toISOString(),
-          date,
-          type: "SALE",
-          productId: line.productId,
-          qty: -Math.abs(num(line.qtyPieces)),
-          unitCost: null,
-          note: `Pedido ${customer}`,
-          branchId, warehouseId,
-          userId: db.currentUserId,
-          ref: soId
-        });
+      db.salesOrders.push({
+        id: soId,
+        code,
+        customer,
+        date,
+        status: "OPEN",
+        branchId,
+        warehouseId,
+        userId: db.currentUserId,
+        lines: tempLines,
+        shipLines: []
       });
 
       tempLines = [];
       saveDB(db);
       render();
     };
+
+    el.querySelectorAll("button[data-fulfill]").forEach(btn => {
+      btn.onclick = () => openFulfillModal(btn.getAttribute("data-fulfill"));
+    });
+
   }, 0);
 
   return el;
@@ -1137,22 +1365,22 @@ function viewWaste() {
   const el = document.createElement("div");
   el.className = "grid cols2";
 
-  const form = card("Registrar merma", `
+  const form = card("Registrar merma (con escaneo)", `
     <div class="row">
       <div class="field">
         <label>Producto</label>
-        <select id="w_prod" ${allowed?"":"disabled"}>
+        <select id="w_prod" ${allowed ? "" : "disabled"}>
           ${db.products.map(p => `<option value="${p.id}">${p.sku} — ${p.name}</option>`).join("")}
         </select>
       </div>
       <div class="field">
         <label>Escanear</label>
-        <button class="btn secondary" id="w_scan" ${allowed?"":"disabled"}>Escanear</button>
+        <button class="btn secondary" id="w_scan" ${allowed ? "" : "disabled"}>Escanear</button>
       </div>
-      <div class="field"><label>Cantidad (pzas)</label><input id="w_qty" type="number" step="1" value="1" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Cantidad (pzas)</label><input id="w_qty" type="number" step="1" value="1" ${allowed ? "" : "disabled"} /></div>
       <div class="field">
         <label>Motivo</label>
-        <select id="w_reason" ${allowed?"":"disabled"}>
+        <select id="w_reason" ${allowed ? "" : "disabled"}>
           <option value="CADUCIDAD">Caducidad</option>
           <option value="DANIADO">Dañado</option>
           <option value="OBSOLETO">Obsoleto / No se vendió</option>
@@ -1160,8 +1388,8 @@ function viewWaste() {
       </div>
     </div>
     <div class="row">
-      <div class="field"><label>Nota</label><input id="w_note" placeholder="Detalle" ${allowed?"":"disabled"} /></div>
-      <button class="btn danger" id="w_add" ${allowed?"":"disabled title='Sin permiso'"}>Registrar merma</button>
+      <div class="field"><label>Nota</label><input id="w_note" placeholder="Detalle" ${allowed ? "" : "disabled"} /></div>
+      <button class="btn danger" id="w_add" ${allowed ? "" : "disabled title='Sin permiso'"}>Registrar merma</button>
     </div>
   `);
 
@@ -1194,19 +1422,16 @@ function viewWaste() {
   el.appendChild(list);
 
   setTimeout(() => {
-    const scanBtn = $("#w_scan");
-    if (scanBtn) {
-      scanBtn.onclick = async () => {
-        if (!allowed) return;
-        await openBarcodeScanner({
-          onCode: (code) => {
-            const p = productByBarcode(code);
-            if (!p) return alert(`No se encontró producto con barcode: ${code}`);
-            $("#w_prod").value = p.id;
-          }
-        });
-      };
-    }
+    $("#w_scan").onclick = async () => {
+      if (!allowed) return;
+      await openBarcodeScanner({
+        onCode: (code) => {
+          const p = productByBarcode(code);
+          if (!p) return alert(`No se encontró producto con barcode: ${code}`);
+          $("#w_prod").value = p.id;
+        }
+      });
+    };
 
     $("#w_add").onclick = () => {
       if (!allowed) return;
@@ -1249,16 +1474,16 @@ function viewBenchmark() {
     <div class="row">
       <div class="field">
         <label>Producto</label>
-        <select id="b_prod" ${allowed?"":"disabled"}>
+        <select id="b_prod" ${allowed ? "" : "disabled"}>
           ${db.products.map(p => `<option value="${p.id}">${p.sku} — ${p.name}</option>`).join("")}
         </select>
       </div>
-      <div class="field"><label>Competidor / Tienda</label><input id="b_store" placeholder="Ej: Tienda X" ${allowed?"":"disabled"} /></div>
-      <div class="field"><label>Precio observado</label><input id="b_price" type="number" step="0.01" placeholder="0.00" ${allowed?"":"disabled"} /></div>
+      <div class="field"><label>Competidor / Tienda</label><input id="b_store" placeholder="Ej: Tienda X" ${allowed ? "" : "disabled"} /></div>
+      <div class="field"><label>Precio observado</label><input id="b_price" type="number" step="0.01" placeholder="0.00" ${allowed ? "" : "disabled"} /></div>
     </div>
     <div class="row">
-      <div class="field"><label>Nota</label><input id="b_note" placeholder="Promo, presentación, etc." ${allowed?"":"disabled"} /></div>
-      <button class="btn primary" id="b_add" ${allowed?"":"disabled title='Sin permiso'"}>Guardar</button>
+      <div class="field"><label>Nota</label><input id="b_note" placeholder="Promo, presentación, etc." ${allowed ? "" : "disabled"} /></div>
+      <button class="btn primary" id="b_add" ${allowed ? "" : "disabled title='Sin permiso'"}>Guardar</button>
     </div>
   `);
 
@@ -1416,6 +1641,12 @@ function viewReports() {
 
 // ---------- Init ----------
 (function init() {
+  if (!canView(currentTab)) currentTab = "sales";
+  if (!canView(currentTab)) currentTab = "purchases";
+  if (!canView(currentTab)) currentTab = "waste";
+  if (!canView(currentTab)) currentTab = "benchmark";
+  if (!canView(currentTab)) currentTab = "inventory";
+  if (!canView(currentTab)) currentTab = "products";
   if (!canView(currentTab)) currentTab = "dashboard";
   render();
 })();
