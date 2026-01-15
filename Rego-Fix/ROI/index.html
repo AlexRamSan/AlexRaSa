@@ -3,411 +3,448 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora ROI Toolholding — AlexRaSa</title>
-  <meta name="description" content="ROI real por toolholding: holders, collets, nuts, accesorios. Ahorros por ciclo, vida, setups, scrap y tiempos muertos. Payback, TCO, ROI." />
-  <meta name="theme-color" content="#111827" />
+  <title>Calculadora ROI — Toolholding (REGO-FIX style) | AlexRaSa</title>
+  <meta name="description" content="Calcula ahorro por ciclo, vida de herramienta, scrap y tiempos muertos. ROI, payback y CAPEX por items (holders, collets, tuercas y unidades tipo powRgrip)." />
+  <meta name="theme-color" content="#CAD42E" />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preload" as="image" href="/assets/hero-industrial.png" />
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     :root{
       --bg:#ffffff;
+      --surface:#f6f7f8;
       --card:#ffffff;
-      --text:#0f172a;     /* slate-900 */
-      --muted:#475569;    /* slate-600 */
-      --line:#e5e7eb;     /* gray-200 */
-      --soft:#f8fafc;     /* slate-50 */
-      --accent:#e30613;   /* rojo industrial (inspirado) */
-      --accent2:#111827;  /* casi negro */
+      --text:#0b1220;
+      --muted:#5b6472;
+      --border:rgba(15,23,42,0.10);
+
+      /* “REGO-FIX-ish”: negro + verde lima del flyer */
+      --rego-green:#cad42e;
+      --rego-green-2:#b9c81f;
+      --rego-dark:#111827;
+      --rego-gray:#1f2937;
+
       --good:#16a34a;
       --warn:#f59e0b;
       --bad:#dc2626;
+      --accent:var(--rego-green);
     }
-    html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
-    a{color:var(--accent);}
-    .card{background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 30px rgba(2,6,23,0.06);}
-    .chip{border:1px solid var(--line); background:var(--soft); border-radius:999px; padding:.25rem .6rem; font-weight:700; font-size:12px; color:var(--muted);}
-    input,select,textarea{background:#fff; color:var(--text); border:1px solid var(--line); padding:.55rem .6rem; border-radius:.65rem;}
-    input:focus,select:focus{outline:none; box-shadow:0 0 0 4px rgba(227,6,19,0.12); border-color:rgba(227,6,19,0.45);}
-    label[title]{cursor:help; text-decoration: underline dotted rgba(15,23,42,.35);}
-    #siteHeader{background:rgba(255,255,255,0.88); backdrop-filter: blur(10px); border-bottom:1px solid var(--line);}
-    .btn{border-radius:.75rem; font-weight:800; letter-spacing:.01em;}
-    .btn-primary{background:var(--accent); color:#fff;}
-    .btn-dark{background:var(--accent2); color:#fff;}
-    .btn-ghost{background:#fff; border:1px solid var(--line);}
-    .kpiBox{border-radius:14px; border:1px solid var(--line); background:linear-gradient(180deg, #ffffff, #fafafa);}
-    .stat-badge{display:inline-block; padding:.28rem .66rem; border-radius:999px; font-weight:900; font-size:11px; min-width:64px; text-align:center; line-height:1; border:1px solid rgba(2,6,23,0.08); background:#fff;}
-    .badge-up{background:linear-gradient(180deg, #16a34a 0%, #059669 100%); color:#fff; border-color:rgba(5,118,78,0.35);}
-    .badge-mid{background:linear-gradient(180deg, #f59e0b 0%, #d97706 100%); color:#101010; border-color:rgba(217,119,6,0.25);}
-    .badge-down{background:linear-gradient(180deg, #ef4444 0%, #dc2626 100%); color:#fff; border-color:rgba(220,38,38,0.28);}
+
+    html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+    a{color:var(--rego-dark);}
+    .topbar{
+      background:rgba(255,255,255,0.92);
+      border-bottom:1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow: 0 12px 30px rgba(2,6,23,0.06);
+    }
+    .soft{
+      background:linear-gradient(180deg, rgba(202,212,46,0.18), rgba(255,255,255,0));
+      border:1px solid rgba(202,212,46,0.25);
+    }
+    input,select,textarea{
+      background:#fff;
+      color:var(--text);
+      border:1px solid rgba(15,23,42,0.14);
+      padding:.55rem .65rem;
+      border-radius:.65rem;
+    }
+    input:focus,select:focus,textarea:focus{
+      outline:none;
+      box-shadow:0 0 0 6px rgba(202,212,46,0.22);
+      border-color: rgba(202,212,46,0.55);
+    }
+    select option { color:#000; background:#fff; }
+
+    label[title]{
+      cursor:help;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-decoration-color: rgba(2,6,23,0.35);
+    }
+
+    .btn-primary{
+      background: linear-gradient(180deg, var(--rego-green), var(--rego-green-2));
+      color:#111827;
+      font-weight:800;
+      border:1px solid rgba(17,24,39,0.12);
+      box-shadow: 0 12px 28px rgba(202,212,46,0.22);
+    }
+    .btn-primary:hover{ filter: brightness(0.98); transform: translateY(-1px); }
+    .btn-secondary{
+      background:#111827;
+      color:#fff;
+      font-weight:800;
+      border:1px solid rgba(17,24,39,0.12);
+    }
+    .btn-secondary:hover{ filter: brightness(1.05); transform: translateY(-1px); }
+
+    .stat-badge{
+      display:inline-block;
+      padding:.28rem .66rem;
+      border-radius:999px;
+      font-weight:800;
+      font-size:11px;
+      min-width: 68px;
+      text-align:center;
+      line-height:1;
+      border:1px solid rgba(15,23,42,0.10);
+      background: rgba(246,247,248,1);
+      color: var(--rego-dark);
+    }
+    .badge-up{ background: rgba(22,163,74,0.12); border-color: rgba(22,163,74,0.25); color:#14532d;}
+    .badge-mid{ background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); color:#7c2d12;}
+    .badge-down{ background: rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.25); color:#7f1d1d;}
+
+    /* Hero (limpio, tipo corporativo) */
     .hero{
       position:relative;
-      background: radial-gradient(1200px 600px at 15% 20%, rgba(227,6,19,0.09), transparent 55%),
-                  radial-gradient(900px 500px at 85% 10%, rgba(17,24,39,0.06), transparent 55%),
-                  linear-gradient(180deg, #ffffff, #f8fafc);
-      border-bottom:1px solid var(--line);
-      overflow:hidden;
+      background: radial-gradient(1200px 520px at 20% 0%, rgba(202,212,46,0.25), rgba(255,255,255,0)),
+                  linear-gradient(180deg, rgba(15,23,42,0.05), rgba(255,255,255,0));
+      border-bottom:1px solid var(--border);
     }
     .hero::after{
       content:"";
-      position:absolute; inset:0;
-      background-image:url('/assets/hero-industrial.png');
-      background-size:cover; background-position:center;
-      opacity:.08;
+      position:absolute;
+      inset:0;
+      background-image: url('/assets/hero-industrial.png');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.06;
       pointer-events:none;
-      mix-blend-mode:multiply;
+      mix-blend-mode: multiply;
     }
-    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .hero > *{ position:relative; z-index:1; }
 
-    /* --- IMPRESIÓN (reporte 1 página) --- */
+    /* SVG text styling */
+    #vizAhorros svg text, #vizPerf svg text, #vizCash svg text { fill: var(--rego-dark) !important; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
+
+    /* PRINT: 1 página, blanco */
     @media print{
-      @page{size:Letter; margin:0.45in;}
-      header, footer, .hero, #mobileBar{display:none !important;}
-      html,body{background:#fff !important; color:#000 !important; font-size:8.6pt !important;}
-      .card{box-shadow:none !important;}
-      #calcGrid{display:block !important; padding:0 !important; margin:0 !important; max-width:100% !important;}
-      #reportSection{display:grid !important; grid-template-columns:repeat(3,1fr) !important; gap:.45rem !important;}
-      #inputPanel{display:none !important;}
-      h2{font-size:1.05rem !important; margin-bottom:.2rem !important;}
-      .text-lg{font-size:.92rem !important;}
-      .text-sm{font-size:.75rem !important;}
-      .min-h-\[320px\]{min-height:150px !important;}
-      svg text{font-size:8px !important;}
-      .badge-up,.badge-mid,.badge-down{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+      @page{ size: Letter; margin: 0.45in; }
+      html,body{ background:#fff !important; color:#000 !important; font-size: 8.6pt !important; }
+      header, footer, .hero, #mobileBar { display:none !important; }
+      main{ padding:0 !important; margin:0 !important; max-width:100% !important; }
+      .card{ box-shadow:none !important; border:1px solid #d1d5db !important; }
+      #reportSection{
+        display:grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.5rem !important;
+      }
+      #reportSection > .col-table{ grid-column: span 1 !important; }
+      #reportSection > .col-kpi{ grid-column: span 1 !important; }
+      #reportSection > .col-viz{ grid-column: span 1 !important; }
+      .viz, .min-h-\[320px\]{ min-height: 150px !important; }
+      #vizPerf svg{ height: 200px !important; }
+      h1,h2,h3,p,span,div,text,svg,path{ color:#000 !important; fill:#000 !important; stroke:#000 !important; }
+      .btn-primary,.btn-secondary{ display:none !important; }
+      .stat-badge.badge-up{ background:#16a34a !important; color:#fff !important; -webkit-print-color-adjust: exact; }
+      .stat-badge.badge-mid{ background:#f59e0b !important; color:#111 !important; -webkit-print-color-adjust: exact; }
+      .stat-badge.badge-down{ background:#dc2626 !important; color:#fff !important; -webkit-print-color-adjust: exact; }
     }
   </style>
 </head>
 
 <body class="antialiased">
-  <header id="siteHeader" class="sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4">
+  <!-- Header -->
+  <header id="siteHeader" class="sticky top-0 z-50 topbar">
+    <div class="max-w-6xl mx-auto px-4">
       <div class="h-16 flex items-center justify-between gap-3">
         <a href="/" class="flex items-center gap-3 shrink-0" aria-label="Ir al inicio">
           <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-9 w-auto" width="150" height="36" />
-          <span class="hidden sm:inline text-[15px] font-extrabold tracking-tight">AlexRaSa<span style="color:var(--accent)">.store</span></span>
-          <span class="hidden md:inline chip">ROI Toolholding</span>
+          <span class="hidden sm:inline text-base font-bold tracking-tight text-slate-900">
+            AlexRaSa<span style="color:var(--rego-green-2)">.store</span>
+          </span>
         </a>
 
-        <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold" style="color:var(--muted)">
-          <a href="/" class="hover:opacity-80">Inicio</a>
-          <a href="/SolidCAM/" class="hover:opacity-80">Soluciones</a>
-          <a href="/#servicios" class="hover:opacity-80">Servicios</a>
-          <a href="/#recursos" class="hover:opacity-80">Recursos</a>
-          <a href="/#contacto" class="hover:opacity-80">Contacto</a>
+        <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-700">
+          <a href="/" class="hover:text-slate-900">Inicio</a>
+          <a href="/SolidCAM/" class="hover:text-slate-900">Soluciones</a>
+          <a href="/#servicios" class="hover:text-slate-900">Servicios</a>
+          <a href="/#recursos" class="hover:text-slate-900">Recursos</a>
+          <a href="/#contacto" class="hover:text-slate-900">Contacto</a>
         </nav>
 
-        <!-- Logo REGO-FIX opcional (solo si tienes permiso) -->
-        <div class="hidden md:flex items-center gap-2">
-          <img src="/assets/brand/rego-fix.svg" alt="REGO-FIX (opcional)" class="h-6 opacity-80" onerror="this.style.display='none';" />
-        </div>
+        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded-md border" style="border-color:var(--border)" aria-label="Abrir menú">
+          <svg class="h-6 w-6 text-slate-900" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
       </div>
     </div>
   </header>
 
+  <!-- Mobile menu -->
+  <div id="mobileBackdrop" class="fixed inset-0 lg:hidden bg-slate-900/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" style="z-index:9998;"></div>
+  <aside id="mobilePanel" class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle" style="z-index:9999;">
+    <div class="absolute inset-0 flex flex-col bg-white text-slate-900">
+      <div class="h-16 flex items-center justify-between px-4 border-b" style="border-color:var(--border)">
+        <span id="mobileMenuTitle" class="text-base font-extrabold">Menú</span>
+        <button id="mobileCloseBtn" class="p-2 rounded-md border" style="border-color:var(--border)" aria-label="Cerrar menú">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto">
+        <nav class="p-4">
+          <ul class="space-y-1 text-[17px] font-semibold">
+            <li><a href="/" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Inicio</a></li>
+            <li><a href="/SolidCAM/" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Soluciones</a></li>
+            <li><a href="/#servicios" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Servicios</a></li>
+            <li><a href="/#recursos" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Recursos</a></li>
+            <li><a href="/#contacto" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Contacto</a></li>
+          </ul>
+
+          <div class="mt-6 grid grid-cols-2 gap-2 px-1">
+            <a href="/#soporte" class="px-3 py-2 text-center rounded-md border hover:bg-slate-50" style="border-color:var(--border)">Soporte</a>
+            <a href="/#agenda" class="px-3 py-2 text-center rounded-md btn-primary">Agendar</a>
+          </div>
+        </nav>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Hero -->
   <section class="hero">
-    <div class="max-w-7xl mx-auto px-4 py-10 md:py-14 relative">
-      <div class="max-w-4xl">
-        <p class="chip inline-flex items-center gap-2">
-          <span class="h-2 w-2 rounded-full" style="background:var(--accent)"></span>
-          ROI basado en holders + componentes
-        </p>
-        <h1 class="mt-3 text-3xl md:text-5xl font-black leading-tight">
-          Calculadora de <span style="color:var(--accent)">ROI</span> para <span class="whitespace-nowrap">Toolholding</span>
-        </h1>
-        <p class="mt-3 text-base md:text-lg" style="color:var(--muted)">
-          Modela <b>CAPEX por items</b> (holders, collets, nuts, accesorios) y cuantifica ahorros por
-          <b>ciclo</b>, <b>vida</b>, <b>setups</b>, <b>scrap</b> y <b>tiempos muertos</b>. Reporte imprimible.
-        </p>
-        <div class="mt-5 flex flex-wrap gap-2">
-          <span class="chip">ROI</span>
-          <span class="chip">Payback</span>
-          <span class="chip">TCO</span>
-          <span class="chip">Micras → dinero</span>
+    <div class="max-w-6xl mx-auto px-4 py-10 md:py-16">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <div class="max-w-3xl">
+          <p class="text-xs font-extrabold tracking-widest uppercase text-slate-600">ROI de Toolholding</p>
+          <h1 class="mt-2 text-3xl md:text-5xl font-black text-slate-900">
+            Calculadora de <span style="color:var(--rego-green-2)">Retorno de Inversión</span>
+          </h1>
+          <p class="mt-3 text-slate-700">
+            Enfocada en <strong>portaherramientas, collets/pinzas y accesorios</strong>.
+            Estima ahorro por <strong>ciclo</strong>, <strong>vida de herramienta</strong>, <strong>scrap</strong> y <strong>tiempos muertos</strong>,
+            con <strong>CAPEX por items</strong>, <strong>ROI</strong> y <strong>payback</strong>.
+          </p>
+        </div>
+
+        <div class="card soft p-4 w-full lg:w-[420px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-xs font-extrabold text-slate-700">Estilo REGO-FIX (paleta)</p>
+              <p class="text-sm text-slate-700">Negro + verde lima corporativo</p>
+            </div>
+            <!-- Placeholder: sube tu logo -->
+            <img src="/assets/rego-fix-logo.svg" alt="Logo REGO-FIX (placeholder)" class="h-8 w-auto" onerror="this.style.display='none'" />
+          </div>
+          <div class="mt-3 text-xs text-slate-600 leading-relaxed">
+            powRgrip se compone de <strong>collet/pinza</strong>, <strong>toolholder</strong> y <strong>unidad de sujeción</strong>. :contentReference[oaicite:3]{index=3}
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <main id="calcGrid" class="max-w-7xl mx-auto px-4 pt-7 pb-24 grid gap-5 lg:grid-cols-12">
-    <!-- INPUT PANEL -->
-    <section id="inputPanel" class="card p-5 lg:col-span-4">
+  <main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-24 grid gap-4 sm:gap-6 lg:grid-cols-8">
+
+    <!-- Inputs -->
+    <section class="card p-5 lg:col-span-3">
       <div class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="text-lg font-black">Entradas</h2>
-          <p class="text-sm" style="color:var(--muted)">Todo en USD por default (puedes cambiarlo).</p>
-        </div>
-        <button id="btnPrint" class="btn btn-ghost px-3 py-2 text-sm">Reporte (PDF)</button>
+        <h2 class="text-lg font-black text-slate-900">Parámetros (Baseline vs Propuesta)</h2>
+        <span class="text-xs font-bold px-2 py-1 rounded-full" style="background:rgba(202,212,46,0.22); border:1px solid rgba(202,212,46,0.40);">
+          Toolholding ROI
+        </span>
       </div>
 
-      <!-- Moneda -->
-      <div class="mt-4 grid gap-3">
-        <div class="grid grid-cols-3 gap-2">
-          <label class="text-sm col-span-1" title="Moneda para mostrar resultados.">
-            Moneda
-            <select id="moneda" class="mt-1 w-full">
-              <option value="USD" selected>USD</option>
-              <option value="MXN">MXN</option>
+      <div class="grid gap-3 mt-4">
+        <!-- Sistemas -->
+        <div class="grid grid-cols-1 gap-2">
+          <label class="text-sm font-semibold text-slate-800" title="Sistema de sujeción actual (referencia).">
+            Sistema actual
+            <select id="sysActual" class="mt-1 w-full">
+              <option value="shrink">Shrink-fit</option>
+              <option value="hydraulic">Hidráulico</option>
+              <option value="er">ER (collet)</option>
+              <option value="side-lock">Weldon / Side-lock</option>
+              <option value="otro">Otro</option>
             </select>
           </label>
-          <label class="text-sm col-span-2" title="Tipo de cambio solo para visualización (si eliges MXN).">
-            TC (MXN/USD)
-            <input id="tc" type="number" value="17.00" class="mt-1 w-full" />
+
+          <label class="text-sm font-semibold text-slate-800" title="Sistema propuesto. Para powRgrip, el CAPEX típicamente incluye unidad + holders + collets.">
+            Sistema propuesto
+            <select id="sysPropuesta" class="mt-1 w-full">
+              <option value="powrgrip">powRgrip (REGO-FIX)</option>
+              <option value="er">ER (REGO-FIX)</option>
+              <option value="otro">Otro</option>
+            </select>
           </label>
         </div>
 
-        <!-- Producción / costos base -->
+        <!-- Proceso -->
         <div class="grid grid-cols-2 gap-2">
-          <label class="text-sm" title="Volumen mensual del proceso analizado.">
-            Piezas/mes
-            <input id="pmes" type="number" value="10000" class="mt-1 w-full">
-          </label>
-          <label class="text-sm" title="Costo total de operar la máquina por hora (incluye MO, energía, etc.).">
-            Costo hora máquina
-            <input id="costoHora" type="number" value="50" class="mt-1 w-full">
-          </label>
-        </div>
-
-        <!-- Baseline vs propuesta (ciclo, vida, muertos) -->
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-sm" title="Tiempo de ciclo actual por pieza (s).">
+          <label class="text-sm font-semibold text-slate-800" title="Tiempo de ciclo actual por pieza (segundos).">
             Ciclo actual (s)
             <input id="cicloA" type="number" value="60" class="mt-1 w-full">
           </label>
-          <label class="text-sm" title="Tiempo de ciclo propuesto por pieza (s).">
+          <label class="text-sm font-semibold text-slate-800" title="Tiempo de ciclo propuesto por pieza (segundos).">
             Ciclo propuesto (s)
             <input id="cicloP" type="number" value="45" class="mt-1 w-full">
           </label>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
-          <label class="text-sm" title="Vida útil actual del filo/herramienta (pzas).">
-            Vida actual (pzas)
+          <label class="text-sm font-semibold text-slate-800" title="Piezas que dura la herramienta actual (pzas).">
+            Vida herramienta actual (pzas)
             <input id="vidaA" type="number" value="1300" class="mt-1 w-full">
           </label>
-          <label class="text-sm" title="Vida útil propuesta (pzas).">
-            Vida propuesta (pzas)
+          <label class="text-sm font-semibold text-slate-800" title="Piezas objetivo con la propuesta (pzas).">
+            Vida herramienta propuesta (pzas)
             <input id="vidaP" type="number" value="2500" class="mt-1 w-full">
           </label>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
-          <label class="text-sm" title="Costo del inserto/herramienta por reemplazo.">
-            Costo herramienta
+          <label class="text-sm font-semibold text-slate-800" title="Costo de la herramienta/inserto (USD).">
+            Costo herramienta (USD)
             <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full">
           </label>
-          <label class="text-sm" title="Minutos totales de paro/tiempos muertos al mes.">
+          <label class="text-sm font-semibold text-slate-800" title="Costo total por hora de máquina (USD/hr).">
+            Costo máquina/hr (USD)
+            <input id="costoHora" type="number" value="50" class="mt-1 w-full">
+          </label>
+        </div>
+
+        <label class="text-sm font-semibold text-slate-800" title="Volumen mensual de producción del proceso.">
+          Piezas por mes
+          <input id="pmes" type="number" value="10000" class="mt-1 w-full">
+        </label>
+
+        <!-- Tiempos muertos -->
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm font-semibold text-slate-800" title="Minutos de paro por mes (cambios, ajustes, retrabajo).">
             T. muerto actual (min/mes)
             <input id="tmuertoA" type="number" value="120" class="mt-1 w-full">
           </label>
+          <label class="text-sm font-semibold text-slate-800" title="Minutos de paro objetivo por mes.">
+            T. muerto propuesto (min/mes)
+            <input id="tmuertoP" type="number" value="30" class="mt-1 w-full">
+          </label>
         </div>
 
-        <label class="text-sm" title="Minutos de paro objetivo con la propuesta.">
-          T. muerto propuesto (min/mes)
-          <input id="tmuertoP" type="number" value="30" class="mt-1 w-full">
-        </label>
-
-        <!-- Setups y scrap (del PDF) -->
-        <div class="mt-2 pt-3 border-t" style="border-color:var(--line)">
-          <h3 class="text-sm font-extrabold">Setups + Scrap</h3>
-
-          <div class="grid grid-cols-2 gap-2 mt-2">
-            <label class="text-sm" title="Minutos totales al mes dedicados a setups/cambios (baseline).">
-              Setup actual (min/mes)
-              <input id="setupA" type="number" value="180" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Minutos totales al mes dedicados a setups/cambios (propuesta).">
-              Setup propuesto (min/mes)
-              <input id="setupP" type="number" value="120" class="mt-1 w-full">
-            </label>
-          </div>
-
-          <div class="grid grid-cols-3 gap-2 mt-2">
-            <label class="text-sm" title="Scrap actual del proceso (%).">
-              Scrap A (%)
-              <input id="scrapA" type="number" value="2.0" step="0.1" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Scrap propuesto (%).">
-              Scrap P (%)
-              <input id="scrapP" type="number" value="0.8" step="0.1" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Costo de scrap por pieza (material + proceso + logística).">
-              Costo scrap/pza
-              <input id="costoScrap" type="number" value="3.50" step="0.1" class="mt-1 w-full">
-            </label>
-          </div>
+        <!-- Scrap -->
+        <div class="grid grid-cols-3 gap-2">
+          <label class="text-sm font-semibold text-slate-800" title="Tasa de scrap actual (% sobre producción mensual).">
+            Scrap actual (%)
+            <input id="scrapA" type="number" value="1.2" step="0.1" class="mt-1 w-full">
+          </label>
+          <label class="text-sm font-semibold text-slate-800" title="Tasa de scrap propuesta (%).">
+            Scrap propuesto (%)
+            <input id="scrapP" type="number" value="0.4" step="0.1" class="mt-1 w-full">
+          </label>
+          <label class="text-sm font-semibold text-slate-800" title="Costo promedio por pieza scrappeada (material + retrabajo + logística + oportunidad).">
+            Costo scrap/pza (USD)
+            <input id="costoScrap" type="number" value="12" step="0.1" class="mt-1 w-full">
+          </label>
         </div>
 
-        <!-- Toolholding REGO-FIX (items) -->
-        <div class="mt-2 pt-3 border-t" style="border-color:var(--line)">
-          <div class="flex items-center justify-between gap-2">
-            <h3 class="text-sm font-extrabold">Paquete Toolholding (items)</h3>
-            <span class="chip">CAPEX por lista</span>
-          </div>
+        <!-- OPEX / CAPEX -->
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm font-semibold text-slate-800" title="Costo recurrente mensual (mantenimiento, servicio, etc.).">
+            OPEX mensual (USD)
+            <input id="mensualidad" type="number" value="0" class="mt-1 w-full">
+          </label>
 
-          <div class="grid grid-cols-2 gap-2 mt-2">
-            <label class="text-sm" title="Sistema de sujeción a evaluar.">
-              Sistema
-              <select id="sistema" class="mt-1 w-full">
-                <option value="POWRGRIP" selected>powRgrip</option>
-                <option value="MICRUN">micRun</option>
-                <option value="ER_STD">ER estándar</option>
-                <option value="ER_UP">ER ultra precision</option>
-                <option value="UNITEC">uniTec (manual)</option>
-              </select>
-            </label>
-            <label class="text-sm" title="Interfaz del husillo (afecta qué holders compras).">
-              Interfaz husillo
-              <select id="interfaz" class="mt-1 w-full">
-                <option>HSK</option><option>BT</option><option>SK</option><option>CAT</option><option>CAPTO</option><option>CYL</option>
-              </select>
-            </label>
-          </div>
+          <label class="text-sm font-semibold text-slate-800" title="CAPEX total. Por defecto se calcula desde la tabla de items; puedes sobrescribirlo.">
+            CAPEX (USD)
+            <input id="inversion" type="number" value="0" class="mt-1 w-full">
+          </label>
+        </div>
 
-          <!-- Micras a dinero -->
-          <div class="grid grid-cols-2 gap-2 mt-2">
-            <label class="text-sm" title="Runout (TIR) actual en micras. Si no lo mides: empieza con 10–20 µm y afina después.">
-              Runout actual (µm)
-              <input id="runoutA" type="number" value="12" step="0.5" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Runout objetivo. Se autocompleta por sistema y puedes ajustarlo.">
-              Runout propuesto (µm)
-              <input id="runoutP" type="number" value="3" step="0.5" class="mt-1 w-full">
-            </label>
-          </div>
-          <div class="grid grid-cols-2 gap-2 mt-2">
-            <label class="text-sm" title="Impacto estimado por micra de mejora en runout sobre vida (%/µm). Ajusta con tus datos.">
-              Vida: % por µm
-              <input id="kVidaPorUm" type="number" value="1.0" step="0.1" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Impacto estimado por micra en scrap (puntos porcentuales / µm). Ajusta con tu historial.">
-              Scrap: pp por µm
-              <input id="kScrapPorUm" type="number" value="0.05" step="0.01" class="mt-1 w-full">
-            </label>
-          </div>
+        <div class="flex items-center justify-between gap-3 mt-2">
+          <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-800" title="Si está activo, el CAPEX se recalcula desde la tabla de items REGO-FIX.">
+            <input id="useItemsCapex" type="checkbox" checked class="h-4 w-4">
+            <span>Calcular CAPEX desde items</span>
+          </label>
 
-          <!-- Lista de items (CAPEX) -->
-          <div class="mt-3 grid gap-2">
-            <p class="text-xs font-bold uppercase tracking-wide" style="color:var(--muted)">Items (cantidad × costo unitario)</p>
-
-            <div class="grid grid-cols-3 gap-2">
-              <label class="text-sm col-span-2" title="Cuerpos/holders según interfaz (HSK/BT/etc.).">
-                Holders (cuerpos)
-                <input id="qtyHolder" type="number" value="6" class="mt-1 w-full">
-              </label>
-              <label class="text-sm" title="Costo unitario del holder.">
-                $/Holder
-                <input id="uHolder" type="number" value="320" class="mt-1 w-full">
-              </label>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-              <label class="text-sm col-span-2" title="Collets/pinzas (powRgrip, micRun, ER).">
-                Collets
-                <input id="qtyCollet" type="number" value="10" class="mt-1 w-full">
-              </label>
-              <label class="text-sm" title="Costo unitario de collet.">
-                $/Collet
-                <input id="uCollet" type="number" value="55" class="mt-1 w-full">
-              </label>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-              <label class="text-sm col-span-2" title="Tuercas de apriete / nuts.">
-                Nuts
-                <input id="qtyNut" type="number" value="6" class="mt-1 w-full">
-              </label>
-              <label class="text-sm" title="Costo unitario de nut.">
-                $/Nut
-                <input id="uNut" type="number" value="48" class="mt-1 w-full">
-              </label>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-              <label class="text-sm col-span-2" title="Pull studs / pernos de retención (si aplica).">
-                Pull studs
-                <input id="qtyPull" type="number" value="6" class="mt-1 w-full">
-              </label>
-              <label class="text-sm" title="Costo unitario de pull stud.">
-                $/Pull
-                <input id="uPull" type="number" value="22" class="mt-1 w-full">
-              </label>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-              <label class="text-sm col-span-2" title="Accesorios (discos sellado, flush disks, llaves, etc.).">
-                Accesorios
-                <input id="qtyAcc" type="number" value="8" class="mt-1 w-full">
-              </label>
-              <label class="text-sm" title="Costo unitario promedio de accesorio.">
-                $/Acc
-                <input id="uAcc" type="number" value="18" class="mt-1 w-full">
-              </label>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-              <label class="text-sm col-span-2" title="Equipo/servicio recurrente (limpieza, calibración, consumibles, etc.).">
-                OPEX mensual (toolholding)
-                <input id="opex" type="number" value="0" class="mt-1 w-full">
-              </label>
-              <label class="text-sm" title="Cuota/suscripción/mantenimiento (si aplica aparte).">
-                Mensualidad
-                <input id="mensualidad" type="number" value="0" class="mt-1 w-full">
-              </label>
-            </div>
-
-            <div class="kpiBox p-3 mt-1">
-              <div class="text-xs font-extrabold uppercase tracking-wide" style="color:var(--muted)">CAPEX calculado (items)</div>
-              <div id="capexCalc" class="text-2xl font-black mt-1">$0</div>
-              <div class="text-xs mt-1" style="color:var(--muted)">Si quieres forzar inversión, usa el override.</div>
-
-              <label class="mt-2 inline-flex items-center gap-2 text-sm font-semibold">
-                <input id="capexOverrideOn" type="checkbox" class="h-4 w-4">
-                Override inversión
-              </label>
-              <input id="capexOverride" type="number" value="2000" class="mt-2 w-full" disabled>
-            </div>
-          </div>
+          <button id="btnResetItems" class="text-xs font-bold px-3 py-2 rounded-md border hover:bg-slate-50" style="border-color:var(--border)">
+            Preset por sistema
+          </button>
         </div>
 
         <!-- Inclusiones -->
-        <div class="mt-2 pt-3 border-t" style="border-color:var(--line)">
-          <h3 class="text-sm font-extrabold">Ahorros a incluir</h3>
+        <div class="mt-3 p-3 rounded-xl" style="background:var(--surface); border:1px solid var(--border);">
+          <h3 class="text-sm font-black text-slate-900">Tipos de ahorro a incluir</h3>
           <div class="grid grid-cols-2 gap-2 text-sm mt-2">
-            <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
-            <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
-            <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
-            <label class="inline-flex items-center gap-2"><input id="incSetup" type="checkbox" checked class="h-4 w-4"><span>Setups/cambios</span></label>
-            <label class="inline-flex items-center gap-2"><input id="incScrap" type="checkbox" checked class="h-4 w-4"><span>Scrap</span></label>
-            <label class="inline-flex items-center gap-2"><input id="incMicras" type="checkbox" checked class="h-4 w-4"><span>Micras→$ (auto)</span></label>
+            <label class="inline-flex items-center gap-2 font-semibold"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Ciclo</span></label>
+            <label class="inline-flex items-center gap-2 font-semibold"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Herramienta</span></label>
+            <label class="inline-flex items-center gap-2 font-semibold"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
+            <label class="inline-flex items-center gap-2 font-semibold"><input id="incScrap" type="checkbox" checked class="h-4 w-4"><span>Scrap</span></label>
           </div>
+        </div>
 
-          <button id="btnCalcular" class="btn btn-primary w-full px-4 py-3 mt-3">Calcular</button>
+        <!-- Acciones -->
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button id="btnCalcular" class="w-full px-4 py-2 rounded-md btn-primary">Calcular</button>
+          <button id="btnPrint" class="w-full px-4 py-2 rounded-md btn-secondary">Reporte (PDF)</button>
+        </div>
 
-          <p class="text-xs mt-3" style="color:var(--muted)">
-            Nota: micras→$ aplica “boost” a vida y scrap según tus coeficientes. No es magia: es un dial para aterrizar runout a impacto real.
-          </p>
+        <!-- Nota producto -->
+        <div class="mt-3 text-xs text-slate-600 leading-relaxed">
+          Tip: si estás modelando powRgrip, el set típico contempla <strong>unidad + holders + collets</strong> (y en algunos casos inserts).
+          El flyer resalta “sin calor, sin vapores” y tiempos de cambio rápidos (p.ej. “tool ready en 8s” en PGU). :contentReference[oaicite:4]{index=4}
         </div>
       </div>
     </section>
 
-    <!-- REPORT -->
-    <div id="reportSection" class="lg:col-span-8 grid gap-5 lg:grid-cols-8">
-      <section class="card p-5 lg:col-span-5">
+    <!-- Report -->
+    <div id="reportSection" class="lg:col-span-5 grid gap-4 sm:gap-6 lg:grid-cols-6">
+
+      <!-- Items / CAPEX -->
+      <section class="card p-5 lg:col-span-6">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <h2 class="text-lg font-black">Comparativa A vs P</h2>
-            <p class="text-sm" style="color:var(--muted)">Incluye items de toolholding + KPIs financieros.</p>
+            <h2 class="text-lg font-black text-slate-900">Items (CAPEX REGO-FIX)</h2>
+            <p class="text-sm text-slate-600 mt-1">Define cantidades y costos unitarios. El CAPEX se calcula automáticamente si está activado.</p>
           </div>
-          <span class="chip" id="sysBadge">powRgrip</span>
+          <div class="text-right">
+            <div class="text-xs font-bold text-slate-600">CAPEX calculado</div>
+            <div id="capexCalc" class="text-xl font-black text-slate-900">$0.00</div>
+          </div>
         </div>
 
         <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
+          <table class="w-full text-sm border-separate [border-spacing:0_10px]">
+            <thead>
+              <tr class="text-slate-600">
+                <th class="text-left font-bold px-2">Item</th>
+                <th class="text-center font-bold px-2">Incluir</th>
+                <th class="text-right font-bold px-2">Qty</th>
+                <th class="text-right font-bold px-2">Unit (USD)</th>
+                <th class="text-right font-bold px-2">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyItems"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-2 text-xs text-slate-600">
+          powRgrip se compone de: <strong>collet</strong> + <strong>toolholder</strong> + <strong>clamping unit</strong>. :contentReference[oaicite:5]{index=5}
+        </div>
+      </section>
+
+      <!-- Comparativa -->
+      <section class="card p-5 lg:col-span-4 col-table">
+        <h2 class="text-lg font-black text-slate-900">Comparativa (Actual vs Propuesta)</h2>
+        <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
           <table class="w-full border-separate [border-spacing:0_8px] text-sm">
             <thead>
-              <tr style="color:var(--muted)">
+              <tr class="text-slate-600">
                 <th class="text-left font-bold px-2">Métrica</th>
                 <th class="text-right font-bold px-2">Actual</th>
                 <th class="text-right font-bold px-2">Propuesta</th>
@@ -417,453 +454,513 @@
             <tbody id="tbodyComp"></tbody>
           </table>
         </div>
-
-        <div class="mt-3 grid md:grid-cols-2 gap-3">
-          <div class="kpiBox p-4">
-            <div class="text-xs font-extrabold uppercase tracking-wide" style="color:var(--muted)">TCO (12m)</div>
-            <div id="tco" class="text-2xl font-black mt-1">$0</div>
-            <div class="text-xs mt-1" style="color:var(--muted)">CAPEX + (OPEX+mensualidad)×12</div>
-          </div>
-          <div class="kpiBox p-4">
-            <div class="text-xs font-extrabold uppercase tracking-wide" style="color:var(--muted)">Ahorro anual (neto)</div>
-            <div id="ahorroAnualNeto" class="text-2xl font-black mt-1">$0</div>
-            <div class="text-xs mt-1" style="color:var(--muted)"> (Ahorro bruto − OPEX − mensualidad)×12</div>
-          </div>
-        </div>
       </section>
 
-      <section class="card p-5 lg:col-span-3">
-        <h2 class="text-lg font-black">Resultados</h2>
+      <!-- KPIs -->
+      <section class="card p-5 lg:col-span-2 col-kpi">
+        <h2 class="text-lg font-black text-slate-900">Resultados</h2>
 
         <div class="mt-3 grid gap-3">
-          <div class="kpiBox p-4">
-            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro mensual (bruto)</div>
-            <div id="ahorro" class="text-right font-black text-2xl" style="color:var(--good)">$0</div>
+          <div class="rounded-xl p-3 soft">
+            <div class="text-sm font-bold text-slate-700">Ahorro mensual total</div>
+            <div id="ahorro" class="text-right font-black text-2xl text-slate-900">$0.00</div>
           </div>
 
-          <div class="kpiBox p-4">
-            <div class="text-sm font-bold" style="color:var(--muted)">Neto mensual</div>
-            <div id="netoMensual" class="text-right font-black text-xl">$0</div>
-            <div class="text-xs mt-1 text-right" style="color:var(--muted)">Neto = ahorro − OPEX − mensualidad</div>
+          <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.03); border:1px solid var(--border);">
+            <div class="text-sm font-bold text-slate-700">Neto mensual (ahorro − OPEX)</div>
+            <div id="netoMensual" class="text-right font-black text-xl">$0.00</div>
           </div>
 
-          <div class="kpiBox p-4">
-            <div class="text-sm font-bold" style="color:var(--muted)">ROI anual</div>
+          <div class="rounded-xl p-3" style="background:rgba(202,212,46,0.14); border:1px solid rgba(202,212,46,0.28);">
+            <div class="text-sm font-bold text-slate-700">ROI anual</div>
             <div id="roi" class="text-right font-black text-xl">0%</div>
           </div>
 
-          <div class="kpiBox p-4">
-            <div class="text-sm font-bold" style="color:var(--muted)">Payback</div>
+          <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.03); border:1px solid var(--border);">
+            <div class="text-sm font-bold text-slate-700">Payback (mes)</div>
             <div id="payback" class="text-right font-black text-xl">—</div>
-            <div class="text-xs mt-1 text-right" style="color:var(--muted)">en meses (aprox)</div>
           </div>
 
-          <div class="kpiBox p-4">
-            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro por scrap (mes)</div>
-            <div id="ahorroScrap" class="text-right font-black text-lg">$0</div>
+          <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.03); border:1px solid var(--border);">
+            <div class="text-sm font-bold text-slate-700">Liberación de capacidad</div>
+            <div class="text-right">
+              <div id="hrsLib" class="font-black text-xl text-slate-900">0.0 hrs/mes</div>
+              <div class="text-xs text-slate-600">ciclo + tiempo muerto</div>
+            </div>
           </div>
 
-          <div class="kpiBox p-4">
-            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro por setups (mes)</div>
-            <div id="ahorroSetup" class="text-right font-black text-lg">$0</div>
+          <div class="rounded-xl p-3" style="background:rgba(15,23,42,0.03); border:1px solid var(--border);">
+            <div class="text-sm font-bold text-slate-700">Ahorro por scrap</div>
+            <div id="ahorroScrap" class="text-right font-black text-lg">$0.00</div>
           </div>
+        </div>
 
-          <div class="kpiBox p-4">
-            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro por tiempo muerto (mes)</div>
-            <div id="ahorroTM" class="text-right font-black text-lg">$0</div>
-          </div>
+        <div class="mt-3 text-xs text-slate-600 leading-relaxed">
+          Checklist ROI recomendado: incluir ciclo, vida de herramienta, scrap, paros y costos directos. :contentReference[oaicite:6]{index=6}
         </div>
       </section>
 
-      <section class="card p-5 lg:col-span-8">
-        <h2 class="text-lg font-black">Visuales</h2>
-        <div class="mt-3 grid grid-cols-1 gap-6">
-          <div class="rounded-xl p-4" style="border:1px solid var(--line); background:#fff;">
-            <p class="text-sm font-extrabold">Distribución de ahorros</p>
-            <div id="vizAhorros" class="mt-3 min-h-[320px]"></div>
+      <!-- Visuales -->
+      <section id="visuales" class="card p-5 lg:col-span-6 col-viz">
+        <h2 class="text-lg font-black text-slate-900">Visuales</h2>
+
+        <div class="mt-3 grid grid-cols-1 gap-6 max-w-5xl mx-auto">
+          <div class="rounded-xl p-3" style="border:1px solid var(--border); background:var(--surface);">
+            <p class="text-sm font-black text-slate-900">Distribución de ahorros</p>
+            <div id="vizAhorros" class="mt-4 min-h-[320px]"></div>
           </div>
-          <div class="rounded-xl p-4" style="border:1px solid var(--line); background:#fff;">
-            <p class="text-sm font-extrabold">Comparativa rápida</p>
-            <div id="vizPerf" class="mt-3"></div>
+
+          <div class="rounded-xl p-3" style="border:1px solid var(--border); background:var(--surface);">
+            <p class="text-sm font-black text-slate-900">Comparativa rápida</p>
+            <div id="vizPerf" class="mt-4"></div>
           </div>
-          <div class="rounded-xl p-4" style="border:1px solid var(--line); background:#fff;">
-            <p class="text-sm font-extrabold">Flujo mensual y payback</p>
-            <div id="vizCash" class="mt-3 min-h-[320px]"></div>
+
+          <div class="rounded-xl p-3" style="border:1px solid var(--border); background:var(--surface);">
+            <p class="text-sm font-black text-slate-900">Flujo mensual y payback</p>
+            <div id="vizCash" class="mt-4 min-h-[320px]"></div>
           </div>
         </div>
       </section>
     </div>
   </main>
 
-  <div id="mobileBar" class="lg:hidden fixed inset-x-0 bottom-0 z-40 px-4 py-3" style="background:rgba(255,255,255,0.92); border-top:1px solid var(--line); backdrop-filter: blur(10px);">
-    <button id="btnCalcularMobile" class="btn btn-primary w-full px-4 py-3">Calcular</button>
+  <!-- Mobile bar -->
+  <div id="mobileBar" class="md:hidden fixed inset-x-0 bottom-0 z-40 px-4 py-2 bg-white/90 backdrop-blur border-t" style="border-color:var(--border)">
+    <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-md btn-primary">Calcular</button>
   </div>
 
-  <footer class="py-8 text-center">
-    <div class="max-w-7xl mx-auto px-4 text-sm" style="color:var(--muted)">
-      © 2026 AlexRaSa — ROI para decisiones técnicas.
+  <footer class="py-10 mt-10 text-center">
+    <div class="max-w-6xl mx-auto px-4 text-sm text-slate-600">
+      © 2026 AlexRaSa — Ingeniería, innovación y eficiencia.
     </div>
   </footer>
 
   <script>
-    // ========= utils =========
-    const $ = (id)=>document.getElementById(id);
-    const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
-    const fmt = (n)=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const fmt0 = (n)=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
-    const isNum = (v)=>Number.isFinite(v) && !Number.isNaN(v);
+    // ---------- Mobile menu ----------
+    const mOpen  = document.getElementById('mobileOpenBtn');
+    const mClose = document.getElementById('mobileCloseBtn');
+    const mPanel = document.getElementById('mobilePanel');
+    const mBg    = document.getElementById('mobileBackdrop');
+    const mLinks = document.querySelectorAll('.mobile-link');
 
-    function money(n){
-      const cur = $('moneda').value;
-      const tc = +$('tc').value || 1;
-      const v = (cur === 'MXN') ? (n * tc) : n;
-      const sym = (cur === 'MXN') ? '$' : '$';
-      return sym + fmt(v);
+    function toggleMenu(open) {
+      if (open) {
+        mBg?.classList.remove('pointer-events-none', 'opacity-0');
+        mBg?.classList.add('pointer-events-auto', 'opacity-100');
+        mPanel?.classList.remove('translate-x-full');
+        mPanel?.classList.add('translate-x-0');
+        document.body.style.overflow = 'hidden';
+      } else {
+        mBg?.classList.remove('pointer-events-auto', 'opacity-100');
+        mBg?.classList.add('pointer-events-none', 'opacity-0');
+        mPanel?.classList.remove('translate-x-0');
+        mPanel?.classList.add('translate-x-full');
+        document.body.style.overflow = '';
+      }
     }
 
-    // ========= sistema -> runout por defecto (según REGO-FIX) =========
-    // powRgrip TIR ≤ 3 µm @ 3xD :contentReference[oaicite:5]{index=5}
-    // ER estándar 10 µm :contentReference[oaicite:6]{index=6}
-    // ER-UP 5 µm :contentReference[oaicite:7]{index=7}
-    // micRun TIR ≤ 3 µm :contentReference[oaicite:8]{index=8}
-    const SYS_RUNOUT = {
-      POWRGRIP: 3,
-      MICRUN: 3,
-      ER_STD: 10,
-      ER_UP: 5,
-      UNITEC: 3 // manual: deja 3 como placeholder editable
-    };
+    mOpen?.addEventListener('click', () => toggleMenu(true));
+    mClose?.addEventListener('click', () => toggleMenu(false));
+    mBg?.addEventListener('click', () => toggleMenu(false));
+    mLinks.forEach(link => link.addEventListener('click', () => toggleMenu(false)));
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(false); });
 
-    function syncRunoutBySystem(){
-      const sys = $('sistema').value;
-      const v = SYS_RUNOUT[sys] ?? 3;
-      $('runoutP').value = v;
-      $('sysBadge').textContent = $('sistema').options[$('sistema').selectedIndex].text;
+    // ---------- Utils ----------
+    function fmt(n){
+      const v = Number(n || 0);
+      return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    function clampPct(v){ return Math.max(0, Math.min(100, Number(v||0))); }
 
-    // ========= CAPEX por items =========
-    function calcCapex(){
-      const qtyHolder = +$('qtyHolder').value || 0;
-      const uHolder = +$('uHolder').value || 0;
-      const qtyCollet = +$('qtyCollet').value || 0;
-      const uCollet = +$('uCollet').value || 0;
-      const qtyNut = +$('qtyNut').value || 0;
-      const uNut = +$('uNut').value || 0;
-      const qtyPull = +$('qtyPull').value || 0;
-      const uPull = +$('uPull').value || 0;
-      const qtyAcc = +$('qtyAcc').value || 0;
-      const uAcc = +$('uAcc').value || 0;
-
-      const capex = (qtyHolder*uHolder) + (qtyCollet*uCollet) + (qtyNut*uNut) + (qtyPull*uPull) + (qtyAcc*uAcc);
-      $('capexCalc').textContent = money(capex);
-      return capex;
+    function setEnabled(ids,on){
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.disabled = !on;
+        el.style.opacity = on ? '1' : '0.55';
+      });
     }
-
-    function capexEffective(){
-      const capex = calcCapex();
-      const on = $('capexOverrideOn').checked;
-      $('capexOverride').disabled = !on;
-      return on ? (+$('capexOverride').value || 0) : capex;
-    }
-
-    // ========= inclusiones enable/disable =========
-    function setEnabled(ids,on){ ids.forEach(id=>{ const el=$(id); if(el) el.disabled=!on; }); }
     function applyInclusions(){
-      setEnabled(['cicloA','cicloP'], $('incCiclo').checked);
-      setEnabled(['vidaA','vidaP','costoHerr'], $('incHerr').checked);
-      setEnabled(['tmuertoA','tmuertoP'], $('incTM').checked);
-      setEnabled(['setupA','setupP'], $('incSetup').checked);
-      setEnabled(['scrapA','scrapP','costoScrap'], $('incScrap').checked);
-      setEnabled(['runoutA','runoutP','kVidaPorUm','kScrapPorUm'], $('incMicras').checked);
+      setEnabled(['cicloA','cicloP'], document.getElementById('incCiclo')?.checked ?? true);
+      setEnabled(['vidaA','vidaP','costoHerr'], document.getElementById('incHerr')?.checked ?? true);
+      setEnabled(['tmuertoA','tmuertoP'], document.getElementById('incTM')?.checked ?? true);
+      setEnabled(['scrapA','scrapP','costoScrap'], document.getElementById('incScrap')?.checked ?? true);
     }
 
-    // ========= core calculator =========
-    function calcular(){
-      // base
-      const pmes = +$('pmes').value || 0;
-      const costoHora = +$('costoHora').value || 0;
+    // ---------- Items / CAPEX ----------
+    const items = [
+      { id:'unit',   name:'Unidad de sujeción (PGU/PGS/PGA/PGC)', inc:true, qty:1,  unit:0 },
+      { id:'holder', name:'Portaherramientas (toolholders)',     inc:true, qty:10, unit:0 },
+      { id:'collet', name:'Pinzas/Collets (powRgrip o ER)',      inc:true, qty:10, unit:0 },
+      { id:'nut',    name:'Tuercas (solo ER)',                   inc:false,qty:10, unit:0 },
+      { id:'insert', name:'Insertos/Accesorios (APG / otros)',   inc:false,qty:1,  unit:0 },
+      { id:'gauge',  name:'Medición / preset / accesorios',      inc:false,qty:1,  unit:0 },
+    ];
 
-      const cicloA = +$('cicloA').value || 0;
-      const cicloP = +$('cicloP').value || 0;
+    function tbodyItemsRow(it){
+      const subtotal = (it.inc ? (Number(it.qty||0) * Number(it.unit||0)) : 0);
+      return `
+        <tr style="background:#fff; border:1px solid var(--border);">
+          <td class="px-2 py-2 font-semibold text-slate-800">${it.name}</td>
+          <td class="px-2 py-2 text-center">
+            <input type="checkbox" data-item-inc="${it.id}" ${it.inc ? 'checked' : ''} class="h-4 w-4">
+          </td>
+          <td class="px-2 py-2 text-right">
+            <input type="number" min="0" step="1" data-item-qty="${it.id}" value="${it.qty}" class="w-24 text-right">
+          </td>
+          <td class="px-2 py-2 text-right">
+            <input type="number" min="0" step="0.01" data-item-unit="${it.id}" value="${it.unit}" class="w-28 text-right">
+          </td>
+          <td class="px-2 py-2 text-right font-black text-slate-900">$${fmt(subtotal)}</td>
+        </tr>
+      `;
+    }
 
-      let vidaA = +$('vidaA').value || 0;
-      let vidaP = +$('vidaP').value || 0;
+    function renderItems(){
+      const tbody = document.getElementById('tbodyItems');
+      if(!tbody) return;
+      tbody.innerHTML = items.map(tbodyItemsRow).join('');
+    }
 
-      const costoHerr = +$('costoHerr').value || 0;
+    function computeCapexFromItems(){
+      return items.reduce((s,it) => s + (it.inc ? (Number(it.qty||0) * Number(it.unit||0)) : 0), 0);
+    }
 
-      const tmuertoA = +$('tmuertoA').value || 0;
-      const tmuertoP = +$('tmuertoP').value || 0;
+    function syncCapexUI(){
+      const capex = computeCapexFromItems();
+      document.getElementById('capexCalc').textContent = `$${fmt(capex)}`;
+      const use = document.getElementById('useItemsCapex')?.checked ?? true;
+      if(use){
+        const invEl = document.getElementById('inversion');
+        if(invEl) invEl.value = String(capex.toFixed(2));
+      }
+    }
 
-      const setupA = +$('setupA').value || 0;
-      const setupP = +$('setupP').value || 0;
+    function attachItemsEvents(){
+      const tbody = document.getElementById('tbodyItems');
+      if(!tbody) return;
 
-      let scrapA = +$('scrapA').value || 0;
-      let scrapP = +$('scrapP').value || 0;
-      const costoScrap = +$('costoScrap').value || 0;
+      tbody.addEventListener('input', (e) => {
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
 
-      const opex = +$('opex').value || 0;
-      const mensualidad = +$('mensualidad').value || 0;
-      const capex = capexEffective();
+        const incId = t.getAttribute('data-item-inc');
+        const qtyId = t.getAttribute('data-item-qty');
+        const unitId= t.getAttribute('data-item-unit');
 
-      // micras -> boosts (configurable)
-      if($('incMicras').checked){
-        const runoutA = +$('runoutA').value || 0;
-        const runoutP = +$('runoutP').value || 0;
-        const dUm = Math.max(0, runoutA - runoutP); // mejora en µm (solo si baja)
-
-        const kVida = +$('kVidaPorUm').value || 0;       // % por µm
-        const kScrap = +$('kScrapPorUm').value || 0;     // puntos porcentuales por µm
-
-        // boost a vida propuesta
-        if(vidaP > 0 && dUm > 0 && kVida > 0){
-          const mult = 1 + (dUm * kVida / 100);
-          vidaP = vidaP * mult;
+        if(incId){
+          const it = items.find(x => x.id === incId);
+          if(it) it.inc = t.checked;
+        }
+        if(qtyId){
+          const it = items.find(x => x.id === qtyId);
+          if(it) it.qty = Number(t.value || 0);
+        }
+        if(unitId){
+          const it = items.find(x => x.id === unitId);
+          if(it) it.unit = Number(t.value || 0);
         }
 
-        // boost a scrap propuesto (reduce)
-        if(dUm > 0 && kScrap > 0){
-          scrapP = Math.max(0, scrapP - (dUm * kScrap));
-        }
+        renderItems();
+        syncCapexUI();
+        calcular();
+      });
+    }
+
+    function presetBySystem(){
+      const sys = document.getElementById('sysPropuesta')?.value || 'powrgrip';
+
+      // valores default: conservadores (precios en 0 para que el usuario los ponga)
+      items.forEach(it => { it.unit = Number(it.unit||0); });
+
+      if(sys === 'powrgrip'){
+        // powRgrip: unidad + holders + collets (tuercas off)
+        items.find(i=>i.id==='unit').inc = true;
+        items.find(i=>i.id==='holder').inc = true;
+        items.find(i=>i.id==='collet').inc = true;
+        items.find(i=>i.id==='nut').inc = false;
+        items.find(i=>i.id==='insert').inc = true; // a veces aplica
+        items.find(i=>i.id==='gauge').inc = false;
+
+        items.find(i=>i.id==='unit').qty = 1;
+        items.find(i=>i.id==='holder').qty = 10;
+        items.find(i=>i.id==='collet').qty = 10;
+        items.find(i=>i.id==='insert').qty = 1;
+
+      } else if(sys === 'er'){
+        // ER: holders + collets + nuts (unidad off)
+        items.find(i=>i.id==='unit').inc = false;
+        items.find(i=>i.id==='holder').inc = true;
+        items.find(i=>i.id==='collet').inc = true;
+        items.find(i=>i.id==='nut').inc = true;
+        items.find(i=>i.id==='insert').inc = false;
+        items.find(i=>i.id==='gauge').inc = false;
+
+        items.find(i=>i.id==='holder').qty = 10;
+        items.find(i=>i.id==='collet').qty = 10;
+        items.find(i=>i.id==='nut').qty = 10;
+
+      } else {
+        // otro: deja todo editable sin supuestos
+        items.forEach(it => it.inc = true);
       }
 
-      // ahorros
-      const incCiclo = $('incCiclo').checked;
-      const incHerr  = $('incHerr').checked;
-      const incTM    = $('incTM').checked;
-      const incSetup = $('incSetup').checked;
-      const incScrap = $('incScrap').checked;
+      renderItems();
+      syncCapexUI();
+      calcular();
+    }
 
-      // ciclo: ahorro = (horas actuales - horas propuestas) * costoHora
-      const horasA = (pmes * cicloA) / 3600;
-      const horasP = (pmes * cicloP) / 3600;
-      const ahorroCiclo = (cicloA>0 && cicloP>0) ? Math.max(0, (horasA - horasP) * costoHora) : 0;
+    // ---------- Core calculator ----------
+    function delta(a,p,{higherIsBetter=true}={}){
+      if(a===0 && p===0) return {val:0, up:false};
+      const d = (p-a) / (a===0 ? 1 : a) * 100;
+      const up = higherIsBetter ? d>0 : d<0;
+      return {val:d, up};
+    }
+    function row(name,a,p,opt){
+      const d = delta(a,p,opt||{});
+      const higherIsBetter = (opt && typeof opt.higherIsBetter !== 'undefined') ? opt.higherIsBetter : true;
+      const displayed = isFinite(d.val) ? (d.val >= 0 ? '+' : '') + fmt(d.val) + '%' : '—';
+      const thresholdPct = 3;
+      const absVal = Math.abs(d.val || 0);
+      const isImprovement = higherIsBetter ? (d.val > 0) : (d.val < 0);
+      let badgeClass;
+      if (absVal < thresholdPct) badgeClass = 'badge-mid';
+      else badgeClass = isImprovement ? 'badge-up' : 'badge-down';
+      const badge = `<span class="stat-badge ${badgeClass}" title="${isImprovement ? 'Mejora' : 'Empeora'}">${displayed}</span>`;
 
-      // herramienta
+      return `<tr style="background:transparent;">
+        <td class="px-2 py-2 font-semibold text-slate-800">${name}</td>
+        <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
+        <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
+        <td class="px-2 py-2 text-right">${badge}</td>
+      </tr>`;
+    }
+
+    function calcular(){
+      // Pull inputs
+      const mensualidad = +document.getElementById('mensualidad').value || 0;
+      const cicloA = +document.getElementById('cicloA').value || 0;
+      const cicloP = +document.getElementById('cicloP').value || 0;
+      const vidaA  = +document.getElementById('vidaA').value  || 0;
+      const vidaP  = +document.getElementById('vidaP').value  || 0;
+      const costoHerr = +document.getElementById('costoHerr').value || 0;
+      const costoHora = +document.getElementById('costoHora').value || 0;
+      const pmes = +document.getElementById('pmes').value || 0;
+      const inversion = +document.getElementById('inversion').value || 0;
+      const tmuertoA = +document.getElementById('tmuertoA').value || 0;
+      const tmuertoP = +document.getElementById('tmuertoP').value || 0;
+
+      const scrapA = clampPct(document.getElementById('scrapA').value);
+      const scrapP = clampPct(document.getElementById('scrapP').value);
+      const costoScrap = +document.getElementById('costoScrap').value || 0;
+
+      // inclusions
+      const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
+      const incHerr  = document.getElementById('incHerr')?.checked ?? true;
+      const incTM    = document.getElementById('incTM')?.checked ?? true;
+      const incScrap = document.getElementById('incScrap')?.checked ?? true;
+
+      // Baseline hours
+      const horasMesA = (pmes * cicloA) / 3600;
+      const horasMesP = (pmes * cicloP) / 3600;
+      const ahorroHorasCiclo = Math.max(0, horasMesA - horasMesP);
+
+      // Savings: cycle
+      const ahorroCiclo = (cicloA>0 && cicloP>0)
+        ? Math.max(0, (horasMesA - horasMesP) * costoHora)
+        : 0;
+
+      // Savings: tooling consumption
       const consA = (vidaA>0) ? (pmes / vidaA) : 0;
       const consP = (vidaP>0) ? (pmes / vidaP) : 0;
       const costoHerrA = consA * costoHerr;
       const costoHerrP = consP * costoHerr;
       const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
 
-      // tiempos muertos y setups (min -> horas)
+      // Savings: downtime
       const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
-      const ahorroSetup = Math.max(0, (setupA - setupP)) / 60 * costoHora;
+      const ahorroHorasTM = Math.max(0, (tmuertoA - tmuertoP)) / 60;
 
-      // scrap (puntos porcentuales)
-      const scrapDelta = Math.max(0, (scrapA - scrapP)) / 100;
-      const ahorroScrap = scrapDelta * pmes * costoScrap;
+      // Savings: scrap
+      const scrapPzasA = (scrapA/100) * pmes;
+      const scrapPzasP = (scrapP/100) * pmes;
+      const ahorroScrap = Math.max(0, (scrapPzasA - scrapPzasP) * costoScrap);
 
-      const ahorroBruto = Math.max(0,
+      // Total
+      const ahorroTotal = Math.max(0,
         (incCiclo ? ahorroCiclo : 0) +
         (incHerr  ? ahorroHerr  : 0) +
         (incTM    ? ahorroTM    : 0) +
-        (incSetup ? ahorroSetup : 0) +
         (incScrap ? ahorroScrap : 0)
       );
 
-      const neto = ahorroBruto - opex - mensualidad;
+      const neto = ahorroTotal - mensualidad;
 
-      const roiAnual = capex > 0 ? ((neto * 12) / capex) * 100 : (neto > 0 ? Infinity : 0);
-      const paybackMeses = (capex > 0 && neto > 0) ? (capex / neto) : Infinity;
+      // ROI (neto vs capex)
+      const roiMensual = inversion > 0 ? (neto / inversion) * 100 : (neto > 0 ? Infinity : 0);
+      const roiAnual   = inversion > 0 ? ((neto * 12) / inversion) * 100 : (neto > 0 ? Infinity : 0);
 
-      // TCO 12m
-      const tco = capex + (opex + mensualidad) * 12;
-      const ahorroAnualNeto = neto * 12;
+      const idxPayback = (inversion > 0 && neto > 0) ? Math.ceil(inversion / neto) : -1;
 
-      // UI results
-      $('ahorro').textContent = money(ahorroBruto);
-      $('netoMensual').textContent = money(neto);
-      $('netoMensual').style.color = (neto >= 0) ? 'var(--good)' : 'var(--bad)';
+      // KPIs
+      document.getElementById('ahorro').textContent = `$${fmt(ahorroTotal)}`;
+      document.getElementById('ahorroScrap').textContent = `$${fmt(ahorroScrap)}`;
 
-      $('roi').textContent = isFinite(roiAnual) ? (fmt(roiAnual) + '%') : '∞%';
-      $('payback').textContent = isFinite(paybackMeses) ? (fmt(paybackMeses) + ' meses') : '—';
+      document.getElementById('roi').textContent = isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
+      document.getElementById('payback').textContent = idxPayback !== -1 ? `${idxPayback}` : '—';
 
-      $('ahorroTM').textContent = money(ahorroTM);
-      $('ahorroSetup').textContent = money(ahorroSetup);
-      $('ahorroScrap').textContent = money(ahorroScrap);
+      const netoEl = document.getElementById('netoMensual');
+      netoEl.textContent = `$${fmt(neto)}`;
+      netoEl.style.color = neto >= 0 ? 'var(--good)' : 'var(--bad)';
 
-      $('tco').textContent = money(tco);
-      $('ahorroAnualNeto').textContent = money(ahorroAnualNeto);
+      const hrsLib = (incCiclo ? ahorroHorasCiclo : 0) + (incTM ? ahorroHorasTM : 0);
+      document.getElementById('hrsLib').textContent = `${(hrsLib || 0).toFixed(1)} hrs/mes`;
 
-      // tabla comparativa
+      // Table rows
       const pphA = cicloA>0 ? 3600/cicloA : 0;
       const pphP = cicloP>0 ? 3600/cicloP : 0;
       const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
       const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
 
-      function delta(a,p,{higherIsBetter=true}={}){
-        if(!isNum(a) || !isNum(p)) return {val:0};
-        if(a===0 && p===0) return {val:0};
-        const d = (p-a) / (a===0 ? 1 : a) * 100;
-        return {val:d, higherIsBetter};
-      }
-
-      function row(name,a,p,opt){
-        const d = delta(a,p,opt||{});
-        const displayed = isFinite(d.val) ? (d.val >= 0 ? '+' : '') + fmt(d.val) + '%' : '—';
-        const thresholdPct = 3;
-        const absVal = Math.abs(d.val || 0);
-        const higherIsBetter = (opt && typeof opt.higherIsBetter !== 'undefined') ? opt.higherIsBetter : true;
-        const isImprovement = higherIsBetter ? (d.val > 0) : (d.val < 0);
-
-        let badgeClass;
-        if (absVal < thresholdPct) badgeClass = 'badge-mid';
-        else badgeClass = isImprovement ? 'badge-up' : 'badge-down';
-
-        const badge = `<span class="stat-badge ${badgeClass}">${displayed}</span>`;
-        return `<tr style="background:#fff; border-bottom:1px solid rgba(2,6,23,0.04);">
-          <td class="px-2 py-2">${name}</td>
-          <td class="px-2 py-2 text-right mono">${isFinite(a)?fmt(a):'—'}</td>
-          <td class="px-2 py-2 text-right mono">${isFinite(p)?fmt(p):'—'}</td>
-          <td class="px-2 py-2 text-right">${badge}</td>
-        </tr>`;
-      }
-
-      const capexShow = capex;
-      const runoutA = +$('runoutA').value || 0;
-      const runoutP = +$('runoutP').value || 0;
-
-      $('tbodyComp').innerHTML = [
+      const rows = [
         row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
         row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
-        row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
-        row('Costo herramienta/pza', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
+        row('Vida herramienta (pzas)', vidaA, vidaP, {higherIsBetter:true}),
+        row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
+        row('Consumo herramienta (USD/mes)', costoHerrA, costoHerrP, {higherIsBetter:false}),
         row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
-        row('Setups (min/mes)', setupA, setupP, {higherIsBetter:false}),
         row('Scrap (%)', scrapA, scrapP, {higherIsBetter:false}),
-        row('Runout (µm)', runoutA, runoutP, {higherIsBetter:false}),
-        row('CAPEX (items)', 0, capexShow, {higherIsBetter:true}),
-        row('Ahorro bruto mensual', 0, ahorroBruto, {higherIsBetter:true}),
-        row('Neto mensual', 0, neto, {higherIsBetter:true}),
+        row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
       ].join('');
 
-      // visuals
+      document.getElementById('tbodyComp').innerHTML = rows;
+
+      // Visuals
       const parts=[], labels=[];
-      if(incCiclo) { parts.push(Math.max(0, ahorroCiclo)); labels.push('Ciclo'); }
-      if(incHerr)  { parts.push(Math.max(0, ahorroHerr));  labels.push('Herramienta'); }
-      if(incTM)    { parts.push(Math.max(0, ahorroTM));    labels.push('Tiempo muerto'); }
-      if(incSetup) { parts.push(Math.max(0, ahorroSetup)); labels.push('Setups'); }
-      if(incScrap) { parts.push(Math.max(0, ahorroScrap)); labels.push('Scrap'); }
+      if(incCiclo){ parts.push(Math.max(0,ahorroCiclo)); labels.push('Ciclo'); }
+      if(incHerr){ parts.push(Math.max(0,ahorroHerr)); labels.push('Herramienta'); }
+      if(incTM){ parts.push(Math.max(0,ahorroTM)); labels.push('Tiempo muerto'); }
+      if(incScrap){ parts.push(Math.max(0,ahorroScrap)); labels.push('Scrap'); }
 
       renderDonut('vizAhorros', parts, labels);
 
       renderBars('vizPerf', [
         ['T. Ciclo (s)', cicloA, cicloP, true],
         ['Pzas/h', pphA, pphP, false],
-        ['Vida útil (pzas)', vidaA, vidaP, false],
+        ['Vida (pzas)', vidaA, vidaP, false],
         ['Scrap (%)', scrapA, scrapP, true],
       ]);
 
-      renderCashflow('vizCash', {
-        ahorroMes: ahorroBruto,
-        cuota: (mensualidad + opex),
-        capex: capex
-      });
+      renderCashflow('vizCash', { ahorroMes: ahorroTotal, cuota: mensualidad, capex: inversion });
     }
 
-    // ========= charts =========
+    // ---------- Charts ----------
     function renderCashflow(targetId, {ahorroMes, cuota, capex}){
-      const el=$(targetId); if(!el) return;
+      const el=document.getElementById(targetId); if(!el) return;
       const meses=Array.from({length:12},(_,i)=>`M${i+1}`);
 
-      const W=800, H=400;
-      const pad={top:40,right:10,bottom:50,left:60};
-      const barW=18, barGap=6, gap=38;
+      const W = 800, H = 400;
+      const pad = { top: 40, right: 10, bottom: 50, left: 60 };
+      const barW = 18, barGap = 6, gap = 38;
       const H_drawable = H - pad.top - pad.bottom;
 
       const neto = (ahorroMes||0) - (cuota||0);
       let acc = -capex;
-      const accArr = meses.map(()=>{ acc += neto; return acc; });
+      const accArr = meses.map(() => { acc += neto; return acc; });
 
-      const allValues=[ahorroMes||0, cuota||0, ...accArr, -capex];
-      const dataMax = Math.max(1, ...allValues.map(v=>Math.max(0,v)));
-      const dataMin = Math.min(0, ...allValues.map(v=>Math.min(0,v)));
+      const allValues = [ahorroMes||0, cuota||0, ...accArr, -capex];
+      const dataMax = Math.max(1, ...allValues.map(v => Math.max(0, v)));
+      const dataMin = Math.min(0, ...allValues.map(v => Math.min(0, v)));
       const totalRange = dataMax - dataMin;
 
-      const scaleY=(v)=>{
-        if(totalRange===0) return H-pad.bottom;
-        return (H-pad.bottom) - (((v-dataMin)/totalRange)*H_drawable);
+      const scaleY = (v) => {
+        if (totalRange === 0) return H - pad.bottom;
+        return (H - pad.bottom) - (((v - dataMin) / totalRange) * H_drawable);
       };
+      const yZero = scaleY(0);
 
-      const yZero=scaleY(0);
-
-      let x=pad.left + gap/2;
+      let x = pad.left + gap/2;
       const bars = meses.map((m,i)=>{
-        const yA=scaleY(ahorroMes); const hA=yZero-yA;
-        const yP=scaleY(cuota);     const hP=yZero-yP;
-        const xa=x, xp=x+barW+barGap;
-        const labelY=H-pad.bottom+20;
+        const yA = scaleY(ahorroMes); const hA = yZero - yA;
+        const yP = scaleY(cuota);     const hP = yZero - yP;
+        const xa = x, xp = x + barW + barGap;
+        const labelY = H - pad.bottom + 20;
 
         const rects = `
           <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#16a34a"></rect>
-          <rect x="${xp}" y="${yP}" width="${barW}" height="${hP}" fill="#e30613"></rect>
+          <rect x="${xp}" y="${yP}" width="${barW}" height="${hP}" fill="#dc2626"></rect>
         `;
-        const txt = `<text x="${x+barW+barGap/2}" y="${labelY}" font-size="14" fill="var(--text)" text-anchor="middle">${m}</text>`;
-        x += (barW*2 + barGap + gap);
-        return rects+txt;
+        const txt = `<text x="${x + barW + barGap/2}" y="${labelY}" font-size="14" fill="#111827" text-anchor="middle">${m}</text>`;
+        x += (barW * 2 + barGap + gap);
+        return rects + txt;
       }).join('');
 
       const linePts = accArr.map((v,i)=>{
-        const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW+barGap/2);
+        const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW + barGap/2);
         const yi = scaleY(v);
         return `${xi},${yi}`;
       }).join(' ');
 
-      const x0 = pad.left + gap/2 - (barW*2+barGap+gap) + (barW+barGap/2);
+      const x0 = pad.left + gap/2 - (barW*2+barGap+gap) + (barW + barGap/2);
       const y0 = scaleY(-capex);
-
-      const polyline = `<polyline points="${x0},${y0} ${linePts}" fill="none" stroke="#111827" stroke-width="3" opacity="0.35"></polyline>`;
+      const polyline = `<polyline points="${x0},${y0} ${linePts}" fill="none" stroke="#111827" stroke-width="3" opacity="0.65"></polyline>`;
 
       let marker='';
-      if(capex>0){
-        const idx = accArr.findIndex(v=>v>=0);
-        if(idx!==-1){
-          const xi = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW+barGap/2);
-          const yi = scaleY(accArr[idx]);
-          marker = `<circle cx="${xi}" cy="${yi}" r="6" fill="#111827"></circle>
-                    <text x="${xi+10}" y="${yi-10}" font-size="14" fill="#111827">Payback M${idx+1}</text>`;
+      if (capex > 0){
+        const idx = accArr.findIndex(v => v >= 0);
+        if(idx !== -1){
+          const xi_marker = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW + barGap/2);
+          const yi_marker = scaleY(accArr[idx]);
+          marker = `
+            <circle cx="${xi_marker}" cy="${yi_marker}" r="6" fill="#cad42e" stroke="#111827" stroke-width="2"></circle>
+            <text x="${xi_marker + 10}" y="${yi_marker - 10}" font-size="14" fill="#111827" font-weight="700">Payback M${idx+1}</text>
+          `;
         }
       }
 
-      const axis = `
-        <line x1="${pad.left}" y1="${pad.top-10}" x2="${pad.left}" y2="${H-pad.bottom}" stroke="rgba(2,6,23,.15)"></line>
-        <line x1="${pad.left}" y1="${yZero}" x2="${W-pad.right}" y2="${yZero}" stroke="rgba(2,6,23,.12)"></line>
-        <text x="${pad.left-10}" y="${yZero+5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.55)">$0</text>
-        <text x="${pad.left-10}" y="${scaleY(dataMax)+5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.55)">$${fmt(dataMax)}</text>
-        ${dataMin<0 ? `<text x="${pad.left-10}" y="${scaleY(dataMin)+5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.55)">$${fmt(dataMin)}</text>` : ''}
+      const legendX = W - pad.right - 160, legendY = pad.top;
+      const legend = `
+        <rect x="${legendX}" y="${legendY - 12}" width="150" height="82" rx="12" fill="rgba(255,255,255,0.85)" stroke="rgba(15,23,42,0.14)"></rect>
+        <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#16a34a"></rect>
+        <text x="${legendX+30}" y="${legendY+10}" font-size="14" fill="#111827" font-weight="700">Ahorro</text>
+        <rect x="${legendX+12}" y="${legendY+26}" width="12" height="12" fill="#dc2626"></rect>
+        <text x="${legendX+30}" y="${legendY+36}" font-size="14" fill="#111827" font-weight="700">OPEX</text>
+        <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="#111827" stroke-width="2.5" opacity="0.65"></line>
+        <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="#111827" font-weight="700">Acumulado</text>
       `;
 
-      const legendX = W - pad.right - 155, legendY = pad.top;
-      const legend = `
-        <rect x="${legendX}" y="${legendY-12}" width="148" height="82" rx="12" fill="#fff" stroke="rgba(2,6,23,0.10)"></rect>
-        <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#16a34a"></rect>
-        <text x="${legendX+30}" y="${legendY+10}" font-size="14" fill="var(--text)">Ahorro</text>
-        <rect x="${legendX+12}" y="${legendY+26}" width="12" height="12" fill="#e30613"></rect>
-        <text x="${legendX+30}" y="${legendY+36}" font-size="14" fill="var(--text)">Cuota</text>
-        <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="#111827" stroke-width="2.5" opacity="0.35"></line>
-        <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="var(--text)">Acum.</text>
+      const axis = `
+        <line x1="${pad.left}" y1="${pad.top - 10}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="rgba(15,23,42,.25)"></line>
+        <line x1="${pad.left}" y1="${yZero}" x2="${W - pad.right}" y2="${yZero}" stroke="rgba(15,23,42,.25)"></line>
+        <text x="${pad.left - 10}" y="${yZero + 5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.65)">$0</text>
+        <text x="${pad.left - 10}" y="${scaleY(dataMax) + 5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.65)">$${fmt(dataMax)}</text>
+        ${dataMin < 0 ? `<text x="${pad.left - 10}" y="${scaleY(dataMin) + 5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.65)">$${fmt(dataMin)}</text>` : ''}
       `;
 
       el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${axis}${bars}${polyline}${marker}${legend}</svg>`;
     }
 
     function renderDonut(targetId, parts, labels){
-      const el=$(targetId); if(!el) return;
-      const data = parts.map((p,i)=>[labels[i],p]).filter(x=>x[1]>0);
-      const total = data.reduce((s,p)=>s+p[1],0);
+      const el=document.getElementById(targetId); if(!el) return;
+      const data=parts.map((p,i)=> [labels[i], p]).filter(p=>p[1]>0);
+      const total=data.reduce((s,p)=> s + p[1], 0);
 
-      const W=640, H=380;
-      const cx=220, cy=H/2, r=H*0.38, th=54;
+      const W=600, H=400;
+      const cx = 210, cy = H / 2, r = H * 0.4, th = 50;
       let start=0;
+      const colors=['#111827','#16a34a','#dc2626','#cad42e','#f59e0b','#0ea5e9'];
 
-      const colors=['#111827','#e30613','#16a34a','#f59e0b','#0ea5e9'];
+      const legendX = 390;
+      const legendFontSize = 18;
+      const legendLineHeight = 30;
+      const legendBlockHeight = data.length * legendLineHeight;
+      const legendStartY = (H - legendBlockHeight) / 2 + (legendFontSize / 2);
 
-      const legendX=410, font=17, lh=30;
-      const legendStartY=(H-(data.length*lh))/2 + (font/2);
-
-      const segs = data.map((p,i)=>{
-        const f = total ? p[1]/total : 0;
-        const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI; start+=f;
+      const segs=data.map((p,i)=>{
+        const f= total? p[1]/total:0;
+        const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI;
+        start+=f;
         const L=(a1-a0)>Math.PI?1:0;
 
         const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
@@ -873,98 +970,115 @@
 
         const d=`M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
         const pct=Math.round(f*100);
-        const ly=legendStartY + i*lh;
+        const ly = legendStartY + (i * legendLineHeight);
 
-        return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>
-                <text x="${legendX}" y="${ly}" font-size="${font}" fill="var(--text)">${p[0]}: ${pct}%</text>`;
+        return `
+          <path d="${d}" fill="${colors[i%colors.length]}" opacity="0.90"></path>
+          <text x="${legendX}" y="${ly}" font-size="${legendFontSize}" fill="#111827" font-weight="700">${p[0]}: ${pct}%</text>
+        `;
       }).join('');
 
-      const centerText = total>0 ? money(total) : '—';
+      const centerFontSize = Math.max(20, Math.round(r * 0.18));
+      const centerText = total > 0 ? ('$' + fmt(total)) : '—';
       const center = `
-        <circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="#fff" stroke="rgba(2,6,23,0.08)"></circle>
-        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="22" fill="var(--text)" font-weight="800">${centerText}</text>
+        <circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="rgba(255,255,255,0.95)" stroke="rgba(15,23,42,0.12)"></circle>
+        <text x="${cx}" y="${cy-6}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.round(centerFontSize*0.9)}" fill="#111827" font-weight="900">Ahorro</text>
+        <text x="${cx}" y="${cy+18}" text-anchor="middle" dominant-baseline="middle" font-size="${centerFontSize}" fill="#111827" font-weight="900">${centerText}</text>
       `;
 
       el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
     }
 
     function renderBars(targetId, pairs){
-      const rowsData = pairs.map(([lbl,a,b,lowerIsBetter])=>({
-        lines:String(lbl).replace(' (','\n(').split('\n'),
-        a: a||0, b: b||0, lowerIsBetter
+      const rowsData = pairs.map(([lbl,a,b,lowerIsBetter]) => ({
+        lines: String(lbl).replace(' (','\n(').split('\n'),
+        a: Number(a||0),
+        b: Number(b||0),
+        lowerIsBetter
       }));
 
-      const approxChar=7;
-      const labelCol=Math.max(160, Math.min(260, Math.max(...rowsData.map(r=>Math.max(...r.lines.map(s=>s.length))*approxChar))));
-      const barStartX=labelCol+16;
-      const barMax=520;
-      const rowH=40,rowGap=16,padY=20;
-      const W=barStartX+barMax+170;
-      const H=padY+rowsData.length*(rowH+rowGap)+40;
+      const approxChar = 7;
+      const labelCol = Math.max(160, Math.min(260, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
+      const barStartX = labelCol + 16;
+      const barMax = 520;
+      const rowH = 40, rowGap = 16, padY = 20;
 
-      let y=padY;
-      const rows = rowsData.map(r=>{
-        const maxVal=Math.max(Math.abs(r.a),Math.abs(r.b),1);
-        const aw=Math.round((Math.abs(r.a)/maxVal)*barMax);
-        const bw=Math.round((Math.abs(r.b)/maxVal)*barMax);
+      const W = barStartX + barMax + 170;
+      const H = padY + rowsData.length * (rowH + rowGap) + 40;
+
+      let y = padY;
+      const rows = rowsData.map(r => {
+        const maxVal = Math.max(Math.abs(r.a), Math.abs(r.b), 1);
+        const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
+        const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
 
         const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
-        const colorP = goodB ? '#16a34a' : '#e30613';
+        const colorP = goodB ? '#16a34a' : '#dc2626';
 
-        const label=`<text x="0" y="${y+14}" font-size="14" fill="var(--text)" font-weight="800">
-          ${r.lines[0]}
-          ${r.lines.length>1 ? `<tspan x="0" dy="1.2em" font-weight="700" fill="rgba(15,23,42,.65)">${r.lines.slice(1).join(' ')}</tspan>` : ''}
-        </text>`;
-
-        const bars=`
-          <rect x="${barStartX}" y="${y}" width="${aw}" height="12" fill="rgba(17,24,39,0.18)"></rect>
-          <rect x="${barStartX}" y="${y+16}" width="${bw}" height="12" fill="${colorP}"></rect>
-          <text x="${barStartX+aw+10}" y="${y+10}" font-size="12" fill="rgba(15,23,42,.75)">${isFinite(r.a)?r.a.toFixed(2):'—'}</text>
-          <text x="${barStartX+bw+10}" y="${y+26}" font-size="12" fill="rgba(15,23,42,.75)">${isFinite(r.b)?r.b.toFixed(2):'—'}</text>
+        const label = `
+          <text x="0" y="${y + 14}" font-size="14" fill="#111827" font-weight="800">
+            ${r.lines[0]}
+            ${r.lines.length > 1 ? `<tspan x="0" dy="1.2em">${r.lines.slice(1).join(' ')}</tspan>` : ''}
+          </text>
         `;
+
+        const bars = `
+          <rect x="${barStartX}" y="${y}"      width="${aw}" height="12" fill="rgba(15,23,42,0.18)"></rect>
+          <rect x="${barStartX}" y="${y + 16}" width="${bw}" height="12" fill="${colorP}"></rect>
+          <text x="${barStartX + aw + 10}" y="${y + 10}"  font-size="12" fill="#111827" font-weight="700">${isFinite(r.a) ? r.a.toFixed(2) : '—'}</text>
+          <text x="${barStartX + bw + 10}" y="${y + 26}" font-size="12" fill="#111827" font-weight="700">${isFinite(r.b) ? r.b.toFixed(2) : '—'}</text>
+        `;
+
         y += rowH + rowGap;
-        return label+bars;
+        return label + bars;
       }).join('');
 
-      const legendY=H-20, legendX=barStartX;
-      const legend=`
-        <rect x="${legendX}" y="${legendY-14}" width="240" height="28" rx="10" fill="#fff" stroke="rgba(2,6,23,0.10)"></rect>
-        <rect x="${legendX+10}" y="${legendY-6}" width="12" height="12" fill="rgba(17,24,39,0.18)"></rect>
-        <text x="${legendX+28}" y="${legendY+4}" font-size="12" fill="var(--text)" font-weight="800">Actual</text>
-        <rect x="${legendX+92}" y="${legendY-6}" width="12" height="12" fill="#16a34a"></rect>
-        <text x="${legendX+110}" y="${legendY+4}" font-size="12" fill="var(--text)" font-weight="800">Propuesta</text>
-        <rect x="${legendX+190}" y="${legendY-6}" width="12" height="12" fill="#e30613"></rect>
-        <text x="${legendX+208}" y="${legendY+4}" font-size="12" fill="var(--text)" font-weight="800">Si empeora</text>
+      const legendY = H - 20;
+      const legendX = barStartX;
+      const legend = `
+        <rect x="${legendX}" y="${legendY - 14}" width="210" height="28" rx="10" fill="rgba(255,255,255,0.95)" stroke="rgba(15,23,42,0.14)"></rect>
+        <rect x="${legendX + 10}" y="${legendY - 6}" width="12" height="12" fill="rgba(15,23,42,0.18)"></rect>
+        <text x="${legendX + 28}" y="${legendY + 4}" font-size="12" fill="#111827" font-weight="800">Actual</text>
+        <rect x="${legendX + 88}" y="${legendY - 6}" width="12" height="12" fill="#16a34a"></rect>
+        <text x="${legendX + 106}" y="${legendY + 4}" font-size="12" fill="#111827" font-weight="800">Propuesta</text>
       `;
 
-      $(targetId).innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${rows}${legend}</svg>`;
+      const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">${rows}${legend}</svg>`;
+      const el = document.getElementById(targetId);
+      if(el) el.innerHTML = svg;
     }
 
-    // ========= wiring =========
-    function wireAll(){
-      const inputs = [
-        'moneda','tc','pmes','costoHora',
-        'cicloA','cicloP','vidaA','vidaP','costoHerr',
-        'tmuertoA','tmuertoP','setupA','setupP','scrapA','scrapP','costoScrap',
-        'sistema','interfaz','runoutA','runoutP','kVidaPorUm','kScrapPorUm',
-        'qtyHolder','uHolder','qtyCollet','uCollet','qtyNut','uNut','qtyPull','uPull','qtyAcc','uAcc',
-        'opex','mensualidad','capexOverrideOn','capexOverride'
-      ];
-      inputs.forEach(id => $(id)?.addEventListener('input', ()=>{ calcCapex(); if(window.innerWidth>=1024) calcular(); }));
-      ['incCiclo','incHerr','incTM','incSetup','incScrap','incMicras'].forEach(id=>$(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); }));
+    // ---------- Wiring ----------
+    document.getElementById('btnCalcular')?.addEventListener('click', calcular);
+    document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
+    document.getElementById('btnPrint')?.addEventListener('click', () => window.print());
 
-      $('sistema')?.addEventListener('change', ()=>{ syncRunoutBySystem(); calcCapex(); calcular(); });
+    document.getElementById('useItemsCapex')?.addEventListener('change', () => {
+      syncCapexUI();
+      calcular();
+    });
 
-      $('btnCalcular')?.addEventListener('click', calcular);
-      $('btnCalcularMobile')?.addEventListener('click', calcular);
-      $('btnPrint')?.addEventListener('click', ()=>window.print());
-    }
+    document.getElementById('btnResetItems')?.addEventListener('click', presetBySystem);
+    document.getElementById('sysPropuesta')?.addEventListener('change', presetBySystem);
+
+    [
+      'cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP','mensualidad','scrapA','scrapP','costoScrap'
+    ].forEach(id => document.getElementById(id)?.addEventListener('input', () => {
+      // recalcula en desktop al teclear
+      if (window.innerWidth >= 768) calcular();
+    }));
+
+    ['incCiclo','incHerr','incTM','incScrap'].forEach(id => document.getElementById(id)?.addEventListener('change', () => {
+      applyInclusions();
+      calcular();
+    }));
 
     // init
-    syncRunoutBySystem();
+    renderItems();
+    attachItemsEvents();
+    presetBySystem();
     applyInclusions();
-    calcCapex();
-    wireAll();
+    syncCapexUI();
     calcular();
   </script>
 
