@@ -3,960 +3,971 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora ROI Maquinado (Costo-Beneficio) — AlexRaSa</title>
-  <meta name="description" content="Calcula ahorros por ciclo, vida de herramienta, setups/paros y scrap. ROI, payback, TCO, neto mensual y capacidad liberada." />
-  <meta name="theme-color" content="#ffffff" />
+  <title>Calculadora ROI Toolholding — AlexRaSa</title>
+  <meta name="description" content="ROI real por toolholding: holders, collets, nuts, accesorios. Ahorros por ciclo, vida, setups, scrap y tiempos muertos. Payback, TCO, ROI." />
+  <meta name="theme-color" content="#111827" />
   <meta name="robots" content="index,follow" />
   <link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
-  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-
+  <link rel="preload" as="image" href="/assets/hero-industrial.png" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      color-scheme: light;
       --bg:#ffffff;
-      --muted:#f6f7f9;
       --card:#ffffff;
-      --text:#0b1220;
-      --sub:#3b465a;
-      --line:rgba(15, 23, 42, 0.10);
-      --shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
-      --accent:#d1001c;     /* rojo tipo industrial */
-      --accent-2:#0b1220;   /* negro/azul profundo */
+      --text:#0f172a;     /* slate-900 */
+      --muted:#475569;    /* slate-600 */
+      --line:#e5e7eb;     /* gray-200 */
+      --soft:#f8fafc;     /* slate-50 */
+      --accent:#e30613;   /* rojo industrial (inspirado) */
+      --accent2:#111827;  /* casi negro */
       --good:#16a34a;
       --warn:#f59e0b;
       --bad:#dc2626;
-      --cyan:#0891b2;
     }
-    html,body{background:var(--bg);color:var(--text);font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;}
+    html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
     a{color:var(--accent);}
-
-    #siteHeader{
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid var(--line);
-    }
-
-    .card{
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:.4rem;
-      padding:.25rem .6rem;
-      border-radius:999px;
-      font-weight:700;
-      font-size:12px;
-      border:1px solid var(--line);
-      background: rgba(2,6,23,0.02);
-      color: var(--sub);
-      white-space: nowrap;
-    }
-
-    input,select,textarea{
-      background: #fff;
-      color: var(--text);
-      border: 1px solid var(--line);
-      padding: .58rem .7rem;
-      border-radius: .7rem;
-      outline: none;
-    }
-    input:focus,select:focus,textarea:focus{
-      box-shadow: 0 0 0 6px rgba(209,0,28,0.10);
-      border-color: rgba(209,0,28,0.30);
-    }
-    label[title]{
-      cursor: help;
-      text-decoration: underline;
-      text-decoration-style: dotted;
-      text-decoration-color: rgba(15,23,42,0.35);
-    }
-
+    .card{background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 30px rgba(2,6,23,0.06);}
+    .chip{border:1px solid var(--line); background:var(--soft); border-radius:999px; padding:.25rem .6rem; font-weight:700; font-size:12px; color:var(--muted);}
+    input,select,textarea{background:#fff; color:var(--text); border:1px solid var(--line); padding:.55rem .6rem; border-radius:.65rem;}
+    input:focus,select:focus{outline:none; box-shadow:0 0 0 4px rgba(227,6,19,0.12); border-color:rgba(227,6,19,0.45);}
+    label[title]{cursor:help; text-decoration: underline dotted rgba(15,23,42,.35);}
+    #siteHeader{background:rgba(255,255,255,0.88); backdrop-filter: blur(10px); border-bottom:1px solid var(--line);}
+    .btn{border-radius:.75rem; font-weight:800; letter-spacing:.01em;}
+    .btn-primary{background:var(--accent); color:#fff;}
+    .btn-dark{background:var(--accent2); color:#fff;}
+    .btn-ghost{background:#fff; border:1px solid var(--line);}
+    .kpiBox{border-radius:14px; border:1px solid var(--line); background:linear-gradient(180deg, #ffffff, #fafafa);}
+    .stat-badge{display:inline-block; padding:.28rem .66rem; border-radius:999px; font-weight:900; font-size:11px; min-width:64px; text-align:center; line-height:1; border:1px solid rgba(2,6,23,0.08); background:#fff;}
+    .badge-up{background:linear-gradient(180deg, #16a34a 0%, #059669 100%); color:#fff; border-color:rgba(5,118,78,0.35);}
+    .badge-mid{background:linear-gradient(180deg, #f59e0b 0%, #d97706 100%); color:#101010; border-color:rgba(217,119,6,0.25);}
+    .badge-down{background:linear-gradient(180deg, #ef4444 0%, #dc2626 100%); color:#fff; border-color:rgba(220,38,38,0.28);}
     .hero{
-      position: relative;
-      overflow:hidden;
+      position:relative;
+      background: radial-gradient(1200px 600px at 15% 20%, rgba(227,6,19,0.09), transparent 55%),
+                  radial-gradient(900px 500px at 85% 10%, rgba(17,24,39,0.06), transparent 55%),
+                  linear-gradient(180deg, #ffffff, #f8fafc);
       border-bottom:1px solid var(--line);
-      background: radial-gradient(1200px 500px at 20% 10%, rgba(209,0,28,0.10), transparent 55%),
-                  radial-gradient(900px 500px at 80% 20%, rgba(2,6,23,0.08), transparent 55%),
-                  linear-gradient(180deg, #ffffff, #fbfbfc);
+      overflow:hidden;
     }
     .hero::after{
       content:"";
-      position:absolute;
-      right:-120px; top:-140px;
-      width: 420px; height: 420px;
-      background: conic-gradient(from 210deg, rgba(209,0,28,0.20), rgba(209,0,28,0.00), rgba(2,6,23,0.10));
-      border-radius: 999px;
-      filter: blur(2px);
-      opacity: .55;
+      position:absolute; inset:0;
+      background-image:url('/assets/hero-industrial.png');
+      background-size:cover; background-position:center;
+      opacity:.08;
+      pointer-events:none;
+      mix-blend-mode:multiply;
     }
-    .hero .inner{position:relative; z-index:2;}
+    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
 
-    /* Badges Δ */
-    .stat-badge{
-      display:inline-block;
-      padding: .28rem .66rem;
-      border-radius: 999px;
-      font-weight: 800;
-      font-size: 11px;
-      min-width: 72px;
-      text-align: center;
-      line-height: 1;
-      border: 1px solid rgba(2,6,23,0.10);
-      background: rgba(2,6,23,0.03);
-      color: var(--text);
-    }
-    .stat-badge.badge-up{
-      background: linear-gradient(180deg, #16a34a 0%, #059669 100%);
-      color: #fff;
-      border-color: rgba(5,118,78,0.25);
-    }
-    .stat-badge.badge-mid{
-      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-      color: #111;
-      border-color: rgba(217,119,6,0.20);
-    }
-    .stat-badge.badge-down{
-      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-      color: #fff;
-      border-color: rgba(220,38,38,0.25);
-    }
-
-    /* Visual SVG */
-    #vizAhorros svg text, #vizPerf svg text, #vizCash svg text { fill: var(--text) !important; }
-
-    /* --- Print (1 página) --- */
+    /* --- IMPRESIÓN (reporte 1 página) --- */
     @media print{
-      @page { size: Letter; margin: 0.4in; }
-      html,body{ font-size: 8.5pt !important; background:#fff !important; color:#000 !important; }
-      header, footer, .hero, main > .lg\:col-span-3, #btnCalcularMobile { display:none !important; }
-      main{ display:block !important; padding:0 !important; margin:0 !important; width:100% !important; max-width:100% !important; }
-      #reportSection{
-        width:100% !important; margin:0 !important; padding:0 !important;
-        display:grid !important; grid-template-columns: repeat(3,1fr) !important; gap:0.5rem !important;
-      }
-      #reportSection > .lg\:col-span-4 { grid-column: span 1 !important; grid-row:1 !important; }
-      #reportSection > .lg\:col-span-2 { grid-column: span 1 !important; grid-row:1 !important; }
-      #reportSection > #visuales { grid-column: span 1 !important; grid-row:1 !important; }
-      #visuales .grid-cols-1 { grid-template-columns:1fr !important; gap:.5rem !important; margin-top:0 !important; }
-
-      .card{ border: 1px solid #ccc !important; box-shadow:none !important; background:#fff !important; page-break-inside: avoid; padding:.5rem !important; }
-      tbody tr{ background:#f9f9f9 !important; }
-      .viz, .min-h-\[320px\]{ min-height:150px !important; }
-      #vizPerf svg{ height:200px !important; }
-      h2{ font-size:1.1rem !important; margin-bottom:.25rem !important; }
-      .text-sm{ font-size:.75rem !important; }
-      .text-lg{ font-size:.9rem !important; }
-      .text-xl{ font-size:1.1rem !important; }
-      *{ color:#000 !important; }
+      @page{size:Letter; margin:0.45in;}
+      header, footer, .hero, #mobileBar{display:none !important;}
+      html,body{background:#fff !important; color:#000 !important; font-size:8.6pt !important;}
+      .card{box-shadow:none !important;}
+      #calcGrid{display:block !important; padding:0 !important; margin:0 !important; max-width:100% !important;}
+      #reportSection{display:grid !important; grid-template-columns:repeat(3,1fr) !important; gap:.45rem !important;}
+      #inputPanel{display:none !important;}
+      h2{font-size:1.05rem !important; margin-bottom:.2rem !important;}
+      .text-lg{font-size:.92rem !important;}
+      .text-sm{font-size:.75rem !important;}
+      .min-h-\[320px\]{min-height:150px !important;}
+      svg text{font-size:8px !important;}
+      .badge-up,.badge-mid,.badge-down{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
     }
   </style>
 </head>
 
 <body class="antialiased">
+  <header id="siteHeader" class="sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="h-16 flex items-center justify-between gap-3">
+        <a href="/" class="flex items-center gap-3 shrink-0" aria-label="Ir al inicio">
+          <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-9 w-auto" width="150" height="36" />
+          <span class="hidden sm:inline text-[15px] font-extrabold tracking-tight">AlexRaSa<span style="color:var(--accent)">.store</span></span>
+          <span class="hidden md:inline chip">ROI Toolholding</span>
+        </a>
 
-<header id="siteHeader" class="sticky top-0 z-50">
-  <div class="max-w-6xl mx-auto px-4">
-    <div class="h-16 flex items-center justify-between gap-3">
-      <a href="/" class="flex items-center gap-3 shrink-0" aria-label="Ir al inicio">
-        <img src="/assets/logo.png" alt="Logo AlexRaSa" class="h-9 w-auto" width="160" height="36" />
-        <span class="hidden sm:inline text-[15px] font-extrabold tracking-tight">
-          AlexRaSa<span style="color:var(--accent)">.store</span>
-        </span>
-      </a>
+        <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold" style="color:var(--muted)">
+          <a href="/" class="hover:opacity-80">Inicio</a>
+          <a href="/SolidCAM/" class="hover:opacity-80">Soluciones</a>
+          <a href="/#servicios" class="hover:opacity-80">Servicios</a>
+          <a href="/#recursos" class="hover:opacity-80">Recursos</a>
+          <a href="/#contacto" class="hover:opacity-80">Contacto</a>
+        </nav>
 
-      <nav class="hidden lg:flex items-center gap-6 text-sm" style="color:var(--sub)">
-        <a href="/" class="hover:opacity-80">Inicio</a>
-        <a href="/SolidCAM/" class="hover:opacity-80">Soluciones</a>
-        <a href="/#servicios" class="hover:opacity-80">Servicios</a>
-        <a href="/#recursos" class="hover:opacity-80">Recursos</a>
-        <a href="/#contacto" class="hover:opacity-80">Contacto</a>
-      </nav>
-
-      <div class="hidden lg:flex items-center gap-3">
-        <span class="pill">ROI real ≠ “se siente más rápido”</span>
-        <!-- Coloca aquí tu logo autorizado -->
-        <img src="/assets/brands/rego-fix.svg" alt="REGO-FIX (logo)" class="h-7 w-auto opacity-90" />
-      </div>
-
-      <button id="mobileOpenBtn" class="lg:hidden p-2 rounded" aria-label="Abrir menú">
-        <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</header>
-
-<div id="mobileBackdrop" class="fixed inset-0 lg:hidden bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" style="z-index:9998;"></div>
-<aside id="mobilePanel" class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle" style="z-index:9999;">
-  <div class="absolute inset-0 flex flex-col bg-white">
-    <div class="h-16 flex items-center justify-between px-4 border-b" style="border-color:var(--line);">
-      <span id="mobileMenuTitle" class="text-base font-extrabold">Menú</span>
-      <button id="mobileCloseBtn" class="p-2 rounded hover:bg-slate-100" aria-label="Cerrar menú">
-        <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-    <div class="flex-1 overflow-y-auto">
-      <nav class="p-4">
-        <ul class="space-y-1 text-[17px]">
-          <li><a href="/" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Inicio</a></li>
-          <li><a href="/SolidCAM/" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Soluciones</a></li>
-          <li><a href="/#servicios" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Servicios</a></li>
-          <li><a href="/#recursos" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Recursos</a></li>
-          <li><a href="/#contacto" class="mobile-link block px-3 py-3 rounded-lg hover:bg-slate-100">Contacto</a></li>
-        </ul>
-      </nav>
-    </div>
-  </div>
-</aside>
-
-<section class="hero" aria-label="Hero">
-  <div class="inner max-w-6xl mx-auto px-4 py-10 md:py-14">
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="pill">Baseline → Cambio → KPI</span>
-        <span class="pill">Ciclo • Herramienta • Setups • Scrap</span>
-        <span class="pill">ROI • Payback • TCO</span>
-      </div>
-
-      <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight">
-        Calculadora de <span style="color:var(--accent)">ROI</span> en Maquinado
-      </h1>
-      <p class="max-w-3xl text-base md:text-lg" style="color:var(--sub)">
-        Estima ahorros por <strong>tiempo de ciclo</strong>, <strong>vida de herramienta</strong>, <strong>setups/paros</strong> y <strong>scrap</strong>.
-        Obtén <strong>neto mensual</strong>, <strong>payback</strong>, <strong>ROI</strong>, <strong>TCO</strong> y <strong>capacidad liberada</strong>.
-      </p>
-
-      <div class="flex flex-wrap gap-2 items-center">
-        <button id="btnCalcularHero" class="px-4 py-2 rounded-xl font-bold"
-          style="background:var(--accent); color:white">Calcular</button>
-        <button id="btnPrintHero" class="px-4 py-2 rounded-xl font-bold border"
-          style="border-color:var(--line); background:white">Generar Reporte (PDF)</button>
-        <span class="text-sm" style="color:var(--sub)">
-          Tip: si no mides scrap/paros/volumen, el ROI es un cuento bonito.
-        </span>
+        <!-- Logo REGO-FIX opcional (solo si tienes permiso) -->
+        <div class="hidden md:flex items-center gap-2">
+          <img src="/assets/brand/rego-fix.svg" alt="REGO-FIX (opcional)" class="h-6 opacity-80" onerror="this.style.display='none';" />
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </header>
 
-<main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-14 grid gap-4 sm:gap-6 lg:grid-cols-9">
-
-  <!-- Sidebar inputs -->
-  <section class="card p-5 lg:col-span-3">
-    <div class="flex items-start justify-between gap-3">
-      <div>
-        <h2 class="text-lg font-extrabold">Datos del ROI</h2>
-        <p class="text-sm mt-1" style="color:var(--sub)">Llena lo mínimo. Lo demás es “aproximómetro”.</p>
-      </div>
-      <span class="pill">v2</span>
-    </div>
-
-    <div class="mt-4 grid gap-3">
-      <details class="rounded-xl p-3" style="background:var(--muted); border:1px solid var(--line);" open>
-        <summary class="font-extrabold cursor-pointer">1) Proceso actual (baseline)</summary>
-        <div class="grid gap-3 mt-3">
-          <label class="text-sm" title="Tiempo de ciclo actual por pieza, en segundos.">
-            Tiempo de ciclo actual (s)
-            <input id="cicloA" type="number" value="60" class="mt-1 w-full">
-          </label>
-          <label class="text-sm" title="Tiempo de ciclo propuesto por pieza, en segundos.">
-            Tiempo de ciclo propuesto (s)
-            <input id="cicloP" type="number" value="45" class="mt-1 w-full">
-          </label>
-
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm" title="Minutos de paro al mes por ajustes, esperas, micro-paros, etc.">
-              Paros (min/mes) actual
-              <input id="tmuertoA" type="number" value="120" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Minutos de paro al mes objetivo con la mejora.">
-              Paros (min/mes) propuesto
-              <input id="tmuertoP" type="number" value="30" class="mt-1 w-full">
-            </label>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm" title="Tiempo promedio de setup/cambio (min) en el proceso actual.">
-              Setup por cambio (min) A
-              <input id="setupMinA" type="number" value="8" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Tiempo promedio de setup/cambio (min) con la propuesta.">
-              Setup por cambio (min) P
-              <input id="setupMinP" type="number" value="5" class="mt-1 w-full">
-            </label>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm" title="Cambios/setups al mes (aprox.).">
-              Cambios/mes A
-              <input id="cambiosMesA" type="number" value="25" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Cambios/setups al mes con la propuesta.">
-              Cambios/mes P
-              <input id="cambiosMesP" type="number" value="18" class="mt-1 w-full">
-            </label>
-          </div>
+  <section class="hero">
+    <div class="max-w-7xl mx-auto px-4 py-10 md:py-14 relative">
+      <div class="max-w-4xl">
+        <p class="chip inline-flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full" style="background:var(--accent)"></span>
+          ROI basado en holders + componentes
+        </p>
+        <h1 class="mt-3 text-3xl md:text-5xl font-black leading-tight">
+          Calculadora de <span style="color:var(--accent)">ROI</span> para <span class="whitespace-nowrap">Toolholding</span>
+        </h1>
+        <p class="mt-3 text-base md:text-lg" style="color:var(--muted)">
+          Modela <b>CAPEX por items</b> (holders, collets, nuts, accesorios) y cuantifica ahorros por
+          <b>ciclo</b>, <b>vida</b>, <b>setups</b>, <b>scrap</b> y <b>tiempos muertos</b>. Reporte imprimible.
+        </p>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <span class="chip">ROI</span>
+          <span class="chip">Payback</span>
+          <span class="chip">TCO</span>
+          <span class="chip">Micras → dinero</span>
         </div>
-      </details>
-
-      <details class="rounded-xl p-3" style="background:var(--muted); border:1px solid var(--line);" open>
-        <summary class="font-extrabold cursor-pointer">2) Herramienta y scrap</summary>
-        <div class="grid gap-3 mt-3">
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm" title="Piezas que dura la herramienta actual.">
-              Vida útil A (pzas)
-              <input id="vidaA" type="number" value="1300" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Piezas que dura la herramienta propuesta.">
-              Vida útil P (pzas)
-              <input id="vidaP" type="number" value="2500" class="mt-1 w-full">
-            </label>
-          </div>
-
-          <label class="text-sm" title="Costo de la herramienta/inserto por reemplazo.">
-            Costo herramienta (USD)
-            <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full">
-          </label>
-
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm" title="Scrap actual (% del volumen). Ejemplo: 2 = 2%.">
-              Scrap A (%)
-              <input id="scrapA" type="number" value="2" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Scrap objetivo (%).">
-              Scrap P (%)
-              <input id="scrapP" type="number" value="0.5" class="mt-1 w-full">
-            </label>
-          </div>
-
-          <label class="text-sm" title="Costo por pieza scrappeada (material + proceso + reproceso o pérdida).">
-            Costo scrap por pieza (USD)
-            <input id="costoScrapPza" type="number" value="6" class="mt-1 w-full">
-          </label>
-        </div>
-      </details>
-
-      <details class="rounded-xl p-3" style="background:var(--muted); border:1px solid var(--line);" open>
-        <summary class="font-extrabold cursor-pointer">3) Volumen y costos</summary>
-        <div class="grid gap-3 mt-3">
-          <label class="text-sm" title="Volumen mensual del proceso.">
-            Piezas por mes
-            <input id="pmes" type="number" value="10000" class="mt-1 w-full">
-          </label>
-
-          <label class="text-sm" title="Costo total de operar máquina por hora (o costo de oportunidad de capacidad).">
-            Costo máquina por hora (USD)
-            <input id="costoHora" type="number" value="50" class="mt-1 w-full">
-          </label>
-
-          <label class="text-sm" title="Si está activado, el tiempo liberado por ciclo/setups/paros se valora como ahorro monetario. Si no, se reporta como capacidad liberada (horas/piezas).">
-            Valorar tiempo liberado como ahorro ($)
-            <select id="valorarTiempo" class="mt-1 w-full">
-              <option value="si" selected>Sí (ahorro en $)</option>
-              <option value="no">No (solo capacidad)</option>
-            </select>
-          </label>
-
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm" title="Inversión única (CAPEX): herramienta, sistema, capacitación, etc.">
-              Inversión inicial (USD)
-              <input id="inversion" type="number" value="2000" class="mt-1 w-full">
-            </label>
-            <label class="text-sm" title="Costo mensual (OPEX): mantenimiento, suscripción, servicio, etc.">
-              Mensualidad (USD)
-              <input id="mensualidad" type="number" value="600" class="mt-1 w-full">
-            </label>
-          </div>
-        </div>
-      </details>
-
-      <details class="rounded-xl p-3" style="background:var(--muted); border:1px solid var(--line);">
-        <summary class="font-extrabold cursor-pointer">Tipos de ahorro a incluir</summary>
-        <div class="grid grid-cols-2 gap-2 text-sm mt-3">
-          <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incHerr"  type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incSetup" type="checkbox" checked class="h-4 w-4"><span>Setups/cambios</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incTM"    type="checkbox" checked class="h-4 w-4"><span>Paros</span></label>
-          <label class="inline-flex items-center gap-2"><input id="incScrap" type="checkbox" checked class="h-4 w-4"><span>Scrap</span></label>
-        </div>
-      </details>
-
-      <details class="rounded-xl p-3" style="background:#fff; border:1px solid var(--line);" open>
-        <summary class="font-extrabold cursor-pointer">Checklist ROI (para no inventar)</summary>
-        <div class="mt-3 text-sm leading-relaxed" style="color:var(--sub)">
-          <ul class="list-disc pl-5 space-y-1">
-            <li><strong>Baseline:</strong> ciclo, setups, paros, herramienta/vida, scrap, operadores, máquina.</li>
-            <li><strong>Economía directa:</strong> costo herramienta, mano de obra, costo máquina/h, scrap, costo del proyecto.</li>
-            <li><strong>Cambio:</strong> reducción ciclo, vida herramienta, scrap reducido, liberación de máquina, menos setups/paros.</li>
-            <li><strong>Capacidad:</strong> instalada vs real, volumen, forecast, turnos, OEE.</li>
-            <li><strong>Mercado:</strong> auto (ciclo+scrap), aero (calidad+estabilidad), mold&die (acabado+tiempo), médico (certificaciones+micras).</li>
-            <li><strong>KPI:</strong> ROI, payback, TCO, COGS impact, margen, CapEx vs OpEx.</li>
-          </ul>
-          <div class="mt-3 p-3 rounded-xl" style="background:rgba(209,0,28,0.06); border:1px solid rgba(209,0,28,0.18);">
-            <div class="font-extrabold" style="color:var(--accent)">Errores comunes</div>
-            <ul class="list-disc pl-5 mt-1 space-y-1">
-              <li>Justificar solo precio de herramienta.</li>
-              <li>No convertir micras/calidad a dinero.</li>
-              <li>No medir scrap/volumen/tiempos.</li>
-            </ul>
-          </div>
-        </div>
-      </details>
-
-      <div class="space-y-3 mt-2">
-        <button id="btnCalcular" class="hidden md:block w-full px-4 py-2 rounded-xl font-extrabold"
-          style="background:var(--accent); color:white">Calcular</button>
-        <button id="btnPrint" class="w-full px-4 py-2 rounded-xl font-extrabold border"
-          style="border-color:var(--line); background:white">Generar Reporte (PDF)</button>
       </div>
     </div>
   </section>
 
-  <!-- Report -->
-  <div id="reportSection" class="lg:col-span-6 grid gap-4 sm:gap-6 lg:grid-cols-6">
-
-    <section class="card p-5 lg:col-span-4">
+  <main id="calcGrid" class="max-w-7xl mx-auto px-4 pt-7 pb-24 grid gap-5 lg:grid-cols-12">
+    <!-- INPUT PANEL -->
+    <section id="inputPanel" class="card p-5 lg:col-span-4">
       <div class="flex items-start justify-between gap-3">
-        <h2 class="text-lg font-extrabold">Comparativa A vs P</h2>
-        <span class="pill">Δ con umbral 3%</span>
+        <div>
+          <h2 class="text-lg font-black">Entradas</h2>
+          <p class="text-sm" style="color:var(--muted)">Todo en USD por default (puedes cambiarlo).</p>
+        </div>
+        <button id="btnPrint" class="btn btn-ghost px-3 py-2 text-sm">Reporte (PDF)</button>
       </div>
-      <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
-        <table class="w-full border-separate [border-spacing:0_8px] text-sm">
-          <thead>
-          <tr style="color:var(--sub)">
-            <th class="text-left font-semibold px-2">Métrica</th>
-            <th class="text-right font-semibold px-2">Actual</th>
-            <th class="text-right font-semibold px-2">Propuesta</th>
-            <th class="text-right font-semibold px-2">Δ</th>
-          </tr>
-          </thead>
-          <tbody id="tbodyComp"></tbody>
-        </table>
+
+      <!-- Moneda -->
+      <div class="mt-4 grid gap-3">
+        <div class="grid grid-cols-3 gap-2">
+          <label class="text-sm col-span-1" title="Moneda para mostrar resultados.">
+            Moneda
+            <select id="moneda" class="mt-1 w-full">
+              <option value="USD" selected>USD</option>
+              <option value="MXN">MXN</option>
+            </select>
+          </label>
+          <label class="text-sm col-span-2" title="Tipo de cambio solo para visualización (si eliges MXN).">
+            TC (MXN/USD)
+            <input id="tc" type="number" value="17.00" class="mt-1 w-full" />
+          </label>
+        </div>
+
+        <!-- Producción / costos base -->
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm" title="Volumen mensual del proceso analizado.">
+            Piezas/mes
+            <input id="pmes" type="number" value="10000" class="mt-1 w-full">
+          </label>
+          <label class="text-sm" title="Costo total de operar la máquina por hora (incluye MO, energía, etc.).">
+            Costo hora máquina
+            <input id="costoHora" type="number" value="50" class="mt-1 w-full">
+          </label>
+        </div>
+
+        <!-- Baseline vs propuesta (ciclo, vida, muertos) -->
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm" title="Tiempo de ciclo actual por pieza (s).">
+            Ciclo actual (s)
+            <input id="cicloA" type="number" value="60" class="mt-1 w-full">
+          </label>
+          <label class="text-sm" title="Tiempo de ciclo propuesto por pieza (s).">
+            Ciclo propuesto (s)
+            <input id="cicloP" type="number" value="45" class="mt-1 w-full">
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm" title="Vida útil actual del filo/herramienta (pzas).">
+            Vida actual (pzas)
+            <input id="vidaA" type="number" value="1300" class="mt-1 w-full">
+          </label>
+          <label class="text-sm" title="Vida útil propuesta (pzas).">
+            Vida propuesta (pzas)
+            <input id="vidaP" type="number" value="2500" class="mt-1 w-full">
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm" title="Costo del inserto/herramienta por reemplazo.">
+            Costo herramienta
+            <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full">
+          </label>
+          <label class="text-sm" title="Minutos totales de paro/tiempos muertos al mes.">
+            T. muerto actual (min/mes)
+            <input id="tmuertoA" type="number" value="120" class="mt-1 w-full">
+          </label>
+        </div>
+
+        <label class="text-sm" title="Minutos de paro objetivo con la propuesta.">
+          T. muerto propuesto (min/mes)
+          <input id="tmuertoP" type="number" value="30" class="mt-1 w-full">
+        </label>
+
+        <!-- Setups y scrap (del PDF) -->
+        <div class="mt-2 pt-3 border-t" style="border-color:var(--line)">
+          <h3 class="text-sm font-extrabold">Setups + Scrap</h3>
+
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <label class="text-sm" title="Minutos totales al mes dedicados a setups/cambios (baseline).">
+              Setup actual (min/mes)
+              <input id="setupA" type="number" value="180" class="mt-1 w-full">
+            </label>
+            <label class="text-sm" title="Minutos totales al mes dedicados a setups/cambios (propuesta).">
+              Setup propuesto (min/mes)
+              <input id="setupP" type="number" value="120" class="mt-1 w-full">
+            </label>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <label class="text-sm" title="Scrap actual del proceso (%).">
+              Scrap A (%)
+              <input id="scrapA" type="number" value="2.0" step="0.1" class="mt-1 w-full">
+            </label>
+            <label class="text-sm" title="Scrap propuesto (%).">
+              Scrap P (%)
+              <input id="scrapP" type="number" value="0.8" step="0.1" class="mt-1 w-full">
+            </label>
+            <label class="text-sm" title="Costo de scrap por pieza (material + proceso + logística).">
+              Costo scrap/pza
+              <input id="costoScrap" type="number" value="3.50" step="0.1" class="mt-1 w-full">
+            </label>
+          </div>
+        </div>
+
+        <!-- Toolholding REGO-FIX (items) -->
+        <div class="mt-2 pt-3 border-t" style="border-color:var(--line)">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-sm font-extrabold">Paquete Toolholding (items)</h3>
+            <span class="chip">CAPEX por lista</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <label class="text-sm" title="Sistema de sujeción a evaluar.">
+              Sistema
+              <select id="sistema" class="mt-1 w-full">
+                <option value="POWRGRIP" selected>powRgrip</option>
+                <option value="MICRUN">micRun</option>
+                <option value="ER_STD">ER estándar</option>
+                <option value="ER_UP">ER ultra precision</option>
+                <option value="UNITEC">uniTec (manual)</option>
+              </select>
+            </label>
+            <label class="text-sm" title="Interfaz del husillo (afecta qué holders compras).">
+              Interfaz husillo
+              <select id="interfaz" class="mt-1 w-full">
+                <option>HSK</option><option>BT</option><option>SK</option><option>CAT</option><option>CAPTO</option><option>CYL</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Micras a dinero -->
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <label class="text-sm" title="Runout (TIR) actual en micras. Si no lo mides: empieza con 10–20 µm y afina después.">
+              Runout actual (µm)
+              <input id="runoutA" type="number" value="12" step="0.5" class="mt-1 w-full">
+            </label>
+            <label class="text-sm" title="Runout objetivo. Se autocompleta por sistema y puedes ajustarlo.">
+              Runout propuesto (µm)
+              <input id="runoutP" type="number" value="3" step="0.5" class="mt-1 w-full">
+            </label>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <label class="text-sm" title="Impacto estimado por micra de mejora en runout sobre vida (%/µm). Ajusta con tus datos.">
+              Vida: % por µm
+              <input id="kVidaPorUm" type="number" value="1.0" step="0.1" class="mt-1 w-full">
+            </label>
+            <label class="text-sm" title="Impacto estimado por micra en scrap (puntos porcentuales / µm). Ajusta con tu historial.">
+              Scrap: pp por µm
+              <input id="kScrapPorUm" type="number" value="0.05" step="0.01" class="mt-1 w-full">
+            </label>
+          </div>
+
+          <!-- Lista de items (CAPEX) -->
+          <div class="mt-3 grid gap-2">
+            <p class="text-xs font-bold uppercase tracking-wide" style="color:var(--muted)">Items (cantidad × costo unitario)</p>
+
+            <div class="grid grid-cols-3 gap-2">
+              <label class="text-sm col-span-2" title="Cuerpos/holders según interfaz (HSK/BT/etc.).">
+                Holders (cuerpos)
+                <input id="qtyHolder" type="number" value="6" class="mt-1 w-full">
+              </label>
+              <label class="text-sm" title="Costo unitario del holder.">
+                $/Holder
+                <input id="uHolder" type="number" value="320" class="mt-1 w-full">
+              </label>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <label class="text-sm col-span-2" title="Collets/pinzas (powRgrip, micRun, ER).">
+                Collets
+                <input id="qtyCollet" type="number" value="10" class="mt-1 w-full">
+              </label>
+              <label class="text-sm" title="Costo unitario de collet.">
+                $/Collet
+                <input id="uCollet" type="number" value="55" class="mt-1 w-full">
+              </label>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <label class="text-sm col-span-2" title="Tuercas de apriete / nuts.">
+                Nuts
+                <input id="qtyNut" type="number" value="6" class="mt-1 w-full">
+              </label>
+              <label class="text-sm" title="Costo unitario de nut.">
+                $/Nut
+                <input id="uNut" type="number" value="48" class="mt-1 w-full">
+              </label>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <label class="text-sm col-span-2" title="Pull studs / pernos de retención (si aplica).">
+                Pull studs
+                <input id="qtyPull" type="number" value="6" class="mt-1 w-full">
+              </label>
+              <label class="text-sm" title="Costo unitario de pull stud.">
+                $/Pull
+                <input id="uPull" type="number" value="22" class="mt-1 w-full">
+              </label>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <label class="text-sm col-span-2" title="Accesorios (discos sellado, flush disks, llaves, etc.).">
+                Accesorios
+                <input id="qtyAcc" type="number" value="8" class="mt-1 w-full">
+              </label>
+              <label class="text-sm" title="Costo unitario promedio de accesorio.">
+                $/Acc
+                <input id="uAcc" type="number" value="18" class="mt-1 w-full">
+              </label>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <label class="text-sm col-span-2" title="Equipo/servicio recurrente (limpieza, calibración, consumibles, etc.).">
+                OPEX mensual (toolholding)
+                <input id="opex" type="number" value="0" class="mt-1 w-full">
+              </label>
+              <label class="text-sm" title="Cuota/suscripción/mantenimiento (si aplica aparte).">
+                Mensualidad
+                <input id="mensualidad" type="number" value="0" class="mt-1 w-full">
+              </label>
+            </div>
+
+            <div class="kpiBox p-3 mt-1">
+              <div class="text-xs font-extrabold uppercase tracking-wide" style="color:var(--muted)">CAPEX calculado (items)</div>
+              <div id="capexCalc" class="text-2xl font-black mt-1">$0</div>
+              <div class="text-xs mt-1" style="color:var(--muted)">Si quieres forzar inversión, usa el override.</div>
+
+              <label class="mt-2 inline-flex items-center gap-2 text-sm font-semibold">
+                <input id="capexOverrideOn" type="checkbox" class="h-4 w-4">
+                Override inversión
+              </label>
+              <input id="capexOverride" type="number" value="2000" class="mt-2 w-full" disabled>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inclusiones -->
+        <div class="mt-2 pt-3 border-t" style="border-color:var(--line)">
+          <h3 class="text-sm font-extrabold">Ahorros a incluir</h3>
+          <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+            <label class="inline-flex items-center gap-2"><input id="incCiclo" type="checkbox" checked class="h-4 w-4"><span>Tiempo de ciclo</span></label>
+            <label class="inline-flex items-center gap-2"><input id="incHerr" type="checkbox" checked class="h-4 w-4"><span>Vida herramienta</span></label>
+            <label class="inline-flex items-center gap-2"><input id="incTM" type="checkbox" checked class="h-4 w-4"><span>Tiempo muerto</span></label>
+            <label class="inline-flex items-center gap-2"><input id="incSetup" type="checkbox" checked class="h-4 w-4"><span>Setups/cambios</span></label>
+            <label class="inline-flex items-center gap-2"><input id="incScrap" type="checkbox" checked class="h-4 w-4"><span>Scrap</span></label>
+            <label class="inline-flex items-center gap-2"><input id="incMicras" type="checkbox" checked class="h-4 w-4"><span>Micras→$ (auto)</span></label>
+          </div>
+
+          <button id="btnCalcular" class="btn btn-primary w-full px-4 py-3 mt-3">Calcular</button>
+
+          <p class="text-xs mt-3" style="color:var(--muted)">
+            Nota: micras→$ aplica “boost” a vida y scrap según tus coeficientes. No es magia: es un dial para aterrizar runout a impacto real.
+          </p>
+        </div>
       </div>
     </section>
 
-    <section class="card p-5 lg:col-span-2">
-      <h2 class="text-lg font-extrabold">Resultados</h2>
-
-      <div class="mt-3 grid gap-3">
-        <div class="rounded-xl p-3" style="background:rgba(22,163,74,0.06); border:1px solid rgba(22,163,74,0.18);">
-          <div class="text-sm" style="color:var(--sub)">Ahorro mensual (bruto)</div>
-          <div id="ahorro" class="text-right font-extrabold text-xl" style="color:var(--good)">$0</div>
+    <!-- REPORT -->
+    <div id="reportSection" class="lg:col-span-8 grid gap-5 lg:grid-cols-8">
+      <section class="card p-5 lg:col-span-5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-black">Comparativa A vs P</h2>
+            <p class="text-sm" style="color:var(--muted)">Incluye items de toolholding + KPIs financieros.</p>
+          </div>
+          <span class="chip" id="sysBadge">powRgrip</span>
         </div>
 
-        <div class="rounded-xl p-3" style="background:rgba(8,145,178,0.06); border:1px solid rgba(8,145,178,0.18);">
-          <div class="text-sm" style="color:var(--sub)">Capacidad liberada (hrs/mes)</div>
-          <div id="hrsLibre" class="text-right font-extrabold text-lg" style="color:var(--cyan)">0</div>
-          <div class="text-xs text-right mt-1" style="color:var(--sub)">Piezas extra aprox: <span id="pzasExtra" class="font-extrabold">0</span></div>
+        <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
+          <table class="w-full border-separate [border-spacing:0_8px] text-sm">
+            <thead>
+              <tr style="color:var(--muted)">
+                <th class="text-left font-bold px-2">Métrica</th>
+                <th class="text-right font-bold px-2">Actual</th>
+                <th class="text-right font-bold px-2">Propuesta</th>
+                <th class="text-right font-bold px-2">Δ</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyComp"></tbody>
+          </table>
         </div>
 
-        <div class="rounded-xl p-3" style="background:rgba(209,0,28,0.05); border:1px solid rgba(209,0,28,0.16);">
-          <div class="text-sm" style="color:var(--sub)">Neto mensual (ahorro - mensualidad)</div>
-          <div id="netoMensual" class="text-right font-extrabold text-lg">$0</div>
+        <div class="mt-3 grid md:grid-cols-2 gap-3">
+          <div class="kpiBox p-4">
+            <div class="text-xs font-extrabold uppercase tracking-wide" style="color:var(--muted)">TCO (12m)</div>
+            <div id="tco" class="text-2xl font-black mt-1">$0</div>
+            <div class="text-xs mt-1" style="color:var(--muted)">CAPEX + (OPEX+mensualidad)×12</div>
+          </div>
+          <div class="kpiBox p-4">
+            <div class="text-xs font-extrabold uppercase tracking-wide" style="color:var(--muted)">Ahorro anual (neto)</div>
+            <div id="ahorroAnualNeto" class="text-2xl font-black mt-1">$0</div>
+            <div class="text-xs mt-1" style="color:var(--muted)"> (Ahorro bruto − OPEX − mensualidad)×12</div>
+          </div>
         </div>
+      </section>
 
-        <div class="rounded-xl p-3" style="background:rgba(2,6,23,0.03); border:1px solid var(--line);">
-          <div class="text-sm" style="color:var(--sub)">ROI anual (sobre CAPEX)</div>
-          <div id="roi" class="text-right font-extrabold text-lg">0%</div>
+      <section class="card p-5 lg:col-span-3">
+        <h2 class="text-lg font-black">Resultados</h2>
+
+        <div class="mt-3 grid gap-3">
+          <div class="kpiBox p-4">
+            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro mensual (bruto)</div>
+            <div id="ahorro" class="text-right font-black text-2xl" style="color:var(--good)">$0</div>
+          </div>
+
+          <div class="kpiBox p-4">
+            <div class="text-sm font-bold" style="color:var(--muted)">Neto mensual</div>
+            <div id="netoMensual" class="text-right font-black text-xl">$0</div>
+            <div class="text-xs mt-1 text-right" style="color:var(--muted)">Neto = ahorro − OPEX − mensualidad</div>
+          </div>
+
+          <div class="kpiBox p-4">
+            <div class="text-sm font-bold" style="color:var(--muted)">ROI anual</div>
+            <div id="roi" class="text-right font-black text-xl">0%</div>
+          </div>
+
+          <div class="kpiBox p-4">
+            <div class="text-sm font-bold" style="color:var(--muted)">Payback</div>
+            <div id="payback" class="text-right font-black text-xl">—</div>
+            <div class="text-xs mt-1 text-right" style="color:var(--muted)">en meses (aprox)</div>
+          </div>
+
+          <div class="kpiBox p-4">
+            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro por scrap (mes)</div>
+            <div id="ahorroScrap" class="text-right font-black text-lg">$0</div>
+          </div>
+
+          <div class="kpiBox p-4">
+            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro por setups (mes)</div>
+            <div id="ahorroSetup" class="text-right font-black text-lg">$0</div>
+          </div>
+
+          <div class="kpiBox p-4">
+            <div class="text-sm font-bold" style="color:var(--muted)">Ahorro por tiempo muerto (mes)</div>
+            <div id="ahorroTM" class="text-right font-black text-lg">$0</div>
+          </div>
         </div>
+      </section>
 
-        <div class="rounded-xl p-3" style="background:rgba(2,6,23,0.03); border:1px solid var(--line);">
-          <div class="text-sm" style="color:var(--sub)">Payback (mes)</div>
-          <div id="payback" class="text-right font-extrabold text-lg">—</div>
+      <section class="card p-5 lg:col-span-8">
+        <h2 class="text-lg font-black">Visuales</h2>
+        <div class="mt-3 grid grid-cols-1 gap-6">
+          <div class="rounded-xl p-4" style="border:1px solid var(--line); background:#fff;">
+            <p class="text-sm font-extrabold">Distribución de ahorros</p>
+            <div id="vizAhorros" class="mt-3 min-h-[320px]"></div>
+          </div>
+          <div class="rounded-xl p-4" style="border:1px solid var(--line); background:#fff;">
+            <p class="text-sm font-extrabold">Comparativa rápida</p>
+            <div id="vizPerf" class="mt-3"></div>
+          </div>
+          <div class="rounded-xl p-4" style="border:1px solid var(--line); background:#fff;">
+            <p class="text-sm font-extrabold">Flujo mensual y payback</p>
+            <div id="vizCash" class="mt-3 min-h-[320px]"></div>
+          </div>
         </div>
+      </section>
+    </div>
+  </main>
 
-        <div class="rounded-xl p-3" style="background:rgba(2,6,23,0.03); border:1px solid var(--line);">
-          <div class="text-sm" style="color:var(--sub)">TCO 12 meses (CAPEX + 12*mensualidad)</div>
-          <div id="tco" class="text-right font-extrabold text-lg">$0</div>
-        </div>
-      </div>
-    </section>
-
-    <section id="visuales" class="card p-5 lg:col-span-6">
-      <div class="flex items-start justify-between gap-3">
-        <h2 class="text-lg font-extrabold">Visuales</h2>
-        <span class="pill">Distribución • Comparativa • Flujo</span>
-      </div>
-
-      <div class="mt-3 grid grid-cols-1 gap-6 max-w-5xl mx-auto">
-        <div class="rounded-xl p-3" style="border:1px solid var(--line); background:#fff;">
-          <p class="text-sm font-extrabold">Distribución de ahorros</p>
-          <div id="vizAhorros" class="mt-4 min-h-[320px]"></div>
-        </div>
-
-        <div class="rounded-xl p-3" style="border:1px solid var(--line); background:#fff;">
-          <p class="text-sm font-extrabold">Comparativa rápida</p>
-          <div id="vizPerf" class="mt-4"></div>
-        </div>
-
-        <div class="rounded-xl p-3" style="border:1px solid var(--line); background:#fff;">
-          <p class="text-sm font-extrabold">Flujo mensual y payback</p>
-          <div id="vizCash" class="mt-4 min-h-[320px]"></div>
-        </div>
-      </div>
-    </section>
-
+  <div id="mobileBar" class="lg:hidden fixed inset-x-0 bottom-0 z-40 px-4 py-3" style="background:rgba(255,255,255,0.92); border-top:1px solid var(--line); backdrop-filter: blur(10px);">
+    <button id="btnCalcularMobile" class="btn btn-primary w-full px-4 py-3">Calcular</button>
   </div>
-</main>
 
-<div class="md:hidden fixed inset-x-0 bottom-0 z-40 px-4 py-2" style="background:rgba(255,255,255,0.92); border-top:1px solid var(--line); backdrop-filter: blur(10px);">
-  <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-xl font-extrabold"
-    style="background:var(--accent); color:white">Calcular</button>
-</div>
+  <footer class="py-8 text-center">
+    <div class="max-w-7xl mx-auto px-4 text-sm" style="color:var(--muted)">
+      © 2026 AlexRaSa — ROI para decisiones técnicas.
+    </div>
+  </footer>
 
-<footer class="py-8 mt-10 text-center">
-  <div class="max-w-6xl mx-auto px-4 text-sm" style="color:var(--sub)">
-    © 2026 AlexRaSa — Ingeniería, innovación y eficiencia.
-  </div>
-</footer>
+  <script>
+    // ========= utils =========
+    const $ = (id)=>document.getElementById(id);
+    const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
+    const fmt = (n)=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const fmt0 = (n)=>Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0});
+    const isNum = (v)=>Number.isFinite(v) && !Number.isNaN(v);
 
-<script>
-  // Mobile menu
-  const mOpen  = document.getElementById('mobileOpenBtn');
-  const mClose = document.getElementById('mobileCloseBtn');
-  const mPanel = document.getElementById('mobilePanel');
-  const mBg    = document.getElementById('mobileBackdrop');
-  const mLinks = document.querySelectorAll('.mobile-link');
-
-  function toggleMenu(open) {
-    if (open) {
-      mBg?.classList.remove('pointer-events-none', 'opacity-0');
-      mBg?.classList.add('pointer-events-auto', 'opacity-100');
-      mPanel?.classList.remove('translate-x-full');
-      mPanel?.classList.add('translate-x-0');
-      document.body.style.overflow = 'hidden';
-    } else {
-      mBg?.classList.remove('pointer-events-auto', 'opacity-100');
-      mBg?.classList.add('pointer-events-none', 'opacity-0');
-      mPanel?.classList.remove('translate-x-0');
-      mPanel?.classList.add('translate-x-full');
-      document.body.style.overflow = '';
-    }
-  }
-  mOpen?.addEventListener('click', () => toggleMenu(true));
-  mClose?.addEventListener('click', () => toggleMenu(false));
-  mBg?.addEventListener('click', () => toggleMenu(false));
-  mLinks.forEach(link => link.addEventListener('click', () => toggleMenu(false)));
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMenu(false); });
-
-  // Utils
-  function fmt(n){
-    return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
-  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
-
-  function setEnabled(ids,on){
-    ids.forEach(id=>{
-      const el=document.getElementById(id);
-      if(!el) return;
-      el.disabled=!on;
-      el.style.opacity = on ? '1' : '0.55';
-    });
-  }
-
-  function applyInclusions(){
-    setEnabled(['cicloA','cicloP'], document.getElementById('incCiclo')?.checked ?? true);
-    setEnabled(['vidaA','vidaP','costoHerr'], document.getElementById('incHerr')?.checked ?? true);
-    setEnabled(['setupMinA','setupMinP','cambiosMesA','cambiosMesP'], document.getElementById('incSetup')?.checked ?? true);
-    setEnabled(['tmuertoA','tmuertoP'], document.getElementById('incTM')?.checked ?? true);
-    setEnabled(['scrapA','scrapP','costoScrapPza'], document.getElementById('incScrap')?.checked ?? true);
-  }
-
-  // Main calculator
-  function calcular(){
-    const cicloA = +document.getElementById('cicloA').value || 0;
-    const cicloP = +document.getElementById('cicloP').value || 0;
-
-    const vidaA = +document.getElementById('vidaA').value || 0;
-    const vidaP = +document.getElementById('vidaP').value || 0;
-    const costoHerr = +document.getElementById('costoHerr').value || 0;
-
-    const pmes = +document.getElementById('pmes').value || 0;
-    const costoHora = +document.getElementById('costoHora').value || 0;
-
-    const tmuertoA = +document.getElementById('tmuertoA').value || 0;
-    const tmuertoP = +document.getElementById('tmuertoP').value || 0;
-
-    const setupMinA = +document.getElementById('setupMinA').value || 0;
-    const setupMinP = +document.getElementById('setupMinP').value || 0;
-    const cambiosMesA = +document.getElementById('cambiosMesA').value || 0;
-    const cambiosMesP = +document.getElementById('cambiosMesP').value || 0;
-
-    const scrapA = (+document.getElementById('scrapA').value || 0) / 100;
-    const scrapP = (+document.getElementById('scrapP').value || 0) / 100;
-    const costoScrapPza = +document.getElementById('costoScrapPza').value || 0;
-
-    const inversion = +document.getElementById('inversion').value || 0;
-    const mensualidad = +document.getElementById('mensualidad').value || 0;
-    const valorarTiempo = (document.getElementById('valorarTiempo').value || 'si') === 'si';
-
-    const incCiclo = document.getElementById('incCiclo')?.checked ?? true;
-    const incHerr  = document.getElementById('incHerr')?.checked ?? true;
-    const incSetup = document.getElementById('incSetup')?.checked ?? true;
-    const incTM    = document.getElementById('incTM')?.checked ?? true;
-    const incScrap = document.getElementById('incScrap')?.checked ?? true;
-
-    // 1) Ciclo: horas liberadas por reducción de ciclo
-    const deltaCicloSec = Math.max(0, cicloA - cicloP);
-    const hrsLibresCiclo = (deltaCicloSec/3600) * pmes;
-    const ahorroCiclo = (incCiclo && valorarTiempo) ? (hrsLibresCiclo * costoHora) : 0;
-
-    // 2) Herramienta: consumo mensual
-    const consA = (vidaA>0) ? (pmes / vidaA) : 0;
-    const consP = (vidaP>0) ? (pmes / vidaP) : 0;
-    const costoHerrA = consA * costoHerr;
-    const costoHerrP = consP * costoHerr;
-    const ahorroHerr = (incHerr) ? Math.max(0, costoHerrA - costoHerrP) : 0;
-
-    // 3) Paros: minutos -> horas
-    const hrsLibresParos = Math.max(0, (tmuertoA - tmuertoP)) / 60;
-    const ahorroTM = (incTM && valorarTiempo) ? (hrsLibresParos * costoHora) : 0;
-
-    // 4) Setups/cambios
-    const minsSetupA = Math.max(0, setupMinA) * Math.max(0, cambiosMesA);
-    const minsSetupP = Math.max(0, setupMinP) * Math.max(0, cambiosMesP);
-    const hrsLibresSetup = Math.max(0, (minsSetupA - minsSetupP)) / 60;
-    const ahorroSetup = (incSetup && valorarTiempo) ? (hrsLibresSetup * costoHora) : 0;
-
-    // 5) Scrap
-    const scrapACl = clamp(scrapA, 0, 1);
-    const scrapPCl = clamp(scrapP, 0, 1);
-    const pzasScrapA = pmes * scrapACl;
-    const pzasScrapP = pmes * scrapPCl;
-    const ahorroScrap = (incScrap) ? Math.max(0, (pzasScrapA - pzasScrapP) * costoScrapPza) : 0;
-
-    // Totales
-    const ahorroTotal = Math.max(0, ahorroCiclo + ahorroHerr + ahorroTM + ahorroSetup + ahorroScrap);
-    const neto = ahorroTotal - mensualidad;
-
-    // ROI / Payback
-    const roiAnual = inversion > 0 ? ((neto * 12) / inversion) * 100 : (neto > 0 ? Infinity : 0);
-    const payback = (inversion > 0 && neto > 0) ? (inversion / neto) : Infinity;
-
-    // Capacidad liberada (siempre reportar)
-    const hrsLibreTotal = hrsLibresCiclo + hrsLibresParos + hrsLibresSetup;
-    const pphP = cicloP>0 ? (3600/cicloP) : 0;
-    const pzasExtra = Math.max(0, Math.round(hrsLibreTotal * pphP));
-
-    // TCO simple (12 meses)
-    const tco12 = inversion + (mensualidad * 12);
-
-    // Paint KPIs
-    document.getElementById('ahorro').textContent = `$${fmt(ahorroTotal)}`;
-    const netoEl = document.getElementById('netoMensual');
-    netoEl.textContent = `$${fmt(neto)}`;
-    netoEl.style.color = neto >= 0 ? 'var(--good)' : 'var(--bad)';
-
-    document.getElementById('roi').textContent = isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
-    document.getElementById('payback').textContent = isFinite(payback) ? `${fmt(payback)}` : '—';
-
-    document.getElementById('hrsLibre').textContent = fmt(hrsLibreTotal);
-    document.getElementById('pzasExtra').textContent = (isFinite(pzasExtra) ? pzasExtra.toLocaleString('en-US') : '—');
-
-    document.getElementById('tco').textContent = `$${fmt(tco12)}`;
-
-    // Comparativa table rows
-    function delta(a,p,{higherIsBetter=true}={}){
-      if(a===0 && p===0) return {val:0};
-      const d = (p-a) / (a===0 ? 1 : a) * 100;
-      return {val:d, higherIsBetter};
-    }
-    function row(name,a,p,opt){
-      const d = delta(a,p,opt||{});
-      const higherIsBetter = (opt && typeof opt.higherIsBetter !== 'undefined') ? opt.higherIsBetter : true;
-      const displayed = isFinite(d.val) ? (d.val >= 0 ? '+' : '') + fmt(d.val) + '%' : '—';
-      const thresholdPct = 3;
-      const absVal = Math.abs(d.val || 0);
-      const isImprovement = higherIsBetter ? (d.val > 0) : (d.val < 0);
-      let badgeClass;
-      if (absVal < thresholdPct) badgeClass = 'badge-mid';
-      else badgeClass = isImprovement ? 'badge-up' : 'badge-down';
-      const badge = `<span class="stat-badge ${badgeClass}" title="${isImprovement ? 'Mejora' : 'Empeora'}">${displayed}</span>`;
-
-      const aTxt = isFinite(a)? fmt(a) : '—';
-      const pTxt = isFinite(p)? fmt(p) : '—';
-
-      return `<tr style="background:transparent; border-bottom:1px solid rgba(2,6,23,0.06);">
-        <td class="px-2 py-2">${name}</td>
-        <td class="px-2 py-2 text-right font-mono tabular-nums">${aTxt}</td>
-        <td class="px-2 py-2 text-right font-mono tabular-nums">${pTxt}</td>
-        <td class="px-2 py-2 text-right">${badge}</td>
-      </tr>`;
+    function money(n){
+      const cur = $('moneda').value;
+      const tc = +$('tc').value || 1;
+      const v = (cur === 'MXN') ? (n * tc) : n;
+      const sym = (cur === 'MXN') ? '$' : '$';
+      return sym + fmt(v);
     }
 
-    const pphA = cicloA>0 ? (3600/cicloA) : 0;
-    const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
-    const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
-
-    const rows = [
-      row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
-      row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
-      row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
-      row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
-      row('Consumo mensual herramienta (USD)', costoHerrA, costoHerrP, {higherIsBetter:false}),
-      row('Paros (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
-      row('Setups totales (min/mes)', minsSetupA, minsSetupP, {higherIsBetter:false}),
-      row('Scrap (pzas/mes)', pzasScrapA, pzasScrapP, {higherIsBetter:false}),
-      row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
-    ].join('');
-    document.getElementById('tbodyComp').innerHTML = rows;
-
-    // Visuals
-    const parts = [];
-    const labels = [];
-    if(incCiclo) { parts.push(Math.max(0, ahorroCiclo)); labels.push('Ciclo'); }
-    if(incHerr)  { parts.push(Math.max(0, ahorroHerr));  labels.push('Herramienta'); }
-    if(incSetup) { parts.push(Math.max(0, ahorroSetup)); labels.push('Setups'); }
-    if(incTM)    { parts.push(Math.max(0, ahorroTM));    labels.push('Paros'); }
-    if(incScrap) { parts.push(Math.max(0, ahorroScrap)); labels.push('Scrap'); }
-
-    renderDonut('vizAhorros', parts, labels);
-
-    renderBars('vizPerf', [
-      ['T. Ciclo (s)', cicloA, cicloP, true],
-      ['Pzas/h', pphA, pphP, false],
-      ['Setups (min/mes)', minsSetupA, minsSetupP, true],
-      ['Scrap (pzas/mes)', pzasScrapA, pzasScrapP, true],
-    ]);
-
-    renderCashflow('vizCash', {
-      ahorroMes: ahorroTotal,
-      cuota: mensualidad,
-      capex: inversion
-    });
-  }
-
-  function renderCashflow(targetId, {ahorroMes, cuota, capex}){
-    const el=document.getElementById(targetId); if(!el) return;
-    const meses=Array.from({length:12},(_,i)=>`M${i+1}`);
-
-    const W = 800, H = 400;
-    const pad = { top: 40, right: 10, bottom: 50, left: 60 };
-    const barW = 18, barGap = 6, gap = 38;
-    const H_drawable = H - pad.top - pad.bottom;
-
-    const neto = (ahorroMes||0) - (cuota||0);
-    let acc = -capex;
-    const accArr = meses.map(() => { acc += neto; return acc; });
-
-    const allValues = [ahorroMes||0, cuota||0, ...accArr, -capex];
-    const dataMax = Math.max(1, ...allValues.map(v => Math.max(0, v)));
-    const dataMin = Math.min(0, ...allValues.map(v => Math.min(0, v)));
-    const totalRange = dataMax - dataMin;
-
-    const scaleY = (v) => {
-      if (totalRange === 0) return H - pad.bottom;
-      return (H - pad.bottom) - (((v - dataMin) / totalRange) * H_drawable);
+    // ========= sistema -> runout por defecto (según REGO-FIX) =========
+    // powRgrip TIR ≤ 3 µm @ 3xD :contentReference[oaicite:5]{index=5}
+    // ER estándar 10 µm :contentReference[oaicite:6]{index=6}
+    // ER-UP 5 µm :contentReference[oaicite:7]{index=7}
+    // micRun TIR ≤ 3 µm :contentReference[oaicite:8]{index=8}
+    const SYS_RUNOUT = {
+      POWRGRIP: 3,
+      MICRUN: 3,
+      ER_STD: 10,
+      ER_UP: 5,
+      UNITEC: 3 // manual: deja 3 como placeholder editable
     };
 
-    const yZero = scaleY(0);
-
-    let x = pad.left + gap/2;
-
-    const bars = meses.map((m,i)=>{
-      const yA = scaleY(ahorroMes); const hA = yZero - yA;
-      const yP = scaleY(cuota);     const hP = yZero - yP;
-      const xa = x, xp = x + barW + barGap;
-      const labelY = H - pad.bottom + 20;
-
-      const rects = `<rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#16a34a"></rect>
-                     <rect x="${xp}" y="${yP}" width="${barW}" height="${hP}" fill="#dc2626"></rect>`;
-      const txt = `<text x="${x + barW + barGap/2}" y="${labelY}" font-size="14" text-anchor="middle">${m}</text>`;
-      x += (barW * 2 + barGap + gap);
-      return rects+txt;
-    }).join('');
-
-    const linePts = accArr.map((v,i)=>{
-      const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW + barGap/2);
-      const yi = scaleY(v);
-      return `${xi},${yi}`;
-    }).join(' ');
-
-    const x0 = pad.left + gap/2 - (barW*2+barGap+gap) + (barW + barGap/2);
-    const y0 = scaleY(-capex);
-    const polyline = `<polyline points="${x0},${y0} ${linePts}" fill="none" stroke="#111827" stroke-opacity="0.55" stroke-width="3"></polyline>`;
-
-    let marker='';
-    if (capex > 0){
-      const idx = accArr.findIndex(v => v >= 0);
-      if(idx !== -1){
-        const xi_marker = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW + barGap/2);
-        const yi_marker = scaleY(accArr[idx]);
-        marker = `<circle cx="${xi_marker}" cy="${yi_marker}" r="6" fill="#d1001c" stroke="#fff" stroke-width="2"></circle>
-                  <text x="${xi_marker + 10}" y="${yi_marker - 10}" font-size="14" fill="#d1001c">Payback M${idx+1}</text>`;
-      }
+    function syncRunoutBySystem(){
+      const sys = $('sistema').value;
+      const v = SYS_RUNOUT[sys] ?? 3;
+      $('runoutP').value = v;
+      $('sysBadge').textContent = $('sistema').options[$('sistema').selectedIndex].text;
     }
 
-    const axis = `
-      <line x1="${pad.left}" y1="${pad.top - 10}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="rgba(2,6,23,.18)"></line>
-      <line x1="${pad.left}" y1="${yZero}" x2="${W - pad.right}" y2="${yZero}" stroke="rgba(2,6,23,.18)"></line>
-      <text x="${pad.left - 10}" y="${yZero + 5}" font-size="14" text-anchor="end" fill="rgba(2,6,23,.65)">$0</text>
-      <text x="${pad.left - 10}" y="${scaleY(dataMax) + 5}" font-size="14" text-anchor="end" fill="rgba(2,6,23,.65)">$${fmt(dataMax)}</text>
-      ${dataMin < 0 ? `<text x="${pad.left - 10}" y="${scaleY(dataMin) + 5}" font-size="14" text-anchor="end" fill="rgba(2,6,23,.65)">$${fmt(dataMin)}</text>` : ''}
-    `;
+    // ========= CAPEX por items =========
+    function calcCapex(){
+      const qtyHolder = +$('qtyHolder').value || 0;
+      const uHolder = +$('uHolder').value || 0;
+      const qtyCollet = +$('qtyCollet').value || 0;
+      const uCollet = +$('uCollet').value || 0;
+      const qtyNut = +$('qtyNut').value || 0;
+      const uNut = +$('uNut').value || 0;
+      const qtyPull = +$('qtyPull').value || 0;
+      const uPull = +$('uPull').value || 0;
+      const qtyAcc = +$('qtyAcc').value || 0;
+      const uAcc = +$('uAcc').value || 0;
 
-    const legendX = W - pad.right - 160, legendY = pad.top;
-    const legend = `
-      <rect x="${legendX}" y="${legendY - 12}" width="150" height="82" rx="12" fill="rgba(2,6,23,0.03)" stroke="rgba(2,6,23,0.10)"></rect>
-      <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#16a34a"></rect>
-      <text x="${legendX+30}" y="${legendY+10}" font-size="14" fill="rgba(2,6,23,0.88)">Ahorro</text>
-      <rect x="${legendX+12}" y="${legendY+26}" width="12" height="12" fill="#dc2626"></rect>
-      <text x="${legendX+30}" y="${legendY+36}" font-size="14" fill="rgba(2,6,23,0.88)">Cuota</text>
-      <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="rgba(2,6,23,0.60)" stroke-width="2.5"></line>
-      <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="rgba(2,6,23,0.88)">Acumulado</text>
-    `;
+      const capex = (qtyHolder*uHolder) + (qtyCollet*uCollet) + (qtyNut*uNut) + (qtyPull*uPull) + (qtyAcc*uAcc);
+      $('capexCalc').textContent = money(capex);
+      return capex;
+    }
 
-    el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">
-      ${axis}${bars}${polyline}${marker}${legend}
-    </svg>`;
-  }
+    function capexEffective(){
+      const capex = calcCapex();
+      const on = $('capexOverrideOn').checked;
+      $('capexOverride').disabled = !on;
+      return on ? (+$('capexOverride').value || 0) : capex;
+    }
 
-  function renderDonut(targetId, parts, labels){
-    const el=document.getElementById(targetId); if(!el) return;
-    const data=parts.map((p,i)=> [labels[i], p]).filter(p=>p[1]>0);
-    const total=data.reduce((s,p)=> s + p[1], 0);
+    // ========= inclusiones enable/disable =========
+    function setEnabled(ids,on){ ids.forEach(id=>{ const el=$(id); if(el) el.disabled=!on; }); }
+    function applyInclusions(){
+      setEnabled(['cicloA','cicloP'], $('incCiclo').checked);
+      setEnabled(['vidaA','vidaP','costoHerr'], $('incHerr').checked);
+      setEnabled(['tmuertoA','tmuertoP'], $('incTM').checked);
+      setEnabled(['setupA','setupP'], $('incSetup').checked);
+      setEnabled(['scrapA','scrapP','costoScrap'], $('incScrap').checked);
+      setEnabled(['runoutA','runoutP','kVidaPorUm','kScrapPorUm'], $('incMicras').checked);
+    }
 
-    const W=650, H=400;
-    const cx = 210, cy = H / 2, r = H * 0.4, th = 50;
-    let start=0;
-    const colors=['#111827','#16a34a','#d1001c','#f59e0b','#0891b2'];
+    // ========= core calculator =========
+    function calcular(){
+      // base
+      const pmes = +$('pmes').value || 0;
+      const costoHora = +$('costoHora').value || 0;
 
-    const legendX = 390;
-    const legendFontSize = 18;
-    const legendLineHeight = 30;
-    const legendBlockHeight = data.length * legendLineHeight;
-    const legendStartY = (H - legendBlockHeight) / 2 + (legendFontSize / 2);
+      const cicloA = +$('cicloA').value || 0;
+      const cicloP = +$('cicloP').value || 0;
 
-    const segs=data.map((p,i)=>{
-      const f= total? p[1]/total:0;
-      const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI;
-      start+=f;
-      const L=(a1-a0)>Math.PI?1:0;
+      let vidaA = +$('vidaA').value || 0;
+      let vidaP = +$('vidaP').value || 0;
 
-      const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
-      const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
-      const x0i=cx+(r-th)*Math.cos(a0), y0i=cy+(r-th)*Math.sin(a0);
-      const x1i=cx+(r-th)*Math.cos(a1), y1i=cy+(r-th)*Math.sin(a1);
+      const costoHerr = +$('costoHerr').value || 0;
 
-      const d=`M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
-      const pct=Math.round(f*100);
-      const ly = legendStartY + (i * legendLineHeight);
+      const tmuertoA = +$('tmuertoA').value || 0;
+      const tmuertoP = +$('tmuertoP').value || 0;
 
-      return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.92"></path>
-              <text x="${legendX}" y="${ly}" font-size="${legendFontSize}" fill="rgba(2,6,23,0.86)">${p[0]}: ${pct}%</text>`;
-    }).join('');
+      const setupA = +$('setupA').value || 0;
+      const setupP = +$('setupP').value || 0;
 
-    const centerFontSize = Math.max(20, Math.round(r * 0.2));
-    const centerText = total > 0 ? ('$' + fmt(total)) : '—';
-    const center = `<circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="rgba(2,6,23,0.03)"></circle>
-                    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${centerFontSize}" fill="rgba(2,6,23,0.86)">${centerText}</text>`;
+      let scrapA = +$('scrapA').value || 0;
+      let scrapP = +$('scrapP').value || 0;
+      const costoScrap = +$('costoScrap').value || 0;
 
-    el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
-  }
+      const opex = +$('opex').value || 0;
+      const mensualidad = +$('mensualidad').value || 0;
+      const capex = capexEffective();
 
-  function renderBars(targetId, pairs){
-    const rowsData = pairs.map(([lbl,a,b,lowerIsBetter]) => ({
-      lines: String(lbl).replace(' (','\n(').split('\n'),
-      a: a || 0,
-      b: b || 0,
-      lowerIsBetter
-    }));
+      // micras -> boosts (configurable)
+      if($('incMicras').checked){
+        const runoutA = +$('runoutA').value || 0;
+        const runoutP = +$('runoutP').value || 0;
+        const dUm = Math.max(0, runoutA - runoutP); // mejora en µm (solo si baja)
 
-    const approxChar = 7;
-    const labelCol = Math.max(160, Math.min(260, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length)) * approxChar))));
-    const barStartX = labelCol + 16;
-    const barMax = 560;
-    const rowH = 40, rowGap = 16, padY = 20;
+        const kVida = +$('kVidaPorUm').value || 0;       // % por µm
+        const kScrap = +$('kScrapPorUm').value || 0;     // puntos porcentuales por µm
 
-    const W = barStartX + barMax + 160;
-    const H = padY + rowsData.length * (rowH + rowGap) + 40;
+        // boost a vida propuesta
+        if(vidaP > 0 && dUm > 0 && kVida > 0){
+          const mult = 1 + (dUm * kVida / 100);
+          vidaP = vidaP * mult;
+        }
 
-    let y = padY;
+        // boost a scrap propuesto (reduce)
+        if(dUm > 0 && kScrap > 0){
+          scrapP = Math.max(0, scrapP - (dUm * kScrap));
+        }
+      }
 
-    const rows = rowsData.map(r => {
-      const maxVal = Math.max(Math.abs(r.a), Math.abs(r.b), 1);
-      const aw = Math.round((Math.abs(r.a) / maxVal) * barMax);
-      const bw = Math.round((Math.abs(r.b) / maxVal) * barMax);
+      // ahorros
+      const incCiclo = $('incCiclo').checked;
+      const incHerr  = $('incHerr').checked;
+      const incTM    = $('incTM').checked;
+      const incSetup = $('incSetup').checked;
+      const incScrap = $('incScrap').checked;
 
-      const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
-      const colorP = goodB ? '#16a34a' : '#dc2626';
+      // ciclo: ahorro = (horas actuales - horas propuestas) * costoHora
+      const horasA = (pmes * cicloA) / 3600;
+      const horasP = (pmes * cicloP) / 3600;
+      const ahorroCiclo = (cicloA>0 && cicloP>0) ? Math.max(0, (horasA - horasP) * costoHora) : 0;
 
-      const label = `<text x="0" y="${y + 14}" font-size="14" fill="rgba(2,6,23,0.86)">
-        ${r.lines[0]}
-        ${r.lines.length > 1 ? `<tspan x="0" dy="1.2em">${r.lines.slice(1).join(' ')}</tspan>` : ''}
-      </text>`;
+      // herramienta
+      const consA = (vidaA>0) ? (pmes / vidaA) : 0;
+      const consP = (vidaP>0) ? (pmes / vidaP) : 0;
+      const costoHerrA = consA * costoHerr;
+      const costoHerrP = consP * costoHerr;
+      const ahorroHerr = Math.max(0, costoHerrA - costoHerrP);
 
-      const bars = `
-        <rect x="${barStartX}" y="${y}" width="${aw}" height="12" fill="rgba(2,6,23,0.20)"></rect>
-        <rect x="${barStartX}" y="${y + 16}" width="${bw}" height="12" fill="${colorP}"></rect>
-        <text x="${barStartX + aw + 10}" y="${y + 10}" font-size="12" fill="rgba(2,6,23,0.70)">${isFinite(r.a) ? r.a.toFixed(1) : '—'}</text>
-        <text x="${barStartX + bw + 10}" y="${y + 26}" font-size="12" fill="rgba(2,6,23,0.70)">${isFinite(r.b) ? r.b.toFixed(1) : '—'}</text>
+      // tiempos muertos y setups (min -> horas)
+      const ahorroTM = Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora;
+      const ahorroSetup = Math.max(0, (setupA - setupP)) / 60 * costoHora;
+
+      // scrap (puntos porcentuales)
+      const scrapDelta = Math.max(0, (scrapA - scrapP)) / 100;
+      const ahorroScrap = scrapDelta * pmes * costoScrap;
+
+      const ahorroBruto = Math.max(0,
+        (incCiclo ? ahorroCiclo : 0) +
+        (incHerr  ? ahorroHerr  : 0) +
+        (incTM    ? ahorroTM    : 0) +
+        (incSetup ? ahorroSetup : 0) +
+        (incScrap ? ahorroScrap : 0)
+      );
+
+      const neto = ahorroBruto - opex - mensualidad;
+
+      const roiAnual = capex > 0 ? ((neto * 12) / capex) * 100 : (neto > 0 ? Infinity : 0);
+      const paybackMeses = (capex > 0 && neto > 0) ? (capex / neto) : Infinity;
+
+      // TCO 12m
+      const tco = capex + (opex + mensualidad) * 12;
+      const ahorroAnualNeto = neto * 12;
+
+      // UI results
+      $('ahorro').textContent = money(ahorroBruto);
+      $('netoMensual').textContent = money(neto);
+      $('netoMensual').style.color = (neto >= 0) ? 'var(--good)' : 'var(--bad)';
+
+      $('roi').textContent = isFinite(roiAnual) ? (fmt(roiAnual) + '%') : '∞%';
+      $('payback').textContent = isFinite(paybackMeses) ? (fmt(paybackMeses) + ' meses') : '—';
+
+      $('ahorroTM').textContent = money(ahorroTM);
+      $('ahorroSetup').textContent = money(ahorroSetup);
+      $('ahorroScrap').textContent = money(ahorroScrap);
+
+      $('tco').textContent = money(tco);
+      $('ahorroAnualNeto').textContent = money(ahorroAnualNeto);
+
+      // tabla comparativa
+      const pphA = cicloA>0 ? 3600/cicloA : 0;
+      const pphP = cicloP>0 ? 3600/cicloP : 0;
+      const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
+      const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
+
+      function delta(a,p,{higherIsBetter=true}={}){
+        if(!isNum(a) || !isNum(p)) return {val:0};
+        if(a===0 && p===0) return {val:0};
+        const d = (p-a) / (a===0 ? 1 : a) * 100;
+        return {val:d, higherIsBetter};
+      }
+
+      function row(name,a,p,opt){
+        const d = delta(a,p,opt||{});
+        const displayed = isFinite(d.val) ? (d.val >= 0 ? '+' : '') + fmt(d.val) + '%' : '—';
+        const thresholdPct = 3;
+        const absVal = Math.abs(d.val || 0);
+        const higherIsBetter = (opt && typeof opt.higherIsBetter !== 'undefined') ? opt.higherIsBetter : true;
+        const isImprovement = higherIsBetter ? (d.val > 0) : (d.val < 0);
+
+        let badgeClass;
+        if (absVal < thresholdPct) badgeClass = 'badge-mid';
+        else badgeClass = isImprovement ? 'badge-up' : 'badge-down';
+
+        const badge = `<span class="stat-badge ${badgeClass}">${displayed}</span>`;
+        return `<tr style="background:#fff; border-bottom:1px solid rgba(2,6,23,0.04);">
+          <td class="px-2 py-2">${name}</td>
+          <td class="px-2 py-2 text-right mono">${isFinite(a)?fmt(a):'—'}</td>
+          <td class="px-2 py-2 text-right mono">${isFinite(p)?fmt(p):'—'}</td>
+          <td class="px-2 py-2 text-right">${badge}</td>
+        </tr>`;
+      }
+
+      const capexShow = capex;
+      const runoutA = +$('runoutA').value || 0;
+      const runoutP = +$('runoutP').value || 0;
+
+      $('tbodyComp').innerHTML = [
+        row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
+        row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
+        row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}),
+        row('Costo herramienta/pza', costPerPieceA, costPerPieceP, {higherIsBetter:false}),
+        row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}),
+        row('Setups (min/mes)', setupA, setupP, {higherIsBetter:false}),
+        row('Scrap (%)', scrapA, scrapP, {higherIsBetter:false}),
+        row('Runout (µm)', runoutA, runoutP, {higherIsBetter:false}),
+        row('CAPEX (items)', 0, capexShow, {higherIsBetter:true}),
+        row('Ahorro bruto mensual', 0, ahorroBruto, {higherIsBetter:true}),
+        row('Neto mensual', 0, neto, {higherIsBetter:true}),
+      ].join('');
+
+      // visuals
+      const parts=[], labels=[];
+      if(incCiclo) { parts.push(Math.max(0, ahorroCiclo)); labels.push('Ciclo'); }
+      if(incHerr)  { parts.push(Math.max(0, ahorroHerr));  labels.push('Herramienta'); }
+      if(incTM)    { parts.push(Math.max(0, ahorroTM));    labels.push('Tiempo muerto'); }
+      if(incSetup) { parts.push(Math.max(0, ahorroSetup)); labels.push('Setups'); }
+      if(incScrap) { parts.push(Math.max(0, ahorroScrap)); labels.push('Scrap'); }
+
+      renderDonut('vizAhorros', parts, labels);
+
+      renderBars('vizPerf', [
+        ['T. Ciclo (s)', cicloA, cicloP, true],
+        ['Pzas/h', pphA, pphP, false],
+        ['Vida útil (pzas)', vidaA, vidaP, false],
+        ['Scrap (%)', scrapA, scrapP, true],
+      ]);
+
+      renderCashflow('vizCash', {
+        ahorroMes: ahorroBruto,
+        cuota: (mensualidad + opex),
+        capex: capex
+      });
+    }
+
+    // ========= charts =========
+    function renderCashflow(targetId, {ahorroMes, cuota, capex}){
+      const el=$(targetId); if(!el) return;
+      const meses=Array.from({length:12},(_,i)=>`M${i+1}`);
+
+      const W=800, H=400;
+      const pad={top:40,right:10,bottom:50,left:60};
+      const barW=18, barGap=6, gap=38;
+      const H_drawable = H - pad.top - pad.bottom;
+
+      const neto = (ahorroMes||0) - (cuota||0);
+      let acc = -capex;
+      const accArr = meses.map(()=>{ acc += neto; return acc; });
+
+      const allValues=[ahorroMes||0, cuota||0, ...accArr, -capex];
+      const dataMax = Math.max(1, ...allValues.map(v=>Math.max(0,v)));
+      const dataMin = Math.min(0, ...allValues.map(v=>Math.min(0,v)));
+      const totalRange = dataMax - dataMin;
+
+      const scaleY=(v)=>{
+        if(totalRange===0) return H-pad.bottom;
+        return (H-pad.bottom) - (((v-dataMin)/totalRange)*H_drawable);
+      };
+
+      const yZero=scaleY(0);
+
+      let x=pad.left + gap/2;
+      const bars = meses.map((m,i)=>{
+        const yA=scaleY(ahorroMes); const hA=yZero-yA;
+        const yP=scaleY(cuota);     const hP=yZero-yP;
+        const xa=x, xp=x+barW+barGap;
+        const labelY=H-pad.bottom+20;
+
+        const rects = `
+          <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#16a34a"></rect>
+          <rect x="${xp}" y="${yP}" width="${barW}" height="${hP}" fill="#e30613"></rect>
+        `;
+        const txt = `<text x="${x+barW+barGap/2}" y="${labelY}" font-size="14" fill="var(--text)" text-anchor="middle">${m}</text>`;
+        x += (barW*2 + barGap + gap);
+        return rects+txt;
+      }).join('');
+
+      const linePts = accArr.map((v,i)=>{
+        const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW+barGap/2);
+        const yi = scaleY(v);
+        return `${xi},${yi}`;
+      }).join(' ');
+
+      const x0 = pad.left + gap/2 - (barW*2+barGap+gap) + (barW+barGap/2);
+      const y0 = scaleY(-capex);
+
+      const polyline = `<polyline points="${x0},${y0} ${linePts}" fill="none" stroke="#111827" stroke-width="3" opacity="0.35"></polyline>`;
+
+      let marker='';
+      if(capex>0){
+        const idx = accArr.findIndex(v=>v>=0);
+        if(idx!==-1){
+          const xi = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW+barGap/2);
+          const yi = scaleY(accArr[idx]);
+          marker = `<circle cx="${xi}" cy="${yi}" r="6" fill="#111827"></circle>
+                    <text x="${xi+10}" y="${yi-10}" font-size="14" fill="#111827">Payback M${idx+1}</text>`;
+        }
+      }
+
+      const axis = `
+        <line x1="${pad.left}" y1="${pad.top-10}" x2="${pad.left}" y2="${H-pad.bottom}" stroke="rgba(2,6,23,.15)"></line>
+        <line x1="${pad.left}" y1="${yZero}" x2="${W-pad.right}" y2="${yZero}" stroke="rgba(2,6,23,.12)"></line>
+        <text x="${pad.left-10}" y="${yZero+5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.55)">$0</text>
+        <text x="${pad.left-10}" y="${scaleY(dataMax)+5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.55)">$${fmt(dataMax)}</text>
+        ${dataMin<0 ? `<text x="${pad.left-10}" y="${scaleY(dataMin)+5}" font-size="14" text-anchor="end" fill="rgba(15,23,42,.55)">$${fmt(dataMin)}</text>` : ''}
       `;
 
-      y += rowH + rowGap;
-      return label + bars;
-    }).join('');
+      const legendX = W - pad.right - 155, legendY = pad.top;
+      const legend = `
+        <rect x="${legendX}" y="${legendY-12}" width="148" height="82" rx="12" fill="#fff" stroke="rgba(2,6,23,0.10)"></rect>
+        <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#16a34a"></rect>
+        <text x="${legendX+30}" y="${legendY+10}" font-size="14" fill="var(--text)">Ahorro</text>
+        <rect x="${legendX+12}" y="${legendY+26}" width="12" height="12" fill="#e30613"></rect>
+        <text x="${legendX+30}" y="${legendY+36}" font-size="14" fill="var(--text)">Cuota</text>
+        <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="#111827" stroke-width="2.5" opacity="0.35"></line>
+        <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="var(--text)">Acum.</text>
+      `;
 
-    const legendY = H - 20;
-    const legendX = barStartX;
-    const legend = `
-      <rect x="${legendX}" y="${legendY - 14}" width="230" height="28" rx="10" fill="rgba(2,6,23,0.03)" stroke="rgba(2,6,23,0.10)"></rect>
-      <rect x="${legendX + 10}" y="${legendY - 6}" width="12" height="12" fill="rgba(2,6,23,0.20)"></rect>
-      <text x="${legendX + 28}" y="${legendY + 4}" font-size="12" fill="rgba(2,6,23,0.76)">Actual</text>
-      <rect x="${legendX + 88}" y="${legendY - 6}" width="12" height="12" fill="#16a34a"></rect>
-      <text x="${legendX + 106}" y="${legendY + 4}" font-size="12" fill="rgba(2,6,23,0.76)">Propuesta</text>
-      <rect x="${legendX + 185}" y="${legendY - 6}" width="12" height="12" fill="#dc2626"></rect>
-      <text x="${legendX + 203}" y="${legendY + 4}" font-size="12" fill="rgba(2,6,23,0.76)">Empeora</text>
-    `;
+      el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${axis}${bars}${polyline}${marker}${legend}</svg>`;
+    }
 
-    const svg = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa">
-      ${rows}${legend}
-    </svg>`;
-    const el = document.getElementById(targetId); if(el) el.innerHTML = svg;
-  }
+    function renderDonut(targetId, parts, labels){
+      const el=$(targetId); if(!el) return;
+      const data = parts.map((p,i)=>[labels[i],p]).filter(x=>x[1]>0);
+      const total = data.reduce((s,p)=>s+p[1],0);
 
-  // Events
-  document.getElementById('btnCalcular')?.addEventListener('click', calcular);
-  document.getElementById('btnCalcularMobile')?.addEventListener('click', calcular);
-  document.getElementById('btnCalcularHero')?.addEventListener('click', calcular);
+      const W=640, H=380;
+      const cx=220, cy=H/2, r=H*0.38, th=54;
+      let start=0;
 
-  document.getElementById('btnPrint')?.addEventListener('click', () => window.print());
-  document.getElementById('btnPrintHero')?.addEventListener('click', () => window.print());
+      const colors=['#111827','#e30613','#16a34a','#f59e0b','#0ea5e9'];
 
-  const inputIds = [
-    'cicloA','cicloP','vidaA','vidaP','costoHerr','costoHora','pmes','inversion','tmuertoA','tmuertoP',
-    'setupMinA','setupMinP','cambiosMesA','cambiosMesP','scrapA','scrapP','costoScrapPza','mensualidad','valorarTiempo'
-  ];
-  inputIds.forEach(id => document.getElementById(id)?.addEventListener('input', () => {
-    if (window.innerWidth >= 768) calcular();
-  }));
+      const legendX=410, font=17, lh=30;
+      const legendStartY=(H-(data.length*lh))/2 + (font/2);
 
-  ['incCiclo','incHerr','incSetup','incTM','incScrap'].forEach(id =>
-    document.getElementById(id)?.addEventListener('change', () => { applyInclusions(); calcular(); })
-  );
+      const segs = data.map((p,i)=>{
+        const f = total ? p[1]/total : 0;
+        const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI; start+=f;
+        const L=(a1-a0)>Math.PI?1:0;
 
-  // Init
-  applyInclusions();
-  calcular();
-</script>
+        const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
+        const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+        const x0i=cx+(r-th)*Math.cos(a0), y0i=cy+(r-th)*Math.sin(a0);
+        const x1i=cx+(r-th)*Math.cos(a1), y1i=cy+(r-th)*Math.sin(a1);
 
-<script src="/assets/chatbot.js"></script>
+        const d=`M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
+        const pct=Math.round(f*100);
+        const ly=legendStartY + i*lh;
+
+        return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.9"></path>
+                <text x="${legendX}" y="${ly}" font-size="${font}" fill="var(--text)">${p[0]}: ${pct}%</text>`;
+      }).join('');
+
+      const centerText = total>0 ? money(total) : '—';
+      const center = `
+        <circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="#fff" stroke="rgba(2,6,23,0.08)"></circle>
+        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="22" fill="var(--text)" font-weight="800">${centerText}</text>
+      `;
+
+      el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
+    }
+
+    function renderBars(targetId, pairs){
+      const rowsData = pairs.map(([lbl,a,b,lowerIsBetter])=>({
+        lines:String(lbl).replace(' (','\n(').split('\n'),
+        a: a||0, b: b||0, lowerIsBetter
+      }));
+
+      const approxChar=7;
+      const labelCol=Math.max(160, Math.min(260, Math.max(...rowsData.map(r=>Math.max(...r.lines.map(s=>s.length))*approxChar))));
+      const barStartX=labelCol+16;
+      const barMax=520;
+      const rowH=40,rowGap=16,padY=20;
+      const W=barStartX+barMax+170;
+      const H=padY+rowsData.length*(rowH+rowGap)+40;
+
+      let y=padY;
+      const rows = rowsData.map(r=>{
+        const maxVal=Math.max(Math.abs(r.a),Math.abs(r.b),1);
+        const aw=Math.round((Math.abs(r.a)/maxVal)*barMax);
+        const bw=Math.round((Math.abs(r.b)/maxVal)*barMax);
+
+        const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
+        const colorP = goodB ? '#16a34a' : '#e30613';
+
+        const label=`<text x="0" y="${y+14}" font-size="14" fill="var(--text)" font-weight="800">
+          ${r.lines[0]}
+          ${r.lines.length>1 ? `<tspan x="0" dy="1.2em" font-weight="700" fill="rgba(15,23,42,.65)">${r.lines.slice(1).join(' ')}</tspan>` : ''}
+        </text>`;
+
+        const bars=`
+          <rect x="${barStartX}" y="${y}" width="${aw}" height="12" fill="rgba(17,24,39,0.18)"></rect>
+          <rect x="${barStartX}" y="${y+16}" width="${bw}" height="12" fill="${colorP}"></rect>
+          <text x="${barStartX+aw+10}" y="${y+10}" font-size="12" fill="rgba(15,23,42,.75)">${isFinite(r.a)?r.a.toFixed(2):'—'}</text>
+          <text x="${barStartX+bw+10}" y="${y+26}" font-size="12" fill="rgba(15,23,42,.75)">${isFinite(r.b)?r.b.toFixed(2):'—'}</text>
+        `;
+        y += rowH + rowGap;
+        return label+bars;
+      }).join('');
+
+      const legendY=H-20, legendX=barStartX;
+      const legend=`
+        <rect x="${legendX}" y="${legendY-14}" width="240" height="28" rx="10" fill="#fff" stroke="rgba(2,6,23,0.10)"></rect>
+        <rect x="${legendX+10}" y="${legendY-6}" width="12" height="12" fill="rgba(17,24,39,0.18)"></rect>
+        <text x="${legendX+28}" y="${legendY+4}" font-size="12" fill="var(--text)" font-weight="800">Actual</text>
+        <rect x="${legendX+92}" y="${legendY-6}" width="12" height="12" fill="#16a34a"></rect>
+        <text x="${legendX+110}" y="${legendY+4}" font-size="12" fill="var(--text)" font-weight="800">Propuesta</text>
+        <rect x="${legendX+190}" y="${legendY-6}" width="12" height="12" fill="#e30613"></rect>
+        <text x="${legendX+208}" y="${legendY+4}" font-size="12" fill="var(--text)" font-weight="800">Si empeora</text>
+      `;
+
+      $(targetId).innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${rows}${legend}</svg>`;
+    }
+
+    // ========= wiring =========
+    function wireAll(){
+      const inputs = [
+        'moneda','tc','pmes','costoHora',
+        'cicloA','cicloP','vidaA','vidaP','costoHerr',
+        'tmuertoA','tmuertoP','setupA','setupP','scrapA','scrapP','costoScrap',
+        'sistema','interfaz','runoutA','runoutP','kVidaPorUm','kScrapPorUm',
+        'qtyHolder','uHolder','qtyCollet','uCollet','qtyNut','uNut','qtyPull','uPull','qtyAcc','uAcc',
+        'opex','mensualidad','capexOverrideOn','capexOverride'
+      ];
+      inputs.forEach(id => $(id)?.addEventListener('input', ()=>{ calcCapex(); if(window.innerWidth>=1024) calcular(); }));
+      ['incCiclo','incHerr','incTM','incSetup','incScrap','incMicras'].forEach(id=>$(id)?.addEventListener('change', ()=>{ applyInclusions(); calcular(); }));
+
+      $('sistema')?.addEventListener('change', ()=>{ syncRunoutBySystem(); calcCapex(); calcular(); });
+
+      $('btnCalcular')?.addEventListener('click', calcular);
+      $('btnCalcularMobile')?.addEventListener('click', calcular);
+      $('btnPrint')?.addEventListener('click', ()=>window.print());
+    }
+
+    // init
+    syncRunoutBySystem();
+    applyInclusions();
+    calcCapex();
+    wireAll();
+    calcular();
+  </script>
+
+  <script src="/assets/chatbot.js"></script>
 </body>
 </html>
