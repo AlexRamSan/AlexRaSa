@@ -3,1101 +3,1559 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora ROI REGO-FIX — by AlexRaSa</title>
-  <meta name="description" content="Calcula ROI y payback enfocado a holders e items REGO-FIX. Ahorro por tiempo, vida de herramienta y mejora de proceso, modular por switches." />
+  <title>Calculadora ROI REGO-FIX (holders) — AlexRaSa</title>
+  <meta name="description" content="Calcula ROI enfocándote en holders y sistemas de sujeción: ahorro por tiempo (ciclo, cambios, setup), ahorro por vida de herramienta y ahorro por mejora de proceso. Reporte imprimible." />
   <meta name="theme-color" content="#121314" />
   <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://alexrasa.store/calculadora-roi-regofix/" />
+
+  <link rel="canonical" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+  <link rel="alternate" hreflang="es-MX" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+  <link rel="alternate" hreflang="es" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+  <link rel="alternate" hreflang="x-default" href="https://alexrasa.store/calculadora-costo-beneficio/" />
+
   <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="preload" as="image" href="/assets/regofix/hero-holders.jpg" />
-  <meta name="color-scheme" content="dark">
+
+  <!-- OpenGraph (opcional) -->
+  <meta property="og:title" content="Calculadora ROI REGO-FIX (holders) — AlexRaSa" />
+  <meta property="og:description" content="ROI por tiempo, vida de herramienta y mejora de proceso. Modular + reporte imprimible." />
+  <meta property="og:image" content="https://alexrasa.store/assets/regofix/og-roi.jpg" />
+
+  <link rel="preload" as="image" href="/assets/regofix/hero.jpg" />
+  <meta name="color-scheme" content="dark" />
+
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     :root{
       color-scheme: dark;
 
-      /* REGO-FIX palette (user provided) */
-      --rf-green: #B7C91F;
-      --rf-green-2:#AAC82D;
-      --rf-teal:  #58D5D3;
-      --rf-blue:  #28556C;
-      --rf-red:   #D31B23;
+      /* === PALETA REGO-FIX (TU LISTA) === */
+      --rf-green:#B7C91F;      /* principal */
+      --rf-green-2:#AAC82D;    /* oliva */
+      --rf-turq:#58D5D3;       /* acento */
+      --rf-bluegray:#28556C;   /* acento oscuro */
+      --rf-red:#D31B23;        /* botón/acento */
+      --rf-black:#121314;      /* negro/gris muy oscuro */
+      --rf-gray-1:#44474A;     /* gris oscuro */
+      --rf-gray-2:#677071;     /* gris medio */
+      --rf-gray-3:#E5E6E4;     /* gris claro */
 
-      --rf-black: #121314;
-      --rf-gray-1:#44474A;
-      --rf-gray-2:#677071;
-      --rf-gray-3:#E5E6E4;
-
-      --rf-text:  #E5E6E4;
-      --rf-muted: rgba(229,230,228,.72);
-      --rf-line:  rgba(229,230,228,.10);
-      --rf-card:  rgba(229,230,228,.03);
+      /* UI */
+      --bg: var(--rf-black);
+      --card: rgba(255,255,255,0.03);
+      --card-2: rgba(255,255,255,0.05);
+      --border: rgba(229,230,228,0.12);
+      --text: #F4F5F3;
+      --muted: rgba(229,230,228,0.72);
 
       --good: var(--rf-green);
-      --warn: var(--rf-green-2);
-      --bad:  var(--rf-red);
-      --cyan: var(--rf-teal);
-      --ink:  var(--rf-blue);
+      --warn: #F59E0B; /* solo para alertas (no branding) */
+      --bad: var(--rf-red);
+
+      --ring: rgba(88,213,211,0.22);
+      --shadow: 0 18px 50px rgba(0,0,0,0.35);
     }
 
-    html,body{
-      background:var(--rf-black);
-      color:var(--rf-text);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-    a{ color: var(--rf-teal); }
-    #siteHeader{
-      background:rgba(18,19,20,0.82);
-      border-bottom:1px solid var(--rf-line);
-      backdrop-filter: blur(10px);
-    }
+    html,body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+    a{color:var(--rf-turq);}
+    #siteHeader{background:rgba(18,19,20,0.75);border-bottom:1px solid var(--border);backdrop-filter: blur(10px);}
 
     .card{
-      background: linear-gradient(180deg, rgba(229,230,228,0.04), rgba(229,230,228,0.02));
-      border:1px solid var(--rf-line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+    .subcard{
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+      border: 1px solid rgba(229,230,228,0.10);
       border-radius: 14px;
     }
+
     input,select,textarea{
-      background: rgba(229,230,228,0.04);
-      color: var(--rf-text);
-      border:1px solid rgba(229,230,228,0.14);
-      padding:.55rem .65rem;
-      border-radius:.65rem;
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border: 1px solid rgba(229,230,228,0.14);
+      padding: .6rem .7rem;
+      border-radius: .75rem;
     }
-    input:focus,select:focus{
-      box-shadow:0 0 0 6px rgba(88,213,211,0.14);
+    input:focus,select:focus,textarea:focus{
+      box-shadow: 0 0 0 6px var(--ring);
       outline:none;
-      border-color: rgba(88,213,211,0.35);
+      border-color: rgba(88,213,211,0.45);
     }
     select option { color:#000; background:#fff; }
 
-    .btn-primary{
-      background: linear-gradient(180deg, var(--rf-red), #B8141B);
-      color:#fff;
-      border: 1px solid rgba(211,27,35,0.35);
-    }
-    .btn-primary:hover{ filter: brightness(1.05); }
-
-    .btn-secondary{
-      background: linear-gradient(180deg, rgba(40,85,108,0.35), rgba(40,85,108,0.18));
-      color: var(--rf-text);
-      border:1px solid rgba(40,85,108,0.45);
-    }
-    .btn-ghost{
-      background: rgba(229,230,228,0.04);
-      border:1px solid rgba(229,230,228,0.14);
-      color: var(--rf-text);
+    label[title]{
+      cursor: help;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-decoration-color: rgba(229,230,228,0.35);
     }
 
-    .hero-bg{
-      position:relative;
-      background-image:url('/assets/regofix/hero-holders.jpg');
-      background-size:cover;
-      background-position:center;
-      background-repeat:no-repeat;
-      min-height:360px;
-      overflow:hidden;
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:.5rem; border-radius:.9rem; padding:.72rem 1rem;
+      font-weight: 800; letter-spacing: .2px;
+      border: 1px solid rgba(229,230,228,0.14);
+      transition: transform .12s ease, filter .12s ease;
+      user-select:none;
     }
-    .hero-bg::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: linear-gradient(180deg, rgba(18,19,20,0.35), rgba(18,19,20,0.88));
-      z-index:1;
-      pointer-events:none;
-    }
-    .hero-content{ position:relative; z-index:2; }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.02); }
+    .btn:active{ transform: translateY(0px); filter: brightness(0.98); }
 
-    /* Switch */
+    .btn-primary{ background: var(--rf-green); color: #111; border-color: rgba(183,201,31,0.4); }
+    .btn-danger{ background: var(--rf-red); color: #fff; border-color: rgba(211,27,35,0.35); }
+    .btn-ghost{ background: rgba(255,255,255,0.04); color: var(--text); }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:.5rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(229,230,228,0.12);
+      border-radius:999px; padding:.25rem .55rem;
+      font-size:12px; color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .stat{
+      border: 1px solid rgba(229,230,228,0.12);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      padding: .75rem .85rem;
+    }
+
+    /* Toggle (switch) */
     .switch{
-      width: 44px; height: 26px;
+      position: relative; width: 44px; height: 26px;
+      background: rgba(229,230,228,0.18);
+      border: 1px solid rgba(229,230,228,0.14);
       border-radius: 999px;
-      background: rgba(229,230,228,0.10);
-      border:1px solid rgba(229,230,228,0.14);
-      position:relative;
       transition: background .15s ease, border-color .15s ease;
+      flex: 0 0 auto;
     }
     .switch::after{
-      content:"";
-      position:absolute;
-      top:3px; left:3px;
-      width:20px; height:20px;
-      border-radius:999px;
-      background: rgba(229,230,228,0.75);
-      transition: transform .15s ease, background .15s ease;
+      content:""; position:absolute; top:3px; left:3px;
+      width: 20px; height: 20px; border-radius: 999px;
+      background: rgba(255,255,255,0.85);
+      transition: transform .15s ease;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.25);
     }
-    input[type="checkbox"].sw{
-      position:absolute;
-      opacity:0;
-      width:44px;
-      height:26px;
-      cursor:pointer;
-      z-index:2;
+    input[type="checkbox"].toggle{
+      position:absolute; opacity:0; pointer-events:none;
     }
-    .sw:checked + .switch{
-      background: rgba(183,201,31,0.25);
+    .toggle:checked + .switch{
+      background: rgba(183,201,31,0.9);
       border-color: rgba(183,201,31,0.55);
     }
-    .sw:checked + .switch::after{
+    .toggle:checked + .switch::after{
       transform: translateX(18px);
-      background: var(--rf-green);
+      background: #121314;
     }
 
-    /* Badges */
+    /* Hero */
+    .hero{
+      position: relative;
+      overflow: hidden;
+      min-height: 340px;
+      background: #0b0c0d;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero::before{
+      content:"";
+      position:absolute; inset:0;
+      background-image: url('/assets/regofix/hero.jpg');
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.02) contrast(1.05);
+      opacity: .42;
+    }
+    .hero::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, rgba(18,19,20,0.92), rgba(18,19,20,0.55) 55%, rgba(18,19,20,0.86));
+    }
+    .hero-inner{ position: relative; z-index: 1; }
+
+    /* Badges para delta */
     .stat-badge{
       display:inline-block;
-      padding: .28rem .66rem;
-      border-radius: 999px;
-      font-weight: 700;
+      padding:.28rem .66rem;
+      border-radius:999px;
+      font-weight:900;
       font-size: 11px;
-      min-width: 64px;
-      text-align: center;
-      line-height: 1;
-      border: 1px solid rgba(229,230,228,0.14);
-      background: rgba(229,230,228,0.05);
-      color: var(--rf-text);
+      min-width: 68px;
+      text-align:center;
+      line-height:1;
+      border: 1px solid rgba(229,230,228,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
     }
-    .stat-badge.badge-up{
+    .badge-up{
       background: linear-gradient(180deg, rgba(183,201,31,0.95), rgba(170,200,45,0.95));
       color:#121314;
       border-color: rgba(183,201,31,0.55);
     }
-    .stat-badge.badge-mid{
-      background: linear-gradient(180deg, rgba(88,213,211,0.45), rgba(88,213,211,0.25));
-      color:#121314;
-      border-color: rgba(88,213,211,0.45);
+    .badge-mid{
+      background: linear-gradient(180deg, rgba(88,213,211,0.5), rgba(88,213,211,0.18));
+      color:#081014;
+      border-color: rgba(88,213,211,0.35);
     }
-    .stat-badge.badge-down{
-      background: linear-gradient(180deg, rgba(211,27,35,0.92), rgba(184,20,27,0.92));
+    .badge-down{
+      background: linear-gradient(180deg, rgba(211,27,35,0.95), rgba(211,27,35,0.75));
       color:#fff;
       border-color: rgba(211,27,35,0.45);
     }
 
-    /* SVG text color */
-    #vizAhorros svg text, #vizPerf svg text, #vizCash svg text { fill: var(--rf-text) !important; }
+    /* SVG text */
+    #vizAhorros svg text, #vizPerf svg text, #vizCash svg text{
+      fill: var(--text) !important;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
 
+    /* Safe bottom (mobile) */
     .safe-bottom{ padding-bottom: max(env(safe-area-inset-bottom), 1rem); }
 
-    /* Print: 1-page report */
-    @media print{
-      @page{ size: Letter; margin: .4in; }
-      html,body{ background:#fff !important; color:#000 !important; font-size: 8.5pt !important; }
-      header, footer, .hero-bg, main > .lg\:col-span-2, #btnCalcularMobile, #itemsSection { display:none !important; }
-      main{ display:block !important; padding:0 !important; margin:0 !important; max-width:100% !important; width:100% !important; }
-      #reportSection{
-        width:100% !important;
-        display:grid !important;
-        grid-template-columns: repeat(3,1fr) !important;
-        gap:.5rem !important;
+    /* ===== PRINT: reporte 1 página (Letter) ===== */
+    @media print {
+      @page { size: Letter; margin: 0.45in; }
+      html, body {
+        font-size: 8.7pt !important;
+        background: #fff !important;
+        color:#000 !important;
       }
-      #reportSection > .lg\:col-span-4{ grid-column: span 1 !important; }
-      #reportSection > .lg\:col-span-2{ grid-column: span 1 !important; }
-      #reportSection > #visuales{ grid-column: span 1 !important; }
-      .card{ border:1px solid #ccc !important; background:#fff !important; box-shadow:none !important; page-break-inside:avoid; padding:.5rem !important; }
-      h1,h2,h3,p,span,div,text,svg,path{ color:#000 !important; fill:#000 !important; stroke:#000 !important; }
-      .viz, .min-h-\[320px\]{ min-height: 150px !important; }
-      #vizPerf svg { height: 200px !important; }
-      svg text{ font-size: 8px !important; }
+      header, footer, .hero, #btnCalcularMobile, #helpPanel { display:none !important; }
+      main{ padding:0 !important; margin:0 !important; max-width:100% !important; width:100% !important; }
+      .card,.subcard{ box-shadow:none !important; background:#fff !important; border:1px solid #ddd !important; }
+      .stat{ background:#fff !important; border-color:#e5e5e5 !important; }
+      h1,h2,h3,p,span,div,td,th,svg,text{ color:#000 !important; fill:#000 !important; }
+      .btn{ display:none !important; }
       .stat-badge.badge-up{ background:#B7C91F !important; color:#121314 !important; -webkit-print-color-adjust:exact; }
-      .stat-badge.badge-mid{ background:#58D5D3 !important; color:#121314 !important; -webkit-print-color-adjust:exact; }
       .stat-badge.badge-down{ background:#D31B23 !important; color:#fff !important; -webkit-print-color-adjust:exact; }
+      .stat-badge.badge-mid{ background:#58D5D3 !important; color:#121314 !important; -webkit-print-color-adjust:exact; }
+      #reportGrid{
+        display:grid !important;
+        grid-template-columns: 1.2fr 0.85fr 1fr !important;
+        gap: .5rem !important;
+      }
+      #inputCol{ display:none !important; }
+      #visuales .minh{ min-height: 150px !important; }
+      #vizPerf svg{ height: 200px !important; }
     }
   </style>
 </head>
 
 <body class="antialiased">
 
-<header id="siteHeader" class="sticky top-0 z-50">
-  <div class="max-w-6xl mx-auto px-4">
-    <div class="h-16 flex items-center justify-between gap-3">
-      <a href="/" class="flex items-center gap-3 shrink-0" aria-label="Ir al inicio">
-        <img src="/assets/brand/regofixlogo.png" alt="Logo REGO-FIX" class="h-9 w-auto" width="170" height="36" />
-        <span class="hidden sm:inline text-sm font-semibold tracking-tight" style="color:var(--rf-muted)">ROI Calculator</span>
-      </a>
+  <!-- Header -->
+  <header id="siteHeader" class="sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="h-16 flex items-center justify-between gap-3">
+        <a href="/" class="flex items-center gap-3 shrink-0" aria-label="Ir al inicio">
+          <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-9 w-auto" />
+          <span class="hidden sm:inline text-base font-extrabold tracking-tight" style="color:var(--text)">
+            ROI Holders <span style="color:var(--rf-green)">REGO-FIX</span>
+          </span>
+        </a>
 
-      <nav class="hidden lg:flex items-center gap-6 text-sm">
-        <a href="/" class="hover:opacity-90">Inicio</a>
-        <a href="/SolidCAM/" class="hover:opacity-90">Soluciones</a>
-        <a href="/#servicios" class="hover:opacity-90">Servicios</a>
-        <a href="/#recursos" class="hover:opacity-90">Recursos</a>
-        <a href="/#contacto" class="hover:opacity-90">Contacto</a>
-      </nav>
+        <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold" style="color:var(--muted)">
+          <a href="/" class="hover:opacity-90">Inicio</a>
+          <a href="/SolidCAM/" class="hover:opacity-90">Soluciones</a>
+          <a href="/#servicios" class="hover:opacity-90">Servicios</a>
+          <a href="/#recursos" class="hover:opacity-90">Recursos</a>
+          <a href="/#contacto" class="hover:opacity-90">Contacto</a>
+        </nav>
 
-      <button id="mobileOpenBtn" class="lg:hidden p-2 rounded" aria-label="Abrir menú">
-        <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-    </div>
-  </div>
-</header>
-
-<div id="mobileBackdrop" class="fixed inset-0 lg:hidden bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" style="z-index:9998;"></div>
-<aside id="mobilePanel" class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle" style="z-index:9999;">
-  <div class="absolute inset-0 flex flex-col" style="background:var(--rf-black); color:var(--rf-text);">
-    <div class="h-16 flex items-center justify-between px-4 border-b" style="border-color:var(--rf-line);">
-      <span id="mobileMenuTitle" class="text-base font-semibold">Menú</span>
-      <button id="mobileCloseBtn" class="p-2 rounded" aria-label="Cerrar menú" style="background:rgba(229,230,228,0.04); border:1px solid rgba(229,230,228,0.10);">
-        <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-    <div class="flex-1 overflow-y-auto">
-      <nav class="p-4">
-        <ul class="space-y-1 text-[17px]">
-          <li><a href="/" class="mobile-link block px-3 py-3 rounded-lg" style="background:rgba(229,230,228,0.04);">Inicio</a></li>
-          <li><a href="/SolidCAM/" class="mobile-link block px-3 py-3 rounded-lg hover:opacity-90">Soluciones</a></li>
-          <li><a href="/#servicios" class="mobile-link block px-3 py-3 rounded-lg hover:opacity-90">Servicios</a></li>
-          <li><a href="/#recursos" class="mobile-link block px-3 py-3 rounded-lg hover:opacity-90">Recursos</a></li>
-          <li><a href="/#contacto" class="mobile-link block px-3 py-3 rounded-lg hover:opacity-90">Contacto</a></li>
-        </ul>
-
-        <div class="mt-6 grid grid-cols-2 gap-2 px-1">
-          <a href="/#soporte" class="px-3 py-2 text-center rounded-md btn-ghost">Soporte</a>
-          <a href="/#agenda" class="px-3 py-2 text-center rounded-md btn-primary">Agendar</a>
-        </div>
-      </nav>
-    </div>
-  </div>
-</aside>
-
-<section aria-label="Hero" class="hero-bg">
-  <div class="hero-content max-w-6xl mx-auto px-4 py-10 md:py-16">
-    <div class="max-w-3xl">
-      <h1 class="text-3xl md:text-5xl font-extrabold">Calculadora ROI <span style="color:var(--rf-green)">REGO-FIX</span></h1>
-      <p class="mt-3 text-base md:text-lg" style="color:var(--rf-muted)">
-        Enfocada a <strong>holders</strong> e <strong>items</strong>. Evalúa ahorro por <strong>tiempo</strong>, <strong>vida de herramienta</strong> y <strong>mejora de proceso</strong>.
-        Modular por switches: incluye solo lo que aplique.
-      </p>
-      <div class="mt-4 flex flex-wrap gap-2">
-        <span class="stat-badge badge-mid">Modular</span>
-        <span class="stat-badge badge-up">Ahorro</span>
-        <span class="stat-badge" style="border-color:rgba(88,213,211,.35); background:rgba(88,213,211,.12); color:#121314;">Payback</span>
+        <button id="mobileOpenBtn" class="lg:hidden p-2 rounded" aria-label="Abrir menú">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
       </div>
     </div>
-  </div>
-</section>
+  </header>
 
-<main id="calc" class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-14 grid gap-4 sm:gap-6 lg:grid-cols-8">
+  <!-- Mobile menu -->
+  <div id="mobileBackdrop" class="fixed inset-0 lg:hidden bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200" style="z-index:9998;"></div>
+  <aside id="mobilePanel" class="fixed inset-0 lg:hidden translate-x-full transition-transform duration-300 ease-out" role="dialog" aria-modal="true" aria-labelledby="mobileMenuTitle" style="z-index:9999;">
+    <div class="absolute inset-0 flex flex-col" style="background:#0f1011; color:#e5e7eb;">
+      <div class="h-16 flex items-center justify-between px-4 border-b" style="border-color:rgba(229,230,228,0.12)">
+        <span id="mobileMenuTitle" class="text-base font-extrabold">Menú</span>
+        <button id="mobileCloseBtn" class="p-2 rounded" aria-label="Cerrar menú">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
 
-  <!-- LEFT: Inputs -->
-  <section class="card p-5 lg:col-span-2">
-    <h2 class="text-lg font-semibold">Entradas</h2>
-    <p class="text-sm mt-1" style="color:var(--rf-muted)">Activa/desactiva módulos para “solo lo real”.</p>
+      <div class="flex-1 overflow-y-auto">
+        <nav class="p-4">
+          <ul class="space-y-1 text-[17px] font-semibold">
+            <li><a href="/" class="mobile-link block px-3 py-3 rounded-lg hover:bg-white/5">Inicio</a></li>
+            <li><a href="/SolidCAM/" class="mobile-link block px-3 py-3 rounded-lg hover:bg-white/5">Soluciones</a></li>
+            <li><a href="/#servicios" class="mobile-link block px-3 py-3 rounded-lg hover:bg-white/5">Servicios</a></li>
+            <li><a href="/#recursos" class="mobile-link block px-3 py-3 rounded-lg hover:bg-white/5">Recursos</a></li>
+            <li><a href="/#contacto" class="mobile-link block px-3 py-3 rounded-lg hover:bg-white/5">Contacto</a></li>
+          </ul>
 
-    <!-- Module switches -->
-    <div class="mt-4 grid gap-3">
-      <div class="flex items-center justify-between gap-3">
+          <div class="mt-6 grid grid-cols-2 gap-2 px-1">
+            <a href="/#soporte" class="px-3 py-2 text-center rounded-md border hover:bg-white/5"
+               style="border-color:rgba(229,230,228,0.18)">Soporte</a>
+            <a href="/#agenda" class="px-3 py-2 text-center rounded-md font-extrabold"
+               style="background:var(--rf-green); color:#121314;">Agendar</a>
+          </div>
+        </nav>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Hero -->
+  <section class="hero" aria-label="Hero">
+    <div class="hero-inner max-w-6xl mx-auto px-4 py-10 md:py-16">
+      <div class="grid md:grid-cols-2 gap-8 items-center">
         <div>
-          <div class="text-sm font-semibold">Ahorro por tiempo</div>
-          <div class="text-xs" style="color:var(--rf-muted)">Setups, cambios en máquina, paros.</div>
-        </div>
-        <div class="relative w-[44px] h-[26px]">
-          <input id="modTiempo" class="sw" type="checkbox" checked>
-          <div class="switch"></div>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <div class="text-sm font-semibold">Ahorro por vida</div>
-          <div class="text-xs" style="color:var(--rf-muted)">Más ciclos con mismo corte (mejor sujeción).</div>
-        </div>
-        <div class="relative w-[44px] h-[26px]">
-          <input id="modVida" class="sw" type="checkbox" checked>
-          <div class="switch"></div>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <div class="text-sm font-semibold">Mejora de proceso</div>
-          <div class="text-xs" style="color:var(--rf-muted)">Mejor sujeción → más agresivo → más pzas/turno.</div>
-        </div>
-        <div class="relative w-[44px] h-[26px]">
-          <input id="modProceso" class="sw" type="checkbox" checked>
-          <div class="switch"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Common -->
-    <div class="grid gap-3 mt-5">
-      <label class="text-sm" title="Costo total de operar la máquina por hora (incluye MO, energía, overhead).">Costo por hora máquina (USD)
-        <input id="costoHora" type="number" value="50" class="mt-1 w-full">
-      </label>
-
-      <label class="text-sm" title="Piezas producidas por mes para este proceso.">Piezas por mes
-        <input id="pmes" type="number" value="10000" class="mt-1 w-full">
-      </label>
-
-      <label class="text-sm" title="CAPEX único (holders, accesorios, capacitación, etc).">Inversión inicial (USD)
-        <input id="capex" type="number" value="2000" class="mt-1 w-full">
-      </label>
-
-      <label class="text-sm" title="OPEX mensual (mantenimiento/servicio, si aplica).">Mensualidad (USD)
-        <input id="mensualidad" type="number" value="0" class="mt-1 w-full">
-      </label>
-    </div>
-
-    <!-- Tiempo module -->
-    <div id="boxTiempo" class="mt-5 card p-4" style="background:rgba(40,85,108,0.10); border-color:rgba(40,85,108,0.35);">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-semibold">Tiempo</h3>
-        <span class="text-xs" style="color:var(--rf-muted)">switch granular</span>
-      </div>
-
-      <div class="grid gap-3 mt-3">
-        <div class="flex items-center justify-between gap-3">
-          <div class="text-sm">Ciclo (Actual vs Propuesta)</div>
-          <div class="relative w-[44px] h-[26px]">
-            <input id="incCiclo" class="sw" type="checkbox" checked>
-            <div class="switch"></div>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="pill"><span style="width:8px;height:8px;border-radius:999px;background:var(--rf-green);display:inline-block;"></span>ROI por holders</span>
+            <span class="pill"><span style="width:8px;height:8px;border-radius:999px;background:var(--rf-turq);display:inline-block;"></span>Modular</span>
+            <span class="pill"><span style="width:8px;height:8px;border-radius:999px;background:var(--rf-red);display:inline-block;"></span>Reporte 1 página</span>
           </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-xs">Ciclo actual (s)
-            <input id="cicloA" type="number" value="60" class="mt-1 w-full">
-          </label>
-          <label class="text-xs">Ciclo propuesto (s)
-            <input id="cicloP" type="number" value="45" class="mt-1 w-full">
-          </label>
-        </div>
 
-        <div class="flex items-center justify-between gap-3">
-          <div class="text-sm">Cambios en máquina (cambios/mes × min/cambio)</div>
-          <div class="relative w-[44px] h-[26px]">
-            <input id="incCambios" class="sw" type="checkbox" checked>
-            <div class="switch"></div>
+          <h1 class="text-3xl md:text-5xl font-black leading-tight">
+            Calculadora de ROI <span style="color:var(--rf-green)">REGO-FIX</span>
+          </h1>
+          <p class="mt-3 max-w-xl" style="color:var(--muted)">
+            Enfoque directo: <b>ahorro por tiempo</b> (ciclo, cambios, setup/paros),
+            <b>ahorro por vida de herramienta</b> y <b>ahorro por mejora de proceso</b> (más avance, más piezas por turno).
+          </p>
+
+          <div class="mt-5 flex flex-wrap gap-3">
+            <button id="btnCalcularTop" class="btn btn-primary">Calcular</button>
+            <button id="btnPrintTop" class="btn btn-danger">Generar Reporte (PDF)</button>
+            <button id="btnReset" class="btn btn-ghost" title="Regresa a valores ejemplo">Reset</button>
           </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-xs">Cambios/mes (actual)
-            <input id="cambiosA" type="number" value="20" class="mt-1 w-full">
-          </label>
-          <label class="text-xs">Cambios/mes (propuesto)
-            <input id="cambiosP" type="number" value="12" class="mt-1 w-full">
-          </label>
-          <label class="text-xs">Min/cambio (actual)
-            <input id="minCambioA" type="number" value="8" class="mt-1 w-full">
-          </label>
-          <label class="text-xs">Min/cambio (propuesto)
-            <input id="minCambioP" type="number" value="6" class="mt-1 w-full">
-          </label>
+
+          <p class="mt-3 text-xs" style="color:rgba(229,230,228,0.55)">
+            Nota: esta calculadora no “vende humo”; si desactivas módulos, el ROI baja. Así debe ser.
+          </p>
         </div>
 
-        <div class="flex items-center justify-between gap-3">
-          <div class="text-sm">Tiempo muerto mensual (min/mes)</div>
-          <div class="relative w-[44px] h-[26px]">
-            <input id="incTM" class="sw" type="checkbox" checked>
-            <div class="switch"></div>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-xs">T. muerto actual (min/mes)
-            <input id="tmuertoA" type="number" value="120" class="mt-1 w-full">
-          </label>
-          <label class="text-xs">T. muerto propuesto (min/mes)
-            <input id="tmuertoP" type="number" value="30" class="mt-1 w-full">
-          </label>
-        </div>
-      </div>
-    </div>
+        <div class="hidden md:block">
+          <div class="card p-5">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-bold" style="color:rgba(229,230,228,0.8)">Solución REGO-FIX (referencia)</p>
+                <p class="text-xs" style="color:var(--muted)">Selecciona el sistema para precargar items típicos en el carrito.</p>
+              </div>
+              <span class="pill">CAPEX/OPEX</span>
+            </div>
 
-    <!-- Vida module -->
-    <div id="boxVida" class="mt-5 card p-4" style="background:rgba(183,201,31,0.08); border-color:rgba(183,201,31,0.32);">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-semibold">Vida de herramienta</h3>
-        <span class="text-xs" style="color:var(--rf-muted)">por ciclo útil</span>
-      </div>
+            <div class="mt-3 grid gap-3">
+              <label class="text-sm font-semibold">
+                Sistema / línea
+                <select id="presetSistema" class="mt-1 w-full">
+                  <option value="powrgrip">powRgrip (PG)</option>
+                  <option value="er">ER</option>
+                  <option value="microrunout">micro-runout / precisión</option>
+                  <option value="unitec">Unitec (tuercas)</option>
+                  <option value="metrology">Metrología</option>
+                  <option value="cleaning">Limpieza / accesorios</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+              </label>
 
-      <div class="grid gap-3 mt-3">
-        <div class="flex items-center justify-between gap-3">
-          <div class="text-sm">Incluir cálculo de vida</div>
-          <div class="relative w-[44px] h-[26px]">
-            <input id="incVida" class="sw" type="checkbox" checked>
-            <div class="switch"></div>
+              <div class="grid grid-cols-2 gap-3">
+                <button id="btnPresetAdd" class="btn btn-primary w-full">Cargar ítems típicos</button>
+                <button id="btnPresetClear" class="btn btn-ghost w-full">Vaciar carrito</button>
+              </div>
+
+              <div class="text-xs" style="color:rgba(229,230,228,0.65)">
+                Los ítems “típicos” solo son plantilla (sin precios). Tú defines cantidades y costos reales.
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <label class="text-xs">Vida actual (pzas)
-            <input id="vidaA" type="number" value="1300" class="mt-1 w-full">
-          </label>
-          <label class="text-xs">Vida propuesta (pzas)
-            <input id="vidaP" type="number" value="2500" class="mt-1 w-full">
-          </label>
-        </div>
-
-        <label class="text-xs" title="Costo por inserto/herramienta que se consume por vida.">Costo herramienta (USD)
-          <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full">
-        </label>
       </div>
-    </div>
-
-    <!-- Proceso module -->
-    <div id="boxProceso" class="mt-5 card p-4" style="background:rgba(88,213,211,0.09); border-color:rgba(88,213,211,0.30);">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-semibold">Mejora de proceso</h3>
-        <span class="text-xs" style="color:var(--rf-muted)">más velocidad por robustez</span>
-      </div>
-
-      <div class="grid gap-3 mt-3">
-        <div class="flex items-center justify-between gap-3">
-          <div class="text-sm">Aumentar output (pzas/mes)</div>
-          <div class="relative w-[44px] h-[26px]">
-            <input id="incOutput" class="sw" type="checkbox">
-            <div class="switch"></div>
-          </div>
-        </div>
-        <label class="text-xs" title="Si el proceso mejora y permite producir más, captura el incremento mensual (pzas).">Incremento de piezas/mes (Δ)
-          <input id="deltaPmes" type="number" value="0" class="mt-1 w-full">
-        </label>
-        <label class="text-xs" title="Margen estimado por pieza (si quieres monetizar el output extra).">Margen por pieza (USD)
-          <input id="margenPza" type="number" value="0" class="mt-1 w-full">
-        </label>
-      </div>
-    </div>
-
-    <div class="space-y-3 mt-5">
-      <button id="btnCalcular" class="hidden md:block w-full px-4 py-2 rounded-md btn-primary">Calcular</button>
-      <button id="btnPrint" class="w-full px-4 py-2 rounded-md btn-secondary">Generar Reporte (PDF)</button>
     </div>
   </section>
 
-  <!-- RIGHT: report -->
-  <div id="reportSection" class="lg:col-span-6 grid gap-4 sm:gap-6 lg:grid-cols-6">
+  <main class="max-w-6xl mx-auto px-4 pt-8 pb-28 md:pb-16 grid gap-5 lg:grid-cols-8">
 
-    <section class="card p-5 lg:col-span-4">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-lg font-semibold">Comparativa</h2>
-        <span class="text-xs" style="color:var(--rf-muted)">Actual vs Propuesta</span>
-      </div>
-      <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
-        <table class="w-full border-separate [border-spacing:0_8px] text-sm">
-          <thead>
-            <tr style="color:var(--rf-muted)">
-              <th class="text-left font-medium px-2">Métrica</th>
-              <th class="text-right font-medium px-2">Actual</th>
-              <th class="text-right font-medium px-2">Propuesta</th>
-              <th class="text-right font-medium px-2">Δ</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyComp"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card p-5 lg:col-span-2">
-      <h2 class="text-lg font-semibold">Resultados</h2>
-      <div class="mt-3 grid gap-3">
-        <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(183,201,31,0.10), rgba(229,230,228,0.02)); border:1px solid rgba(183,201,31,0.20);">
-          <div class="text-sm">Ahorro mensual (bruto)</div>
-          <div id="ahorro" class="text-right font-bold text-xl" style="color:var(--good)">$0</div>
-        </div>
-
-        <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(88,213,211,0.09), rgba(229,230,228,0.02)); border:1px solid rgba(88,213,211,0.18);">
-          <div class="text-sm">Ahorro por tiempo muerto (USD/mes)</div>
-          <div id="ahorroTM" class="text-right font-bold text-lg" style="color:var(--cyan)">$0</div>
-        </div>
-
-        <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(40,85,108,0.10), rgba(229,230,228,0.02)); border:1px solid rgba(40,85,108,0.22);">
-          <div class="text-sm">Neto mensual (ahorro - mensualidad)</div>
-          <div id="netoMensual" class="text-right font-bold text-lg">$0</div>
-        </div>
-
-        <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(40,85,108,0.08), rgba(229,230,228,0.02)); border:1px solid rgba(40,85,108,0.18);">
-          <div class="text-sm">ROI anual</div>
-          <div id="roi" class="text-right font-bold text-lg" style="color:var(--rf-teal)">0%</div>
-        </div>
-
-        <div class="rounded-lg p-3" style="background:linear-gradient(180deg, rgba(170,200,45,0.10), rgba(229,230,228,0.02)); border:1px solid rgba(170,200,45,0.20);">
-          <div class="text-sm">Payback (mes)</div>
-          <div id="payback" class="text-right font-bold text-lg" style="color:var(--warn)">—</div>
-        </div>
-      </div>
-
-      <div class="mt-4 text-xs" style="color:var(--rf-muted)">
-        Nota: ROI usa <strong>neto</strong> (ahorro − mensualidad). Payback cuenta meses hasta recuperar el CAPEX.
-      </div>
-    </section>
-
-    <!-- Visuals -->
-    <section id="visuales" class="card p-5 lg:col-span-6">
-      <h2 class="text-lg font-semibold">Visuales</h2>
-      <div class="mt-3 grid grid-cols-1 gap-6 max-w-5xl mx-auto">
-        <div class="rounded-lg p-3" style="border:1px solid var(--rf-line);">
-          <p class="text-sm font-semibold">Distribución de ahorros</p>
-          <div id="vizAhorros" class="mt-4 min-h-[320px]"></div>
-        </div>
-        <div class="rounded-lg p-3" style="border:1px solid var(--rf-line);">
-          <p class="text-sm font-semibold">Comparativa rápida</p>
-          <div id="vizPerf" class="mt-4"></div>
-        </div>
-        <div class="rounded-lg p-3" style="border:1px solid var(--rf-line);">
-          <p class="text-sm font-semibold">Flujo mensual y payback</p>
-          <div id="vizCash" class="mt-4 min-h-[320px]"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Items / Holders selection (optional) -->
-    <section id="itemsSection" class="card p-5 lg:col-span-6">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <!-- Left inputs -->
+    <section id="inputCol" class="card p-5 lg:col-span-3">
+      <div class="flex items-start justify-between gap-3">
         <div>
-          <h2 class="text-lg font-semibold">Items REGO-FIX (holders & accesorios)</h2>
-          <p class="text-sm" style="color:var(--rf-muted)">Lista editable: define tu paquete y que se sume al CAPEX.</p>
+          <h2 class="text-lg font-black">Entradas</h2>
+          <p class="text-xs mt-1" style="color:var(--muted)">
+            Activa/desactiva módulos. El cálculo se arma con switches (como debe ser).
+          </p>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="btnAddItem" class="px-3 py-2 rounded-md btn-ghost text-sm">+ Agregar item</button>
-          <button id="btnClearItems" class="px-3 py-2 rounded-md btn-ghost text-sm">Limpiar</button>
+        <button id="btnHelp" class="btn btn-ghost" title="Qué significa cada módulo">Ayuda</button>
+      </div>
+
+      <!-- Switches (3 frentes) -->
+      <div class="mt-4 subcard p-4">
+        <h3 class="text-sm font-black">Módulos de ahorro</h3>
+
+        <div class="mt-3 grid gap-3">
+
+          <!-- Tiempo -->
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-extrabold">Ahorro por tiempo</p>
+              <p class="text-xs" style="color:var(--muted)">Ciclo + cambios + setup/paros</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="mTiempo" class="toggle" type="checkbox" checked />
+              <span class="switch" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <!-- Vida -->
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-extrabold">Ahorro por vida de herramienta</p>
+              <p class="text-xs" style="color:var(--muted)">Menos consumo por mes</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="mVida" class="toggle" type="checkbox" checked />
+              <span class="switch" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <!-- Proceso -->
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-extrabold">Ahorro por mejora de proceso</p>
+              <p class="text-xs" style="color:var(--muted)">Más avance/estabilidad → más piezas</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="mProceso" class="toggle" type="checkbox" checked />
+              <span class="switch" aria-hidden="true"></span>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <div class="mt-4 overflow-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr style="color:var(--rf-muted)">
-              <th class="text-left py-2">Incluir</th>
-              <th class="text-left py-2">Item</th>
-              <th class="text-left py-2">Categoría</th>
-              <th class="text-right py-2">Qty</th>
-              <th class="text-right py-2">Precio (USD)</th>
-              <th class="text-right py-2">Subtotal</th>
-              <th class="text-right py-2"></th>
-            </tr>
-          </thead>
-          <tbody id="itemsTbody"></tbody>
-        </table>
+      <!-- Parámetros base -->
+      <div class="mt-4 grid gap-3">
+        <div class="subcard p-4">
+          <h3 class="text-sm font-black">Producción & costos</h3>
+
+          <div class="grid gap-3 mt-3">
+            <label class="text-sm font-semibold" title="Volumen mensual del proceso (piezas/mes).">
+              Piezas por mes
+              <input id="pmes" type="number" value="10000" class="mt-1 w-full" />
+            </label>
+
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-sm font-semibold" title="Costo total de operar la máquina por hora (USD/h).">
+                Costo hora máquina (USD)
+                <input id="costoHora" type="number" value="50" class="mt-1 w-full" />
+              </label>
+              <label class="text-sm font-semibold" title="Moneda solo informativa (el cálculo es numérico).">
+                Moneda
+                <select id="moneda" class="mt-1 w-full">
+                  <option value="USD" selected>USD</option>
+                  <option value="MXN">MXN</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-sm font-semibold" title="Costo mensual recurrente (mantenimiento/contrato).">
+                OPEX mensual (USD)
+                <input id="opexMensual" type="number" value="0" class="mt-1 w-full" />
+              </label>
+              <label class="text-sm font-semibold" title="CAPEX fijo adicional si quieres sumarlo aparte del carrito.">
+                CAPEX extra (USD)
+                <input id="capexExtra" type="number" value="0" class="mt-1 w-full" />
+              </label>
+            </div>
+
+            <p class="text-xs" style="color:rgba(229,230,228,0.65)">
+              Tip: si vas a meter todo en el carrito REGO-FIX, deja CAPEX extra en 0.
+            </p>
+          </div>
+        </div>
+
+        <!-- Ahorro por TIEMPO (submódulos) -->
+        <div id="blkTiempo" class="subcard p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-black">Tiempo</h3>
+              <p class="text-xs" style="color:var(--muted)">Submódulos: ciclo, cambios, setup/paros</p>
+            </div>
+            <span class="pill">módulo</span>
+          </div>
+
+          <div class="mt-3 grid gap-3">
+
+            <!-- ciclo -->
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="font-extrabold text-sm">Ciclo</p>
+                <p class="text-xs" style="color:var(--muted)">segundos por pieza</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="tCiclo" class="toggle" type="checkbox" checked />
+                <span class="switch" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div id="blkCiclo" class="grid grid-cols-2 gap-3">
+              <label class="text-sm font-semibold" title="Tiempo de ciclo actual por pieza (s).">
+                Ciclo actual (s)
+                <input id="cicloA" type="number" value="60" class="mt-1 w-full" />
+              </label>
+              <label class="text-sm font-semibold" title="Tiempo de ciclo propuesto (s).">
+                Ciclo propuesto (s)
+                <input id="cicloP" type="number" value="45" class="mt-1 w-full" />
+              </label>
+            </div>
+
+            <!-- cambios de herramienta -->
+            <div class="border-t" style="border-color:rgba(229,230,228,0.10)"></div>
+
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="font-extrabold text-sm">Cambios de herramienta</p>
+                <p class="text-xs" style="color:var(--muted)">cambios/mes * min/cambio</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="tCambios" class="toggle" type="checkbox" checked />
+                <span class="switch" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div id="blkCambios" class="grid grid-cols-2 gap-3">
+              <label class="text-sm font-semibold" title="Cambios de herramienta por mes (estimado).">
+                Cambios/mes (actual)
+                <input id="cambiosMesA" type="number" value="120" class="mt-1 w-full" />
+              </label>
+              <label class="text-sm font-semibold" title="Minutos perdidos por cada cambio (incluye indexado, medición, ajuste).">
+                Min/cambio
+                <input id="minPorCambio" type="number" value="3" class="mt-1 w-full" />
+              </label>
+              <label class="text-sm font-semibold col-span-2" title="Cambios/mes propuestos (menores por mejor sujeción / menos vibración / mejor repetibilidad).">
+                Cambios/mes (propuesto)
+                <input id="cambiosMesP" type="number" value="70" class="mt-1 w-full" />
+              </label>
+            </div>
+
+            <!-- setup / paros -->
+            <div class="border-t" style="border-color:rgba(229,230,228,0.10)"></div>
+
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="font-extrabold text-sm">Setup / paros</p>
+                <p class="text-xs" style="color:var(--muted)">minutos/mes</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="tParos" class="toggle" type="checkbox" checked />
+                <span class="switch" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div id="blkParos" class="grid grid-cols-2 gap-3">
+              <label class="text-sm font-semibold" title="Minutos totales de paro por mes (ajustes, vibración, rework, cambios no planeados).">
+                Paro actual (min/mes)
+                <input id="paroA" type="number" value="120" class="mt-1 w-full" />
+              </label>
+              <label class="text-sm font-semibold" title="Minutos objetivo por mes con la mejora.">
+                Paro propuesto (min/mes)
+                <input id="paroP" type="number" value="30" class="mt-1 w-full" />
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Ahorro por VIDA -->
+        <div id="blkVida" class="subcard p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-black">Vida de herramienta</h3>
+              <p class="text-xs" style="color:var(--muted)">Consumo mensual (tooling)</p>
+            </div>
+            <span class="pill">módulo</span>
+          </div>
+
+          <div class="mt-3 grid gap-3">
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-sm font-semibold" title="Vida útil actual (piezas por herramienta/filo).">
+                Vida actual (pzas)
+                <input id="vidaA" type="number" value="1300" class="mt-1 w-full" />
+              </label>
+              <label class="text-sm font-semibold" title="Vida útil propuesta (piezas por herramienta/filo).">
+                Vida propuesta (pzas)
+                <input id="vidaP" type="number" value="2500" class="mt-1 w-full" />
+              </label>
+            </div>
+
+            <label class="text-sm font-semibold" title="Costo por herramienta/filo (USD).">
+              Costo herramienta (USD)
+              <input id="costoHerr" type="number" value="128.87" class="mt-1 w-full" />
+            </label>
+
+            <p class="text-xs" style="color:rgba(229,230,228,0.65)">
+              Aquí el ahorro es directo: menos herramientas al mes por mayor vida.
+            </p>
+          </div>
+        </div>
+
+        <!-- Ahorro por PROCESO -->
+        <div id="blkProceso" class="subcard p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-black">Mejora de proceso</h3>
+              <p class="text-xs" style="color:var(--muted)">Más avance / más piezas por turno</p>
+            </div>
+            <span class="pill">módulo</span>
+          </div>
+
+          <div class="mt-3 grid gap-3">
+            <label class="text-sm font-semibold" title="Incremento adicional de productividad (%) por estabilidad/sujeción (más avance, menos vibración).">
+              Mejora adicional de throughput (%)
+              <input id="thrPct" type="number" value="0" class="mt-1 w-full" />
+            </label>
+
+            <label class="text-sm font-semibold" title="Valor económico de producir más piezas. Usualmente: margen/pieza o contribución/pieza (USD).">
+              Valor por pieza extra (USD)
+              <input id="valorPieza" type="number" value="0" class="mt-1 w-full" />
+            </label>
+
+            <p class="text-xs" style="color:rgba(229,230,228,0.65)">
+              Si no tienes margen/pieza, déjalo en 0 y este módulo no “inventará” ahorros.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <button id="btnCalcular" class="btn btn-primary w-full">Calcular</button>
+          <button id="btnPrint" class="btn btn-danger w-full">Generar PDF</button>
+        </div>
       </div>
 
-      <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div class="text-sm" style="color:var(--rf-muted)">
-          Tip: si tu CAPEX viene “del paquete”, activa “Incluir” en los items y listo.
+      <!-- Carrito REGO-FIX -->
+      <div class="mt-5 subcard p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-black">Carrito REGO-FIX (holders + items)</h3>
+            <p class="text-xs" style="color:var(--muted)">Define tu CAPEX y tu OPEX real (cantidades + precio).</p>
+          </div>
+          <span class="pill">CAPEX / OPEX</span>
         </div>
-        <div class="text-sm font-semibold">
-          CAPEX (manual): <span class="font-mono" id="capexManual">$0.00</span> |
-          Items incluidos: <span class="font-mono" id="capexItems">$0.00</span> |
-          <span style="color:var(--rf-green)">CAPEX total:</span> <span class="font-mono" id="capexTotal">$0.00</span>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="btnAddItem" class="btn btn-primary">+ Agregar ítem</button>
+          <button id="btnAddCommon" class="btn btn-ghost" title="Agrega una línea con ejemplos (sin precio).">+ Común</button>
+        </div>
+
+        <div class="mt-3 overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr style="color:rgba(229,230,228,0.8)">
+                <th class="text-left py-2">Ítem</th>
+                <th class="text-right py-2">Qty</th>
+                <th class="text-right py-2">USD</th>
+                <th class="text-right py-2">Tipo</th>
+                <th class="text-right py-2">Total</th>
+                <th class="text-right py-2"></th>
+              </tr>
+            </thead>
+            <tbody id="cartBody"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <div class="stat">
+            <div class="text-xs" style="color:var(--muted)">CAPEX carrito</div>
+            <div id="capexCarrito" class="text-lg font-black">$0.00</div>
+          </div>
+          <div class="stat">
+            <div class="text-xs" style="color:var(--muted)">OPEX carrito (mensual)</div>
+            <div id="opexCarrito" class="text-lg font-black">$0.00</div>
+          </div>
         </div>
       </div>
+
     </section>
 
+    <!-- Right report -->
+    <section class="lg:col-span-5 grid gap-5" id="reportCol">
+
+      <div id="reportGrid" class="grid gap-5">
+
+        <!-- Comparativa -->
+        <section class="card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-black">Comparativa A vs P</h2>
+              <p class="text-xs" style="color:var(--muted)">Lo que cambia con el holder/sistema, en números.</p>
+            </div>
+            <span class="pill" id="pillSistema">Sistema: powRgrip</span>
+          </div>
+
+          <div class="mt-3 overflow-auto -mx-2 sm:mx-0">
+            <table class="w-full border-separate [border-spacing:0_8px] text-sm">
+              <thead>
+                <tr style="color:rgba(229,230,228,0.75)">
+                  <th class="text-left font-semibold px-2">Métrica</th>
+                  <th class="text-right font-semibold px-2">Actual</th>
+                  <th class="text-right font-semibold px-2">Propuesta</th>
+                  <th class="text-right font-semibold px-2">Δ</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyComp"></tbody>
+            </table>
+          </div>
+
+          <div class="mt-3 text-xs" style="color:rgba(229,230,228,0.6)">
+            Δ en verde = mejora; Δ en rojo = empeora; turquesa = cambio pequeño.
+          </div>
+        </section>
+
+        <!-- Resultados -->
+        <section class="card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-black">Resultados</h2>
+              <p class="text-xs" style="color:var(--muted)">Ahorro bruto, neto, ROI y payback.</p>
+            </div>
+            <span class="pill" id="pillMoneda">Moneda: USD</span>
+          </div>
+
+          <div class="mt-4 grid gap-3 md:grid-cols-2">
+            <div class="stat">
+              <div class="text-xs" style="color:var(--muted)">Ahorro mensual (bruto)</div>
+              <div id="kpiAhorro" class="text-2xl font-black" style="color:var(--good)">$0.00</div>
+            </div>
+
+            <div class="stat">
+              <div class="text-xs" style="color:var(--muted)">Neto mensual (bruto - OPEX)</div>
+              <div id="kpiNeto" class="text-2xl font-black">$0.00</div>
+            </div>
+
+            <div class="stat">
+              <div class="text-xs" style="color:var(--muted)">CAPEX total (carrito + extra)</div>
+              <div id="kpiCapex" class="text-xl font-black">$0.00</div>
+            </div>
+
+            <div class="stat">
+              <div class="text-xs" style="color:var(--muted)">OPEX mensual total (carrito + campo)</div>
+              <div id="kpiOpex" class="text-xl font-black">$0.00</div>
+            </div>
+
+            <div class="stat">
+              <div class="text-xs" style="color:var(--muted)">ROI anual</div>
+              <div id="kpiROIAnual" class="text-xl font-black" style="color:var(--rf-bluegray)">0%</div>
+            </div>
+
+            <div class="stat">
+              <div class="text-xs" style="color:var(--muted)">Payback (mes)</div>
+              <div id="kpiPayback" class="text-xl font-black" style="color:var(--rf-turq)">—</div>
+            </div>
+          </div>
+
+          <div class="mt-3 text-xs" style="color:rgba(229,230,228,0.65)">
+            Payback se calcula con el neto mensual. Si neto ≤ 0, payback = — (porque no hay retorno).
+          </div>
+        </section>
+
+        <!-- Visuales -->
+        <section id="visuales" class="card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-black">Visuales</h2>
+              <p class="text-xs" style="color:var(--muted)">Distribución y flujo mensual.</p>
+            </div>
+            <span class="pill">imprimible</span>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 gap-5">
+
+            <div class="subcard p-4">
+              <p class="text-sm font-black">Distribución de ahorros</p>
+              <div id="vizAhorros" class="mt-3 minh min-h-[300px]"></div>
+            </div>
+
+            <div class="subcard p-4">
+              <p class="text-sm font-black">Comparativa rápida</p>
+              <div id="vizPerf" class="mt-3"></div>
+            </div>
+
+            <div class="subcard p-4">
+              <p class="text-sm font-black">Flujo mensual y payback</p>
+              <div id="vizCash" class="mt-3 minh min-h-[300px]"></div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Mobile bottom CTA -->
+  <div class="md:hidden fixed inset-x-0 bottom-0 z-40 safe-bottom px-4 py-2">
+    <button id="btnCalcularMobile" class="btn btn-primary w-full">Calcular</button>
   </div>
-</main>
 
-<div class="md:hidden fixed inset-x-0 bottom-0 z-40 safe-bottom px-4 py-2">
-  <button id="btnCalcularMobile" class="w-full px-4 py-3 rounded-md btn-primary">Calcular</button>
-</div>
+  <!-- Help panel -->
+  <div id="helpPanel" class="fixed inset-0 hidden" style="z-index:9997;">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="absolute inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center p-4">
+      <div class="card p-5 w-full md:max-w-2xl">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-black">Cómo usar (sin cuentos)</h3>
+            <p class="text-xs" style="color:var(--muted)">
+              Activa módulos, llena datos reales, y mete tus holders/items en el carrito.
+            </p>
+          </div>
+          <button id="btnHelpClose" class="btn btn-ghost">Cerrar</button>
+        </div>
 
-<footer class="py-8 mt-10 text-center">
-  <div class="max-w-6xl mx-auto px-4 text-sm" style="color:var(--rf-muted)">
-    © 2026 REGO-FIX ROI Calculator — <span style="color:var(--rf-gray-3)">by alexrasa</span>
+        <div class="mt-4 grid gap-3 text-sm" style="color:rgba(229,230,228,0.85)">
+          <div class="subcard p-4">
+            <p class="font-extrabold">Tiempo</p>
+            <ul class="list-disc pl-5 mt-2 text-sm" style="color:rgba(229,230,228,0.75)">
+              <li><b>Ciclo:</b> compara segundos/pieza (A vs P).</li>
+              <li><b>Cambios:</b> (cambios/mes * min/cambio) convertido a USD con costo hora.</li>
+              <li><b>Paros:</b> minutos/mes por ajustes/vibración/rework.</li>
+            </ul>
+          </div>
+
+          <div class="subcard p-4">
+            <p class="font-extrabold">Vida</p>
+            <p class="mt-2 text-sm" style="color:rgba(229,230,228,0.75)">
+              Si el holder mejora la sujeción, la herramienta dura más (piezas). Eso reduce consumo mensual.
+            </p>
+          </div>
+
+          <div class="subcard p-4">
+            <p class="font-extrabold">Proceso</p>
+            <p class="mt-2 text-sm" style="color:rgba(229,230,228,0.75)">
+              Si quieres monetizar “más piezas por turno”, captura el % extra y el valor por pieza (margen).
+              Si no tienes margen real, déjalo en 0.
+            </p>
+          </div>
+        </div>
+
+        <p class="mt-4 text-xs" style="color:rgba(229,230,228,0.6)">
+          “by alexrasa” se imprime en el footer del reporte.
+        </p>
+      </div>
+    </div>
   </div>
-</footer>
 
-<script>
-  // ===== Mobile menu =====
-  const mOpen  = document.getElementById('mobileOpenBtn');
-  const mClose = document.getElementById('mobileCloseBtn');
-  const mPanel = document.getElementById('mobilePanel');
-  const mBg    = document.getElementById('mobileBackdrop');
-  const mLinks = document.querySelectorAll('.mobile-link');
+  <footer class="py-8 mt-8 text-center">
+    <div class="max-w-6xl mx-auto px-4 text-sm" style="color:rgba(229,230,228,0.6)">
+      © 2026 — ROI Holders REGO-FIX <span style="opacity:.7">•</span> <span style="font-size:12px;">by alexrasa</span>
+    </div>
+  </footer>
 
-  function toggleMenu(open){
-    if(open){
-      mBg?.classList.remove('pointer-events-none','opacity-0');
-      mBg?.classList.add('pointer-events-auto','opacity-100');
-      mPanel?.classList.remove('translate-x-full');
-      mPanel?.classList.add('translate-x-0');
-      document.body.style.overflow='hidden';
-    }else{
-      mBg?.classList.remove('pointer-events-auto','opacity-100');
-      mBg?.classList.add('pointer-events-none','opacity-0');
-      mPanel?.classList.remove('translate-x-0');
-      mPanel?.classList.add('translate-x-full');
-      document.body.style.overflow='';
-    }
-  }
-  mOpen?.addEventListener('click',()=>toggleMenu(true));
-  mClose?.addEventListener('click',()=>toggleMenu(false));
-  mBg?.addEventListener('click',()=>toggleMenu(false));
-  mLinks.forEach(l=>l.addEventListener('click',()=>toggleMenu(false)));
-  window.addEventListener('keydown',(e)=>{ if(e.key==='Escape') toggleMenu(false); });
+  <script>
+    /* ============================
+       Utils
+    ============================ */
+    const $ = (id) => document.getElementById(id);
 
-  // ===== Utilities =====
-  const $ = (id)=>document.getElementById(id);
-  function num(id){ return +($(id)?.value ?? 0) || 0; }
-  function fmt(n){
-    return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
-  function safeDiv(a,b){ return b===0 ? 0 : a/b; }
-
-  // ===== Items model =====
-  const defaultItems = [
-    {on:true,  name:'Holder principal', cat:'Holders', qty:1, price:1200},
-    {on:true,  name:'Collets ER',       cat:'Collets', qty:6, price:35},
-    {on:false, name:'Tuerca/Accesorio', cat:'Accesorios', qty:2, price:25},
-  ];
-  let items = JSON.parse(localStorage.getItem('rf_items') || 'null') || defaultItems;
-
-  function itemRow(i, it){
-    const cats = ['Holders','Collets','PowRgrip','Accesorios','Torque','Presetting','Otro'];
-    const opts = cats.map(c=>`<option value="${c}" ${it.cat===c?'selected':''}>${c}</option>`).join('');
-    const subtotal = (it.on ? (it.qty*it.price) : 0);
-    return `
-      <tr class="border-t" style="border-color:var(--rf-line)">
-        <td class="py-2">
-          <input type="checkbox" ${it.on?'checked':''} data-act="toggle" data-i="${i}">
-        </td>
-        <td class="py-2">
-          <input type="text" value="${escapeHtml(it.name)}" class="w-full" data-act="name" data-i="${i}">
-        </td>
-        <td class="py-2">
-          <select class="w-full" data-act="cat" data-i="${i}">${opts}</select>
-        </td>
-        <td class="py-2 text-right">
-          <input type="number" min="0" step="1" value="${it.qty}" class="w-24 text-right" data-act="qty" data-i="${i}">
-        </td>
-        <td class="py-2 text-right">
-          <input type="number" min="0" step="0.01" value="${it.price}" class="w-28 text-right" data-act="price" data-i="${i}">
-        </td>
-        <td class="py-2 text-right font-mono tabular-nums">$${fmt(subtotal)}</td>
-        <td class="py-2 text-right">
-          <button class="px-2 py-1 rounded btn-ghost text-xs" data-act="del" data-i="${i}">Eliminar</button>
-        </td>
-      </tr>
-    `;
-  }
-  function escapeHtml(s){
-    return String(s||'').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
-  }
-  function saveItems(){
-    localStorage.setItem('rf_items', JSON.stringify(items));
-  }
-  function capexItemsTotal(){
-    return items.reduce((s,it)=> s + (it.on ? (Number(it.qty||0)*Number(it.price||0)) : 0), 0);
-  }
-  function renderItems(){
-    const tbody = $('itemsTbody'); if(!tbody) return;
-    tbody.innerHTML = items.map((it,i)=>itemRow(i,it)).join('');
-    const manual = num('capex');
-    const itemsTot = capexItemsTotal();
-    $('capexManual').textContent = `$${fmt(manual)}`;
-    $('capexItems').textContent  = `$${fmt(itemsTot)}`;
-    $('capexTotal').textContent  = `$${fmt(manual + itemsTot)}`;
-  }
-
-  $('btnAddItem')?.addEventListener('click', ()=>{
-    items.push({on:true,name:'Nuevo item',cat:'Otro',qty:1,price:0});
-    saveItems(); renderItems(); calcular();
-  });
-  $('btnClearItems')?.addEventListener('click', ()=>{
-    items = [];
-    saveItems(); renderItems(); calcular();
-  });
-  $('itemsTbody')?.addEventListener('input', (e)=>{
-    const t = e.target;
-    const i = +t.getAttribute('data-i');
-    const act = t.getAttribute('data-act');
-    if(Number.isNaN(i) || !act) return;
-
-    if(act==='toggle') items[i].on = t.checked;
-    if(act==='name')   items[i].name = t.value;
-    if(act==='cat')    items[i].cat = t.value;
-    if(act==='qty')    items[i].qty = +t.value || 0;
-    if(act==='price')  items[i].price = +t.value || 0;
-    saveItems(); renderItems(); calcular();
-  });
-  $('itemsTbody')?.addEventListener('click', (e)=>{
-    const t = e.target;
-    if(!(t instanceof HTMLElement)) return;
-    const act = t.getAttribute('data-act');
-    if(act!=='del') return;
-    const i = +t.getAttribute('data-i');
-    items.splice(i,1);
-    saveItems(); renderItems(); calcular();
-  });
-
-  // ===== Enable/disable module sections =====
-  function setDisabled(sectionId, disabled){
-    const box = $(sectionId); if(!box) return;
-    box.style.opacity = disabled ? '0.45' : '1';
-    box.querySelectorAll('input,select,textarea,button').forEach(el=>{
-      if(el.id === 'btnPrint') return;
-      if(el.classList.contains('sw')) return; // switches remain clickable
-      el.disabled = disabled;
-    });
-  }
-  function applyModules(){
-    const t = $('modTiempo')?.checked ?? true;
-    const v = $('modVida')?.checked ?? true;
-    const p = $('modProceso')?.checked ?? true;
-    setDisabled('boxTiempo', !t);
-    setDisabled('boxVida', !v);
-    setDisabled('boxProceso', !p);
-  }
-
-  ['modTiempo','modVida','modProceso'].forEach(id=> $(id)?.addEventListener('change', ()=>{ applyModules(); calcular(); }));
-
-  // ===== Calculator =====
-  function calcular(){
-    // Modules
-    const modTiempo  = $('modTiempo')?.checked ?? true;
-    const modVida    = $('modVida')?.checked ?? true;
-    const modProceso = $('modProceso')?.checked ?? true;
-
-    // Common
-    const costoHora  = num('costoHora');
-    const pmesBase   = num('pmes');
-    const capexManual= num('capex');
-    const capexItems = capexItemsTotal();
-    const capex      = capexManual + capexItems;
-    const mensualidad= num('mensualidad');
-
-    // Proceso module (optional output)
-    const incOutput = $('incOutput')?.checked ?? false;
-    const deltaPmes = num('deltaPmes');
-    const margenPza = num('margenPza');
-    const extraOutputUSD = (modProceso && incOutput) ? Math.max(0, deltaPmes) * Math.max(0, margenPza) : 0;
-
-    // Tiempo module
-    const incCiclo   = $('incCiclo')?.checked ?? true;
-    const incCambios = $('incCambios')?.checked ?? true;
-    const incTM      = $('incTM')?.checked ?? true;
-
-    const cicloA = num('cicloA');
-    const cicloP = num('cicloP');
-
-    // ahorro por ciclo: horas actuales (pmes*cicloA/3600) * costoHora * %reducción
-    const ahorroCiclo = (modTiempo && incCiclo && cicloA>0 && cicloP>0)
-      ? Math.max(0, (1 - (cicloP/cicloA))) * costoHora * (pmesBase * cicloA / 3600)
-      : 0;
-
-    // Cambios/mes * min/cambio -> se convierte a horas * costoHora
-    const cambiosA = num('cambiosA');
-    const cambiosP = num('cambiosP');
-    const minCambioA = num('minCambioA');
-    const minCambioP = num('minCambioP');
-    const ahorroCambios = (modTiempo && incCambios)
-      ? Math.max(0, ((cambiosA*minCambioA) - (cambiosP*minCambioP))) / 60 * costoHora
-      : 0;
-
-    // Tiempo muerto (min/mes)
-    const tmuertoA = num('tmuertoA');
-    const tmuertoP = num('tmuertoP');
-    const ahorroTM = (modTiempo && incTM)
-      ? Math.max(0, (tmuertoA - tmuertoP)) / 60 * costoHora
-      : 0;
-
-    // Vida module
-    const incVida = $('incVida')?.checked ?? true;
-    const vidaA = num('vidaA');
-    const vidaP = num('vidaP');
-    const costoHerr = num('costoHerr');
-
-    const consA = (vidaA>0) ? (pmesBase / vidaA) : 0;
-    const consP = (vidaP>0) ? (pmesBase / vidaP) : 0;
-    const costoHerrA = consA * costoHerr;
-    const costoHerrP = consP * costoHerr;
-    const ahorroVida = (modVida && incVida) ? Math.max(0, costoHerrA - costoHerrP) : 0;
-
-    // Total
-    const ahorroTotal = Math.max(0, ahorroCiclo + ahorroCambios + ahorroTM + ahorroVida + extraOutputUSD);
-    const neto = ahorroTotal - mensualidad;
-
-    // ROI + Payback
-    const roiAnual = capex > 0 ? ((neto*12) / capex) * 100 : (neto>0 ? Infinity : 0);
-    const paybackMes = (capex > 0 && neto > 0) ? Math.ceil(capex / neto) : -1;
-
-    // Paint KPIs
-    $('ahorro').textContent = `$${fmt(ahorroTotal)}`;
-    $('ahorroTM').textContent = `$${fmt(ahorroTM)}`;
-
-    const netoEl = $('netoMensual');
-    if(netoEl){
-      netoEl.textContent = `$${fmt(neto)}`;
-      netoEl.style.color = neto >= 0 ? 'var(--good)' : 'var(--bad)';
-    }
-    $('roi').textContent = isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
-    $('payback').textContent = paybackMes !== -1 ? `M${paybackMes}` : '—';
-
-    // Table rows
-    const pphA = cicloA>0 ? 3600/cicloA : 0;
-    const pphP = cicloP>0 ? 3600/cicloP : 0;
-    const costPerPieceA = vidaA>0 ? (costoHerr/vidaA) : 0;
-    const costPerPieceP = vidaP>0 ? (costoHerr/vidaP) : 0;
-
-    function delta(a,p,{higherIsBetter=true}={}){
-      if(a===0 && p===0) return {val:0};
-      const d = ((p-a) / (a===0 ? 1 : a)) * 100;
-      return {val:d, higherIsBetter};
-    }
-    function badge(d){
-      const thresholdPct = 3;
-      const absVal = Math.abs(d.val||0);
-      const isImprovement = d.higherIsBetter ? (d.val > 0) : (d.val < 0);
-      let cls = 'badge-mid';
-      if(absVal >= thresholdPct) cls = isImprovement ? 'badge-up' : 'badge-down';
-      const displayed = isFinite(d.val) ? ((d.val>=0?'+':'') + fmt(d.val) + '%') : '—';
-      return `<span class="stat-badge ${cls}">${displayed}</span>`;
-    }
-    function row(name,a,p,opt){
-      const d = delta(a,p,opt||{});
-      return `<tr style="background:transparent; border-bottom:1px solid rgba(229,230,228,0.06);">
-        <td class="px-2 py-2">${name}</td>
-        <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(a)?fmt(a):'—'}</td>
-        <td class="px-2 py-2 text-right font-mono tabular-nums">${isFinite(p)?fmt(p):'—'}</td>
-        <td class="px-2 py-2 text-right">${badge(d)}</td>
-      </tr>`;
+    function num(v){
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
     }
 
-    const rows = [
-      modTiempo && incCiclo   ? row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}) : '',
-      modTiempo && incCiclo   ? row('Piezas por hora', pphA, pphP, {higherIsBetter:true}) : '',
-      modVida   && incVida    ? row('Vida útil (pzas)', vidaA, vidaP, {higherIsBetter:true}) : '',
-      modVida   && incVida    ? row('Costo herramienta/pza (USD)', costPerPieceA, costPerPieceP, {higherIsBetter:false}) : '',
-      modTiempo && incCambios ? row('Cambios/mes', cambiosA, cambiosP, {higherIsBetter:false}) : '',
-      modTiempo && incTM      ? row('Tiempo muerto (min/mes)', tmuertoA, tmuertoP, {higherIsBetter:false}) : '',
-      row('CAPEX total (USD) [manual + items]', 0, capex, {higherIsBetter:true}),
-      row('Ahorro mensual total (USD)', 0, ahorroTotal, {higherIsBetter:true}),
-    ].filter(Boolean).join('');
+    function currencySymbol(code){
+      if(code === 'MXN') return '$';
+      if(code === 'EUR') return '€';
+      return '$';
+    }
 
-    $('tbodyComp').innerHTML = rows;
+    function fmt(n, decimals=2){
+      const x = Number(n || 0);
+      return x.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
 
-    // Visuals data
-    const parts=[], labels=[];
-    if(ahorroCiclo>0)   { parts.push(ahorroCiclo);   labels.push('Ciclo'); }
-    if(ahorroCambios>0) { parts.push(ahorroCambios); labels.push('Cambios'); }
-    if(ahorroTM>0)      { parts.push(ahorroTM);      labels.push('T. muerto'); }
-    if(ahorroVida>0)    { parts.push(ahorroVida);    labels.push('Vida'); }
-    if(extraOutputUSD>0){ parts.push(extraOutputUSD);labels.push('Output'); }
+    function clampMin0(n){ return Math.max(0, num(n)); }
 
-    renderDonut('vizAhorros', parts, labels);
-    renderBars('vizPerf', [
-      ['T. Ciclo (s)', cicloA, cicloP, true],
-      ['Pzas/h', pphA, pphP, false],
-      ['Vida Útil (pzas)', vidaA, vidaP, false],
-      ['T. Muerto (min/mes)', tmuertoA, tmuertoP, true]
-    ].filter(x => {
-      // hide irrelevant rows
-      if(x[0].includes('Ciclo') && !(modTiempo && incCiclo)) return false;
-      if(x[0].includes('Vida') && !(modVida && incVida)) return false;
-      if(x[0].includes('Muerto') && !(modTiempo && incTM)) return false;
-      return true;
-    }));
-    renderCashflow('vizCash', { ahorroMes: ahorroTotal, cuota: mensualidad, capex });
-  }
+    function setEnabled(ids, enabled){
+      ids.forEach(id => {
+        const el = $(id);
+        if(!el) return;
+        el.disabled = !enabled;
+        el.style.opacity = enabled ? '1' : '0.55';
+      });
+    }
 
-  // ===== Visuals =====
-  function renderCashflow(targetId, {ahorroMes, cuota, capex}){
-    const el=$(targetId); if(!el) return;
-    const meses=Array.from({length:12},(_,i)=>`M${i+1}`);
-    const W = 820, H = 400;
-    const pad = { top: 40, right: 10, bottom: 50, left: 60 };
-    const barW = 18, barGap = 6, gap = 38;
-    const H_drawable = H - pad.top - pad.bottom;
+    /* ============================
+       Mobile menu
+    ============================ */
+    const mOpen  = $('mobileOpenBtn');
+    const mClose = $('mobileCloseBtn');
+    const mPanel = $('mobilePanel');
+    const mBg    = $('mobileBackdrop');
+    const mLinks = document.querySelectorAll('.mobile-link');
 
-    const neto = (ahorroMes||0) - (cuota||0);
-    let acc = -capex;
-    const accArr = meses.map(()=>{ acc += neto; return acc; });
-
-    const allValues = [ahorroMes||0, cuota||0, ...accArr, -capex];
-    const dataMax = Math.max(1, ...allValues.map(v => Math.max(0, v)));
-    const dataMin = Math.min(0, ...allValues.map(v => Math.min(0, v)));
-    const totalRange = dataMax - dataMin;
-
-    const scaleY = (v)=>{
-      if(totalRange===0) return H - pad.bottom;
-      return (H - pad.bottom) - (((v - dataMin) / totalRange) * H_drawable);
-    };
-    const yZero = scaleY(0);
-
-    let x = pad.left + gap/2;
-    const bars = meses.map((m,i)=>{
-      const yA = scaleY(ahorroMes); const hA = yZero - yA;
-      const yP = scaleY(cuota);     const hP = yZero - yP;
-      const xa = x, xp = x + barW + barGap;
-      const labelY = H - pad.bottom + 20;
-
-      const rects = `
-        <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="${cssVar('--rf-green')}"></rect>
-        <rect x="${xp}" y="${yP}" width="${barW}" height="${hP}" fill="${cssVar('--rf-red')}"></rect>
-      `;
-      const txt = `<text x="${x + barW + barGap/2}" y="${labelY}" font-size="14" fill="var(--rf-text)" text-anchor="middle">${m}</text>`;
-      x += (barW * 2 + barGap + gap);
-      return rects + txt;
-    }).join('');
-
-    const linePts = accArr.map((v,i)=>{
-      const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW + barGap/2);
-      const yi = scaleY(v);
-      return `${xi},${yi}`;
-    }).join(' ');
-    const x0 = pad.left + gap/2 - (barW*2+barGap+gap) + (barW + barGap/2);
-    const y0 = scaleY(-capex);
-
-    const polyline = `<polyline points="${x0},${y0} ${linePts}" fill="none" stroke="${cssVar('--rf-teal')}" stroke-width="3"></polyline>`;
-
-    let marker='';
-    if(capex > 0){
-      const idx = accArr.findIndex(v => v >= 0);
-      if(idx !== -1){
-        const xi = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW + barGap/2);
-        const yi = scaleY(accArr[idx]);
-        marker = `
-          <circle cx="${xi}" cy="${yi}" r="6" fill="${cssVar('--rf-teal')}" stroke="var(--rf-black)" stroke-width="2"></circle>
-          <text x="${xi + 10}" y="${yi - 10}" font-size="14" fill="${cssVar('--rf-teal')}">Payback M${idx+1}</text>
-        `;
+    function toggleMenu(open){
+      if(open){
+        mBg?.classList.remove('pointer-events-none','opacity-0');
+        mBg?.classList.add('pointer-events-auto','opacity-100');
+        mPanel?.classList.remove('translate-x-full');
+        mPanel?.classList.add('translate-x-0');
+        document.body.style.overflow='hidden';
+      }else{
+        mBg?.classList.remove('pointer-events-auto','opacity-100');
+        mBg?.classList.add('pointer-events-none','opacity-0');
+        mPanel?.classList.remove('translate-x-0');
+        mPanel?.classList.add('translate-x-full');
+        document.body.style.overflow='';
       }
     }
+    mOpen?.addEventListener('click', ()=>toggleMenu(true));
+    mClose?.addEventListener('click', ()=>toggleMenu(false));
+    mBg?.addEventListener('click', ()=>toggleMenu(false));
+    mLinks.forEach(a=>a.addEventListener('click', ()=>toggleMenu(false)));
+    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') { toggleMenu(false); closeHelp(); } });
 
-    const legendX = W - pad.right - 170, legendY = pad.top;
-    const legend = `
-      <rect x="${legendX}" y="${legendY - 12}" width="160" height="82" rx="10" fill="rgba(229,230,228,0.04)" stroke="rgba(229,230,228,0.12)"></rect>
-      <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="${cssVar('--rf-green')}"></rect>
-      <text x="${legendX+30}" y="${legendY+10}" font-size="14" fill="var(--rf-text)">Ahorro</text>
-      <rect x="${legendX+12}" y="${legendY+26}" width="12" height="12" fill="${cssVar('--rf-red')}"></rect>
-      <text x="${legendX+30}" y="${legendY+36}" font-size="14" fill="var(--rf-text)">Cuota</text>
-      <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="${cssVar('--rf-teal')}" stroke-width="2.5"></line>
-      <text x="${legendX+30}" y="${legendY+62}" font-size="14" fill="var(--rf-text)">Acumulado</text>
-    `;
+    /* ============================
+       Help panel
+    ============================ */
+    function openHelp(){ $('helpPanel').classList.remove('hidden'); }
+    function closeHelp(){ $('helpPanel').classList.add('hidden'); }
+    $('btnHelp')?.addEventListener('click', openHelp);
+    $('btnHelpClose')?.addEventListener('click', closeHelp);
+    $('helpPanel')?.addEventListener('click', (e)=>{ if(e.target === $('helpPanel')) closeHelp(); });
 
-    const axis = `
-      <line x1="${pad.left}" y1="${pad.top - 10}" x2="${pad.left}" y2="${H - pad.bottom}" stroke="rgba(229,230,228,.22)"></line>
-      <line x1="${pad.left}" y1="${yZero}" x2="${W - pad.right}" y2="${yZero}" stroke="rgba(229,230,228,.22)"></line>
-      <text x="${pad.left - 10}" y="${yZero + 5}" font-size="14" text-anchor="end" fill="rgba(229,230,228,.75)">$0</text>
-      <text x="${pad.left - 10}" y="${scaleY(dataMax) + 5}" font-size="14" text-anchor="end" fill="rgba(229,230,228,.75)">$${fmt(dataMax)}</text>
-      ${dataMin < 0 ? `<text x="${pad.left - 10}" y="${scaleY(dataMin) + 5}" font-size="14" text-anchor="end" fill="rgba(229,230,228,.75)">$${fmt(dataMin)}</text>` : ''}
-    `;
+    /* ============================
+       Carrito (CAPEX/OPEX)
+    ============================ */
+    let cart = [
+      // ejemplo inicial mínimo (sin precios)
+      { name: "Holder REGO-FIX (ejemplo)", qty: 1, price: 0, type: "CAPEX" }
+    ];
 
-    el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${axis}${bars}${polyline}${marker}${legend}</svg>`;
-  }
-
-  function renderDonut(targetId, parts, labels){
-    const el=$(targetId); if(!el) return;
-    const data=parts.map((p,i)=>[labels[i],p]).filter(x=>x[1]>0);
-    const total=data.reduce((s,p)=>s+p[1],0);
-
-    const W=640, H=400;
-    const cx=220, cy=H/2, r=H*0.40, th=52;
-    let start=0;
-    const colors=[cssVar('--rf-blue'), cssVar('--rf-green'), cssVar('--rf-teal'), cssVar('--rf-green-2'), cssVar('--rf-red')];
-
-    const legendX=400;
-    const legendFontSize=18, legendLineHeight=30;
-    const legendBlockHeight=data.length*legendLineHeight;
-    const legendStartY=(H-legendBlockHeight)/2 + (legendFontSize/2);
-
-    const segs=data.map((p,i)=>{
-      const f= total ? (p[1]/total) : 0;
-      const a0=start*2*Math.PI, a1=(start+f)*2*Math.PI;
-      start+=f;
-      const L=(a1-a0)>Math.PI?1:0;
-      const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
-      const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
-      const x0i=cx+(r-th)*Math.cos(a0), y0i=cy+(r-th)*Math.sin(a0);
-      const x1i=cx+(r-th)*Math.cos(a1), y1i=cy+(r-th)*Math.sin(a1);
-      const d=`M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
-      const pct=Math.round(f*100);
-      const ly=legendStartY + (i*legendLineHeight);
-      return `<path d="${d}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
-              <text x="${legendX}" y="${ly}" font-size="${legendFontSize}" fill="var(--rf-text)">${p[0]}: ${pct}%</text>`;
-    }).join('');
-
-    const centerText = total>0 ? ('$'+fmt(total)) : '—';
-    const centerFontSize = Math.max(20, Math.round(r*0.2));
-    const center = `
-      <circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="rgba(229,230,228,0.06)"></circle>
-      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${centerFontSize}" fill="var(--rf-text)">${centerText}</text>
-    `;
-
-    el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${segs}${center}</svg>`;
-  }
-
-  function renderBars(targetId, pairs){
-    const rowsData = pairs.map(([lbl,a,b,lowerIsBetter]) => ({
-      lines: String(lbl).replace(' (','\n(').split('\n'),
-      a: isFinite(a)?a:0,
-      b: isFinite(b)?b:0,
-      lowerIsBetter
-    }));
-
-    const approxChar = 7;
-    const labelCol = Math.max(160, Math.min(260, Math.max(...rowsData.map(r => Math.max(...r.lines.map(s => s.length))*approxChar))));
-    const barStartX = labelCol + 16;
-    const barMax = 520;
-    const rowH = 40, rowGap = 16, padY = 20;
-    const W = barStartX + barMax + 160;
-    const H = padY + rowsData.length * (rowH + rowGap) + 40;
-
-    let y = padY;
-    const rows = rowsData.map(r=>{
-      const maxVal = Math.max(Math.abs(r.a), Math.abs(r.b), 1);
-      const aw = Math.round((Math.abs(r.a)/maxVal)*barMax);
-      const bw = Math.round((Math.abs(r.b)/maxVal)*barMax);
-
-      const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
-      const colorP = goodB ? cssVar('--rf-green') : cssVar('--rf-red');
-
-      const label = `<text x="0" y="${y + 14}" font-size="14" fill="var(--rf-text)">
-        ${r.lines[0]}
-        ${r.lines.length>1 ? `<tspan x="0" dy="1.2em">${r.lines.slice(1).join(' ')}</tspan>` : ''}
-      </text>`;
-
-      const bars = `
-        <rect x="${barStartX}" y="${y}" width="${aw}" height="12" fill="rgba(229,230,228,0.35)"></rect>
-        <rect x="${barStartX}" y="${y+16}" width="${bw}" height="12" fill="${colorP}"></rect>
-        <text x="${barStartX + aw + 10}" y="${y + 10}" font-size="12" fill="var(--rf-text)">${r.a.toFixed(1)}</text>
-        <text x="${barStartX + bw + 10}" y="${y + 26}" font-size="12" fill="var(--rf-text)">${r.b.toFixed(1)}</text>
+    function cartRow(i, item){
+      const sym = currencySymbol($('moneda')?.value || 'USD');
+      const total = num(item.qty) * num(item.price);
+      return `
+        <tr class="border-t" style="border-color:rgba(229,230,228,0.10)">
+          <td class="py-2 pr-2">
+            <input data-i="${i}" data-k="name" class="w-full" value="${escapeHtml(item.name)}" />
+          </td>
+          <td class="py-2 pr-2 text-right">
+            <input data-i="${i}" data-k="qty" type="number" class="w-24 text-right" value="${num(item.qty)}" />
+          </td>
+          <td class="py-2 pr-2 text-right">
+            <input data-i="${i}" data-k="price" type="number" class="w-28 text-right" value="${num(item.price)}" />
+          </td>
+          <td class="py-2 pr-2 text-right">
+            <select data-i="${i}" data-k="type" class="w-28">
+              <option value="CAPEX" ${item.type==='CAPEX'?'selected':''}>CAPEX</option>
+              <option value="OPEX" ${item.type==='OPEX'?'selected':''}>OPEX</option>
+            </select>
+          </td>
+          <td class="py-2 pr-2 text-right font-mono tabular-nums">${sym}${fmt(total)}</td>
+          <td class="py-2 text-right">
+            <button class="btn btn-ghost" data-del="${i}" title="Eliminar">✕</button>
+          </td>
+        </tr>
       `;
-      y += rowH + rowGap;
-      return label + bars;
-    }).join('');
+    }
 
-    const legendY = H - 20;
-    const legendX = barStartX;
-    const legend = `
-      <rect x="${legendX}" y="${legendY - 14}" width="210" height="28" rx="8" fill="rgba(229,230,228,0.04)" stroke="rgba(229,230,228,0.12)"></rect>
-      <rect x="${legendX+10}" y="${legendY - 6}" width="12" height="12" fill="rgba(229,230,228,0.35)"></rect>
-      <text x="${legendX+28}" y="${legendY + 4}" font-size="12" fill="var(--rf-text)">Actual</text>
-      <rect x="${legendX+96}" y="${legendY - 6}" width="12" height="12" fill="${cssVar('--rf-green')}"></rect>
-      <text x="${legendX+114}" y="${legendY + 4}" font-size="12" fill="var(--rf-text)">Propuesta</text>
-    `;
+    function escapeHtml(s){
+      return String(s||'')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
 
-    const el=$(targetId); if(el) el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${rows}${legend}</svg>`;
-  }
+    function renderCart(){
+      const body = $('cartBody');
+      if(!body) return;
+      body.innerHTML = cart.map((it,i)=>cartRow(i,it)).join('');
 
-  function cssVar(name){
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#ffffff';
-  }
+      // listeners inputs
+      body.querySelectorAll('input[data-i], select[data-i]').forEach(el=>{
+        el.addEventListener('input', (e)=>{
+          const i = Number(e.target.getAttribute('data-i'));
+          const k = e.target.getAttribute('data-k');
+          if(!Number.isFinite(i) || !k) return;
+          if(k === 'name') cart[i][k] = e.target.value;
+          if(k === 'qty') cart[i][k] = num(e.target.value);
+          if(k === 'price') cart[i][k] = num(e.target.value);
+          if(k === 'type') cart[i][k] = e.target.value;
+          updateCartTotals();
+          calcular();
+        });
+      });
 
-  // ===== Wiring =====
-  $('btnCalcular')?.addEventListener('click', calcular);
-  $('btnCalcularMobile')?.addEventListener('click', calcular);
-  $('btnPrint')?.addEventListener('click', ()=>window.print());
+      // delete
+      body.querySelectorAll('button[data-del]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const i = Number(btn.getAttribute('data-del'));
+          if(!Number.isFinite(i)) return;
+          cart.splice(i,1);
+          if(cart.length === 0) cart.push({ name:"(vacío)", qty:0, price:0, type:"CAPEX" });
+          renderCart();
+          updateCartTotals();
+          calcular();
+        });
+      });
 
-  // Auto-calc on desktop typing
-  [
-    'costoHora','pmes','capex','mensualidad',
-    'cicloA','cicloP','tmuertoA','tmuertoP',
-    'cambiosA','cambiosP','minCambioA','minCambioP',
-    'vidaA','vidaP','costoHerr',
-    'deltaPmes','margenPza'
-  ].forEach(id => $(id)?.addEventListener('input', ()=>{ renderItems(); if(window.innerWidth>=768) calcular(); }));
+      updateCartTotals();
+    }
 
-  // Switches
-  [
-    'incCiclo','incCambios','incTM','incVida','incOutput'
-  ].forEach(id => $(id)?.addEventListener('change', ()=>{ renderItems(); calcular(); }));
+    function updateCartTotals(){
+      const sym = currencySymbol($('moneda')?.value || 'USD');
+      let capex = 0, opex = 0;
+      cart.forEach(it=>{
+        const tot = num(it.qty) * num(it.price);
+        if((it.type||'CAPEX') === 'OPEX') opex += tot;
+        else capex += tot;
+      });
+      $('capexCarrito').textContent = `${sym}${fmt(capex)}`;
+      $('opexCarrito').textContent  = `${sym}${fmt(opex)}`;
+      return { capex, opex };
+    }
 
-  // init
-  renderItems();
-  applyModules();
-  calcular();
-</script>
+    $('btnAddItem')?.addEventListener('click', ()=>{
+      cart.push({ name:"Nuevo ítem", qty:1, price:0, type:"CAPEX" });
+      renderCart();
+      calcular();
+    });
 
+    $('btnAddCommon')?.addEventListener('click', ()=>{
+      cart.push({ name:"Pinza/Collet (ejemplo)", qty:1, price:0, type:"CAPEX" });
+      cart.push({ name:"Servicio / mantenimiento (ejemplo)", qty:1, price:0, type:"OPEX" });
+      renderCart();
+      calcular();
+    });
+
+    /* ============================
+       Presets por sistema (sin precios)
+    ============================ */
+    function presetItems(key){
+      const base = {
+        powrgrip: [
+          { name:"Holder powRgrip (PG) — portapinzas", qty:1, price:0, type:"CAPEX" },
+          { name:"Pinza powRgrip (PG) — collet", qty:1, price:0, type:"CAPEX" },
+          { name:"Unidad de sujeción (PGU/PGS) (si aplica)", qty:0, price:0, type:"CAPEX" },
+          { name:"Accesorios / limpieza", qty:0, price:0, type:"CAPEX" }
+        ],
+        er: [
+          { name:"Portapinzas ER", qty:1, price:0, type:"CAPEX" },
+          { name:"Pinza ER", qty:1, price:0, type:"CAPEX" },
+          { name:"Tuerca ER", qty:1, price:0, type:"CAPEX" }
+        ],
+        microrunout: [
+          { name:"Holder de alta precisión (micro-runout)", qty:1, price:0, type:"CAPEX" },
+          { name:"Pinza de alta precisión", qty:1, price:0, type:"CAPEX" },
+          { name:"Balanceo (si aplica)", qty:0, price:0, type:"CAPEX" }
+        ],
+        unitec: [
+          { name:"Tuerca Unitec", qty:1, price:0, type:"CAPEX" },
+          { name:"Portapinzas compatible", qty:1, price:0, type:"CAPEX" }
+        ],
+        metrology: [
+          { name:"Equipo metrología (ej.)", qty:1, price:0, type:"CAPEX" }
+        ],
+        cleaning: [
+          { name:"Sistema limpieza / accesorios", qty:1, price:0, type:"CAPEX" }
+        ],
+        custom: [
+          { name:"Ítem personalizado", qty:1, price:0, type:"CAPEX" }
+        ]
+      };
+      return base[key] || base.custom;
+    }
+
+    function applyPreset(){
+      const key = $('presetSistema')?.value || 'powrgrip';
+      cart = presetItems(key);
+      renderCart();
+      calcular();
+    }
+
+    $('btnPresetAdd')?.addEventListener('click', applyPreset);
+    $('btnPresetClear')?.addEventListener('click', ()=>{
+      cart = [{ name:"(vacío)", qty:0, price:0, type:"CAPEX" }];
+      renderCart();
+      calcular();
+    });
+
+    /* ============================
+       Module enable/disable wiring
+    ============================ */
+    function applyModuleVisibility(){
+      const mTiempo = $('mTiempo')?.checked ?? true;
+      const mVida   = $('mVida')?.checked ?? true;
+      const mProc   = $('mProceso')?.checked ?? true;
+
+      $('blkTiempo').style.display = mTiempo ? '' : 'none';
+      $('blkVida').style.display   = mVida ? '' : 'none';
+      $('blkProceso').style.display= mProc ? '' : 'none';
+
+      // submodules time
+      const tCiclo   = $('tCiclo')?.checked ?? true;
+      const tCambios = $('tCambios')?.checked ?? true;
+      const tParos   = $('tParos')?.checked ?? true;
+
+      $('blkCiclo').style.display   = (mTiempo && tCiclo) ? '' : 'none';
+      $('blkCambios').style.display = (mTiempo && tCambios) ? '' : 'none';
+      $('blkParos').style.display   = (mTiempo && tParos) ? '' : 'none';
+
+      setEnabled(['cicloA','cicloP'], mTiempo && tCiclo);
+      setEnabled(['cambiosMesA','cambiosMesP','minPorCambio'], mTiempo && tCambios);
+      setEnabled(['paroA','paroP'], mTiempo && tParos);
+
+      setEnabled(['vidaA','vidaP','costoHerr'], mVida);
+
+      setEnabled(['thrPct','valorPieza'], mProc);
+    }
+
+    ['mTiempo','mVida','mProceso','tCiclo','tCambios','tParos'].forEach(id=>{
+      $(id)?.addEventListener('change', ()=>{ applyModuleVisibility(); calcular(); });
+    });
+
+    /* ============================
+       Core calculation
+    ============================ */
+    function calcular(){
+      const sym = currencySymbol($('moneda')?.value || 'USD');
+      $('pillMoneda').textContent = `Moneda: ${$('moneda').value || 'USD'}`;
+
+      const sistema = $('presetSistema')?.value || 'powrgrip';
+      $('pillSistema').textContent = `Sistema: ${sistema}`;
+      $('pillPayback')?.textContent && ( $('pillPayback').textContent = '' );
+
+      // Totals from cart
+      const totals = updateCartTotals();
+      const capexCarrito = totals.capex;
+      const opexCarrito  = totals.opex;
+
+      // Base
+      const pmes = clampMin0($('pmes').value);
+      const costoHora = clampMin0($('costoHora').value);
+      const opexMensual = clampMin0($('opexMensual').value) + opexCarrito;
+      const capex = clampMin0($('capexExtra').value) + capexCarrito;
+
+      // Module flags
+      const mTiempo = $('mTiempo')?.checked ?? true;
+      const mVida   = $('mVida')?.checked ?? true;
+      const mProc   = $('mProceso')?.checked ?? true;
+
+      const tCiclo   = $('tCiclo')?.checked ?? true;
+      const tCambios = $('tCambios')?.checked ?? true;
+      const tParos   = $('tParos')?.checked ?? true;
+
+      // ===== TIEMPO: Ciclo
+      const cicloA = clampMin0($('cicloA')?.value);
+      const cicloP = clampMin0($('cicloP')?.value);
+      const horasMesA = (pmes * (cicloA/3600));
+      const horasMesP = (pmes * (cicloP/3600));
+      const ahorroCicloUSD = (mTiempo && tCiclo && cicloA>0 && cicloP>0)
+        ? Math.max(0, (horasMesA - horasMesP) * costoHora)
+        : 0;
+
+      // ===== TIEMPO: Cambios herramienta (cambios/mes * min/cambio)
+      const cambiosMesA = clampMin0($('cambiosMesA')?.value);
+      const cambiosMesP = clampMin0($('cambiosMesP')?.value);
+      const minPorCambio = clampMin0($('minPorCambio')?.value);
+      const ahorroCambiosUSD = (mTiempo && tCambios)
+        ? Math.max(0, ((cambiosMesA - cambiosMesP) * minPorCambio / 60) * costoHora)
+        : 0;
+
+      // ===== TIEMPO: Paros (min/mes)
+      const paroA = clampMin0($('paroA')?.value);
+      const paroP = clampMin0($('paroP')?.value);
+      const ahorroParosUSD = (mTiempo && tParos)
+        ? Math.max(0, ((paroA - paroP)/60) * costoHora)
+        : 0;
+
+      // ===== VIDA: consumo tooling mensual
+      const vidaA = clampMin0($('vidaA')?.value);
+      const vidaP = clampMin0($('vidaP')?.value);
+      const costoHerr = clampMin0($('costoHerr')?.value);
+      const consumoHerrA = (mVida && vidaA>0) ? (pmes/vidaA) * costoHerr : 0;
+      const consumoHerrP = (mVida && vidaP>0) ? (pmes/vidaP) * costoHerr : 0;
+      const ahorroVidaUSD = (mVida) ? Math.max(0, consumoHerrA - consumoHerrP) : 0;
+
+      // ===== PROCESO: throughput extra (% * piezas/mes * valor/pieza)
+      const thrPct = num($('thrPct')?.value);
+      const valorPieza = clampMin0($('valorPieza')?.value);
+      const piezasExtra = (mProc && thrPct>0) ? pmes * (thrPct/100) : 0;
+      const ahorroProcUSD = (mProc) ? Math.max(0, piezasExtra * valorPieza) : 0;
+
+      // ===== Total
+      const ahorroBruto = ahorroCicloUSD + ahorroCambiosUSD + ahorroParosUSD + ahorroVidaUSD + ahorroProcUSD;
+      const neto = ahorroBruto - opexMensual;
+
+      const roiAnual = capex > 0 ? (neto*12 / capex) * 100 : (neto>0 ? Infinity : 0);
+      const paybackMes = (capex>0 && neto>0) ? (capex / neto) : null;
+
+      // KPIs
+      $('kpiAhorro').textContent = `${sym}${fmt(ahorroBruto)}`;
+      $('kpiNeto').textContent   = `${sym}${fmt(neto)}`;
+      $('kpiNeto').style.color   = neto >= 0 ? 'var(--rf-green)' : 'var(--rf-red)';
+
+      $('kpiCapex').textContent  = `${sym}${fmt(capex)}`;
+      $('kpiOpex').textContent   = `${sym}${fmt(opexMensual)}`;
+
+      $('kpiROIAnual').textContent = Number.isFinite(roiAnual) ? `${fmt(roiAnual)}%` : '∞%';
+      $('kpiPayback').textContent  = paybackMes ? `M${Math.ceil(paybackMes)}` : '—';
+
+      // Comparativa
+      const pphA = cicloA>0 ? 3600/cicloA : 0;
+      const pphP = cicloP>0 ? 3600/cicloP : 0;
+
+      function delta(a,p,{higherIsBetter=true}={}){
+        if(a===0 && p===0) return { val: 0, isImprovement: false, small:true };
+        const base = (a===0 ? 1 : a);
+        const d = ((p-a)/base)*100;
+        const isImprovement = higherIsBetter ? (d>0) : (d<0);
+        const small = Math.abs(d) < 3;
+        return { val:d, isImprovement, small };
+      }
+
+      function row(name,a,p,opt){
+        const d = delta(a,p,opt||{});
+        const displayed = Number.isFinite(d.val) ? ((d.val>=0?'+':'') + fmt(d.val) + '%') : '—';
+        let badgeClass = d.small ? 'badge-mid' : (d.isImprovement ? 'badge-up' : 'badge-down');
+        const badge = `<span class="stat-badge ${badgeClass}">${displayed}</span>`;
+        return `
+          <tr style="background:transparent;">
+            <td class="px-2 py-2">${name}</td>
+            <td class="px-2 py-2 text-right font-mono tabular-nums">${Number.isFinite(a)?fmt(a):'—'}</td>
+            <td class="px-2 py-2 text-right font-mono tabular-nums">${Number.isFinite(p)?fmt(p):'—'}</td>
+            <td class="px-2 py-2 text-right">${badge}</td>
+          </tr>
+        `;
+      }
+
+      const rows = [
+        row('Tiempo de ciclo (s)', cicloA, cicloP, {higherIsBetter:false}),
+        row('Piezas por hora', pphA, pphP, {higherIsBetter:true}),
+        row('Cambios/mes', cambiosMesA, cambiosMesP, {higherIsBetter:false}),
+        row('Paro (min/mes)', paroA, paroP, {higherIsBetter:false}),
+        row('Vida (pzas)', vidaA, vidaP, {higherIsBetter:true}),
+        row('Consumo herramienta (USD/mes)', consumoHerrA, consumoHerrP, {higherIsBetter:false}),
+        row('Ahorro por ciclo (USD/mes)', 0, ahorroCicloUSD, {higherIsBetter:true}),
+        row('Ahorro por cambios (USD/mes)', 0, ahorroCambiosUSD, {higherIsBetter:true}),
+        row('Ahorro por paros (USD/mes)', 0, ahorroParosUSD, {higherIsBetter:true}),
+        row('Ahorro por vida (USD/mes)', 0, ahorroVidaUSD, {higherIsBetter:true}),
+        row('Ahorro por proceso (USD/mes)', 0, ahorroProcUSD, {higherIsBetter:true}),
+        row('Ahorro bruto total (USD/mes)', 0, ahorroBruto, {higherIsBetter:true}),
+      ].join('');
+
+      $('tbodyComp').innerHTML = rows;
+
+      // Visuals
+      renderDonut('vizAhorros', [
+        { label:'Ciclo', val: ahorroCicloUSD },
+        { label:'Cambios', val: ahorroCambiosUSD },
+        { label:'Paros', val: ahorroParosUSD },
+        { label:'Vida', val: ahorroVidaUSD },
+        { label:'Proceso', val: ahorroProcUSD }
+      ], sym);
+
+      renderBars('vizPerf', [
+        ['Ciclo (s)', cicloA, cicloP, true],
+        ['Pzas/h', pphA, pphP, false],
+        ['Cambios/mes', cambiosMesA, cambiosMesP, true],
+        ['Paro (min/mes)', paroA, paroP, true],
+      ]);
+
+      renderCashflow('vizCash', { ahorroMes: ahorroBruto, opex: opexMensual, capex }, sym);
+
+      // result header stats
+      $('kpiCapex').textContent = `${sym}${fmt(capex)}`;
+      $('kpiOpex').textContent  = `${sym}${fmt(opexMensual)}`;
+    }
+
+    /* ============================
+       Visuals (SVG)
+    ============================ */
+    function renderDonut(targetId, items, sym){
+      const el = $(targetId); if(!el) return;
+
+      const data = items.filter(x => num(x.val) > 0);
+      const total = data.reduce((s,x)=> s + num(x.val), 0);
+
+      const W=640, H=320;
+      const cx=190, cy=H/2, r=120, th=44;
+      const legendX=365, legendFont=16, legendLH=28;
+      const legendStartY = (H - (data.length * legendLH)) / 2 + (legendFont/2);
+
+      const colors = ['#B7C91F','#58D5D3','#28556C','#AAC82D','#D31B23'];
+
+      let start=0;
+      const segs = data.map((d,i)=>{
+        const f = total ? (num(d.val)/total) : 0;
+        const a0 = start*2*Math.PI;
+        const a1 = (start+f)*2*Math.PI;
+        start += f;
+
+        const L = (a1-a0) > Math.PI ? 1 : 0;
+        const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
+        const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+
+        const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
+        const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
+
+        const path = `M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
+
+        const pct = Math.round(f*100);
+        const ly = legendStartY + (i*legendLH);
+
+        return `
+          <path d="${path}" fill="${colors[i%colors.length]}" opacity="0.95"></path>
+          <text x="${legendX}" y="${ly}" font-size="${legendFont}" fill="var(--text)">${d.label}: ${pct}%</text>
+          <text x="${legendX+210}" y="${ly}" font-size="${legendFont}" fill="rgba(229,230,228,0.85)" text-anchor="end">${sym}${fmt(d.val)}</text>
+        `;
+      }).join('');
+
+      const centerText = total>0 ? `${sym}${fmt(total)}` : '—';
+      const center = `
+        <circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="rgba(255,255,255,0.05)"></circle>
+        <text x="${cx}" y="${cy-2}" text-anchor="middle" dominant-baseline="middle" font-size="22" fill="var(--text)" font-weight="800">${centerText}</text>
+        <text x="${cx}" y="${cy+22}" text-anchor="middle" font-size="12" fill="rgba(229,230,228,0.7)">Ahorro mensual bruto</text>
+      `;
+
+      el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Distribución de ahorros">${segs}${center}</svg>`;
+    }
+
+    function renderBars(targetId, pairs){
+      const el = $(targetId); if(!el) return;
+
+      const rowsData = pairs.map(([lbl,a,b,lowerIsBetter]) => ({
+        label: String(lbl),
+        a: num(a), b: num(b),
+        lowerIsBetter: !!lowerIsBetter
+      }));
+
+      const labelCol = 170;
+      const barStartX = labelCol + 16;
+      const barMax = 420;
+      const rowH = 34, rowGap = 14, padY = 16;
+      const W = barStartX + barMax + 160;
+      const H = padY + rowsData.length*(rowH+rowGap) + 32;
+
+      let y = padY;
+
+      const rows = rowsData.map(r=>{
+        const maxVal = Math.max(Math.abs(r.a), Math.abs(r.b), 1);
+        const aw = Math.round((Math.abs(r.a)/maxVal) * barMax);
+        const bw = Math.round((Math.abs(r.b)/maxVal) * barMax);
+
+        const goodB = r.lowerIsBetter ? (r.b < r.a) : (r.b > r.a);
+        const colorP = goodB ? '#B7C91F' : '#D31B23';
+
+        const label = `<text x="0" y="${y+14}" font-size="14" fill="var(--text)">${r.label}</text>`;
+
+        const bars = `
+          <rect x="${barStartX}" y="${y}" width="${aw}" height="12" fill="#677071" opacity="0.9"></rect>
+          <rect x="${barStartX}" y="${y+16}" width="${bw}" height="12" fill="${colorP}" opacity="0.95"></rect>
+          <text x="${barStartX+aw+10}" y="${y+10}" font-size="12" fill="rgba(229,230,228,0.9)">${r.a.toFixed(1)}</text>
+          <text x="${barStartX+bw+10}" y="${y+26}" font-size="12" fill="rgba(229,230,228,0.9)">${r.b.toFixed(1)}</text>
+        `;
+
+        y += rowH + rowGap;
+        return label + bars;
+      }).join('');
+
+      const legendY = H - 20;
+      const legendX = barStartX;
+      const legend = `
+        <rect x="${legendX}" y="${legendY-14}" width="220" height="28" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(229,230,228,0.12)"></rect>
+        <rect x="${legendX+10}" y="${legendY-6}" width="12" height="12" fill="#677071"></rect>
+        <text x="${legendX+28}" y="${legendY+4}" font-size="12" fill="var(--text)">Actual</text>
+        <rect x="${legendX+98}" y="${legendY-6}" width="12" height="12" fill="#B7C91F"></rect>
+        <text x="${legendX+116}" y="${legendY+4}" font-size="12" fill="var(--text)">Propuesta</text>
+      `;
+
+      el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Comparativa rápida">${rows}${legend}</svg>`;
+    }
+
+    function renderCashflow(targetId, {ahorroMes, opex, capex}, sym){
+      const el = $(targetId); if(!el) return;
+
+      const meses = Array.from({length:12},(_,i)=>`M${i+1}`);
+      const W=820, H=340;
+      const pad = { top: 34, right: 12, bottom: 52, left: 66 };
+      const Hdraw = H - pad.top - pad.bottom;
+
+      const barW=18, barGap=6, gap=38;
+
+      const neto = num(ahorroMes) - num(opex);
+      let acc = -num(capex);
+      const accArr = meses.map(()=>{ acc += neto; return acc; });
+
+      const all = [num(ahorroMes), num(opex), ...accArr, -num(capex)];
+      const maxV = Math.max(1, ...all.map(v=>Math.max(0,v)));
+      const minV = Math.min(0, ...all.map(v=>Math.min(0,v)));
+      const range = maxV - minV;
+
+      const scaleY = (v) => (H - pad.bottom) - (((v - minV)/ (range||1)) * Hdraw);
+      const y0 = scaleY(0);
+
+      let x = pad.left + gap/2;
+
+      const bars = meses.map((m,i)=>{
+        const yA = scaleY(num(ahorroMes)), hA = y0 - yA;
+        const yO = scaleY(num(opex)), hO = y0 - yO;
+
+        const xa = x, xo = x + barW + barGap;
+        const labelY = H - pad.bottom + 20;
+
+        const rects = `
+          <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="#B7C91F"></rect>
+          <rect x="${xo}" y="${yO}" width="${barW}" height="${hO}" fill="#D31B23"></rect>
+        `;
+        const txt = `<text x="${x + barW + barGap/2}" y="${labelY}" font-size="13" text-anchor="middle" fill="rgba(229,230,228,0.85)">${m}</text>`;
+        x += (barW*2 + barGap + gap);
+        return rects + txt;
+      }).join('');
+
+      const linePts = accArr.map((v,i)=>{
+        const xi = pad.left + gap/2 + i*(barW*2+barGap+gap) + (barW + barGap/2);
+        const yi = scaleY(v);
+        return `${xi},${yi}`;
+      }).join(' ');
+
+      const xStart = pad.left + gap/2 - (barW*2+barGap+gap) + (barW + barGap/2);
+      const yStart = scaleY(-num(capex));
+      const poly = `<polyline points="${xStart},${yStart} ${linePts}" fill="none" stroke="#58D5D3" stroke-width="3"></polyline>`;
+
+      let marker = '';
+      if(num(capex)>0){
+        const idx = accArr.findIndex(v=>v>=0);
+        if(idx !== -1){
+          const xi = pad.left + gap/2 + idx*(barW*2+barGap+gap) + (barW + barGap/2);
+          const yi = scaleY(accArr[idx]);
+          marker = `
+            <circle cx="${xi}" cy="${yi}" r="6" fill="#58D5D3" stroke="rgba(18,19,20,0.9)" stroke-width="2"></circle>
+            <text x="${xi+10}" y="${yi-10}" font-size="13" fill="#58D5D3">Payback M${idx+1}</text>
+          `;
+        }
+      }
+
+      const axis = `
+        <line x1="${pad.left}" y1="${pad.top-10}" x2="${pad.left}" y2="${H-pad.bottom}" stroke="rgba(229,230,228,.25)"></line>
+        <line x1="${pad.left}" y1="${y0}" x2="${W-pad.right}" y2="${y0}" stroke="rgba(229,230,228,.25)"></line>
+        <text x="${pad.left-10}" y="${y0+5}" font-size="12" text-anchor="end" fill="rgba(229,230,228,.7)">${sym}0</text>
+        <text x="${pad.left-10}" y="${scaleY(maxV)+5}" font-size="12" text-anchor="end" fill="rgba(229,230,228,.7)">${sym}${fmt(maxV)}</text>
+        ${minV < 0 ? `<text x="${pad.left-10}" y="${scaleY(minV)+5}" font-size="12" text-anchor="end" fill="rgba(229,230,228,.7)">${sym}${fmt(minV)}</text>` : ''}
+      `;
+
+      const legendX = W - pad.right - 160;
+      const legendY = pad.top - 2;
+      const legend = `
+        <rect x="${legendX}" y="${legendY-12}" width="150" height="86" rx="12" fill="rgba(255,255,255,0.04)" stroke="rgba(229,230,228,0.12)"></rect>
+        <rect x="${legendX+12}" y="${legendY}" width="12" height="12" fill="#B7C91F"></rect>
+        <text x="${legendX+30}" y="${legendY+10}" font-size="13" fill="var(--text)">Ahorro</text>
+        <rect x="${legendX+12}" y="${legendY+26}" width="12" height="12" fill="#D31B23"></rect>
+        <text x="${legendX+30}" y="${legendY+36}" font-size="13" fill="var(--text)">OPEX</text>
+        <line x1="${legendX+12}" y1="${legendY+60}" x2="${legendX+24}" y2="${legendY+60}" stroke="#58D5D3" stroke-width="3"></line>
+        <text x="${legendX+30}" y="${legendY+62}" font-size="13" fill="var(--text)">Acumulado</text>
+      `;
+
+      el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flujo y payback">
+        ${axis}${bars}${poly}${marker}${legend}
+      </svg>`;
+    }
+
+    /* ============================
+       Reset defaults
+    ============================ */
+    function resetDefaults(){
+      $('pmes').value = 10000;
+      $('costoHora').value = 50;
+      $('opexMensual').value = 0;
+      $('capexExtra').value = 0;
+
+      $('mTiempo').checked = true;
+      $('mVida').checked = true;
+      $('mProceso').checked = true;
+
+      $('tCiclo').checked = true;
+      $('tCambios').checked = true;
+      $('tParos').checked = true;
+
+      $('cicloA').value = 60;
+      $('cicloP').value = 45;
+
+      $('cambiosMesA').value = 120;
+      $('cambiosMesP').value = 70;
+      $('minPorCambio').value = 3;
+
+      $('paroA').value = 120;
+      $('paroP').value = 30;
+
+      $('vidaA').value = 1300;
+      $('vidaP').value = 2500;
+      $('costoHerr').value = 128.87;
+
+      $('thrPct').value = 0;
+      $('valorPieza').value = 0;
+
+      $('presetSistema').value = 'powrgrip';
+      cart = presetItems('powrgrip');
+
+      applyModuleVisibility();
+      renderCart();
+      calcular();
+    }
+
+    /* ============================
+       Buttons & live calc
+    ============================ */
+    $('btnCalcular')?.addEventListener('click', calcular);
+    $('btnCalcularTop')?.addEventListener('click', calcular);
+    $('btnCalcularMobile')?.addEventListener('click', calcular);
+
+    $('btnPrint')?.addEventListener('click', ()=>window.print());
+    $('btnPrintTop')?.addEventListener('click', ()=>window.print());
+
+    $('btnReset')?.addEventListener('click', resetDefaults);
+
+    // Live inputs
+    [
+      'pmes','costoHora','opexMensual','capexExtra',
+      'cicloA','cicloP','cambiosMesA','cambiosMesP','minPorCambio',
+      'paroA','paroP','vidaA','vidaP','costoHerr','thrPct','valorPieza','moneda','presetSistema'
+    ].forEach(id=>{
+      $(id)?.addEventListener('input', ()=>{
+        if(id === 'presetSistema'){
+          $('pillSistema').textContent = `Sistema: ${$('presetSistema').value}`;
+        }
+        renderCart(); // to refresh totals with currency symbol
+        applyModuleVisibility();
+        calcular();
+      });
+    });
+
+    $('btnPresetAdd')?.addEventListener('click', ()=> {
+      $('pillSistema').textContent = `Sistema: ${$('presetSistema').value}`;
+      applyPreset();
+    });
+
+    /* ============================
+       Init
+    ============================ */
+    applyModuleVisibility();
+    renderCart();
+    calcular();
+  </script>
+
+  <script src="/assets/chatbot.js"></script>
 </body>
 </html>
