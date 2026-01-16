@@ -3,1363 +3,1086 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ROI Holders — REGO-FIX style | AlexRaSa</title>
-  <meta name="description" content="ROI de holders REGO-FIX: ahorro por tiempo, vida, paros y mejora de proceso. Carrito por ítems (precios manuales). UI tipo app, modular y mobile-first." />
-  <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://alexrasa.store/calculadora-roi-holders/" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <title>ROI REGO-FIX Holders — Calculadora modular | AlexRaSa</title>
+  <meta name="description" content="Calculadora modular de ROI enfocada en holders y consumibles REGO-FIX. Carrito con búsqueda por SKU/nombre, precios manuales, ahorros por tiempo/vida de herramienta/proceso." />
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!--
-  IMÁGENES A SUBIR (rutas usadas):
-  1) LOGO: /assets/regofixlogo.png
-  2) ICONOS (SVG/PNG, opcional pero recomendado):
-     /assets/icons/time.svg
-     /assets/icons/life.svg
-     /assets/icons/process.svg
-     /assets/icons/stops.svg
-     /assets/icons/cart.svg
-     /assets/icons/report.svg
-  3) HERO (opcional):
-     /assets/hero-regofix.jpg
-  Si no existen, no truena: se ocultan con onerror.
-  -->
-
   <style>
     :root{
-      --rgx-green:#B7C91F;
-      --rgx-olive:#AAC82D;
-      --rgx-turq:#58D5D3;
-      --rgx-blue:#28556C;
-      --rgx-red:#D31B23;
-
-      --rgx-black:#121314;
-      --rgx-dk:#44474A;
-      --rgx-mid:#677071;
-      --rgx-light:#E5E6E4;
-
-      --bg:#ffffff;
-      --card:#ffffff;
-      --text:var(--rgx-black);
-      --muted:var(--rgx-mid);
-      --border:var(--rgx-light);
-
-      --shadow: 0 10px 30px rgba(18,19,20,0.08);
-      --shadow-soft: 0 6px 18px rgba(18,19,20,0.06);
-      --radius: 16px;
+      --rego-green: #B7C91F;
+      --rego-green-2:#AAC82D;
+      --rego-turq:  #58D5D3;
+      --rego-blue:  #28556C;
+      --rego-red:   #D31B23;
+      --rego-black: #121314;
+      --rego-gd:    #44474A;
+      --rego-gm:    #677071;
+      --rego-gl:    #E5E6E4;
+      --card: #ffffff;
+      --bg: #ffffff;
+      --border: rgba(40,85,108,.18);
+      --shadow: 0 10px 30px rgba(18,19,20,.08);
     }
-
-    html, body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
-    * { box-sizing: border-box; }
-    a { color: var(--rgx-blue); }
-
-    .card {
+    html,body{ background: var(--bg) !important; color: var(--rego-black); }
+    /* Fuerza modo blanco aunque el navegador quiera “dark” */
+    @media (prefers-color-scheme: dark){
+      html,body{ background:#fff !important; color:#121314 !important; }
+    }
+    .card{
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: var(--shadow-soft);
+      box-shadow: var(--shadow);
+      border-radius: 20px;
     }
-    .chip {
+    .chip{
       border: 1px solid var(--border);
       border-radius: 999px;
-      padding: .32rem .6rem;
-      font-weight: 900;
-      font-size: 12px;
-      color: var(--rgx-dk);
+      padding: .35rem .65rem;
+      font-size: .8rem;
+      color: var(--rego-blue);
       background: #fff;
-      white-space: nowrap;
     }
-
-    .btn {
-      border-radius: 14px;
+    .btn{
+      border-radius: 16px;
       padding: .75rem 1rem;
-      font-weight: 900;
+      font-weight: 700;
       border: 1px solid transparent;
-      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
-      user-select: none;
+      transition: .15s ease;
+      user-select:none;
     }
-    .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
-    .btn:active { transform: translateY(0px); box-shadow: none; }
-    .btn-primary { background: var(--rgx-green); color: var(--rgx-black); }
-    .btn-primary:hover { background: var(--rgx-olive); }
-    .btn-ghost { background: #fff; color: var(--rgx-dk); border-color: var(--border); }
-    .btn-ghost:hover { background: #fafafa; }
-    .btn-danger { background: var(--rgx-red); color: #fff; }
-    .btn-danger:hover { filter: brightness(0.95); }
-
-    .input, select, textarea{
-      background: #fff !important;
-      color: var(--rgx-black) !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 14px !important;
-      padding: .68rem .78rem !important;
-      outline: none !important;
-      width: 100%;
-      font-weight: 800;
-    }
-    .input:focus, select:focus, textarea:focus{
-      box-shadow: 0 0 0 4px rgba(88,213,211,0.22);
-      border-color: rgba(88,213,211,0.75) !important;
-    }
-
-    .label { font-size: 12px; color: var(--rgx-dk); font-weight: 900; }
-    .hint  { font-size: 12px; color: var(--muted); font-weight: 700; }
-
-    .kpi {
+    .btn-primary{ background: var(--rego-green); color: #121314; }
+    .btn-primary:hover{ filter: brightness(.96); }
+    .btn-outline{ background:#fff; border-color: var(--border); color: var(--rego-black); }
+    .btn-outline:hover{ background: rgba(183,201,31,.10); }
+    .btn-danger{ background: var(--rego-red); color:#fff; }
+    .btn-danger:hover{ filter: brightness(.95); }
+    .kpi{
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px 12px;
+      border-radius: 18px;
+      padding: .9rem 1rem;
       background: #fff;
     }
-    .kpi .t { font-size: 12px; color: var(--muted); font-weight: 900; }
-    .kpi .v { font-size: 22px; font-weight: 1000; color: var(--rgx-black); letter-spacing: -0.02em; }
-    .kpi.good .v { color: #0a7a34; }
-    .kpi.bad  .v { color: #b4141b; }
-    .kpi.info .v { color: var(--rgx-blue); }
-    .kpi.warn .v { color: #a76400; }
-
-    .badge {
-      display:inline-flex; align-items:center; gap:.4rem;
-      border-radius:999px; padding:.2rem .55rem;
-      font-weight:1000; font-size:11px;
+    .muted{ color: var(--rego-gm); }
+    .label{ color: var(--rego-gd); font-weight: 700; font-size:.9rem; }
+    .input{
+      width:100%;
       border:1px solid var(--border);
+      border-radius: 14px;
+      padding: .65rem .8rem;
+      outline: none;
       background:#fff;
     }
-    .badge.up   { background: rgba(183,201,31,0.18); border-color: rgba(183,201,31,0.35); color: var(--rgx-black); }
-    .badge.mid  { background: rgba(88,213,211,0.14); border-color: rgba(88,213,211,0.35); color: var(--rgx-black); }
-    .badge.down { background: rgba(211,27,35,0.10); border-color: rgba(211,27,35,0.25); color: var(--rgx-black); }
-
-    /* App shell */
-    .appHeader{
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-    }
-    .safeBottom { padding-bottom: max(env(safe-area-inset-bottom), 14px); }
-
-    /* Mobile "pages" */
-    .page { display: none; }
-    .page.active { display: block; }
-
-    /* Segmented control */
-    .seg {
-      display:flex;
+    .input:focus{ border-color: rgba(40,85,108,.45); box-shadow: 0 0 0 4px rgba(88,213,211,.18); }
+    .switch{
+      position:relative; width: 52px; height: 30px; border-radius: 999px;
+      background: rgba(103,112,113,.25);
       border:1px solid var(--border);
+      cursor:pointer;
+      flex: 0 0 auto;
+    }
+    .switch[data-on="true"]{ background: rgba(183,201,31,.85); }
+    .switch .knob{
+      position:absolute; top: 3px; left: 3px;
+      width: 24px; height: 24px; border-radius: 999px;
+      background:#fff; box-shadow: 0 6px 16px rgba(18,19,20,.15);
+      transition: .15s ease;
+    }
+    .switch[data-on="true"] .knob{ transform: translateX(22px); }
+    .hr{ height:1px; background: rgba(40,85,108,.14); border:0; }
+    .badge{
+      display:inline-flex; align-items:center; gap:.35rem;
       border-radius: 999px;
-      overflow:hidden;
-      background:#fff;
-    }
-    .seg button{
-      flex:1;
-      padding:.62rem .75rem;
-      font-weight:1000;
-      font-size:12px;
-      color: var(--rgx-dk);
-      background:#fff;
-      border-right:1px solid var(--border);
-    }
-    .seg button:last-child{ border-right:none; }
-    .seg button.active{
-      background: rgba(183,201,31,0.22);
-      color: var(--rgx-black);
-    }
-
-    /* Module card */
-    .modCardHeader{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-    }
-    .modTitle{
-      display:flex; align-items:center; gap:10px;
-    }
-    .modIcon{
-      width: 38px; height: 38px; border-radius: 12px;
+      padding:.25rem .55rem;
+      font-size: .78rem;
+      font-weight:700;
       border:1px solid var(--border);
-      display:flex; align-items:center; justify-content:center;
-      background: rgba(88,213,211,0.10);
-      flex: 0 0 auto;
-    }
-    .modIcon img{ width:22px; height:22px; object-fit:contain; }
-    .modIcon .dot{ width:10px; height:10px; border-radius:999px; background: var(--rgx-blue); }
-
-    .toggle{
-      display:flex; align-items:center; gap:10px;
-      border:1px solid var(--border);
-      border-radius:999px;
-      padding:.38rem .55rem;
       background:#fff;
-      user-select:none;
-      flex: 0 0 auto;
     }
-    .toggle input{ width:18px; height:18px; }
-    .toggle span{ font-size:12px; font-weight:1000; color: var(--rgx-dk); }
-
-    /* Collapsible */
-    .collapse { overflow:hidden; max-height: 0; transition: max-height .22s ease; }
-    .collapse.open { max-height: 999px; }
-
-    /* Mobile cards for lists */
-    .listCard{
-      border:1px solid var(--border);
-      border-radius: 16px;
-      background:#fff;
-      padding: 12px;
-    }
-
-    /* Print */
-    @media print{
-      @page { size: Letter; margin: 0.45in; }
-      header, footer, #bottomNav, #floatingCTA, #pageTabs { display:none !important; }
-      body { background:#fff !important; }
-      .card { box-shadow: none !important; }
-      .page { display:block !important; }
+    .badge.inv{ color: var(--rego-blue); }
+    .badge.cons{ color: var(--rego-red); }
+    .small{ font-size:.85rem; }
+    .by{
+      font-size:.78rem;
+      color: var(--rego-gm);
+      letter-spacing: .02em;
     }
   </style>
 </head>
 
-<body class="antialiased">
-
-  <!-- App Header -->
-  <header class="appHeader sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <img src="/assets/regofixlogo.png" alt="REGO-FIX Logo" class="h-9 w-auto" onerror="this.style.display='none';" />
-          <div class="min-w-0">
-            <div class="font-black tracking-tight truncate" style="color:var(--rgx-black)">ROI Holders</div>
-            <div class="text-xs font-extrabold truncate" style="color:var(--rgx-mid)">UI tipo app · modular · precios manuales</div>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="max-w-6xl mx-auto px-4 pt-6 pb-4">
+    <div class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <img id="logo" src="./regofixlogo.png" alt="REGO-FIX" class="h-10 w-auto" onerror="this.style.display='none'">
+          <div>
+            <div class="text-xl sm:text-2xl font-extrabold" style="color:var(--rego-black)">
+              ROI Holders REGO-FIX
+            </div>
+            <div class="muted small">
+              Calculadora modular (inversión + consumibles) · carrito con búsqueda SKU/nombre
+            </div>
           </div>
         </div>
 
-        <div class="hidden md:flex items-center gap-2">
-          <button id="btnPrintTop" class="btn btn-ghost">Generar PDF</button>
-          <button id="btnCalcularTop" class="btn btn-primary">Calcular</button>
+        <div class="flex items-center gap-2 flex-wrap justify-start sm:justify-end">
+          <span class="chip">Modo blanco fijo</span>
+          <span class="chip">Colores REGO-FIX</span>
+          <span class="chip">100% funcional (sin “switches de adorno”)</span>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl overflow-hidden border" style="border-color:var(--border); background:linear-gradient(90deg, rgba(183,201,31,.18), rgba(88,213,211,.18), rgba(40,85,108,.10));">
+        <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div class="flex-1">
+            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: holders + items REGO-FIX</div>
+            <div class="muted small">Los precios se capturan manualmente. El catálogo es una lista editable/importable (CSV) para que puedas meter TODO tu catálogo sin pelearte con el PDF.</div>
+          </div>
+          <div class="text-right">
+            <div class="by">by alexrasa</div>
+          </div>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Desktop Tabs / Mobile Page Tabs -->
-  <section id="pageTabs" class="max-w-6xl mx-auto px-4 pt-4">
-    <div class="seg">
-      <button class="tabBtn active" data-page="page-calc">Cálculo</button>
-      <button class="tabBtn" data-page="page-cart">Carrito</button>
-      <button class="tabBtn" data-page="page-report">Reporte</button>
-    </div>
-  </section>
+  <main class="max-w-6xl mx-auto px-4 pb-10 space-y-6">
 
-  <main class="max-w-6xl mx-auto px-4 pt-4 pb-24">
-    <!-- PAGE: CALC -->
-    <section id="page-calc" class="page active">
-      <div class="grid lg:grid-cols-12 gap-4">
-        <!-- LEFT: Modules -->
-        <div class="lg:col-span-7 grid gap-4">
+    <!-- 1) Configuración base -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1) Configuración base</h2>
+          <p class="muted small mt-1">Define el costo de máquina/hora y el volumen. Todo lo demás se calcula con tus switches.</p>
+        </div>
+        <span class="badge inv">Base</span>
+      </div>
 
-          <!-- Base card -->
-          <div class="card p-4">
-            <div class="flex flex-col gap-3">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <div class="text-sm font-black" style="color:var(--rgx-black)">Base del proceso</div>
-                  <div class="hint mt-1">Estos campos aplican a todos los módulos.</div>
-                </div>
-                <span class="chip">modo blanco fijo</span>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="grid gap-1">
-                  <span class="label">Piezas por mes</span>
-                  <input id="pmes" type="number" value="10000" class="input" />
-                </label>
-                <label class="grid gap-1">
-                  <span class="label">Costo por hora máquina (USD)</span>
-                  <input id="costoHora" type="number" value="50" class="input" />
-                </label>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="grid gap-1">
-                  <span class="label">Inversión (USD)</span>
-                  <input id="inversion" type="number" value="0" class="input" />
-                  <span class="hint">Sincroniza desde Carrito (tipo: Inversión).</span>
-                </label>
-                <label class="grid gap-1">
-                  <span class="label">Consumibles (USD/mes)</span>
-                  <input id="consumibles" type="number" value="0" class="input" />
-                  <span class="hint">Sincroniza desde Carrito (tipo: Consumibles).</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Module: Time -->
-          <div class="card p-4">
-            <div class="modCardHeader">
-              <div class="modTitle">
-                <div class="modIcon">
-                  <img src="/assets/icons/time.svg" alt="Tiempo" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;dot&quot; style=&quot;background:var(--rgx-blue)&quot;></span>';">
-                </div>
-                <div>
-                  <div class="font-black" style="color:var(--rgx-black)">Ahorro por tiempo (ciclo)</div>
-                  <div class="hint">Menos segundos → menos horas → menos costo.</div>
-                </div>
-              </div>
-              <label class="toggle">
-                <input id="incTiempo" type="checkbox" checked />
-                <span>Incluir</span>
-              </label>
-            </div>
-
-            <button class="mt-3 btn btn-ghost w-full text-left" data-collapse="modTiempo">
-              Abrir / cerrar módulo
-            </button>
-
-            <div id="modTiempo" class="collapse open mt-3">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="grid gap-1">
-                  <span class="label">Ciclo actual (s)</span>
-                  <input id="cicloA" type="number" value="60" class="input" />
-                </label>
-                <label class="grid gap-1">
-                  <span class="label">Ciclo propuesto (s)</span>
-                  <input id="cicloP" type="number" value="45" class="input" />
-                </label>
-              </div>
-              <div class="mt-2 hint">Si activas “Mejora de proceso”, al ciclo propuesto se le aplica reducción adicional.</div>
-            </div>
-          </div>
-
-          <!-- Module: Process -->
-          <div class="card p-4">
-            <div class="modCardHeader">
-              <div class="modTitle">
-                <div class="modIcon" style="background: rgba(183,201,31,0.14);">
-                  <img src="/assets/icons/process.svg" alt="Proceso" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;dot&quot; style=&quot;background:var(--rgx-green)&quot;></span>';">
-                </div>
-                <div>
-                  <div class="font-black" style="color:var(--rgx-black)">Mejora de proceso</div>
-                  <div class="hint">Sujeción más robusta → mejores condiciones.</div>
-                </div>
-              </div>
-              <label class="toggle">
-                <input id="incProceso" type="checkbox" checked />
-                <span>Incluir</span>
-              </label>
-            </div>
-
-            <button class="mt-3 btn btn-ghost w-full text-left" data-collapse="modProceso">
-              Abrir / cerrar módulo
-            </button>
-
-            <div id="modProceso" class="collapse open mt-3">
-              <label class="grid gap-1">
-                <span class="label">Reducción adicional sobre ciclo propuesto (%)</span>
-                <input id="procPct" type="number" value="10" class="input" />
-                <span class="hint">Ej.: 10% = el ciclo propuesto baja 10% extra.</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Module: Life -->
-          <div class="card p-4">
-            <div class="modCardHeader">
-              <div class="modTitle">
-                <div class="modIcon" style="background: rgba(88,213,211,0.12);">
-                  <img src="/assets/icons/life.svg" alt="Vida" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;dot&quot; style=&quot;background:var(--rgx-turq)&quot;></span>';">
-                </div>
-                <div>
-                  <div class="font-black" style="color:var(--rgx-black)">Ahorro por vida de herramienta</div>
-                  <div class="hint">Más ciclos por herramienta → menos consumo mensual.</div>
-                </div>
-              </div>
-              <label class="toggle">
-                <input id="incVida" type="checkbox" checked />
-                <span>Incluir</span>
-              </label>
-            </div>
-
-            <button class="mt-3 btn btn-ghost w-full text-left" data-collapse="modVida">
-              Abrir / cerrar módulo
-            </button>
-
-            <div id="modVida" class="collapse open mt-3">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="grid gap-1">
-                  <span class="label">Vida actual (pzas)</span>
-                  <input id="vidaA" type="number" value="1300" class="input" />
-                </label>
-                <label class="grid gap-1">
-                  <span class="label">Vida propuesta (pzas)</span>
-                  <input id="vidaP" type="number" value="2500" class="input" />
-                </label>
-              </div>
-              <label class="grid gap-1 mt-3">
-                <span class="label">Costo herramienta / inserto (USD)</span>
-                <input id="costoHerr" type="number" value="128.87" class="input" />
-              </label>
-            </div>
-          </div>
-
-          <!-- Module: Stops -->
-          <div class="card p-4">
-            <div class="modCardHeader">
-              <div class="modTitle">
-                <div class="modIcon" style="background: rgba(211,27,35,0.08);">
-                  <img src="/assets/icons/stops.svg" alt="Paros" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;dot&quot; style=&quot;background:var(--rgx-red)&quot;></span>';">
-                </div>
-                <div>
-                  <div class="font-black" style="color:var(--rgx-black)">Ahorro por paros / cambios</div>
-                  <div class="hint">Cambios/mes × min/cambio (+ otros paros).</div>
-                </div>
-              </div>
-              <label class="toggle">
-                <input id="incParos" type="checkbox" checked />
-                <span>Incluir</span>
-              </label>
-            </div>
-
-            <button class="mt-3 btn btn-ghost w-full text-left" data-collapse="modParos">
-              Abrir / cerrar módulo
-            </button>
-
-            <div id="modParos" class="collapse open mt-3">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="grid gap-1">
-                  <span class="label">Cambios/mes (Actual)</span>
-                  <input id="cambiosA" type="number" value="20" class="input" />
-                </label>
-                <label class="grid gap-1">
-                  <span class="label">Cambios/mes (Propuesto)</span>
-                  <input id="cambiosP" type="number" value="8" class="input" />
-                </label>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <label class="grid gap-1">
-                  <span class="label">Min/cambio (Actual)</span>
-                  <input id="minCambioA" type="number" value="6" class="input" />
-                </label>
-                <label class="grid gap-1">
-                  <span class="label">Min/cambio (Propuesto)</span>
-                  <input id="minCambioP" type="number" value="4" class="input" />
-                </label>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <label class="grid gap-1">
-                  <span class="label">Otros paros (min/mes) Actual</span>
-                  <input id="otrosParosA" type="number" value="30" class="input" />
-                </label>
-                <label class="grid gap-1">
-                  <span class="label">Otros paros (min/mes) Propuesto</span>
-                  <input id="otrosParosP" type="number" value="10" class="input" />
-                </label>
-              </div>
-
-              <div class="mt-2 hint">Total paros = (cambios × min/cambio) + otros.</div>
-            </div>
-          </div>
-
-          <!-- Actions -->
-          <div class="grid grid-cols-2 gap-3">
-            <button id="btnResetAll" class="btn btn-danger w-full">Reset</button>
-            <button id="btnPrint" class="btn btn-ghost w-full">Generar PDF</button>
-          </div>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <div class="label">Costo máquina (MXN/h)</div>
+          <input id="costHour" class="input" type="number" min="0" step="1" value="850">
+          <div class="muted small mt-1">Incluye operador, carga, overhead, etc.</div>
         </div>
 
-        <!-- RIGHT: Sticky KPIs + Quick Report -->
-        <div class="lg:col-span-5 grid gap-4 lg:sticky lg:top-24 lg:self-start">
+        <div>
+          <div class="label">Piezas por mes</div>
+          <input id="partsMonth" class="input" type="number" min="0" step="1" value="5000">
+          <div class="muted small mt-1">Para vida de herramienta y ciclo.</div>
+        </div>
 
-          <div class="card p-4">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="text-sm font-black" style="color:var(--rgx-black)">Resultados</div>
-                <div class="hint mt-1">Se actualiza en vivo.</div>
-              </div>
-              <span class="chip">by alexrasa</span>
-            </div>
+        <div>
+          <div class="label">Días por mes</div>
+          <input id="daysMonth" class="input" type="number" min="1" step="1" value="22">
+        </div>
 
-            <div class="mt-3 grid grid-cols-2 gap-3">
-              <div class="kpi good">
-                <div class="t">Ahorro mensual (bruto)</div>
-                <div id="kpiAhorro" class="v">$0.00</div>
-              </div>
-              <div class="kpi info">
-                <div class="t">Neto mensual</div>
-                <div id="kpiNeto" class="v">$0.00</div>
-              </div>
-              <div class="kpi warn">
-                <div class="t">Payback (mes)</div>
-                <div id="kpiPayback" class="v">—</div>
-              </div>
-              <div class="kpi">
-                <div class="t">ROI anual</div>
-                <div id="kpiROI" class="v">0%</div>
-              </div>
-            </div>
-
-            <div class="mt-4 grid gap-3">
-              <div class="listCard">
-                <div class="text-xs font-black" style="color:var(--rgx-mid)">Distribución de ahorros</div>
-                <div id="vizDonut" class="mt-2"></div>
-              </div>
-              <div class="listCard">
-                <div class="text-xs font-black" style="color:var(--rgx-mid)">Flujo mensual y payback</div>
-                <div id="vizCash" class="mt-2"></div>
-              </div>
-            </div>
-
-            <div class="mt-3 hidden md:grid grid-cols-2 gap-2">
-              <button id="btnGoCart" class="btn btn-ghost w-full">Ir a Carrito</button>
-              <button id="btnGoReport" class="btn btn-ghost w-full">Ver Reporte</button>
-            </div>
-          </div>
-
+        <div>
+          <div class="label">Horas por turno</div>
+          <input id="hoursShift" class="input" type="number" min="1" step="0.5" value="8">
         </div>
       </div>
     </section>
 
-    <!-- PAGE: CART -->
-    <section id="page-cart" class="page">
-      <div class="grid lg:grid-cols-12 gap-4">
-        <div class="lg:col-span-5 grid gap-4">
-          <div class="card p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="text-sm font-black" style="color:var(--rgx-black)">Catálogo (precios manuales)</div>
-                <div class="hint mt-1">Busca y agrega ítems al carrito.</div>
-              </div>
-              <span class="chip">sin precios</span>
-            </div>
-
-            <div class="mt-3 grid gap-3">
-              <label class="grid gap-1">
-                <span class="label">Buscar</span>
-                <input id="catSearch" class="input" type="text" placeholder="powRgrip, ER, tuerca, pinza..." />
-              </label>
-
-              <label class="grid gap-1">
-                <span class="label">Categoría</span>
-                <select id="catFilter">
-                  <option value="__all__">Todas</option>
-                </select>
-              </label>
-
-              <div class="grid grid-cols-2 gap-2">
-                <button id="btnResetCat" class="btn w-full" style="background:var(--rgx-turq); color:var(--rgx-black);">Limpiar</button>
-                <button id="btnVaciarCarrito" class="btn btn-ghost w-full">Vaciar carrito</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Catalog list as cards (mobile-first) -->
-          <div id="catCards" class="grid gap-3"></div>
+    <!-- 2) Carrito: items REGO-FIX -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">2) Carrito REGO-FIX (inversión + consumibles)</h2>
+          <p class="muted small mt-1">Busca por SKU o nombre. Agrega cantidades. Captura precios manuales. Clasifica cada línea como <b>Inversión</b> o <b>Consumible mensual</b>.</p>
         </div>
-
-        <div class="lg:col-span-7 grid gap-4">
-          <div class="card p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="text-sm font-black" style="color:var(--rgx-black)">Carrito</div>
-                <div class="hint mt-1">Define tipo, qty y precio unitario.</div>
-              </div>
-              <div class="text-right">
-                <div class="text-xs font-black" style="color:var(--rgx-mid)">Inversión</div>
-                <div id="sumInversion" class="text-base font-black" style="color:var(--rgx-black)">$0.00</div>
-                <div class="text-xs font-black mt-1" style="color:var(--rgx-mid)">Consumibles/mes</div>
-                <div id="sumConsumibles" class="text-base font-black" style="color:var(--rgx-black)">$0.00</div>
-              </div>
-            </div>
-
-            <div class="mt-3 hint">
-              Al cambiar el carrito, se sincroniza <b>Inversión</b> y <b>Consumibles</b> en la pestaña de Cálculo.
-            </div>
-          </div>
-
-          <!-- Cart items as cards -->
-          <div id="cartCards" class="grid gap-3"></div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <button id="btnBackCalcFromCart" class="btn btn-ghost w-full">Volver a Cálculo</button>
-            <button id="btnCalcularFromCart" class="btn btn-primary w-full">Recalcular</button>
-          </div>
+        <div class="flex gap-2">
+          <button id="btnClearCart" class="btn btn-outline">Vaciar carrito</button>
+          <button id="btnAddCustom" class="btn btn-primary">+ Línea manual</button>
         </div>
       </div>
-    </section>
 
-    <!-- PAGE: REPORT -->
-    <section id="page-report" class="page">
-      <div class="grid gap-4">
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Catálogo -->
         <div class="card p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="text-sm font-black" style="color:var(--rgx-black)">Reporte (tarjetas)</div>
-              <div class="hint mt-1">Comparativa y métricas clave.</div>
+          <div class="flex items-center justify-between gap-2">
+            <div class="font-extrabold" style="color:var(--rego-blue)">Catálogo (editable)</div>
+            <span class="chip" id="catalogCount">0 items</span>
+          </div>
+
+          <div class="mt-3">
+            <input id="catalogSearch" class="input" placeholder="Buscar por SKU o nombre (ej. 4340.11136 o ER 16)">
+            <div class="muted small mt-1">Tip: si tu catálogo es gigante, usa SKU y listo. Es el “control numérico” de las compras.</div>
+          </div>
+
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button id="btnImportCsv" class="btn btn-outline">Importar CSV</button>
+            <button id="btnExportCsv" class="btn btn-outline">Exportar CSV</button>
+          </div>
+
+          <!-- Import CSV drawer -->
+          <div id="csvPanel" class="mt-3 hidden">
+            <div class="muted small mb-2">
+              Pega CSV con columnas: <b>sku,name,category</b> (category opcional). Una línea por item.
             </div>
-            <div class="flex gap-2">
-              <button id="btnPrintReport" class="btn btn-ghost">PDF</button>
-              <button id="btnBackCalcFromReport" class="btn btn-ghost">Cálculo</button>
+            <textarea id="csvTextarea" class="input" rows="6" placeholder="sku,name,category&#10;4340.11136,CAT+ 40/ER 11 x 050 H,holders"></textarea>
+            <div class="mt-2 flex gap-2">
+              <button id="btnCsvApply" class="btn btn-primary">Aplicar</button>
+              <button id="btnCsvClose" class="btn btn-outline">Cerrar</button>
+            </div>
+          </div>
+
+          <hr class="hr my-4"/>
+
+          <div id="catalogResults" class="space-y-2 max-h-[420px] overflow-auto pr-1">
+            <!-- results rendered -->
+          </div>
+        </div>
+
+        <!-- Carrito -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-2">
+            <div class="font-extrabold" style="color:var(--rego-blue)">Carrito</div>
+            <span class="chip" id="cartCount">0 líneas</span>
+          </div>
+
+          <div id="cartList" class="mt-3 space-y-2">
+            <!-- cart rows -->
+          </div>
+
+          <hr class="hr my-4"/>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="kpi">
+              <div class="muted small">Total Inversión</div>
+              <div id="totalInv" class="text-2xl font-extrabold">MXN 0</div>
+              <div class="muted small">Pago único (holders, kits, etc.)</div>
+            </div>
+            <div class="kpi">
+              <div class="muted small">Consumibles mensuales</div>
+              <div id="totalCons" class="text-2xl font-extrabold">MXN 0</div>
+              <div class="muted small">Líquidos, limpiadores, collets si lo manejas así, etc.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3) Ahorros (switches reales) -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">3) Ahorros estimados (3 frentes)</h2>
+          <p class="muted small mt-1">Activa solo lo que aplique. Cada módulo se suma a los ahorros mensuales.</p>
+        </div>
+        <span class="badge inv">Ahorros</span>
+      </div>
+
+      <!-- cards -->
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <!-- A) Tiempo -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-extrabold" style="color:var(--rego-blue)">A) Ahorro por tiempo</div>
+              <div class="muted small">Setups, cambios, paros por cambios</div>
+            </div>
+            <div class="switch" id="swTime" data-on="true" role="switch" aria-checked="true" tabindex="0">
+              <div class="knob"></div>
+            </div>
+          </div>
+
+          <div class="mt-3 space-y-3" id="timeBody">
+            <div class="flex items-center justify-between">
+              <div class="small font-bold" style="color:var(--rego-gd)">Incluir: Cambios/mes * min/cambio</div>
+              <div class="switch" id="swTimeChanges" data-on="true"><div class="knob"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Cambios/mes (actual)</div>
+                <input id="chgAct" class="input" type="number" min="0" step="1" value="180">
+              </div>
+              <div>
+                <div class="label">Cambios/mes (nuevo)</div>
+                <input id="chgNew" class="input" type="number" min="0" step="1" value="140">
+              </div>
+              <div>
+                <div class="label">Min/cambio (actual)</div>
+                <input id="chgMinAct" class="input" type="number" min="0" step="0.1" value="6">
+              </div>
+              <div>
+                <div class="label">Min/cambio (nuevo)</div>
+                <input id="chgMinNew" class="input" type="number" min="0" step="0.1" value="4.5">
+              </div>
+            </div>
+
+            <hr class="hr"/>
+
+            <div class="flex items-center justify-between">
+              <div class="small font-bold" style="color:var(--rego-gd)">Incluir: Setups/mes * min/setup</div>
+              <div class="switch" id="swTimeSetups" data-on="false"><div class="knob"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Setups/mes (actual)</div>
+                <input id="setAct" class="input" type="number" min="0" step="1" value="20">
+              </div>
+              <div>
+                <div class="label">Setups/mes (nuevo)</div>
+                <input id="setNew" class="input" type="number" min="0" step="1" value="18">
+              </div>
+              <div>
+                <div class="label">Min/setup (actual)</div>
+                <input id="setMinAct" class="input" type="number" min="0" step="0.1" value="25">
+              </div>
+              <div>
+                <div class="label">Min/setup (nuevo)</div>
+                <input id="setMinNew" class="input" type="number" min="0" step="0.1" value="20">
+              </div>
+            </div>
+
+            <hr class="hr"/>
+
+            <div class="flex items-center justify-between">
+              <div class="small font-bold" style="color:var(--rego-gd)">Incluir: Paros/mes * min/paro</div>
+              <div class="switch" id="swTimeStops" data-on="false"><div class="knob"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Paros/mes (actual)</div>
+                <input id="stpAct" class="input" type="number" min="0" step="1" value="12">
+              </div>
+              <div>
+                <div class="label">Paros/mes (nuevo)</div>
+                <input id="stpNew" class="input" type="number" min="0" step="1" value="8">
+              </div>
+              <div>
+                <div class="label">Min/paro (actual)</div>
+                <input id="stpMinAct" class="input" type="number" min="0" step="0.1" value="18">
+              </div>
+              <div>
+                <div class="label">Min/paro (nuevo)</div>
+                <input id="stpMinNew" class="input" type="number" min="0" step="0.1" value="12">
+              </div>
+            </div>
+
+            <div class="kpi mt-3">
+              <div class="muted small">Ahorro por tiempo (mensual)</div>
+              <div id="saveTime" class="text-xl font-extrabold">MXN 0</div>
             </div>
           </div>
         </div>
 
-        <!-- Compare cards -->
-        <div id="reportCards" class="grid md:grid-cols-2 gap-3"></div>
+        <!-- B) Vida herramienta -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-extrabold" style="color:var(--rego-blue)">B) Vida de herramienta</div>
+              <div class="muted small">Mis mismas condiciones, más ciclos por herramienta</div>
+            </div>
+            <div class="switch" id="swLife" data-on="true" role="switch" aria-checked="true" tabindex="0">
+              <div class="knob"></div>
+            </div>
+          </div>
+
+          <div class="mt-3 space-y-3" id="lifeBody">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Ciclos por herramienta (actual)</div>
+                <input id="lifeAct" class="input" type="number" min="1" step="1" value="100">
+              </div>
+              <div>
+                <div class="label">Ciclos por herramienta (nuevo)</div>
+                <input id="lifeNew" class="input" type="number" min="1" step="1" value="160">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Costo por herramienta (MXN)</div>
+                <input id="toolCost" class="input" type="number" min="0" step="1" value="650">
+              </div>
+              <div>
+                <div class="label">Herramientas iguales en proceso</div>
+                <input id="toolCount" class="input" type="number" min="1" step="1" value="3">
+              </div>
+            </div>
+
+            <div class="kpi">
+              <div class="muted small">Ahorro por vida (mensual)</div>
+              <div id="saveLife" class="text-xl font-extrabold">MXN 0</div>
+              <div class="muted small">Asume consumo proporcional a piezas/mes.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- C) Proceso -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-extrabold" style="color:var(--rego-blue)">C) Mejora de proceso</div>
+              <div class="muted small">Ciclo menor por sujeción más robusta</div>
+            </div>
+            <div class="switch" id="swProc" data-on="true" role="switch" aria-checked="true" tabindex="0">
+              <div class="knob"></div>
+            </div>
+          </div>
+
+          <div class="mt-3 space-y-3" id="procBody">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Ciclo actual (min/pieza)</div>
+                <input id="cycAct" class="input" type="number" min="0" step="0.01" value="3.20">
+              </div>
+              <div>
+                <div class="label">Ciclo nuevo (min/pieza)</div>
+                <input id="cycNew" class="input" type="number" min="0" step="0.01" value="2.85">
+              </div>
+            </div>
+
+            <div class="kpi">
+              <div class="muted small">Ahorro por proceso (mensual)</div>
+              <div id="saveProc" class="text-xl font-extrabold">MXN 0</div>
+              <div class="muted small">Ahorro = (min ahorrados * piezas/mes) * costo/min.</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
+
+    <!-- 4) Resultados ROI -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">4) Resultados</h2>
+          <p class="muted small mt-1">Payback, ahorro neto mensual y ROI anual estimado.</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnCopySummary" class="btn btn-outline">Copiar resumen</button>
+          <button id="btnResetAll" class="btn btn-danger">Reset</button>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div class="kpi">
+          <div class="muted small">Ahorro bruto mensual</div>
+          <div id="grossSave" class="text-2xl font-extrabold">MXN 0</div>
+          <div class="muted small">Tiempo + vida + proceso</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Ahorro neto mensual</div>
+          <div id="netSave" class="text-2xl font-extrabold">MXN 0</div>
+          <div class="muted small">Bruto − consumibles mensuales</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Payback (meses)</div>
+          <div id="payback" class="text-2xl font-extrabold">—</div>
+          <div class="muted small">Inversión / ahorro neto mensual</div>
+        </div>
+      </div>
+
+      <div class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="kpi">
+          <div class="muted small">ROI anual estimado</div>
+          <div id="roiAnnual" class="text-2xl font-extrabold">—</div>
+          <div class="muted small">((neto*12) / inversión) · si inversión = 0, se omite</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Notas</div>
+          <div class="small" style="color:var(--rego-gd)">
+            Esta calculadora es intencionalmente “manual” en precios: tú mandas.  
+            (Como debe ser. Si compras por intuición, luego no te quejes del retrabajo financiero.)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- footer small -->
+    <footer class="text-center pb-4">
+      <div class="by">by alexrasa</div>
+    </footer>
+
   </main>
 
-  <!-- Floating CTA (mobile) -->
-  <div id="floatingCTA" class="md:hidden fixed inset-x-0 bottom-16 z-40 px-4">
-    <button id="btnCalcularMobile" class="btn btn-primary w-full">Calcular</button>
-  </div>
+<script>
+/* =========================
+   Datos: Catálogo inicial
+   =========================
+   Nota: el PDF que compartiste viene mayormente como imagen (no texto).
+   Por eso, aquí dejo un “starter” de SKUs (extraídos de algunas páginas) y
+   te doy importación CSV para que metas TODO tu catálogo sin sufrir.
 
-  <!-- Bottom Nav (mobile) -->
-  <nav id="bottomNav" class="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white border-t safeBottom" style="border-color:var(--border)">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between">
-        <button class="navBtn flex-1 py-2" data-page="page-calc" aria-label="Cálculo">
-          <div class="text-xs font-black" style="color:var(--rgx-dk)">Cálculo</div>
-        </button>
-        <button class="navBtn flex-1 py-2" data-page="page-cart" aria-label="Carrito">
-          <div class="text-xs font-black" style="color:var(--rgx-dk)">Carrito</div>
-        </button>
-        <button class="navBtn flex-1 py-2" data-page="page-report" aria-label="Reporte">
-          <div class="text-xs font-black" style="color:var(--rgx-dk)">Reporte</div>
-        </button>
+   Formato item: { sku, name, category }
+*/
+const DEFAULT_CATALOG = [
+  // Sample holders/portapinzas (OCR parcial)
+  { sku:"4340.11136", name:"CAT+ 40/ER 11 x 050 H", category:"holders" },
+  { sku:"4340.11236", name:"CAT+ 40/ER 11 x 070 H", category:"holders" },
+  { sku:"4340.11336", name:"CAT+ 40/ER 11 x 100 H", category:"holders" },
+  { sku:"4340.11436", name:"CAT+ 40/ER 11 x 150 H", category:"holders" },
+  { sku:"4340.11536", name:"CAT+ 40/ER 11 x 200 H", category:"holders" },
+  { sku:"4340.11636", name:"CAT+ 40/ER 11 x 250 H", category:"holders" },
+  { sku:"4340.11736", name:"CAT+ 40/ER 11 x 300 H", category:"holders" },
+  { sku:"4350.11166", name:"CAT+ 40/ER 16 x 050 H", category:"holders" },
+  { sku:"4350.11266", name:"CAT+ 40/ER 16 x 070 H", category:"holders" },
+  { sku:"4350.11366", name:"CAT+ 40/ER 16 x 100 H", category:"holders" },
+  { sku:"4350.11466", name:"CAT+ 40/ER 16 x 150 H", category:"holders" },
+  { sku:"4350.11566", name:"CAT+ 40/ER 16 x 200 H", category:"holders" },
+  { sku:"4350.11666", name:"CAT+ 40/ER 16 x 250 H", category:"holders" },
+
+  { sku:"4805.13250", name:"CS/ER 32 x 100H", category:"holders" },
+  { sku:"4806.11170", name:"(C6/ER 11x 1S0H)", category:"holders" },
+  { sku:"4806.11630", name:"C6/ER 16 x 070H", category:"holders" },
+  { sku:"4806.11650", name:"C6/ER 16 x 100 H", category:"holders" },
+  { sku:"4806.11670", name:"C6/ER 16 x 150H", category:"holders" },
+
+  { sku:"8886.13050", name:"CO/ER 16 x 225 XL", category:"holders" },
+  { sku:"8886.13070", name:"CO/ER 16 x 240 XL", category:"holders" },
+  { sku:"8886.13090", name:"CO/ER 16 x 260 XL", category:"holders" },
+  { sku:"8886.13130", name:"CO/ER 16 x 300 XL", category:"holders" },
+  { sku:"8886.13150", name:"CO/ER 16 x 325 XL", category:"holders" },
+  { sku:"8886.13170", name:"C6/ER 16 x 340 XL", category:"holders" },
+  { sku:"8886.13190", name:"C6/ER 16 x 360 XL", category:"holders" },
+
+  { sku:"2806.12020", name:"C6/ER 20 x 060", category:"holders" },
+  { sku:"2808.15040", name:"CB/ER 50 x 080", category:"holders" },
+
+  // Ejemplos de “consumibles/limpieza” (agrega lo tuyo por CSV)
+  { sku:"CLEAN-001", name:"Limpiador (ejemplo) — captura SKU real por CSV", category:"cleaning" },
+  { sku:"ACC-001",   name:"Accesorio (ejemplo) — captura SKU real por CSV", category:"accessories" }
+];
+
+/* =========================
+   Estado
+   ========================= */
+const state = {
+  catalog: [],
+  cart: [], // {id, sku, name, qty, price, type:"inv"|"cons"}
+  switches: {
+    time: true,
+    timeChanges: true,
+    timeSetups: false,
+    timeStops: false,
+    life: true,
+    proc: true
+  }
+};
+
+const $ = (id)=>document.getElementById(id);
+const money = (n)=>{
+  const v = Number(n||0);
+  return "MXN " + v.toLocaleString("es-MX",{maximumFractionDigits:0});
+};
+const clamp0 = (n)=>Math.max(0, Number(n||0));
+
+function uid(){
+  return Math.random().toString(16).slice(2)+Date.now().toString(16);
+}
+
+/* =========================
+   Switch helpers
+   ========================= */
+function setSwitch(el, on){
+  el.dataset.on = on ? "true":"false";
+}
+function getSwitch(el){
+  return el.dataset.on === "true";
+}
+function bindSwitch(id, key, onChange){
+  const el = $(id);
+  setSwitch(el, !!state.switches[key]);
+  const toggle = ()=>{
+    const next = !getSwitch(el);
+    setSwitch(el, next);
+    state.switches[key] = next;
+    onChange && onChange(next);
+    renderAll();
+  };
+  el.addEventListener("click", toggle);
+  el.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); }
+  });
+}
+
+/* =========================
+   Catálogo
+   ========================= */
+function loadInitial(){
+  // localStorage
+  const savedCat = localStorage.getItem("rego_catalog_v1");
+  const savedCart = localStorage.getItem("rego_cart_v1");
+  const savedSw  = localStorage.getItem("rego_switches_v1");
+
+  state.catalog = savedCat ? safeJson(savedCat, DEFAULT_CATALOG) : DEFAULT_CATALOG.slice();
+  state.cart    = savedCart ? safeJson(savedCart, []) : [];
+  state.switches= savedSw ? safeJson(savedSw, state.switches) : state.switches;
+
+  // ensure minimal
+  if(!Array.isArray(state.catalog)) state.catalog = DEFAULT_CATALOG.slice();
+  if(!Array.isArray(state.cart)) state.cart = [];
+}
+
+function persist(){
+  localStorage.setItem("rego_catalog_v1", JSON.stringify(state.catalog));
+  localStorage.setItem("rego_cart_v1", JSON.stringify(state.cart));
+  localStorage.setItem("rego_switches_v1", JSON.stringify(state.switches));
+}
+
+function safeJson(str, fallback){
+  try{ return JSON.parse(str); }catch{ return fallback; }
+}
+
+function renderCatalog(){
+  $("catalogCount").textContent = `${state.catalog.length} items`;
+  const q = ($("catalogSearch").value||"").trim().toLowerCase();
+  const results = state.catalog
+    .filter(it=>{
+      if(!q) return true;
+      return (it.sku||"").toLowerCase().includes(q) || (it.name||"").toLowerCase().includes(q);
+    })
+    .slice(0, 60); // UI cap
+
+  const wrap = $("catalogResults");
+  wrap.innerHTML = "";
+
+  if(results.length===0){
+    const empty = document.createElement("div");
+    empty.className="muted small";
+    empty.textContent="Sin resultados. Importa CSV o prueba con SKU.";
+    wrap.appendChild(empty);
+    return;
+  }
+
+  results.forEach(it=>{
+    const row = document.createElement("div");
+    row.className="border rounded-2xl p-3 bg-white";
+    row.style.borderColor="var(--border)";
+
+    row.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="font-extrabold" style="color:var(--rego-black)">${escapeHtml(it.sku||"")}</div>
+          <div class="small muted truncate">${escapeHtml(it.name||"")}</div>
+          <div class="mt-2 flex gap-2 flex-wrap">
+            <span class="badge inv">${escapeHtml(it.category||"item")}</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="padding:.55rem .8rem; border-radius:14px">Agregar</button>
       </div>
-    </div>
-  </nav>
+    `;
+    row.querySelector("button").addEventListener("click", ()=>{
+      addToCart(it);
+    });
+    wrap.appendChild(row);
+  });
+}
 
-  <footer class="hidden md:block py-8 border-t" style="border-color:var(--border)">
-    <div class="max-w-6xl mx-auto px-4 text-sm font-black" style="color:var(--rgx-mid)">
-      © 2026 AlexRaSa — by alexrasa
-    </div>
-  </footer>
+function addToCart(it){
+  // If exists, increase qty
+  const found = state.cart.find(x=>x.sku===it.sku && x.type==="inv");
+  if(found){
+    found.qty = clamp0(found.qty)+1;
+  }else{
+    state.cart.push({
+      id: uid(),
+      sku: it.sku || "",
+      name: it.name || "",
+      qty: 1,
+      price: 0,
+      type: "inv" // default: inversión
+    });
+  }
+  persist();
+  renderAll();
+}
 
-  <script>
-    // =========================
-    // Utils
-    // =========================
-    const $ = (id) => document.getElementById(id);
+function addCustomLine(){
+  state.cart.push({
+    id: uid(),
+    sku: "",
+    name: "Línea manual",
+    qty: 1,
+    price: 0,
+    type: "inv"
+  });
+  persist();
+  renderAll();
+}
 
-    function num(x, d=0){ const v = Number(x); return isFinite(v) ? v : d; }
-    function clamp(n, min=0){ n=num(n); return Math.max(min,n); }
-    function money(n){ return `$${Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
-    function pct(n){ if(!isFinite(n)) return '∞%'; return `${n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}%`; }
+function clearCart(){
+  state.cart = [];
+  persist();
+  renderAll();
+}
 
-    function setEnabled(ids, on){
-      ids.forEach(id=>{
-        const el=$(id);
-        if(!el) return;
-        el.disabled = !on;
-        if(!on) el.classList.add('opacity-60');
-        else el.classList.remove('opacity-60');
-      });
-    }
+function renderCart(){
+  $("cartCount").textContent = `${state.cart.length} líneas`;
+  const wrap = $("cartList");
+  wrap.innerHTML = "";
 
-    // =========================
-    // Pages (app-like)
-    // =========================
-    function showPage(pageId){
-      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-      $(pageId)?.classList.add('active');
+  if(state.cart.length===0){
+    const empty = document.createElement("div");
+    empty.className="muted small";
+    empty.textContent="Carrito vacío. Agrega items del catálogo o crea una línea manual.";
+    wrap.appendChild(empty);
+    return;
+  }
 
-      // tabs state
-      document.querySelectorAll('.tabBtn').forEach(b=>b.classList.toggle('active', b.dataset.page===pageId));
-      // bottom nav state (simple)
-      document.querySelectorAll('.navBtn').forEach(b=>{
-        const active = b.dataset.page===pageId;
-        b.style.opacity = active ? '1' : '.55';
-      });
-      // scroll to top of content
-      window.scrollTo({top: 0, behavior:'smooth'});
-    }
+  state.cart.forEach(line=>{
+    const row = document.createElement("div");
+    row.className="border rounded-2xl p-3 bg-white";
+    row.style.borderColor="var(--border)";
 
-    // =========================
-    // Collapsibles
-    // =========================
-    function toggleCollapse(id){
-      const el = $(id);
-      if(!el) return;
-      el.classList.toggle('open');
-    }
-
-    // =========================
-    // Toggle enable/disable modules
-    // =========================
-    function applyInclusions(){
-      const incTiempo = $('incTiempo')?.checked ?? true;
-      const incVida   = $('incVida')?.checked ?? true;
-      const incProc   = $('incProceso')?.checked ?? true;
-      const incParos  = $('incParos')?.checked ?? true;
-
-      setEnabled(['cicloA','cicloP'], incTiempo);
-      setEnabled(['procPct'], incProc);
-
-      setEnabled(['vidaA','vidaP','costoHerr'], incVida);
-
-      setEnabled(['cambiosA','cambiosP','minCambioA','minCambioP','otrosParosA','otrosParosP'], incParos);
-    }
-
-    // =========================
-    // Core Calc
-    // =========================
-    function calcular(){
-      const pmes = clamp($('pmes')?.value, 0);
-      const costoHora = clamp($('costoHora')?.value, 0);
-
-      const incTiempo = $('incTiempo')?.checked ?? true;
-      const incVida   = $('incVida')?.checked ?? true;
-      const incProc   = $('incProceso')?.checked ?? true;
-      const incParos  = $('incParos')?.checked ?? true;
-
-      // Cycle
-      const cicloA = clamp($('cicloA')?.value, 0);
-      const cicloP_in = clamp($('cicloP')?.value, 0);
-
-      // Process additional %
-      const procPct = clamp($('procPct')?.value, 0);
-      const cicloP_eff = (incProc && cicloP_in>0) ? (cicloP_in * (1 - procPct/100)) : cicloP_in;
-
-      // Tool life
-      const vidaA = clamp($('vidaA')?.value, 0);
-      const vidaP = clamp($('vidaP')?.value, 0);
-      const costoHerr = clamp($('costoHerr')?.value, 0);
-
-      // Stops / changes
-      const cambiosA = clamp($('cambiosA')?.value, 0);
-      const cambiosP = clamp($('cambiosP')?.value, 0);
-      const minCambioA = clamp($('minCambioA')?.value, 0);
-      const minCambioP = clamp($('minCambioP')?.value, 0);
-      const otrosParosA = clamp($('otrosParosA')?.value, 0);
-      const otrosParosP = clamp($('otrosParosP')?.value, 0);
-
-      const tParoA = (cambiosA * minCambioA) + otrosParosA;
-      const tParoP = (cambiosP * minCambioP) + otrosParosP;
-
-      // Costs
-      const inversion = clamp($('inversion')?.value, 0);
-      const consumibles = clamp($('consumibles')?.value, 0);
-
-      // Savings
-      const costoCicloA = (cicloA>0) ? (pmes * cicloA / 3600) * costoHora : 0;
-      const costoCicloP = (cicloP_eff>0) ? (pmes * cicloP_eff / 3600) * costoHora : 0;
-      const ahorroTiempo = Math.max(0, costoCicloA - costoCicloP);
-
-      const consumoHerrA = (vidaA>0) ? (pmes/vidaA) * costoHerr : 0;
-      const consumoHerrP = (vidaP>0) ? (pmes/vidaP) * costoHerr : 0;
-      const ahorroVida = Math.max(0, consumoHerrA - consumoHerrP);
-
-      const ahorroParos = Math.max(0, (tParoA - tParoP)) / 60 * costoHora;
-
-      const bruto =
-        (incTiempo ? ahorroTiempo : 0) +
-        (incVida   ? ahorroVida   : 0) +
-        (incParos  ? ahorroParos  : 0);
-
-      const neto = bruto - consumibles;
-
-      const roiAnual = inversion > 0 ? ((neto * 12) / inversion) * 100 : (neto > 0 ? Infinity : 0);
-      const paybackIdx = (inversion > 0 && neto > 0) ? Math.ceil(inversion / neto) : -1;
-
-      // KPIs
-      $('kpiAhorro').textContent = money(bruto);
-      $('kpiNeto').textContent   = money(neto);
-      $('kpiROI').textContent    = pct(roiAnual);
-      $('kpiPayback').textContent = (paybackIdx !== -1) ? String(paybackIdx) : '—';
-
-      const netoEl = $('kpiNeto');
-      if(netoEl){
-        netoEl.style.color = (neto >= 0) ? '#0a7a34' : '#b4141b';
-      }
-
-      // Build report cards
-      renderReportCards({
-        pmes, costoHora, cicloA, cicloP_eff, cicloP_in, procPct,
-        vidaA, vidaP, costoHerr, consumoHerrA, consumoHerrP,
-        tParoA, tParoP, ahorroTiempo, ahorroVida, ahorroParos,
-        bruto, neto, inversion, consumibles
-      });
-
-      // Visuals
-      renderDonut('vizDonut', [
-        { name:'Tiempo', value: incTiempo ? ahorroTiempo : 0, color: getCSS('--rgx-blue','#28556C') },
-        { name:'Vida', value: incVida ? ahorroVida : 0, color: getCSS('--rgx-green','#B7C91F') },
-        { name:'Paros', value: incParos ? ahorroParos : 0, color: getCSS('--rgx-turq','#58D5D3') },
-      ]);
-
-      renderCashflow('vizCash', { ahorroMes: bruto, cuota: consumibles, capex: inversion });
-    }
-
-    function getCSS(varName, fallback){
-      const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-      return v || fallback;
-    }
-
-    // =========================
-    // Report as cards (mobile-first)
-    // =========================
-    function renderReportCards(d){
-      const cards = [];
-
-      // Helper: delta badge
-      function delta(a,p,higherIsBetter=true){
-        if(a===0 && p===0) return { val: 0, improve: false };
-        const dv = ((p-a) / (a===0 ? 1 : a)) * 100;
-        const improve = higherIsBetter ? (dv>0) : (dv<0);
-        return { val: dv, improve };
-      }
-      function badge(dv, improve, higherIsBetter){
-        const absVal = Math.abs(dv||0);
-        const threshold = 3;
-        let cls = 'mid';
-        if(absVal >= threshold) cls = improve ? 'up' : 'down';
-        const sign = (isFinite(dv) && dv>=0) ? '+' : '';
-        const txt = isFinite(dv) ? `${sign}${dv.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}%` : '—';
-        return `<span class="badge ${cls}">${txt}</span>`;
-      }
-
-      // Cycle
-      const dC = delta(d.cicloA, d.cicloP_eff, false);
-      cards.push(cardMetric(
-        "Tiempo de ciclo (s)",
-        d.cicloA, d.cicloP_eff,
-        badge(dC.val, dC.improve, false),
-        `Ciclo propuesto base: ${d.cicloP_in}s. Proceso: ${d.procPct}% → efectivo: ${d.cicloP_eff.toFixed(2)}s`
-      ));
-
-      // PPH
-      const pphA = d.cicloA>0 ? 3600/d.cicloA : 0;
-      const pphP = d.cicloP_eff>0 ? 3600/d.cicloP_eff : 0;
-      const dPPH = delta(pphA, pphP, true);
-      cards.push(cardMetric(
-        "Piezas por hora",
-        pphA, pphP,
-        badge(dPPH.val, dPPH.improve, true),
-        "Más piezas por hora normalmente te libera capacidad o reduce overtime."
-      ));
-
-      // Tool life
-      const dV = delta(d.vidaA, d.vidaP, true);
-      cards.push(cardMetric(
-        "Vida herramienta (pzas)",
-        d.vidaA, d.vidaP,
-        badge(dV.val, dV.improve, true),
-        `Consumo mensual: ${money(d.consumoHerrA)} → ${money(d.consumoHerrP)}`
-      ));
-
-      // Stops
-      const dT = delta(d.tParoA, d.tParoP, false);
-      cards.push(cardMetric(
-        "Paros total (min/mes)",
-        d.tParoA, d.tParoP,
-        badge(dT.val, dT.improve, false),
-        "Incluye (cambios×min/cambio) + otros paros."
-      ));
-
-      // Savings summary
-      cards.push(`
-        <div class="card p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="text-sm font-black" style="color:var(--rgx-black)">Resumen financiero</div>
-              <div class="hint mt-1">Bruto, neto, inversión y consumibles.</div>
-            </div>
-            <span class="chip">ROI</span>
+    row.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex gap-2 flex-wrap items-center">
+            <span class="font-extrabold">${escapeHtml(line.sku||"—")}</span>
+            <span class="badge ${line.type==="inv"?"inv":"cons"}">${line.type==="inv"?"Inversión":"Consumible mensual"}</span>
           </div>
 
-          <div class="mt-3 grid grid-cols-2 gap-3">
-            <div class="kpi good">
-              <div class="t">Ahorro bruto/mes</div>
-              <div class="v">${money(d.bruto)}</div>
+          <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <div class="label">SKU</div>
+              <input class="input" data-k="sku" value="${escapeAttr(line.sku||"")}">
             </div>
-            <div class="kpi info">
-              <div class="t">Neto/mes</div>
-              <div class="v" style="color:${d.neto>=0?'#0a7a34':'#b4141b'}">${money(d.neto)}</div>
+            <div>
+              <div class="label">Nombre</div>
+              <input class="input" data-k="name" value="${escapeAttr(line.name||"")}">
             </div>
-            <div class="kpi">
-              <div class="t">Inversión</div>
-              <div class="v">${money(d.inversion)}</div>
+
+            <div>
+              <div class="label">Cantidad</div>
+              <input class="input" data-k="qty" type="number" min="0" step="1" value="${Number(line.qty||0)}">
             </div>
-            <div class="kpi">
-              <div class="t">Consumibles/mes</div>
-              <div class="v">${money(d.consumibles)}</div>
+            <div>
+              <div class="label">Precio unitario (MXN)</div>
+              <input class="input" data-k="price" type="number" min="0" step="1" value="${Number(line.price||0)}">
             </div>
+
+            <div class="sm:col-span-2">
+              <div class="label">Tipo</div>
+              <select class="input" data-k="type">
+                <option value="inv" ${line.type==="inv"?"selected":""}>Inversión</option>
+                <option value="cons" ${line.type==="cons"?"selected":""}>Consumible mensual</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-2 flex items-center justify-between">
+            <div class="muted small">Subtotal</div>
+            <div class="font-extrabold">${money(clamp0(line.qty)*clamp0(line.price))}</div>
           </div>
         </div>
-      `);
 
-      $('reportCards').innerHTML = cards.join('');
+        <button class="btn btn-outline" title="Eliminar" style="padding:.55rem .7rem; border-radius:14px">✕</button>
+      </div>
+    `;
+
+    // Bind inputs
+    row.querySelectorAll("[data-k]").forEach(inp=>{
+      inp.addEventListener("input", ()=>{
+        const k = inp.dataset.k;
+        let v = inp.value;
+        if(k==="qty"||k==="price") v = Number(v||0);
+        line[k] = v;
+        persist();
+        renderAll(false);
+      });
+      inp.addEventListener("change", ()=>{
+        const k = inp.dataset.k;
+        let v = inp.value;
+        if(k==="qty"||k==="price") v = Number(v||0);
+        line[k] = v;
+        persist();
+        renderAll();
+      });
+    });
+
+    row.querySelector("button").addEventListener("click", ()=>{
+      state.cart = state.cart.filter(x=>x.id!==line.id);
+      persist();
+      renderAll();
+    });
+
+    wrap.appendChild(row);
+  });
+}
+
+/* =========================
+   Cálculos
+   ========================= */
+function calc(){
+  const costHour = clamp0($("costHour").value);
+  const costMin  = costHour / 60;
+
+  // Cart totals
+  let inv = 0, cons = 0;
+  state.cart.forEach(l=>{
+    const sub = clamp0(l.qty) * clamp0(l.price);
+    if(l.type==="cons") cons += sub;
+    else inv += sub;
+  });
+
+  // Savings
+  let saveTime = 0, saveLife = 0, saveProc = 0;
+
+  // A) Time
+  if(state.switches.time){
+    const doChanges = state.switches.timeChanges;
+    const doSetups  = state.switches.timeSetups;
+    const doStops   = state.switches.timeStops;
+
+    let minSaved = 0;
+
+    if(doChanges){
+      const a = clamp0($("chgAct").value), b = clamp0($("chgNew").value);
+      const ma = clamp0($("chgMinAct").value), mb = clamp0($("chgMinNew").value);
+      minSaved += Math.max(0, (a*ma) - (b*mb));
+    }
+    if(doSetups){
+      const a = clamp0($("setAct").value), b = clamp0($("setNew").value);
+      const ma = clamp0($("setMinAct").value), mb = clamp0($("setMinNew").value);
+      minSaved += Math.max(0, (a*ma) - (b*mb));
+    }
+    if(doStops){
+      const a = clamp0($("stpAct").value), b = clamp0($("stpNew").value);
+      const ma = clamp0($("stpMinAct").value), mb = clamp0($("stpMinNew").value);
+      minSaved += Math.max(0, (a*ma) - (b*mb));
     }
 
-    function cardMetric(title, a, p, badgeHtml, foot){
-      const fmt = (n)=> isFinite(n) ? n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-      return `
-        <div class="card p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="text-sm font-black" style="color:var(--rgx-black)">${title}</div>
-              <div class="hint mt-1">${foot || ''}</div>
-            </div>
-            ${badgeHtml}
-          </div>
-          <div class="mt-3 grid grid-cols-2 gap-3">
-            <div class="listCard">
-              <div class="text-xs font-black" style="color:var(--rgx-mid)">Actual</div>
-              <div class="text-lg font-black" style="color:var(--rgx-black)">${fmt(a)}</div>
-            </div>
-            <div class="listCard">
-              <div class="text-xs font-black" style="color:var(--rgx-mid)">Propuesta</div>
-              <div class="text-lg font-black" style="color:var(--rgx-black)">${fmt(p)}</div>
-            </div>
-          </div>
-        </div>
-      `;
+    saveTime = minSaved * costMin;
+  }
+
+  // B) Tool life
+  if(state.switches.life){
+    const partsMonth = clamp0($("partsMonth").value);
+    const lifeAct = Math.max(1, clamp0($("lifeAct").value));
+    const lifeNew = Math.max(1, clamp0($("lifeNew").value));
+    const toolCost = clamp0($("toolCost").value);
+    const toolCount = Math.max(1, clamp0($("toolCount").value));
+
+    // tools needed per month = partsMonth / life
+    const toolsAct = (partsMonth / lifeAct) * toolCount;
+    const toolsNew = (partsMonth / lifeNew) * toolCount;
+    const spendAct = toolsAct * toolCost;
+    const spendNew = toolsNew * toolCost;
+
+    saveLife = Math.max(0, spendAct - spendNew);
+  }
+
+  // C) Process
+  if(state.switches.proc){
+    const partsMonth = clamp0($("partsMonth").value);
+    const cycAct = clamp0($("cycAct").value);
+    const cycNew = clamp0($("cycNew").value);
+    const minSavedPer = Math.max(0, cycAct - cycNew);
+    saveProc = (minSavedPer * partsMonth) * costMin;
+  }
+
+  const gross = saveTime + saveLife + saveProc;
+  const net   = Math.max(0, gross - cons);
+
+  let payback = null;
+  if(inv > 0 && net > 0){
+    payback = inv / net;
+  }
+
+  let roiAnnual = null;
+  if(inv > 0){
+    roiAnnual = (net*12) / inv;
+  }
+
+  return { inv, cons, saveTime, saveLife, saveProc, gross, net, payback, roiAnnual };
+}
+
+/* =========================
+   Render
+   ========================= */
+function renderSavingsVisibility(){
+  // hide bodies if module off
+  toggleBlock("timeBody", state.switches.time);
+  toggleBlock("lifeBody", state.switches.life);
+  toggleBlock("procBody", state.switches.proc);
+}
+function toggleBlock(id, on){
+  const el = $(id);
+  el.style.opacity = on ? "1" : ".45";
+  el.style.pointerEvents = on ? "auto" : "none";
+}
+
+function renderKPIs(){
+  const r = calc();
+
+  $("totalInv").textContent = money(r.inv);
+  $("totalCons").textContent = money(r.cons);
+
+  $("saveTime").textContent = money(r.saveTime);
+  $("saveLife").textContent = money(r.saveLife);
+  $("saveProc").textContent = money(r.saveProc);
+
+  $("grossSave").textContent = money(r.gross);
+  $("netSave").textContent   = money(r.net);
+
+  $("payback").textContent = (r.payback===null) ? "—" : (r.payback.toFixed(1) + " meses");
+  $("roiAnnual").textContent = (r.roiAnnual===null) ? "—" : ((r.roiAnnual*100).toFixed(0) + "%");
+}
+
+function renderAll(doCatalog=true){
+  renderSavingsVisibility();
+  renderCart();
+  if(doCatalog) renderCatalog();
+  renderKPIs();
+}
+
+/* =========================
+   CSV Import/Export
+   ========================= */
+function showCsvPanel(show){
+  $("csvPanel").classList.toggle("hidden", !show);
+}
+function applyCsv(){
+  const txt = $("csvTextarea").value || "";
+  const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const out = [];
+  for(const line of lines){
+    // split CSV naive (works for simple data)
+    const parts = line.split(",");
+    if(parts.length < 2) continue;
+    const sku = parts[0].trim();
+    const name = parts.slice(1, parts.length-1>=1?parts.length-1:parts.length).join(",").trim();
+    // if 3 columns: sku,name,category
+    let category = "";
+    if(parts.length >= 3){
+      category = parts[parts.length-1].trim();
     }
-
-    // =========================
-    // Visual: Donut (simple)
-    // =========================
-    function renderDonut(targetId, parts){
-      const el = $(targetId);
-      if(!el) return;
-
-      const data = parts.filter(p => (p.value||0) > 0);
-      const sum = data.reduce((s,p)=> s + p.value, 0);
-
-      if(sum <= 0){
-        el.innerHTML = `<div class="hint">Sin ahorro (módulos apagados o valores 0).</div>`;
-        return;
-      }
-
-      const W=520, H=240;
-      const cx=120, cy=H/2, r=88, th=28;
-      let start=0;
-
-      const legendX=245, legendY0=78, step=26;
-
-      const segs = data.map((p,i)=>{
-        const f = p.value/sum;
-        const a0 = start * 2*Math.PI;
-        const a1 = (start+f) * 2*Math.PI;
-        start += f;
-        const L = (a1-a0) > Math.PI ? 1 : 0;
-
-        const x0 = cx + r*Math.cos(a0), y0 = cy + r*Math.sin(a0);
-        const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
-
-        const x0i = cx + (r-th)*Math.cos(a0), y0i = cy + (r-th)*Math.sin(a0);
-        const x1i = cx + (r-th)*Math.cos(a1), y1i = cy + (r-th)*Math.sin(a1);
-
-        const d = `M ${x0} ${y0} A ${r} ${r} 0 ${L} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r-th} ${r-th} 0 ${L} 0 ${x0i} ${y0i} Z`;
-        const pctVal = Math.round(f*100);
-        const ly = legendY0 + i*step;
-
-        return `
-          <path d="${d}" fill="${p.color}" opacity="0.92"></path>
-          <circle cx="${legendX}" cy="${ly-4}" r="6" fill="${p.color}"></circle>
-          <text x="${legendX+14}" y="${ly}" font-size="13" fill="var(--rgx-dk)" font-weight="900">${p.name}: ${pctVal}%</text>
-        `;
-      }).join('');
-
-      el.innerHTML = `
-        <svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">
-          ${segs}
-          <circle cx="${cx}" cy="${cy}" r="${r-th+1}" fill="#fff" stroke="var(--border)"></circle>
-          <text x="${cx}" y="${cy-4}" text-anchor="middle" dominant-baseline="middle" font-size="16" fill="var(--rgx-black)" font-weight="1000">${money(sum)}</text>
-          <text x="${cx}" y="${cy+18}" text-anchor="middle" font-size="11" fill="var(--rgx-mid)" font-weight="900">Ahorro bruto/mes</text>
-        </svg>
-      `;
-    }
-
-    // =========================
-    // Visual: Cashflow 12m
-    // =========================
-    function renderCashflow(targetId, {ahorroMes, cuota, capex}){
-      const el = $(targetId);
-      if(!el) return;
-
-      const meses = Array.from({length:12},(_,i)=>`M${i+1}`);
-      const neto = (ahorroMes||0) - (cuota||0);
-
-      const W=720, H=240;
-      const pad={top:18,right:10,bottom:34,left:52};
-      const drawH = H - pad.top - pad.bottom;
-
-      let acc = -capex;
-      const accArr = meses.map(()=>{ acc += neto; return acc; });
-
-      const maxV = Math.max(1, ...[ahorroMes||0, cuota||0, ...accArr].map(v=>Math.max(0,v)));
-      const minV = Math.min(0, ...[0, -capex, ...accArr].map(v=>Math.min(0,v)));
-      const range = maxV - minV || 1;
-
-      const y = (v)=> (H - pad.bottom) - ((v - minV)/range)*drawH;
-      const y0 = y(0);
-
-      const cA = getCSS('--rgx-green','#B7C91F');
-      const cQ = getCSS('--rgx-red','#D31B23');
-      const cL = getCSS('--rgx-blue','#28556C');
-
-      const barW=14, barGap=5, groupGap=22;
-      let x=pad.left + groupGap/2;
-
-      const bars = meses.map((m,i)=>{
-        const yA=y(ahorroMes||0), hA=Math.max(0, y0-yA);
-        const yQ=y(cuota||0),     hQ=Math.max(0, y0-yQ);
-
-        const xa=x;
-        const xq=x+barW+barGap;
-        const labelY=H-pad.bottom+18;
-
-        const out=`
-          <rect x="${xa}" y="${yA}" width="${barW}" height="${hA}" fill="${cA}" opacity="0.95"></rect>
-          <rect x="${xq}" y="${yQ}" width="${barW}" height="${hQ}" fill="${cQ}" opacity="0.85"></rect>
-          <text x="${x + barW + barGap/2}" y="${labelY}" font-size="11" fill="var(--rgx-mid)" text-anchor="middle" font-weight="900">${m}</text>
-        `;
-        x += (barW*2 + barGap + groupGap);
-        return out;
-      }).join('');
-
-      const linePts = accArr.map((v,i)=>{
-        const xi = pad.left + groupGap/2 + i*(barW*2+barGap+groupGap) + (barW + barGap/2);
-        const yi = y(v);
-        return `${xi},${yi}`;
-      }).join(' ');
-
-      const x0line = pad.left + groupGap/2 - (barW*2+barGap+groupGap) + (barW + barGap/2);
-      const y0line = y(-capex);
-
-      const polyline = `<polyline points="${x0line},${y0line} ${linePts}" fill="none" stroke="${cL}" stroke-width="3"></polyline>`;
-
-      let marker='';
-      if(capex > 0 && neto > 0){
-        const idx = accArr.findIndex(v=>v>=0);
-        if(idx !== -1){
-          const xi = pad.left + groupGap/2 + idx*(barW*2+barGap+groupGap) + (barW + barGap/2);
-          const yi = y(accArr[idx]);
-          marker = `
-            <circle cx="${xi}" cy="${yi}" r="6" fill="${cL}" stroke="#fff" stroke-width="2"></circle>
-            <text x="${xi+10}" y="${yi-8}" font-size="12" fill="${cL}" font-weight="1000">Payback M${idx+1}</text>
-          `;
-        }
-      }
-
-      const axis = `
-        <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${H-pad.bottom}" stroke="var(--border)"></line>
-        <line x1="${pad.left}" y1="${y0}" x2="${W-pad.right}" y2="${y0}" stroke="var(--border)"></line>
-        <text x="${pad.left-8}" y="${y0+4}" font-size="11" fill="var(--rgx-mid)" text-anchor="end" font-weight="900">$0</text>
-      `;
-
-      el.innerHTML = `<svg class="w-full h-auto" viewBox="0 0 ${W} ${H}">${axis}${bars}${polyline}${marker}</svg>`;
-    }
-
-    // =========================
-    // Catalog + Cart (cards UI)
-    // =========================
-    // DEMO. Tú lo reemplazas con TODO el catálogo 2026 (sin precios).
-    const CATALOGO = [
-      { id:"RF-PRG-001", nombre:"powRgrip® (placeholder)", categoria:"powRgrip", unidad:"pza" },
-      { id:"RF-PRG-ACC-001", nombre:"Accesorio powRgrip® (placeholder)", categoria:"powRgrip", unidad:"pza" },
-      { id:"RF-ER-001", nombre:"Pinza ER (placeholder)", categoria:"ER", unidad:"pza" },
-      { id:"RF-ER-002", nombre:"Tuerca ER (placeholder)", categoria:"ER", unidad:"pza" },
-      { id:"RF-CLN-001", nombre:"Limpieza / accesorios (placeholder)", categoria:"Limpieza/Accesorios", unidad:"pza" },
-    ];
-
-    const cart = new Map();
-
-    function buildCategoryOptions(){
-      const sel = $('catFilter');
-      if(!sel) return;
-      const cats = Array.from(new Set(CATALOGO.map(i=>i.categoria))).sort((a,b)=>a.localeCompare(b));
-      sel.innerHTML = `<option value="__all__">Todas</option>` + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
-    }
-
-    function renderCatalogCards(){
-      const wrap = $('catCards');
-      if(!wrap) return;
-
-      const q = ($('catSearch')?.value || '').trim().toLowerCase();
-      const f = $('catFilter')?.value || '__all__';
-
-      const filtered = CATALOGO.filter(it=>{
-        const okCat = (f==='__all__') ? true : it.categoria === f;
-        const okQ = !q ? true : (it.nombre.toLowerCase().includes(q) || it.id.toLowerCase().includes(q));
-        return okCat && okQ;
-      }).slice(0, 200);
-
-      wrap.innerHTML = filtered.map(it=>{
-        const inCart = cart.has(it.id);
-        return `
-          <div class="listCard">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="font-black truncate" style="color:var(--rgx-dk)">${it.nombre}</div>
-                <div class="text-xs font-black" style="color:var(--rgx-mid)">${it.id} • ${it.categoria} • ${it.unidad||'pza'}</div>
-              </div>
-              <button class="btn ${inCart?'btn-ghost':'btn-primary'}" style="padding:.55rem .75rem"
-                data-add="${it.id}">${inCart?'Agregar +':'Agregar'}</button>
-            </div>
-          </div>
-        `;
-      }).join('') || `<div class="hint">Sin resultados.</div>`;
-
-      wrap.querySelectorAll('[data-add]').forEach(btn=>{
-        btn.addEventListener('click', ()=> addToCart(btn.getAttribute('data-add')));
-      });
-    }
-
-    function addToCart(id){
-      const it = CATALOGO.find(x=>x.id===id);
-      if(!it) return;
-
-      if(cart.has(id)){
-        const v = cart.get(id);
-        v.qty = clamp(v.qty + 1, 0);
-        cart.set(id, v);
-      }else{
-        cart.set(id, {
-          id: it.id,
-          nombre: it.nombre,
-          categoria: it.categoria,
-          unidad: it.unidad || 'pza',
-          tipo: 'Inversion',
-          qty: 1,
-          precio: 0
-        });
-      }
-      renderCartCards();
-    }
-
-    function removeFromCart(id){
-      cart.delete(id);
-      renderCartCards();
-    }
-
-    function updateCartSums(){
-      let inv=0, cons=0;
-      cart.forEach(it=>{
-        const sub = (it.qty||0) * (it.precio||0);
-        if(it.tipo === 'Consumibles') cons += sub;
-        else inv += sub;
-      });
-
-      $('sumInversion').textContent = money(inv);
-      $('sumConsumibles').textContent = money(cons);
-
-      // Sync inputs
-      if($('inversion')) $('inversion').value = inv.toFixed(2);
-      if($('consumibles')) $('consumibles').value = cons.toFixed(2);
-    }
-
-    function renderCartCards(){
-      const wrap = $('cartCards');
-      if(!wrap) return;
-
-      const items = Array.from(cart.values());
-
-      wrap.innerHTML = items.map(it=>{
-        const subtotal = (it.qty||0) * (it.precio||0);
-        return `
-          <div class="listCard">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="font-black truncate" style="color:var(--rgx-dk)">${it.nombre}</div>
-                <div class="text-xs font-black" style="color:var(--rgx-mid)">${it.id} • ${it.categoria}</div>
-              </div>
-              <button class="btn btn-danger" style="padding:.55rem .75rem" data-del="${it.id}">Quitar</button>
-            </div>
-
-            <div class="mt-3 grid grid-cols-2 gap-3">
-              <label class="grid gap-1">
-                <span class="label">Tipo</span>
-                <select class="typeSel" data-type="${it.id}">
-                  <option value="Inversion" ${it.tipo==='Inversion'?'selected':''}>Inversión</option>
-                  <option value="Consumibles" ${it.tipo==='Consumibles'?'selected':''}>Consumibles</option>
-                </select>
-              </label>
-              <div class="text-right">
-                <div class="label">Subtotal</div>
-                <div class="text-lg font-black mt-2" style="color:var(--rgx-black)">${money(subtotal)}</div>
-              </div>
-            </div>
-
-            <div class="mt-3 grid grid-cols-2 gap-3">
-              <label class="grid gap-1">
-                <span class="label">Qty</span>
-                <input class="input text-right qtyInp" type="number" min="0" step="1" value="${it.qty}" data-qty="${it.id}" />
-              </label>
-              <label class="grid gap-1">
-                <span class="label">Precio unitario</span>
-                <input class="input text-right priceInp" type="number" min="0" step="0.01" value="${it.precio}" data-price="${it.id}" />
-              </label>
-            </div>
-          </div>
-        `;
-      }).join('') || `<div class="hint">El carrito está vacío.</div>`;
-
-      // events
-      wrap.querySelectorAll('[data-del]').forEach(btn=>{
-        btn.addEventListener('click', ()=> removeFromCart(btn.getAttribute('data-del')));
-      });
-
-      wrap.querySelectorAll('.qtyInp').forEach(inp=>{
-        inp.addEventListener('input', ()=>{
-          const id = inp.getAttribute('data-qty');
-          const v = cart.get(id); if(!v) return;
-          v.qty = clamp(inp.value, 0);
-          cart.set(id, v);
-          updateCartSums();
-          calcular();
-          renderCartCards(); // refresh subtotal display
-        });
-      });
-
-      wrap.querySelectorAll('.priceInp').forEach(inp=>{
-        inp.addEventListener('input', ()=>{
-          const id = inp.getAttribute('data-price');
-          const v = cart.get(id); if(!v) return;
-          v.precio = clamp(inp.value, 0);
-          cart.set(id, v);
-          updateCartSums();
-          calcular();
-          renderCartCards();
-        });
-      });
-
-      wrap.querySelectorAll('.typeSel').forEach(sel=>{
-        sel.addEventListener('change', ()=>{
-          const id = sel.getAttribute('data-type');
-          const v = cart.get(id); if(!v) return;
-          v.tipo = sel.value;
-          cart.set(id, v);
-          updateCartSums();
-          calcular();
-          renderCartCards();
-        });
-      });
-
-      updateCartSums();
-      renderCatalogCards();
-    }
-
-    // =========================
-    // Wiring
-    // =========================
-    function wire(){
-      // Tabs
-      document.querySelectorAll('.tabBtn').forEach(btn=>{
-        btn.addEventListener('click', ()=> showPage(btn.dataset.page));
-      });
-      document.querySelectorAll('.navBtn').forEach(btn=>{
-        btn.addEventListener('click', ()=> showPage(btn.dataset.page));
-      });
-
-      // Quick nav
-      $('btnGoCart')?.addEventListener('click', ()=> showPage('page-cart'));
-      $('btnGoReport')?.addEventListener('click', ()=> showPage('page-report'));
-      $('btnBackCalcFromCart')?.addEventListener('click', ()=> showPage('page-calc'));
-      $('btnBackCalcFromReport')?.addEventListener('click', ()=> showPage('page-calc'));
-
-      // Collapses
-      document.querySelectorAll('[data-collapse]').forEach(btn=>{
-        btn.addEventListener('click', ()=> toggleCollapse(btn.getAttribute('data-collapse')));
-      });
-
-      // Print
-      const printFn = ()=> window.print();
-      $('btnPrint')?.addEventListener('click', printFn);
-      $('btnPrintReport')?.addEventListener('click', printFn);
-      $('btnPrintTop')?.addEventListener('click', printFn);
-
-      // Calculate
-      $('btnCalcularMobile')?.addEventListener('click', calcular);
-      $('btnCalcularTop')?.addEventListener('click', calcular);
-      $('btnCalcularFromCart')?.addEventListener('click', ()=>{ calcular(); showPage('page-report'); });
-
-      // Toggles
-      ['incTiempo','incVida','incProceso','incParos'].forEach(id=>{
-        $(id)?.addEventListener('change', ()=>{
-          applyInclusions();
-          calcular();
-        });
-      });
-
-      // Live input updates
-      const liveIds = [
-        'pmes','costoHora','inversion','consumibles',
-        'cicloA','cicloP','procPct',
-        'vidaA','vidaP','costoHerr',
-        'cambiosA','cambiosP','minCambioA','minCambioP','otrosParosA','otrosParosP'
-      ];
-      liveIds.forEach(id=>{
-        $(id)?.addEventListener('input', ()=> calcular());
-      });
-
-      // Catalog
-      $('catSearch')?.addEventListener('input', renderCatalogCards);
-      $('catFilter')?.addEventListener('change', renderCatalogCards);
-      $('btnResetCat')?.addEventListener('click', ()=>{
-        if($('catSearch')) $('catSearch').value='';
-        if($('catFilter')) $('catFilter').value='__all__';
-        renderCatalogCards();
-      });
-
-      $('btnVaciarCarrito')?.addEventListener('click', ()=>{
-        cart.clear();
-        renderCartCards();
-        calcular();
-      });
-
-      // Reset all
-      $('btnResetAll')?.addEventListener('click', ()=>{
-        cart.clear();
-        renderCartCards();
-
-        $('pmes').value = 10000;
-        $('costoHora').value = 50;
-
-        $('cicloA').value = 60;
-        $('cicloP').value = 45;
-        $('procPct').value = 10;
-
-        $('vidaA').value = 1300;
-        $('vidaP').value = 2500;
-        $('costoHerr').value = 128.87;
-
-        $('cambiosA').value = 20;
-        $('cambiosP').value = 8;
-        $('minCambioA').value = 6;
-        $('minCambioP').value = 4;
-        $('otrosParosA').value = 30;
-        $('otrosParosP').value = 10;
-
-        $('inversion').value = 0;
-        $('consumibles').value = 0;
-
-        $('incTiempo').checked = true;
-        $('incVida').checked = true;
-        $('incProceso').checked = true;
-        $('incParos').checked = true;
-
-        applyInclusions();
-        calcular();
-        showPage('page-calc');
-      });
-    }
-
-    // Init
-    applyInclusions();
-    buildCategoryOptions();
-    renderCatalogCards();
-    renderCartCards();
-    wire();
-    calcular();
-  </script>
-
-  <script src="/assets/chatbot.js"></script>
+    // if user pasted 2 columns, category blank
+    out.push({ sku, name, category: category || "item" });
+  }
+  if(out.length===0){
+    alert("CSV inválido. Usa: sku,name,category (category opcional).");
+    return;
+  }
+  // merge: replace same sku
+  const map = new Map(state.catalog.map(x=>[x.sku, x]));
+  out.forEach(x=>{
+    map.set(x.sku, x);
+  });
+  state.catalog = Array.from(map.values());
+  persist();
+  showCsvPanel(false);
+  renderAll();
+}
+
+function exportCsv(){
+  const rows = state.catalog.map(x=>`${csvEscape(x.sku)},${csvEscape(x.name)},${csvEscape(x.category||"")}`);
+  const blob = new Blob([ "sku,name,category\n" + rows.join("\n") ], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "regofix_catalog.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+}
+
+function csvEscape(s){
+  const v = String(s??"");
+  if(/[",\n]/.test(v)) return `"${v.replaceAll('"','""')}"`;
+  return v;
+}
+
+/* =========================
+   UX helpers
+   ========================= */
+function escapeHtml(s){
+  return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+function escapeAttr(s){
+  return escapeHtml(s).replaceAll('"',"&quot;");
+}
+
+function copySummary(){
+  const r = calc();
+  const lines = [
+    "ROI Holders REGO-FIX — Resumen",
+    `Inversión total: ${money(r.inv)}`,
+    `Consumibles mensuales: ${money(r.cons)}`,
+    `Ahorro por tiempo (mensual): ${money(r.saveTime)}`,
+    `Ahorro por vida herramienta (mensual): ${money(r.saveLife)}`,
+    `Ahorro por proceso (mensual): ${money(r.saveProc)}`,
+    `Ahorro bruto mensual: ${money(r.gross)}`,
+    `Ahorro neto mensual: ${money(r.net)}`,
+    `Payback: ${r.payback===null?"—":(r.payback.toFixed(1)+" meses")}`,
+    `ROI anual: ${r.roiAnnual===null?"—":((r.roiAnnual*100).toFixed(0)+"%")}`,
+  ];
+  navigator.clipboard.writeText(lines.join("\n")).then(()=>{
+    alert("Resumen copiado.");
+  }).catch(()=>{
+    alert("No se pudo copiar. (Tu navegador anda de malas.)");
+  });
+}
+
+function resetAll(){
+  if(!confirm("¿Reset total? Se borra carrito, switches y catálogo importado.")) return;
+  localStorage.removeItem("rego_catalog_v1");
+  localStorage.removeItem("rego_cart_v1");
+  localStorage.removeItem("rego_switches_v1");
+  loadInitial();
+  bindAllSwitches();
+  renderAll();
+}
+
+function bindAllSwitches(){
+  bindSwitch("swTime","time", (on)=>{});
+  bindSwitch("swTimeChanges","timeChanges", ()=>{});
+  bindSwitch("swTimeSetups","timeSetups", ()=>{});
+  bindSwitch("swTimeStops","timeStops", ()=>{});
+  bindSwitch("swLife","life", ()=>{});
+  bindSwitch("swProc","proc", ()=>{});
+
+  // init visual state after load
+  setSwitch($("swTime"), !!state.switches.time);
+  setSwitch($("swTimeChanges"), !!state.switches.timeChanges);
+  setSwitch($("swTimeSetups"), !!state.switches.timeSetups);
+  setSwitch($("swTimeStops"), !!state.switches.timeStops);
+  setSwitch($("swLife"), !!state.switches.life);
+  setSwitch($("swProc"), !!state.switches.proc);
+}
+
+/* =========================
+   Events
+   ========================= */
+function bindInputs(){
+  [
+    "costHour","partsMonth","daysMonth","hoursShift",
+    "chgAct","chgNew","chgMinAct","chgMinNew",
+    "setAct","setNew","setMinAct","setMinNew",
+    "stpAct","stpNew","stpMinAct","stpMinNew",
+    "lifeAct","lifeNew","toolCost","toolCount",
+    "cycAct","cycNew"
+  ].forEach(id=>{
+    $(id).addEventListener("input", ()=>renderAll(false));
+    $(id).addEventListener("change", ()=>renderAll(false));
+  });
+
+  $("catalogSearch").addEventListener("input", ()=>renderCatalog());
+  $("btnClearCart").addEventListener("click", clearCart);
+  $("btnAddCustom").addEventListener("click", addCustomLine);
+
+  $("btnImportCsv").addEventListener("click", ()=>showCsvPanel(true));
+  $("btnCsvClose").addEventListener("click", ()=>showCsvPanel(false));
+  $("btnCsvApply").addEventListener("click", applyCsv);
+  $("btnExportCsv").addEventListener("click", exportCsv);
+
+  $("btnCopySummary").addEventListener("click", copySummary);
+  $("btnResetAll").addEventListener("click", resetAll);
+}
+
+/* =========================
+   Init
+   ========================= */
+loadInitial();
+bindAllSwitches();
+bindInputs();
+renderAll();
+</script>
 </body>
 </html>
