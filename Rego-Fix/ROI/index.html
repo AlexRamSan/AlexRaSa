@@ -156,7 +156,7 @@
 
       <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div>
-          <div class="label">Costo máquina (MXN/h)</div>
+          <div class="label">Costo máquina (USD/h)</div>
           <input id="costHour" class="input" type="number" min="0" step="1" value="850">
           <div class="muted small mt-1">Incluye operador, overhead, etc.</div>
         </div>
@@ -168,13 +168,13 @@
         </div>
 
         <div>
-          <div class="label">Inversión (MXN)</div>
+          <div class="label">Inversión (USD)</div>
           <input id="invest" class="input" type="number" min="0" step="1" value="45000">
           <div class="muted small mt-1">Pago único (holders, kits, etc.).</div>
         </div>
 
         <div>
-          <div class="label">Consumibles mensuales (MXN/mes)</div>
+          <div class="label">Consumibles mensuales (USD/mes)</div>
           <input id="consMonth" class="input" type="number" min="0" step="1" value="0">
           <div class="muted small mt-1">Si aplica (limpieza, collets, etc.).</div>
         </div>
@@ -281,7 +281,7 @@
 
             <div class="kpi mt-3">
               <div class="muted small">Ahorro por tiempo (mensual)</div>
-              <div id="saveTime" class="text-xl font-extrabold">MXN 0</div>
+              <div id="saveTime" class="text-xl font-extrabold">$0</div>
             </div>
           </div>
         </div>
@@ -312,7 +312,7 @@
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <div class="label">Costo por herramienta (MXN)</div>
+                <div class="label">Costo por herramienta (USD)</div>
                 <input id="toolCost" class="input" type="number" min="0" step="1" value="650">
               </div>
               <div>
@@ -323,7 +323,7 @@
 
             <div class="kpi">
               <div class="muted small">Ahorro por vida (mensual)</div>
-              <div id="saveLife" class="text-xl font-extrabold">MXN 0</div>
+              <div id="saveLife" class="text-xl font-extrabold">$0</div>
             </div>
           </div>
         </div>
@@ -354,7 +354,7 @@
 
             <div class="kpi">
               <div class="muted small">Ahorro por proceso (mensual)</div>
-              <div id="saveProc" class="text-xl font-extrabold">MXN 0</div>
+              <div id="saveProc" class="text-xl font-extrabold">$0</div>
             </div>
           </div>
         </div>
@@ -378,12 +378,12 @@
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div class="kpi">
           <div class="muted small">Ahorro bruto mensual</div>
-          <div id="grossSave" class="text-2xl font-extrabold">MXN 0</div>
+          <div id="grossSave" class="text-2xl font-extrabold">$0</div>
           <div class="muted small">Tiempo + vida + proceso</div>
         </div>
         <div class="kpi">
           <div class="muted small">Ahorro neto mensual</div>
-          <div id="netSave" class="text-2xl font-extrabold">MXN 0</div>
+          <div id="netSave" class="text-2xl font-extrabold">$0</div>
           <div class="muted small">Bruto − consumibles mensuales</div>
         </div>
         <div class="kpi">
@@ -427,7 +427,14 @@ const state = {
 
 const $ = (id)=>document.getElementById(id);
 const clamp0 = (n)=>Math.max(0, Number(n||0));
-const money = (n)=>"MXN " + Number(n||0).toLocaleString("es-MX",{maximumFractionDigits:0});
+
+/* ==== CAMBIO ÚNICO: moneda a USD ==== */
+const money = (n) =>
+  Number(n || 0).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  });
 
 function safeJson(str, fallback){ try{ return JSON.parse(str); }catch{ return fallback; } }
 function persist(){
