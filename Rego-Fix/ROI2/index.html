@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ROI Holders REGO-FIX — Calculadora modular | AlexRaSa</title>
+  <meta name="description" content="Calculadora modular de ROI enfocada en holders REGO-FIX. Ahorros por tiempo/vida de herramienta/proceso. Inversión manual." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --rego-green: #B7C91F;
+      --rego-green-2:#AAC82D;
+      --rego-turq:  #58D5D3;
+      --rego-blue:  #28556C;
+      --rego-red:   #D31B23;
+      --rego-black: #121314;
+      --rego-gd:    #44474A;
+      --rego-gm:    #677071;
+      --rego-gl:    #E5E6E4;
+      --card: #ffffff;
+      --bg: #ffffff;
+      --border: rgba(40,85,108,.18);
+      --shadow: 0 10px 30px rgba(18,19,20,.08);
+    }
+    html,body{ background: var(--bg) !important; color: var(--rego-black); }
+    @media (prefers-color-scheme: dark){
+      html,body{ background:#fff !important; color:#121314 !important; }
+    }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: 20px;
+    }
+    .chip{
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .35rem .65rem;
+      font-size: .8rem;
+      color: var(--rego-blue);
+      background: #fff;
+    }
+    .btn{
+      border-radius: 16px;
+      padding: .75rem 1rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: .15s ease;
+      user-select:none;
+    }
+    .btn-outline{ background:#fff; border-color: var(--border); color: var(--rego-black); }
+    .btn-outline:hover{ background: rgba(183,201,31,.10); }
+    .btn-danger{ background: var(--rego-red); color:#fff; }
+    .btn-danger:hover{ filter: brightness(.95); }
+    .btn-primary{ background: rgba(183,201,31,.95); color:#121314; }
+    .btn-primary:hover{ filter: brightness(.97); }
+    .kpi{
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: .9rem 1rem;
+      background: #fff;
+    }
+    .muted{ color: var(--rego-gm); }
+    .label{ color: var(--rego-gd); font-weight: 700; font-size:.9rem; }
+    .input{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding: .65rem .8rem;
+      outline: none;
+      background:#fff;
+    }
+    .input:focus{ border-color: rgba(40,85,108,.45); box-shadow: 0 0 0 4px rgba(88,213,211,.18); }
+    textarea.input{ min-height: 110px; resize: vertical; }
+    .switch{
+      position:relative; width: 52px; height: 30px; border-radius: 999px;
+      background: rgba(103,112,113,.25);
+      border:1px solid var(--border);
+      cursor:pointer;
+      flex: 0 0 auto;
+    }
+    .switch[data-on="true"]{ background: rgba(183,201,31,.85); }
+    .switch .knob{
+      position:absolute; top: 3px; left: 3px;
+      width: 24px; height: 24px; border-radius: 999px;
+      background:#fff; box-shadow: 0 6px 16px rgba(18,19,20,.15);
+      transition: .15s ease;
+    }
+    .switch[data-on="true"] .knob{ transform: translateX(22px); }
+    .hr{ height:1px; background: rgba(40,85,108,.14); border:0; }
+    .badge{
+      display:inline-flex; align-items:center; gap:.35rem;
+      border-radius: 999px;
+      padding:.25rem .55rem;
+      font-size: .78rem;
+      font-weight:700;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+    .badge.inv{ color: var(--rego-blue); }
+    .badge.cons{ color: var(--rego-red); }
+    .small{ font-size:.85rem; }
+    .by{
+      font-size:.78rem;
+      color: var(--rego-gm);
+      letter-spacing: .02em;
+    }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <header class="max-w-6xl mx-auto px-4 pt-6 pb-4">
+    <div class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-10 w-auto" onerror="this.style.display='none'">
+          <div>
+            <div class="text-xl sm:text-2xl font-extrabold" style="color:var(--rego-black)">
+              ROI Holders REGO-FIX
+            </div>
+            <div class="muted small">
+              Calculadora modular · inversión manual
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="flex gap-2">
+          <button id="btnPdfReport" class="btn btn-primary">Exportar PDF</button>
+          <button id="btnCopySummary" class="btn btn-outline">Copiar resumen</button>
+          <button id="btnResetAll" class="btn btn-danger">Reset</button>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl overflow-hidden border" style="border-color:var(--border); background:linear-gradient(90deg, rgba(183,201,31,.18), rgba(88,213,211,.18), rgba(40,85,108,.10));">
+        <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div class="flex-1">
+            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: holders (sujeción) y ROI real</div>
+            <div class="muted small">Captura el estudio (cliente + aplicación), calcula ROI y genera un reporte en PDF para enviar/guardar.</div>
+          </div>
+          <div class="text-right">
+            <div class="by">by alexrasa</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-10 space-y-6">
+
+    <!-- 0) Estudio (usuario/empresa/aplicación) -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">0) Estudio (cliente, usuario y aplicación)</h2>
+          <p class="muted small mt-1">Campos libres para documentar el caso. Se guardan en tu navegador automáticamente.</p>
+        </div>
+        <span class="badge inv">Estudio</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <div class="label">Fecha</div>
+          <input id="studyDate" class="input" type="text" data-study="studyDate" readonly>
+          <div class="muted small mt-1">Auto.</div>
+        </div>
+        <div>
+          <div class="label">Usuario</div>
+          <input id="userName" class="input" type="text" placeholder="Nombre" data-study="userName">
+        </div>
+        <div>
+          <div class="label">Puesto</div>
+          <input id="userRole" class="input" type="text" placeholder="Ej: Ing. Procesos / Compras" data-study="userRole">
+        </div>
+        <div>
+          <div class="label">Empresa</div>
+          <input id="company" class="input" type="text" placeholder="Razón social / planta" data-study="company">
+        </div>
+      </div>
+
+      <div class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div>
+          <div class="label">Aplicación (descripción)</div>
+          <textarea id="application" class="input" placeholder="Ej: Barrenos Ø8 en aluminio 6061, 12k rpm, refrigerante interno, objetivo: mejorar runout y vida." data-study="application"></textarea>
+          <div class="muted small mt-1">Pon lo que tú quieras. Aquí vive el contexto real.</div>
+        </div>
+        <div>
+          <div class="label">Notas / restricciones</div>
+          <textarea id="notes" class="input" placeholder="Ej: Limitante: portaherramientas actuales con vibración; requieren cambio rápido; stock de collets; tolerancia runout ≤ 5 µm." data-study="notes"></textarea>
+          <div class="muted small mt-1">Esto también se va al PDF.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1) Configuración base + Inversión -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1) Configuración base e inversión</h2>
+          <p class="muted small mt-1">Aquí se captura lo mínimo indispensable: costo/hora, volumen y el monto de inversión (único) + consumibles mensuales.</p>
+        </div>
+        <span class="badge inv">Base</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <div class="label">Costo máquina (USD/h)</div>
+          <input id="costHour" class="input" type="number" min="0" step="1" value="850" inputmode="numeric">
+          <div class="muted small mt-1">Incluye operador, overhead, etc.</div>
+        </div>
+
+        <div>
+          <div class="label">Piezas por mes</div>
+          <input id="partsMonth" class="input" type="number" min="0" step="1" value="5000" inputmode="numeric">
+          <div class="muted small mt-1">Para vida y ciclo.</div>
+        </div>
+
+        <div>
+          <div class="label">Inversión (USD)</div>
+          <input id="invest" class="input" type="number" min="0" step="1" value="45000" inputmode="numeric">
+          <div class="muted small mt-1">Pago único (holders, kits, etc.).</div>
+        </div>
+
+        <div>
+          <div class="label">Consumibles mensuales (USD/mes)</div>
+          <input id="consMonth" class="input" type="number" min="0" step="1" value="0" inputmode="numeric">
+          <div class="muted small mt-1">Si aplica (limpieza, collets, etc.).</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1B) Herramienta actual + recomendación REGO-FIX -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1B) Herramienta actual y recomendación REGO-FIX</h2>
+          <p class="muted small mt-1">Define el setup actual (marca/modelo/aplicación). El sistema sugiere la mejor opción REGO-FIX con base en reglas prácticas.</p>
+        </div>
+        <span class="badge inv">Recomendación</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Actual -->
+        <div class="card p-4">
+          <div class="font-extrabold" style="color:var(--rego-blue)">Setup actual (lo que tiene hoy)</div>
+
+          <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <div class="label">Marca holder actual</div>
+              <input id="curBrand" class="input" type="text" placeholder="Ej: Haimer / Nikken / Genérico" data-study="curBrand">
+            </div>
+            <div>
+              <div class="label">Modelo / tipo</div>
+              <input id="curModel" class="input" type="text" placeholder="Ej: ER32, hidráulico, shrink, etc." data-study="curModel">
+            </div>
+            <div>
+              <div class="label">Interfaz husillo</div>
+              <input id="spindleInterface" class="input" type="text" placeholder="Ej: BT40 / CAT40 / HSK63A" data-study="spindleInterface">
+            </div>
+            <div>
+              <div class="label">Refrigerante</div>
+              <select id="coolant" class="input" data-study="coolant">
+                <option value="">—</option>
+                <option value="flood">Externo</option>
+                <option value="through">Interno (TSC)</option>
+                <option value="mql">MQL</option>
+                <option value="dry">Seco</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <div class="label">Diámetro herramienta (mm)</div>
+              <input id="toolDia" class="input" type="number" min="0" step="0.01" value="8" inputmode="decimal" data-study="toolDia">
+            </div>
+            <div>
+              <div class="label">RPM objetivo</div>
+              <input id="rpm" class="input" type="number" min="0" step="1" value="12000" inputmode="numeric" data-study="rpm">
+            </div>
+            <div>
+              <div class="label">Runout objetivo (µm)</div>
+              <input id="runout" class="input" type="number" min="0" step="1" value="5" inputmode="numeric" data-study="runout">
+            </div>
+            <div>
+              <div class="label">Prioridad</div>
+              <select id="priority" class="input" data-study="priority">
+                <option value="precision">Precisión / runout</option>
+                <option value="rigidity">Rigidez</option>
+                <option value="change">Cambio rápido</option>
+                <option value="balanced">Balance general</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <div class="label">Operación</div>
+              <select id="operation" class="input" data-study="operation">
+                <option value="">—</option>
+                <option value="drilling">Barrenado</option>
+                <option value="tapping">Roscado</option>
+                <option value="milling">Fresado</option>
+                <option value="reaming">Escariado</option>
+                <option value="boring">Mandrinado</option>
+                <option value="turning">Torneado (si aplica)</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">Material</div>
+              <select id="material" class="input" data-study="material">
+                <option value="">—</option>
+                <option value="aluminum">Aluminio</option>
+                <option value="steel">Acero</option>
+                <option value="stainless">Inox</option>
+                <option value="castiron">Fundición</option>
+                <option value="titanium">Titanio</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <div class="label">Problema actual / oportunidad</div>
+            <textarea id="curProblem" class="input" placeholder="Ej: vibración, runout alto, baja vida, mala repetibilidad, setup lento..." data-study="curProblem"></textarea>
+          </div>
+
+          <div class="mt-3">
+            <div class="label">Objetivo (qué quiere mejorar)</div>
+            <textarea id="goal" class="input" placeholder="Ej: +vida herramienta, -tiempo cambio, mejor acabado, tolerancia, etc." data-study="goal"></textarea>
+          </div>
+        </div>
+
+        <!-- Reco -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-2">
+            <div class="font-extrabold" style="color:var(--rego-blue)">Recomendación REGO-FIX (auto)</div>
+            <button id="btnRecalcReco" class="btn btn-outline py-2 px-3 text-sm">Recalcular</button>
+          </div>
+
+          <div class="mt-3 kpi">
+            <div class="muted small">Opción sugerida</div>
+            <div id="regoRecoTitle" class="text-xl font-extrabold">—</div>
+            <div id="regoRecoSubtitle" class="muted small mt-1">—</div>
+          </div>
+
+          <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="kpi">
+              <div class="muted small">Sistema</div>
+              <div id="regoSystem" class="font-extrabold">—</div>
+              <div class="muted small">Ej: poweRgrip / ER Hi-Q</div>
+            </div>
+            <div class="kpi">
+              <div class="muted small">Por qué</div>
+              <div id="regoWhy" class="font-extrabold">—</div>
+              <div class="muted small">Regla aplicada</div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <div class="label">Detalle propuesto (editable)</div>
+            <textarea id="regoRecoEditable" class="input" placeholder="Aquí puedes ajustar el texto final para el cliente (SKU, tamaños, notas, etc.)." data-study="regoRecoEditable"></textarea>
+            <div class="muted small mt-1">Auto-llenado, pero tú mandas.</div>
+          </div>
+
+          <hr class="hr mt-4"/>
+
+          <div class="kpi mt-3">
+            <div class="muted small">Checklist de datos mínimos (para propuesta “cerrada”)</div>
+            <div id="regoMissing" class="small">—</div>
+          </div>
+
+          <div class="muted small mt-3">
+            Si más adelante quieres “modo ChatGPT”: aquí solo cambiamos la función <span class="mono">recommendRegoFix()</span> para que llame a tu endpoint (API) y listo.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) Ahorros (switches) -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">2) Ahorros estimados (3 frentes)</h2>
+          <p class="muted small mt-1">Activa solo lo que aplique. Cada módulo se suma a los ahorros mensuales.</p>
+        </div>
+        <span class="badge inv">Ahorros</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <!-- A) Tiempo -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-extrabold" style="color:var(--rego-blue)">A) Ahorro por tiempo</div>
+              <div class="muted small">Cambios, setups, paros</div>
+            </div>
+            <div class="switch" id="swTime" data-on="true" role="switch" aria-checked="true" tabindex="0">
+              <div class="knob"></div>
+            </div>
+          </div>
+
+          <div class="mt-3 space-y-3" id="timeBody">
+            <div class="flex items-center justify-between">
+              <div class="small font-bold" style="color:var(--rego-gd)">Incluir: Cambios/mes * min/cambio</div>
+              <div class="switch" id="swTimeChanges" data-on="true"><div class="knob"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Cambios/mes (actual)</div>
+                <input id="chgAct" class="input" type="number" min="0" step="1" value="180">
+              </div>
+              <div>
+                <div class="label">Cambios/mes (nuevo)</div>
+                <input id="chgNew" class="input" type="number" min="0" step="1" value="140">
+              </div>
+              <div>
+                <div class="label">Min/cambio (actual)</div>
+                <input id="chgMinAct" class="input" type="number" min="0" step="0.1" value="6">
+              </div>
+              <div>
+                <div class="label">Min/cambio (nuevo)</div>
+                <input id="chgMinNew" class="input" type="number" min="0" step="0.1" value="4.5">
+              </div>
+            </div>
+
+            <hr class="hr"/>
+
+            <div class="flex items-center justify-between">
+              <div class="small font-bold" style="color:var(--rego-gd)">Incluir: Setups/mes * min/setup</div>
+              <div class="switch" id="swTimeSetups" data-on="false"><div class="knob"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Setups/mes (actual)</div>
+                <input id="setAct" class="input" type="number" min="0" step="1" value="20">
+              </div>
+              <div>
+                <div class="label">Setups/mes (nuevo)</div>
+                <input id="setNew" class="input" type="number" min="0" step="1" value="18">
+              </div>
+              <div>
+                <div class="label">Min/setup (actual)</div>
+                <input id="setMinAct" class="input" type="number" min="0" step="0.1" value="25">
+              </div>
+              <div>
+                <div class="label">Min/setup (nuevo)</div>
+                <input id="setMinNew" class="input" type="number" min="0" step="0.1" value="20">
+              </div>
+            </div>
+
+            <hr class="hr"/>
+
+            <div class="flex items-center justify-between">
+              <div class="small font-bold" style="color:var(--rego-gd)">Incluir: Paros/mes * min/paro</div>
+              <div class="switch" id="swTimeStops" data-on="false"><div class="knob"></div></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Paros/mes (actual)</div>
+                <input id="stpAct" class="input" type="number" min="0" step="1" value="12">
+              </div>
+              <div>
+                <div class="label">Paros/mes (nuevo)</div>
+                <input id="stpNew" class="input" type="number" min="0" step="1" value="8">
+              </div>
+              <div>
+                <div class="label">Min/paro (actual)</div>
+                <input id="stpMinAct" class="input" type="number" min="0" step="0.1" value="18">
+              </div>
+              <div>
+                <div class="label">Min/paro (nuevo)</div>
+                <input id="stpMinNew" class="input" type="number" min="0" step="0.1" value="12">
+              </div>
+            </div>
+
+            <div class="kpi mt-3">
+              <div class="muted small">Ahorro por tiempo (mensual)</div>
+              <div id="saveTime" class="text-xl font-extrabold">$0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- B) Vida herramienta -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-extrabold" style="color:var(--rego-blue)">B) Vida de herramienta</div>
+              <div class="muted small">Más ciclos por herramienta</div>
+            </div>
+            <div class="switch" id="swLife" data-on="true" role="switch" aria-checked="true" tabindex="0">
+              <div class="knob"></div>
+            </div>
+          </div>
+
+          <div class="mt-3 space-y-3" id="lifeBody">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Ciclos por herramienta (actual)</div>
+                <input id="lifeAct" class="input" type="number" min="1" step="1" value="100">
+              </div>
+              <div>
+                <div class="label">Ciclos por herramienta (nuevo)</div>
+                <input id="lifeNew" class="input" type="number" min="1" step="1" value="160">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Costo por herramienta (USD)</div>
+                <input id="toolCost" class="input" type="number" min="0" step="1" value="650">
+              </div>
+              <div>
+                <div class="label">Herramientas iguales en proceso</div>
+                <input id="toolCount" class="input" type="number" min="1" step="1" value="3">
+              </div>
+            </div>
+
+            <div class="kpi">
+              <div class="muted small">Ahorro por vida (mensual)</div>
+              <div id="saveLife" class="text-xl font-extrabold">$0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- C) Proceso -->
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="font-extrabold" style="color:var(--rego-blue)">C) Mejora de proceso</div>
+              <div class="muted small">Ciclo menor por sujeción robusta</div>
+            </div>
+            <div class="switch" id="swProc" data-on="true" role="switch" aria-checked="true" tabindex="0">
+              <div class="knob"></div>
+            </div>
+          </div>
+
+          <div class="mt-3 space-y-3" id="procBody">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="label">Ciclo actual (min/pieza)</div>
+                <input id="cycAct" class="input" type="number" min="0" step="0.01" value="3.20">
+              </div>
+              <div>
+                <div class="label">Ciclo nuevo (min/pieza)</div>
+                <input id="cycNew" class="input" type="number" min="0" step="0.01" value="2.85">
+              </div>
+            </div>
+
+            <div class="kpi">
+              <div class="muted small">Ahorro por proceso (mensual)</div>
+              <div id="saveProc" class="text-xl font-extrabold">$0</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3) Resultados -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">3) Resultados</h2>
+          <p class="muted small mt-1">Payback, ahorro neto mensual y ROI anual.</p>
+        </div>
+        <span class="badge inv">ROI</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div class="kpi">
+          <div class="muted small">Ahorro bruto mensual</div>
+          <div id="grossSave" class="text-2xl font-extrabold">$0</div>
+          <div class="muted small">Tiempo + vida + proceso</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Ahorro neto mensual</div>
+          <div id="netSave" class="text-2xl font-extrabold">$0</div>
+          <div class="muted small">Bruto − consumibles mensuales</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Payback (meses)</div>
+          <div id="payback" class="text-2xl font-extrabold">—</div>
+          <div class="muted small">Inversión / neto mensual</div>
+        </div>
+      </div>
+
+      <div class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="kpi">
+          <div class="muted small">ROI anual estimado</div>
+          <div id="roiAnnual" class="text-2xl font-extrabold">—</div>
+          <div class="muted small">((neto*12) / inversión)</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">by</div>
+          <div class="by">alexrasa</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center pb-4">
+      <div class="by">by alexrasa</div>
+    </footer>
+
+  </main>
+
+<script>
+/* ========= state ========= */
+const state = {
+  switches: {
+    time: true,
+    timeChanges: true,
+    timeSetups: false,
+    timeStops: false,
+    life: true,
+    proc: true
+  },
+  study: {
+    studyDate: "",
+    userName: "",
+    userRole: "",
+    company: "",
+    application: "",
+    notes: "",
+    curBrand: "",
+    curModel: "",
+    spindleInterface: "",
+    coolant: "",
+    toolDia: "8",
+    rpm: "12000",
+    runout: "5",
+    priority: "precision",
+    operation: "",
+    material: "",
+    curProblem: "",
+    goal: "",
+    regoRecoEditable: ""
+  }
+};
+
+const $ = (id)=>document.getElementById(id);
+const clamp0 = (n)=>Math.max(0, Number(n||0));
+
+/* ==== Moneda a USD ==== */
+const money = (n) =>
+  Number(n || 0).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  });
+
+function safeJson(str, fallback){ try{ return JSON.parse(str); }catch{ return fallback; } }
+
+/* ========= persist ========= */
+function persist(){
+  localStorage.setItem("rego_switches_v2", JSON.stringify(state.switches));
+  localStorage.setItem("rego_study_v1", JSON.stringify(state.study));
+}
+function load(){
+  const sw = localStorage.getItem("rego_switches_v2");
+  if(sw) state.switches = safeJson(sw, state.switches);
+
+  const st = localStorage.getItem("rego_study_v1");
+  if(st) state.study = { ...state.study, ...safeJson(st, {}) };
+}
+
+/* ========= switches ========= */
+function setSwitch(el, on){ el.dataset.on = on ? "true":"false"; }
+function getSwitch(el){ return el.dataset.on === "true"; }
+
+function bindSwitch(id, key){
+  const el = $(id);
+  setSwitch(el, !!state.switches[key]);
+  const toggle = ()=>{
+    const next = !getSwitch(el);
+    setSwitch(el, next);
+    state.switches[key] = next;
+    persist();
+    renderAll();
+  };
+  el.addEventListener("click", toggle);
+  el.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); }
+  });
+}
+
+/* ========= calc (ROI) ========= */
+function calc(){
+  const costHour = clamp0($("costHour").value);
+  const costMin  = costHour / 60;
+
+  const partsMonth = clamp0($("partsMonth").value);
+  const invest = clamp0($("invest").value);
+  const consMonth = clamp0($("consMonth").value);
+
+  let saveTime = 0, saveLife = 0, saveProc = 0;
+
+  // A) time
+  if(state.switches.time){
+    let minSaved = 0;
+
+    if(state.switches.timeChanges){
+      const a = clamp0($("chgAct").value), b = clamp0($("chgNew").value);
+      const ma = clamp0($("chgMinAct").value), mb = clamp0($("chgMinNew").value);
+      minSaved += Math.max(0, (a*ma) - (b*mb));
+    }
+    if(state.switches.timeSetups){
+      const a = clamp0($("setAct").value), b = clamp0($("setNew").value);
+      const ma = clamp0($("setMinAct").value), mb = clamp0($("setMinNew").value);
+      minSaved += Math.max(0, (a*ma) - (b*mb));
+    }
+    if(state.switches.timeStops){
+      const a = clamp0($("stpAct").value), b = clamp0($("stpNew").value);
+      const ma = clamp0($("stpMinAct").value), mb = clamp0($("stpMinNew").value);
+      minSaved += Math.max(0, (a*ma) - (b*mb));
+    }
+
+    saveTime = minSaved * costMin;
+  }
+
+  // B) life
+  if(state.switches.life){
+    const lifeAct = Math.max(1, clamp0($("lifeAct").value));
+    const lifeNew = Math.max(1, clamp0($("lifeNew").value));
+    const toolCost = clamp0($("toolCost").value);
+    const toolCount = Math.max(1, clamp0($("toolCount").value));
+
+    const toolsAct = (partsMonth / lifeAct) * toolCount;
+    const toolsNew = (partsMonth / lifeNew) * toolCount;
+    const spendAct = toolsAct * toolCost;
+    const spendNew = toolsNew * toolCost;
+
+    saveLife = Math.max(0, spendAct - spendNew);
+  }
+
+  // C) process
+  if(state.switches.proc){
+    const cycAct = clamp0($("cycAct").value);
+    const cycNew = clamp0($("cycNew").value);
+    const minSavedPer = Math.max(0, cycAct - cycNew);
+    saveProc = (minSavedPer * partsMonth) * costMin;
+  }
+
+  const gross = saveTime + saveLife + saveProc;
+  const net = Math.max(0, gross - consMonth);
+
+  let payback = null;
+  if(invest > 0 && net > 0) payback = invest / net;
+
+  let roiAnnual = null;
+  if(invest > 0) roiAnnual = (net * 12) / invest;
+
+  return { invest, consMonth, saveTime, saveLife, saveProc, gross, net, payback, roiAnnual };
+}
+
+/* ========= REGO-FIX recommendation (heurística) =========
+   Nota: aquí NO “inventamos” SKUs. Damos:
+   - sistema recomendado (poweRgrip / ER Hi-Q / etc.)
+   - motivo
+   - checklist de info faltante
+   Tú puedes editar el texto final en "Detalle propuesto".
+*/
+function recommendRegoFix(){
+  const s = state.study;
+
+  const op = (s.operation || "").toLowerCase();
+  const mat = (s.material || "").toLowerCase();
+  const priority = (s.priority || "precision").toLowerCase();
+  const rpm = clamp0(s.rpm);
+  const runout = clamp0(s.runout);
+  const dia = clamp0(s.toolDia);
+  const coolant = (s.coolant || "").toLowerCase();
+
+  const missing = [];
+  if(!s.operation) missing.push("Operación");
+  if(!s.material) missing.push("Material");
+  if(!s.spindleInterface) missing.push("Interfaz husillo");
+  if(!s.toolDia) missing.push("Ø herramienta");
+  if(!s.rpm) missing.push("RPM");
+  if(!s.runout) missing.push("Runout objetivo");
+  $("regoMissing").textContent = missing.length ? ("Falta: " + missing.join(", ")) : "OK (datos mínimos completos)";
+
+  // Reglas base (simples, prácticas)
+  // 1) Si prioridad es cambio rápido o runout muy bajo => poweRgrip
+  // 2) Si tapping => ER Hi-Q (tapping-friendly) o poweRgrip si se pide máxima rigidez
+  // 3) Si drilling/reaming y runout <= 5um => poweRgrip o ER Hi-Q (según rpm/rigidez)
+  // 4) Si milling con dia grande o material duro => preferir sistema más rígido (poweRgrip)
+  // 5) Si rpm muy alto (>= 18k) => preferir poweRgrip por repetibilidad (regla conservadora)
+
+  let system = "ER (Hi-Q / alta precisión)";
+  let title = "ER de alta precisión (Hi-Q)";
+  let why = "Balance general: precisión y flexibilidad.";
+  let subtitle = "Recomendación base cuando no hay una condición extrema (runout/rpm/cambio rápido).";
+
+  const runoutTight = runout > 0 && runout <= 5;
+  const rpmHigh = rpm >= 18000;
+  const diaBig = dia >= 16; // regla simple
+  const hardMat = ["stainless","titanium","steel"].includes(mat);
+
+  if(priority === "change"){
+    system = "poweRgrip";
+    title = "poweRgrip (cambio rápido + repetibilidad)";
+    why = "Prioridad: cambio rápido y consistencia.";
+    subtitle = "Ideal cuando el tiempo de setup y repetibilidad mandan.";
+  } else if(rpmHigh){
+    system = "poweRgrip";
+    title = "poweRgrip (alta velocidad + runout controlado)";
+    why = "RPM alto (≥18k): se busca repetibilidad y balance.";
+    subtitle = "Para procesos de alta velocidad donde el runout castiga vida y acabado.";
+  } else if(runoutTight && (op === "drilling" || op === "reaming" || op === "boring")){
+    system = "poweRgrip";
+    title = "poweRgrip (para runout ≤5 µm en agujeros)";
+    why = "Runout objetivo muy estricto en operación de agujeros.";
+    subtitle = "En agujeros (barrenado/escariado/mandrinado), el runout manda.";
+  } else if(op === "tapping"){
+    if(priority === "rigidity" || hardMat){
+      system = "poweRgrip";
+      title = "poweRgrip (roscas con máxima rigidez)";
+      why = "Roscado + rigidez/material: minimizar microdeslizamiento.";
+      subtitle = "En roscado, la estabilidad evita roturas y mejora repetibilidad.";
+    } else {
+      system = "ER (Hi-Q / collet de precisión)";
+      title = "ER Hi-Q (roscas con precisión y flexibilidad)";
+      why = "Roscado sin condición extrema: ER de precisión es robusto y práctico.";
+      subtitle = "Buena opción si el requerimiento es estable sin reconfigurar medio taller.";
+    }
+  } else if(op === "milling" && (diaBig || hardMat || priority === "rigidity")){
+    system = "poweRgrip";
+    title = "poweRgrip (fresado rígido)";
+    why = "Fresado con diámetro grande/material duro/rigidez.";
+    subtitle = "Cuando la rigidez manda, un sistema más ‘amarrado’ gana.";
+  } else if(runoutTight){
+    system = "ER (Hi-Q / alta precisión)";
+    title = "ER Hi-Q (runout controlado)";
+    why = "Runout objetivo estricto: collet de alta precisión.";
+    subtitle = "Cuando se busca precisión sin forzar cambio de sistema completo.";
+  } else if(mat === "aluminum" && (op === "drilling" || op === "milling")){
+    system = "ER (Hi-Q) o poweRgrip";
+    title = "ER Hi-Q (aluminio) / poweRgrip si quieres ir por todo";
+    why = "Aluminio suele premiar runout y rpm; ambas opciones son válidas.";
+    subtitle = "Si el objetivo es productividad máxima, poweRgrip suele justificar ROI más rápido.";
+  }
+
+  const coolTxt = coolant ? `Refrigerante: ${coolant}.` : "";
+  const ctx = [
+    `Operación: ${s.operation || "—"} · Material: ${s.material || "—"}`,
+    `Husillo: ${s.spindleInterface || "—"} · Ø herramienta: ${s.toolDia || "—"} mm · RPM: ${s.rpm || "—"}`,
+    `Runout objetivo: ${s.runout || "—"} µm · Prioridad: ${s.priority || "—"}. ${coolTxt}`
+  ].join("\n");
+
+  const editable = [
+    `Recomendación REGO-FIX: ${title}`,
+    `Sistema: ${system}`,
+    `Motivo: ${why}`,
+    ``,
+    `Contexto considerado:`,
+    ctx,
+    ``,
+    `Siguiente paso (para aterrizar SKU exacto):`,
+    `- Confirmar interfaz exacta (BT/CAT/HSK) y longitud requerida.`,
+    `- Confirmar tipo de herramienta (cilíndrico/Weldon), tolerancia y balance.`,
+    `- Confirmar necesidad de refrigerante interno (TSC) y rango de RPM real.`,
+    `- Definir objetivo: runout, vida, acabado o cambio rápido.`,
+  ].join("\n");
+
+  // Render
+  $("regoRecoTitle").textContent = title;
+  $("regoRecoSubtitle").textContent = subtitle;
+  $("regoSystem").textContent = system;
+  $("regoWhy").textContent = why;
+
+  // Solo autollenar si está vacío (para no pisarte lo que edites)
+  if(!state.study.regoRecoEditable || state.study.regoRecoEditable.trim().length < 10){
+    $("regoRecoEditable").value = editable;
+    state.study.regoRecoEditable = editable;
+    persist();
+  }
+}
+
+/* ========= render ========= */
+function toggleBlock(id, on){
+  const el = $(id);
+  el.style.opacity = on ? "1" : ".45";
+  el.style.pointerEvents = on ? "auto" : "none";
+}
+
+function renderSwitchBodies(){
+  toggleBlock("timeBody", state.switches.time);
+  toggleBlock("lifeBody", state.switches.life);
+  toggleBlock("procBody", state.switches.proc);
+}
+
+function renderKPIs(){
+  const r = calc();
+  $("saveTime").textContent = money(r.saveTime);
+  $("saveLife").textContent = money(r.saveLife);
+  $("saveProc").textContent = money(r.saveProc);
+
+  $("grossSave").textContent = money(r.gross);
+  $("netSave").textContent = money(r.net);
+
+  $("payback").textContent = (r.payback===null) ? "—" : (r.payback.toFixed(1) + " meses");
+  $("roiAnnual").textContent = (r.roiAnnual===null) ? "—" : ((r.roiAnnual*100).toFixed(0) + "%");
+}
+
+function renderAll(){
+  renderSwitchBodies();
+  renderKPIs();
+  recommendRegoFix();
+}
+
+/* ========= copy summary ========= */
+function copySummary(){
+  const r = calc();
+  const lines = [
+    "ROI Holders REGO-FIX — Resumen de estudio",
+    `Fecha: ${state.study.studyDate || "—"}`,
+    `Empresa: ${state.study.company || "—"}`,
+    `Usuario: ${state.study.userName || "—"} (${state.study.userRole || "—"})`,
+    "",
+    "Aplicación:",
+    state.study.application || "—",
+    "",
+    "Herramienta actual / oportunidad:",
+    state.study.curProblem || "—",
+    "",
+    "Recomendación REGO-FIX:",
+    (state.study.regoRecoEditable || "").trim() || "—",
+    "",
+    "ROI:",
+    `Inversión: ${money(r.invest)}`,
+    `Consumibles mensuales: ${money(r.consMonth)}`,
+    `Ahorro bruto mensual: ${money(r.gross)}`,
+    `Ahorro neto mensual: ${money(r.net)}`,
+    `Payback: ${r.payback===null ? "—" : (r.payback.toFixed(1)+" meses")}`,
+    `ROI anual: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")}`,
+    "",
+    "by alexrasa"
+  ];
+  navigator.clipboard.writeText(lines.join("\n")).then(()=>alert("Resumen copiado.")).catch(()=>alert("No se pudo copiar."));
+}
+
+/* ========= PDF (print-to-PDF) ========= */
+function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+
+function buildReportHTML(){
+  const r = calc();
+  const s = state.study;
+
+  const html = `
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Reporte ROI — REGO-FIX</title>
+<style>
+  body{ font-family: Arial, Helvetica, sans-serif; color:#111; padding:24px; }
+  h1{ font-size:18px; margin:0 0 6px; }
+  h2{ font-size:14px; margin:18px 0 8px; }
+  .muted{ color:#555; font-size:12px; }
+  .box{ border:1px solid #ddd; border-radius:10px; padding:12px; margin:10px 0; }
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  .k{ font-size:11px; color:#666; margin-bottom:3px; }
+  .v{ font-size:12px; font-weight:700; }
+  pre{ white-space:pre-wrap; word-wrap:break-word; font-family: Arial, Helvetica, sans-serif; font-size:12px; margin:0; }
+  .hr{ height:1px; background:#eee; border:0; margin:16px 0; }
+  @media print{
+    body{ padding:0; }
+    .no-print{ display:none; }
+  }
+</style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom:10px;">
+    <button onclick="window.print()">Imprimir / Guardar como PDF</button>
+    <span class="muted">Tip: en el diálogo de impresión elige “Guardar como PDF”.</span>
+  </div>
+
+  <h1>Reporte ROI — REGO-FIX (Holders / Sujeción)</h1>
+  <div class="muted">Fecha: ${esc(s.studyDate)} · by alexrasa</div>
+
+  <div class="box">
+    <div class="grid">
+      <div><div class="k">Empresa</div><div class="v">${esc(s.company||"—")}</div></div>
+      <div><div class="k">Usuario / Puesto</div><div class="v">${esc((s.userName||"—") + " / " + (s.userRole||"—"))}</div></div>
+    </div>
+  </div>
+
+  <h2>Aplicación</h2>
+  <div class="box"><pre>${esc(s.application||"—")}</pre></div>
+
+  <h2>Notas / restricciones</h2>
+  <div class="box"><pre>${esc(s.notes||"—")}</pre></div>
+
+  <h2>Setup actual</h2>
+  <div class="box">
+    <div class="grid">
+      <div><div class="k">Marca / modelo</div><div class="v">${esc((s.curBrand||"—") + " / " + (s.curModel||"—"))}</div></div>
+      <div><div class="k">Husillo / Refrigerante</div><div class="v">${esc((s.spindleInterface||"—") + " / " + (s.coolant||"—"))}</div></div>
+      <div><div class="k">Operación / Material</div><div class="v">${esc((s.operation||"—") + " / " + (s.material||"—"))}</div></div>
+      <div><div class="k">Ø / RPM / Runout</div><div class="v">${esc((s.toolDia||"—")+" mm / "+(s.rpm||"—")+" rpm / "+(s.runout||"—")+" µm")}</div></div>
+      <div><div class="k">Prioridad</div><div class="v">${esc(s.priority||"—")}</div></div>
+      <div><div class="k">Objetivo</div><div class="v">${esc(s.goal||"—")}</div></div>
+    </div>
+    <div class="hr"></div>
+    <div class="k">Problema actual / oportunidad</div>
+    <pre>${esc(s.curProblem||"—")}</pre>
+  </div>
+
+  <h2>Recomendación REGO-FIX</h2>
+  <div class="box"><pre>${esc((s.regoRecoEditable||"—").trim() || "—")}</pre></div>
+
+  <h2>ROI</h2>
+  <div class="box">
+    <div class="grid">
+      <div><div class="k">Inversión</div><div class="v">${esc(money(r.invest))}</div></div>
+      <div><div class="k">Consumibles mensuales</div><div class="v">${esc(money(r.consMonth))}</div></div>
+      <div><div class="k">Ahorro bruto mensual</div><div class="v">${esc(money(r.gross))}</div></div>
+      <div><div class="k">Ahorro neto mensual</div><div class="v">${esc(money(r.net))}</div></div>
+      <div><div class="k">Payback</div><div class="v">${esc(r.payback===null ? "—" : (r.payback.toFixed(1)+" meses"))}</div></div>
+      <div><div class="k">ROI anual</div><div class="v">${esc(r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%"))}</div></div>
+    </div>
+  </div>
+
+  <div class="muted">Documento generado desde la calculadora local. Ajusta campos y vuelve a exportar.</div>
+</body>
+</html>`;
+  return html;
+}
+
+function exportPdf(){
+  const w = window.open("", "_blank");
+  if(!w){ alert("Bloqueado por el navegador. Permite popups para exportar PDF."); return; }
+  w.document.open();
+  w.document.write(buildReportHTML());
+  w.document.close();
+  // auto abrir print cuando cargue
+  w.onload = ()=>{ try{ w.focus(); w.print(); }catch{} };
+}
+
+/* ========= inputs -> study ========= */
+function bindStudyFields(){
+  // fecha auto una vez
+  if(!state.study.studyDate){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    state.study.studyDate = `${yyyy}-${mm}-${dd}`;
+  }
+  $("studyDate").value = state.study.studyDate;
+
+  document.querySelectorAll("[data-study]").forEach(el=>{
+    const key = el.getAttribute("data-study");
+    if(!key) return;
+
+    if(el.id !== "studyDate"){
+      // hydrate
+      if(state.study[key] !== undefined && state.study[key] !== null){
+        el.value = state.study[key];
+      }
+    }
+
+    el.addEventListener("input", ()=>{
+      state.study[key] = el.value;
+      persist();
+      renderAll();
+    });
+    el.addEventListener("change", ()=>{
+      state.study[key] = el.value;
+      persist();
+      renderAll();
+    });
+  });
+}
+
+/* ========= wiring ========= */
+function bindInputs(){
+  [
+    "costHour","partsMonth","invest","consMonth",
+    "chgAct","chgNew","chgMinAct","chgMinNew",
+    "setAct","setNew","setMinAct","setMinNew",
+    "stpAct","stpNew","stpMinAct","stpMinNew",
+    "lifeAct","lifeNew","toolCost","toolCount",
+    "cycAct","cycNew"
+  ].forEach(id=>{
+    $(id).addEventListener("input", renderAll);
+    $(id).addEventListener("change", renderAll);
+  });
+
+  $("btnCopySummary").addEventListener("click", copySummary);
+  $("btnResetAll").addEventListener("click", resetAll);
+  $("btnPdfReport").addEventListener("click", exportPdf);
+
+  $("btnRecalcReco").addEventListener("click", ()=>{
+    // Forzar recalcular y también reescribir editable si está vacío/pequeño
+    state.study.regoRecoEditable = $("regoRecoEditable").value;
+    persist();
+    recommendRegoFix();
+    alert("Recomendación recalculada.");
+  });
+}
+
+function resetAll(){
+  if(!confirm("¿Reset? Se restauran switches y se limpia el estudio guardado.")) return;
+  localStorage.removeItem("rego_switches_v2");
+  localStorage.removeItem("rego_study_v1");
+
+  state.switches = {
+    time: true,
+    timeChanges: true,
+    timeSetups: false,
+    timeStops: false,
+    life: true,
+    proc: true
+  };
+  state.study = {
+    studyDate: "",
+    userName: "",
+    userRole: "",
+    company: "",
+    application: "",
+    notes: "",
+    curBrand: "",
+    curModel: "",
+    spindleInterface: "",
+    coolant: "",
+    toolDia: "8",
+    rpm: "12000",
+    runout: "5",
+    priority: "precision",
+    operation: "",
+    material: "",
+    curProblem: "",
+    goal: "",
+    regoRecoEditable: ""
+  };
+
+  // re-sync switch UI
+  ["swTime","swTimeChanges","swTimeSetups","swTimeStops","swLife","swProc"].forEach((id)=>{
+    const keyMap = {
+      swTime:"time",
+      swTimeChanges:"timeChanges",
+      swTimeSetups:"timeSetups",
+      swTimeStops:"timeStops",
+      swLife:"life",
+      swProc:"proc"
+    };
+    setSwitch($(id), state.switches[keyMap[id]]);
+  });
+
+  // clear study fields
+  document.querySelectorAll("[data-study]").forEach(el=>{
+    const key = el.getAttribute("data-study");
+    if(key) el.value = "";
+  });
+
+  bindStudyFields();
+  renderAll();
+}
+
+/* ========= init ========= */
+load();
+
+bindSwitch("swTime","time");
+bindSwitch("swTimeChanges","timeChanges");
+bindSwitch("swTimeSetups","timeSetups");
+bindSwitch("swTimeStops","timeStops");
+bindSwitch("swLife","life");
+bindSwitch("swProc","proc");
+
+bindStudyFields();
+bindInputs();
+renderAll();
+</script>
+</body>
+</html>
