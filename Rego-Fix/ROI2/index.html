@@ -949,6 +949,13 @@ function buildReportHTML(){
   const r = calc();
   const s = state.study;
 
+  // Ajusta estas rutas a tus assets
+  const LOGO_URL = "/assets/regofixlogo.png";
+  // Pon aquí la imagen difuminada (ej: /assets/honeywell-bg.jpg o /assets/bg-industrial.png)
+  const BG_URL   = "/assets/bg-watermark.jpg";
+
+  const CONF_TXT = "INFORMACIÓN CONFIDENCIAL — Uso exclusivo para evaluación interna. No distribuir.";
+
   const html = `
 <!doctype html>
 <html lang="es">
@@ -957,32 +964,142 @@ function buildReportHTML(){
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Reporte ROI — REGO-FIX</title>
 <style>
-  body{ font-family: Arial, Helvetica, sans-serif; color:#111; padding:24px; }
-  h1{ font-size:18px; margin:0 0 6px; }
-  h2{ font-size:14px; margin:18px 0 8px; }
-  .muted{ color:#555; font-size:12px; }
-  .box{ border:1px solid #ddd; border-radius:10px; padding:12px; margin:10px 0; }
+  :root{ --blue:#28556C; --green:#B7C91F; --red:#D31B23; --g:#555; }
+  *{ box-sizing:border-box; }
+  body{
+    font-family: Arial, Helvetica, sans-serif;
+    color:#111;
+    padding:28px;
+    position: relative;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Fondo con imagen difuminada */
+  .bg{
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image: url("${BG_URL}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: .10;
+    filter: blur(2px) grayscale(10%);
+    transform: scale(1.05);
+  }
+
+  /* Watermark diagonal repetido */
+  .wm{
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity: .10;
+  }
+  .wm span{
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    color: #111;
+    transform: rotate(-25deg);
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: 2px solid rgba(0,0,0,.25);
+    padding: 14px 18px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.15);
+  }
+
+  /* Encabezado */
+  .header{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 16px;
+    border:1px solid #ddd;
+    border-radius:14px;
+    background: rgba(255,255,255,.92);
+  }
+  .h-left{ display:flex; align-items:center; gap:12px; }
+  .logo{ height:32px; width:auto; }
+  h1{ font-size:18px; margin:0; }
+  .muted{ color: var(--g); font-size:12px; }
+  .conf{
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.06em;
+    color: #111;
+    border:1px solid rgba(0,0,0,.25);
+    padding:8px 10px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.80);
+    text-transform: uppercase;
+  }
+
+  /* Contenido */
+  h2{ font-size:13px; margin:18px 0 8px; color:#111; }
+  .box{
+    border:1px solid #ddd;
+    border-radius:12px;
+    padding:12px;
+    margin:10px 0;
+    background: rgba(255,255,255,.92);
+  }
   .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
   .k{ font-size:11px; color:#666; margin-bottom:3px; }
   .v{ font-size:12px; font-weight:700; }
-  pre{ white-space:pre-wrap; word-wrap:break-word; font-family: Arial, Helvetica, sans-serif; font-size:12px; margin:0; }
+  pre{
+    white-space:pre-wrap;
+    word-wrap:break-word;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size:12px;
+    margin:0;
+  }
   .hr{ height:1px; background:#eee; border:0; margin:16px 0; }
+
+  .footer{
+    margin-top:14px;
+    font-size:11px;
+    color:#444;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    background: rgba(255,255,255,.85);
+    border: 1px solid #e6e6e6;
+    padding:10px 12px;
+    border-radius: 12px;
+  }
+  .tag{
+    font-weight:800;
+    color:#111;
+    letter-spacing:.04em;
+  }
+
   @media print{
     body{ padding:0; }
-    .no-print{ display:none; }
+    /* Por si el navegador intenta recortar */
+    .bg, .wm{ position: fixed; }
   }
 </style>
 </head>
 <body>
-  <div class="no-print" style="margin-bottom:10px;">
-    <button onclick="window.print()">Imprimir / Guardar como PDF</button>
-    <span class="muted">Tip: en el diálogo de impresión elige “Guardar como PDF”.</span>
+  <div class="bg"></div>
+  <div class="wm"><span>INFORMACIÓN CONFIDENCIAL</span></div>
+
+  <div class="header">
+    <div class="h-left">
+      <img class="logo" src="${LOGO_URL}" alt="REGO-FIX" />
+      <div>
+        <h1>Reporte ROI — REGO-FIX (Holders / Sujeción)</h1>
+        <div class="muted">Fecha: ${esc(s.studyDate)} · by alexrasa</div>
+      </div>
+    </div>
+    <div class="conf">${esc(CONF_TXT)}</div>
   </div>
 
-  <h1>Reporte ROI — REGO-FIX (Holders / Sujeción)</h1>
-  <div class="muted">Fecha: ${esc(s.studyDate)} · by alexrasa</div>
-
-  <div class="box">
+  <div class="box" style="margin-top:12px;">
     <div class="grid">
       <div><div class="k">Empresa</div><div class="v">${esc(s.company||"—")}</div></div>
       <div><div class="k">Usuario / Puesto</div><div class="v">${esc((s.userName||"—") + " / " + (s.userRole||"—"))}</div></div>
@@ -1025,12 +1142,14 @@ function buildReportHTML(){
     </div>
   </div>
 
-  <div class="muted">Documento generado desde la calculadora local. Ajusta campos y vuelve a exportar.</div>
+  <div class="footer">
+    <div><span class="tag">CONFIDENCIAL:</span> ${esc(CONF_TXT)}</div>
+    <div class="muted">Documento generado desde la calculadora local.</div>
+  </div>
 </body>
 </html>`;
   return html;
 }
-
 function exportPdf(){
   const w = window.open("", "_blank");
   if(!w){ alert("Bloqueado por el navegador. Permite popups para exportar PDF."); return; }
