@@ -950,8 +950,27 @@ function buildReportHTML(){
   const s = state.study;
 
   const LOGO_URL = "/assets/regofixlogo.png";
-  const BG_URL   = "/assets/bg-watermark.jpg"; // tu imagen de fondo
+  const BG_URL   = "/assets/bg-watermark.jpg"; // tu imagen difuminada
+
   const CONF_TXT = "INFORMACIÓN CONFIDENCIAL — Uso exclusivo para evaluación interna. No distribuir.";
+
+  // Watermark repetido (SVG) — imprime MUCHO más confiable que hacks con masks
+  const WM_SVG = encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="520" height="360">
+    <defs>
+      <style>
+        .t{ font-family: Arial, Helvetica, sans-serif; font-weight: 900; letter-spacing: 3px; fill: rgba(0,0,0,.18); }
+        .s{ font-size: 18px; }
+      </style>
+    </defs>
+    <g transform="translate(40,260) rotate(-25)">
+      <text class="t s" x="0"   y="0">INFORMACIÓN CONFIDENCIAL</text>
+      <text class="t s" x="0"   y="26">${CONF_TXT}</text>
+
+      <text class="t s" x="0"   y="120">INFORMACIÓN CONFIDENCIAL</text>
+      <text class="t s" x="0"   y="146">${CONF_TXT}</text>
+    </g>
+  </svg>`);
 
   const html = `
 <!doctype html>
@@ -963,6 +982,7 @@ function buildReportHTML(){
 <style>
   :root{ --g:#555; }
   *{ box-sizing:border-box; }
+
   body{
     font-family: Arial, Helvetica, sans-serif;
     color:#111;
@@ -971,7 +991,7 @@ function buildReportHTML(){
     print-color-adjust: exact;
   }
 
-  /* Fondo difuminado (atrás) */
+  /* Fondo difuminado: fijo para que salga en cada hoja */
   .bg{
     position: fixed;
     inset: 0;
@@ -980,66 +1000,29 @@ function buildReportHTML(){
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: .10;
-    filter: blur(2px) grayscale(10%);
-    transform: scale(1.05);
+
+    opacity: .045;                 /* 👈 MÁS CLARO */
+    filter: blur(10px) grayscale(25%);
+    transform: scale(1.10);
     pointer-events:none;
+  }
+
+  /* Watermark repetido: ENCIMA DE TODO y repetido (tile) */
+  .wm{
+    position: fixed;
+    inset: 0;
+    z-index: 9999;                 /* 👈 encima del contenido */
+    pointer-events:none;
+
+    background-image: url("data:image/svg+xml,${WM_SVG}");
+    background-repeat: repeat;     /* 👈 se repite */
+    background-size: 520px 360px;  /* tamaño del patrón */
+    opacity: .10;                  /* 👈 intensidad general (bájalo a .07 si aún lo ves fuerte) */
   }
 
   /* Contenido */
   .wrap{ position: relative; z-index: 10; }
 
-  /* Watermark repetido (ENCIMA DE TODO) */
-  .wm{
-    position: fixed;
-    inset: 0;
-    z-index: 9999;            /* 👈 encima de todo */
-    pointer-events:none;
-    opacity: .12;             /* fuerza global del watermark */
-    transform: rotate(-25deg);
-    display: block;
-  }
-  .wm::before{
-    content: "INFORMACIÓN CONFIDENCIAL  •  ${CONF_TXT}  •  ";
-    position: absolute;
-    inset: -40%;
-    font-weight: 900;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: #111;
-    font-size: 20px;
-
-    /* patrón repetido */
-    background-image: repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,0) 0px,
-      rgba(0,0,0,0) 52px,
-      rgba(0,0,0,.85) 52px,
-      rgba(0,0,0,.85) 54px
-    );
-    -webkit-mask-image: repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,1) 0px,
-      rgba(0,0,0,1) 52px,
-      rgba(0,0,0,0) 52px,
-      rgba(0,0,0,0) 120px
-    );
-    mask-image: repeating-linear-gradient(
-      0deg,
-      rgba(0,0,0,1) 0px,
-      rgba(0,0,0,1) 52px,
-      rgba(0,0,0,0) 52px,
-      rgba(0,0,0,0) 120px
-    );
-
-    /* para que el texto se vea “repetido” en filas */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-  }
-
-  /* Encabezado */
   .header{
     display:flex; align-items:center; justify-content:space-between; gap:12px;
     padding:14px 16px;
@@ -1052,7 +1035,6 @@ function buildReportHTML(){
   h1{ font-size:18px; margin:0; }
   .muted{ color: var(--g); font-size:12px; }
 
-  /* Secciones */
   h2{ font-size:13px; margin:18px 0 8px; color:#111; }
   .box{
     border:1px solid #ddd;
@@ -1075,7 +1057,7 @@ function buildReportHTML(){
 
   @media print{
     body{ padding:0; }
-    .bg,.wm{ position: fixed; }
+    .bg, .wm{ position: fixed; }
   }
 </style>
 </head>
