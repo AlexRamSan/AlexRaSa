@@ -949,11 +949,8 @@ function buildReportHTML(){
   const r = calc();
   const s = state.study;
 
-  // Ajusta estas rutas a tus assets
   const LOGO_URL = "/assets/regofixlogo.png";
-  // Pon aquí la imagen difuminada (ej: /assets/honeywell-bg.jpg o /assets/bg-industrial.png)
-  const BG_URL   = "/assets/bg-watermark.jpg";
-
+  const BG_URL   = "/assets/bg-watermark.jpg"; // tu imagen de fondo
   const CONF_TXT = "INFORMACIÓN CONFIDENCIAL — Uso exclusivo para evaluación interna. No distribuir.";
 
   const html = `
@@ -964,22 +961,21 @@ function buildReportHTML(){
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Reporte ROI — REGO-FIX</title>
 <style>
-  :root{ --blue:#28556C; --green:#B7C91F; --red:#D31B23; --g:#555; }
+  :root{ --g:#555; }
   *{ box-sizing:border-box; }
   body{
     font-family: Arial, Helvetica, sans-serif;
     color:#111;
     padding:28px;
-    position: relative;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Fondo con imagen difuminada */
+  /* Fondo difuminado (atrás) */
   .bg{
     position: fixed;
     inset: 0;
-    z-index: -2;
+    z-index: 0;
     background-image: url("${BG_URL}");
     background-size: cover;
     background-position: center;
@@ -987,31 +983,60 @@ function buildReportHTML(){
     opacity: .10;
     filter: blur(2px) grayscale(10%);
     transform: scale(1.05);
+    pointer-events:none;
   }
 
-  /* Watermark diagonal repetido */
+  /* Contenido */
+  .wrap{ position: relative; z-index: 10; }
+
+  /* Watermark repetido (ENCIMA DE TODO) */
   .wm{
     position: fixed;
     inset: 0;
-    z-index: -1;
+    z-index: 9999;            /* 👈 encima de todo */
     pointer-events:none;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    opacity: .10;
-  }
-  .wm span{
-    font-size: 48px;
-    font-weight: 800;
-    letter-spacing: .12em;
-    color: #111;
+    opacity: .12;             /* fuerza global del watermark */
     transform: rotate(-25deg);
+    display: block;
+  }
+  .wm::before{
+    content: "INFORMACIÓN CONFIDENCIAL  •  ${CONF_TXT}  •  ";
+    position: absolute;
+    inset: -40%;
+    font-weight: 900;
+    letter-spacing: .14em;
     text-transform: uppercase;
+    color: #111;
+    font-size: 20px;
+
+    /* patrón repetido */
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 52px,
+      rgba(0,0,0,.85) 52px,
+      rgba(0,0,0,.85) 54px
+    );
+    -webkit-mask-image: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,1) 0px,
+      rgba(0,0,0,1) 52px,
+      rgba(0,0,0,0) 52px,
+      rgba(0,0,0,0) 120px
+    );
+    mask-image: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,1) 0px,
+      rgba(0,0,0,1) 52px,
+      rgba(0,0,0,0) 52px,
+      rgba(0,0,0,0) 120px
+    );
+
+    /* para que el texto se vea “repetido” en filas */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     white-space: nowrap;
-    border: 2px solid rgba(0,0,0,.25);
-    padding: 14px 18px;
-    border-radius: 16px;
-    background: rgba(255,255,255,.15);
   }
 
   /* Encabezado */
@@ -1026,19 +1051,8 @@ function buildReportHTML(){
   .logo{ height:32px; width:auto; }
   h1{ font-size:18px; margin:0; }
   .muted{ color: var(--g); font-size:12px; }
-  .conf{
-    font-size:11px;
-    font-weight:800;
-    letter-spacing:.06em;
-    color: #111;
-    border:1px solid rgba(0,0,0,.25);
-    padding:8px 10px;
-    border-radius: 12px;
-    background: rgba(255,255,255,.80);
-    text-transform: uppercase;
-  }
 
-  /* Contenido */
+  /* Secciones */
   h2{ font-size:13px; margin:18px 0 8px; color:#111; }
   .box{
     border:1px solid #ddd;
@@ -1059,92 +1073,70 @@ function buildReportHTML(){
   }
   .hr{ height:1px; background:#eee; border:0; margin:16px 0; }
 
-  .footer{
-    margin-top:14px;
-    font-size:11px;
-    color:#444;
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    background: rgba(255,255,255,.85);
-    border: 1px solid #e6e6e6;
-    padding:10px 12px;
-    border-radius: 12px;
-  }
-  .tag{
-    font-weight:800;
-    color:#111;
-    letter-spacing:.04em;
-  }
-
   @media print{
     body{ padding:0; }
-    /* Por si el navegador intenta recortar */
-    .bg, .wm{ position: fixed; }
+    .bg,.wm{ position: fixed; }
   }
 </style>
 </head>
 <body>
   <div class="bg"></div>
-  <div class="wm"><span>INFORMACIÓN CONFIDENCIAL</span></div>
+  <div class="wm"></div>
 
-  <div class="header">
-    <div class="h-left">
-      <img class="logo" src="${LOGO_URL}" alt="REGO-FIX" />
-      <div>
-        <h1>Reporte ROI — REGO-FIX (Holders / Sujeción)</h1>
-        <div class="muted">Fecha: ${esc(s.studyDate)} · by alexrasa</div>
+  <div class="wrap">
+    <div class="header">
+      <div class="h-left">
+        <img class="logo" src="${LOGO_URL}" alt="REGO-FIX" />
+        <div>
+          <h1>Reporte ROI — REGO-FIX (Holders / Sujeción)</h1>
+          <div class="muted">${esc(s.company||"—")}</div>
+        </div>
+      </div>
+      <div class="muted">Estudio: ${esc(s.studyDate || "—")}</div>
+    </div>
+
+    <div class="box" style="margin-top:12px;">
+      <div class="grid">
+        <div><div class="k">Empresa</div><div class="v">${esc(s.company||"—")}</div></div>
+        <div><div class="k">Usuario / Puesto</div><div class="v">${esc((s.userName||"—") + " / " + (s.userRole||"—"))}</div></div>
       </div>
     </div>
-    <div class="conf">${esc(CONF_TXT)}</div>
-  </div>
 
-  <div class="box" style="margin-top:12px;">
-    <div class="grid">
-      <div><div class="k">Empresa</div><div class="v">${esc(s.company||"—")}</div></div>
-      <div><div class="k">Usuario / Puesto</div><div class="v">${esc((s.userName||"—") + " / " + (s.userRole||"—"))}</div></div>
+    <h2>Aplicación</h2>
+    <div class="box"><pre>${esc(s.application||"—")}</pre></div>
+
+    <h2>Notas / restricciones</h2>
+    <div class="box"><pre>${esc(s.notes||"—")}</pre></div>
+
+    <h2>Setup actual</h2>
+    <div class="box">
+      <div class="grid">
+        <div><div class="k">Marca / modelo</div><div class="v">${esc((s.curBrand||"—") + " / " + (s.curModel||"—"))}</div></div>
+        <div><div class="k">Husillo / Refrigerante</div><div class="v">${esc((s.spindleInterface||"—") + " / " + (s.coolant||"—"))}</div></div>
+        <div><div class="k">Operación / Material</div><div class="v">${esc((s.operation||"—") + " / " + (s.material||"—"))}</div></div>
+        <div><div class="k">Ø / RPM / Runout</div><div class="v">${esc((s.toolDia||"—")+" mm / "+(s.rpm||"—")+" rpm / "+(s.runout||"—")+" µm")}</div></div>
+        <div><div class="k">Prioridad</div><div class="v">${esc(s.priority||"—")}</div></div>
+        <div><div class="k">Objetivo</div><div class="v">${esc(s.goal||"—")}</div></div>
+      </div>
+      <div class="hr"></div>
+      <div class="k">Problema actual / oportunidad</div>
+      <pre>${esc(s.curProblem||"—")}</pre>
     </div>
-  </div>
 
-  <h2>Aplicación</h2>
-  <div class="box"><pre>${esc(s.application||"—")}</pre></div>
+    <h2>Recomendación REGO-FIX</h2>
+    <div class="box"><pre>${esc((s.regoRecoEditable||"—").trim() || "—")}</pre></div>
 
-  <h2>Notas / restricciones</h2>
-  <div class="box"><pre>${esc(s.notes||"—")}</pre></div>
-
-  <h2>Setup actual</h2>
-  <div class="box">
-    <div class="grid">
-      <div><div class="k">Marca / modelo</div><div class="v">${esc((s.curBrand||"—") + " / " + (s.curModel||"—"))}</div></div>
-      <div><div class="k">Husillo / Refrigerante</div><div class="v">${esc((s.spindleInterface||"—") + " / " + (s.coolant||"—"))}</div></div>
-      <div><div class="k">Operación / Material</div><div class="v">${esc((s.operation||"—") + " / " + (s.material||"—"))}</div></div>
-      <div><div class="k">Ø / RPM / Runout</div><div class="v">${esc((s.toolDia||"—")+" mm / "+(s.rpm||"—")+" rpm / "+(s.runout||"—")+" µm")}</div></div>
-      <div><div class="k">Prioridad</div><div class="v">${esc(s.priority||"—")}</div></div>
-      <div><div class="k">Objetivo</div><div class="v">${esc(s.goal||"—")}</div></div>
+    <h2>ROI</h2>
+    <div class="box">
+      <div class="grid">
+        <div><div class="k">Inversión</div><div class="v">${esc(money(r.invest))}</div></div>
+        <div><div class="k">Consumibles mensuales</div><div class="v">${esc(money(r.consMonth))}</div></div>
+        <div><div class="k">Ahorro bruto mensual</div><div class="v">${esc(money(r.gross))}</div></div>
+        <div><div class="k">Ahorro neto mensual</div><div class="v">${esc(money(r.net))}</div></div>
+        <div><div class="k">Payback</div><div class="v">${esc(r.payback===null ? "—" : (r.payback.toFixed(1)+" meses"))}</div></div>
+        <div><div class="k">ROI anual</div><div class="v">${esc(r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%"))}</div></div>
+      </div>
     </div>
-    <div class="hr"></div>
-    <div class="k">Problema actual / oportunidad</div>
-    <pre>${esc(s.curProblem||"—")}</pre>
-  </div>
-
-  <h2>Recomendación REGO-FIX</h2>
-  <div class="box"><pre>${esc((s.regoRecoEditable||"—").trim() || "—")}</pre></div>
-
-  <h2>ROI</h2>
-  <div class="box">
-    <div class="grid">
-      <div><div class="k">Inversión</div><div class="v">${esc(money(r.invest))}</div></div>
-      <div><div class="k">Consumibles mensuales</div><div class="v">${esc(money(r.consMonth))}</div></div>
-      <div><div class="k">Ahorro bruto mensual</div><div class="v">${esc(money(r.gross))}</div></div>
-      <div><div class="k">Ahorro neto mensual</div><div class="v">${esc(money(r.net))}</div></div>
-      <div><div class="k">Payback</div><div class="v">${esc(r.payback===null ? "—" : (r.payback.toFixed(1)+" meses"))}</div></div>
-      <div><div class="k">ROI anual</div><div class="v">${esc(r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%"))}</div></div>
-    </div>
-  </div>
-
-  <div class="footer">
-    <div><span class="tag">CONFIDENCIAL:</span> ${esc(CONF_TXT)}</div>
-    <div class="muted">Documento generado desde la calculadora local.</div>
   </div>
 </body>
 </html>`;
