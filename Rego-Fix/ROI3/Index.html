@@ -78,6 +78,18 @@
           <button id="btnResetAll" class="btn btn-danger">Reset</button>
         </div>
       </div>
+
+      <div class="mt-4 rounded-2xl overflow-hidden border" style="border-color:var(--border); background:linear-gradient(90deg, rgba(183,201,31,.18), rgba(88,213,211,.18), rgba(40,85,108,.10));">
+        <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div class="flex-1">
+            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: holders (sujeción) y ROI real</div>
+            <div class="muted small">Captura el estudio (cliente + aplicación), calcula ROI y genera un reporte en PDF para enviar/guardar.</div>
+          </div>
+          <div class="text-right">
+            <div class="by">by alexrasa</div>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -346,7 +358,7 @@
 
 <script>
 /* ========================================================
-   ESTADO GLOBAL (V6 - Blindado contra crashes)
+   ESTADO GLOBAL (V6)
 ======================================================== */
 const state = {
   switches: { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true },
@@ -527,7 +539,7 @@ function calc(){
 }
 
 /* ========================================================
-   IA CALL (Con Reglas Técnicas REGO-FIX)
+   IA CALL (Ruta corregida y Anti-[object Object])
 ======================================================== */
 async function recommendRegoFixAI() {
   const btn = $("btnRecalcReco");
@@ -573,19 +585,19 @@ async function recommendRegoFixAI() {
 
   INSTRUCCIONES DE SALIDA:
   Devuelve ESTRICTAMENTE un JSON válido (sin texto fuera del JSON).
-  En la matriz "tools_reco", para cada caso debes especificar: El sistema recomendado (PG, ER o micRun), el tamaño sugerido (ej. PG 15 o ER 32) basado en la operación, y una explicación técnica persuasiva de por qué solucionará el "Problema a resolver".
   
   Estructura esperada:
   {
-    "general_pitch": "Párrafo comercial/técnico de 3 a 4 líneas sobre cómo la tecnología Suiza de REGO-FIX reducirá costos operativos basándose en el material y la máquina.",
+    "general_pitch": "Párrafo comercial/técnico de 3 a 4 líneas sobre cómo la tecnología Suiza de REGO-FIX reducirá costos operativos.",
     "tools_reco": [
        "Sistema Recomendado (Tamaño) - Explicación detallada de cómo ataca la vibración/acabado/vida de herramienta.",
        "Sistema Recomendado (Tamaño) - Explicación..."
     ],
-    "missing_data": "Lista de detalles técnicos que faltan preguntar (Ej: Tipo de tirante, longitud del cono, diámetro exacto del zanco de la herramienta)"
+    "missing_data": "Lista de detalles técnicos que faltan preguntar"
   }`;
 
   try {
+    // ⚠️ LA RUTA ESTÁ CORREGIDA AQUÍ PARA COINCIDIR CON VERCEL
     const response = await fetch('/api/recommend.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -603,9 +615,17 @@ async function recommendRegoFixAI() {
     state.study.aiPitch = recoData.general_pitch;
     state.study.aiMissing = recoData.missing_data;
 
+    // EL ESCUDO CONTRA EL [object Object]
     if(recoData.tools_reco && Array.isArray(recoData.tools_reco)) {
         state.study.tools.forEach((t, i) => {
-            if(recoData.tools_reco[i]) t.reco = recoData.tools_reco[i];
+            if(recoData.tools_reco[i]) {
+                let rec = recoData.tools_reco[i];
+                if(typeof rec === 'object' && rec !== null) {
+                    t.reco = Object.values(rec).join(" - ");
+                } else {
+                    t.reco = rec;
+                }
+            }
         });
     }
     
