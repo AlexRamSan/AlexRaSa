@@ -204,20 +204,64 @@
 
       <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div>
-          <div class="label">Costo máquina (USD/h)</div>
-          <input id="costHour" class="input" type="number" min="0" step="1" value="850">
+          <div class="flex items-center justify-between">
+            <div class="label">Costo máquina/hora</div>
+            <button id="btnToggleHrCalc" class="text-xs font-bold text-[#28556C] hover:text-[#8CA015] underline flex items-center gap-1">
+              🪄 Asistente
+            </button>
+          </div>
+          <div class="relative mt-1">
+            <span class="absolute left-3 top-2.5 text-gray-500 font-bold">$</span>
+            <input id="costHour" class="input pl-7" type="number" min="0" step="1" value="75">
+          </div>
+          <div class="muted small mt-1">USD/hora (Manual o asistente)</div>
         </div>
+
         <div>
           <div class="label">Piezas por mes</div>
-          <input id="partsMonth" class="input" type="number" min="0" step="1" value="5000">
+          <input id="partsMonth" class="input mt-1" type="number" min="0" step="1" value="5000">
         </div>
         <div>
           <div class="label">Inversión (USD)</div>
-          <input id="invest" class="input" type="number" min="0" step="1" value="45000">
+          <input id="invest" class="input mt-1" type="number" min="0" step="1" value="4500">
         </div>
         <div>
-          <div class="label">Consumibles mensuales (USD/mes)</div>
-          <input id="consMonth" class="input" type="number" min="0" step="1" value="0">
+          <div class="label">Consumibles (USD/mes)</div>
+          <input id="consMonth" class="input mt-1" type="number" min="0" step="1" value="0">
+        </div>
+        
+        <div id="hrCalcPanel" class="col-span-1 sm:col-span-2 lg:col-span-4 bg-[#f9fafb] p-4 rounded-xl border border-gray-200 hidden mt-2">
+            <div class="font-bold text-sm mb-3" style="color:var(--rego-blue)">Parámetros para estimar costo por hora (Valores referenciales en USD)</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <div class="label text-xs">Tipo de Máquina</div>
+                    <select id="calcMachine" class="input mt-1 text-sm" data-study="calcMachine">
+                        <option value="40">Torno CNC (2 Ejes)</option>
+                        <option value="50" selected>Centro de Maquinado (3 Ejes)</option>
+                        <option value="75">Centro de Maquinado (4 Ejes)</option>
+                        <option value="90">Torno Multitarea / Suizo</option>
+                        <option value="120">Centro de Maquinado (5 Ejes)</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="label text-xs">Sector Industrial (Overhead)</div>
+                    <select id="calcSector" class="input mt-1 text-sm" data-study="calcSector">
+                        <option value="1.0" selected>General / Job Shop</option>
+                        <option value="1.15">Automotriz</option>
+                        <option value="1.25">Moldes y Troqueles</option>
+                        <option value="1.40">Aeroespacial</option>
+                        <option value="1.50">Médico</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="label text-xs">Mano de Obra (Relación)</div>
+                    <select id="calcOperator" class="input mt-1 text-sm" data-study="calcOperator">
+                        <option value="25" selected>1 Operador por máquina ($25/h)</option>
+                        <option value="12.5">1 Operador para 2 máquinas ($12.5/h)</option>
+                        <option value="8">Celda automatizada (1 Op / 3+ maq)</option>
+                    </select>
+                </div>
+            </div>
         </div>
       </div>
     </section>
@@ -443,7 +487,7 @@
             <div class="grid grid-cols-2 gap-2">
               <div><div class="label">Ciclos por herr. (actual)</div><input id="lifeAct" class="input" type="number" min="1" step="1" value="100"></div>
               <div><div class="label">Ciclos por herr. (nuevo)</div><input id="lifeNew" class="input" type="number" min="1" step="1" value="160"></div>
-              <div><div class="label">Costo por herr. (USD)</div><input id="toolCost" class="input" type="number" min="0" step="1" value="650"></div>
+              <div><div class="label">Costo por herr. (USD)</div><input id="toolCost" class="input" type="number" min="0" step="1" value="50"></div>
               <div><div class="label">Herr. iguales en proceso</div><input id="toolCount" class="input" type="number" min="1" step="1" value="3"></div>
             </div>
             <div class="kpi"><div class="muted small">Ahorro por vida (mensual)</div><div id="saveLife" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
@@ -515,7 +559,8 @@
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="kpi flex flex-col justify-center">
           <div class="muted small">ROI anual estimado</div>
-          <div id="roiAnnual" class="text-4xl font-extrabold text-[#B7C91F]">—</div>
+          <div id="roiAnnual" class="text-5xl font-extrabold text-[#B7C91F]">—</div>
+          <div id="roiAnnualUsd" class="text-2xl font-bold text-[#28556C] mt-2">—</div>
           <div class="muted small mt-2">((neto*12) / inversión)</div>
         </div>
         
@@ -535,7 +580,7 @@
 /* ========= state ========= */
 const state = {
   switches: { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true },
-  study: { studyDate: "", userName: "", userRole: "", company: "", application: "", notes: "", curBrand: "", curModel: "", spindleInterface: "", coolant: "", toolDia: "8", rpm: "12000", runout: "5", priority: "precision", operation: "", material: "", curProblem: "", goal: "", regoRecoEditable: "" }
+  study: { studyDate: "", userName: "", userRole: "", company: "", application: "", notes: "", curBrand: "", curModel: "", spindleInterface: "", coolant: "", toolDia: "8", rpm: "12000", runout: "5", priority: "precision", operation: "", material: "", curProblem: "", goal: "", regoRecoEditable: "", calcMachine: "50", calcSector: "1.0", calcOperator: "25" }
 };
 
 const $ = (id)=>document.getElementById(id);
@@ -545,12 +590,12 @@ function safeJson(str, fallback){ try{ return JSON.parse(str); }catch{ return fa
 
 function persist(){
   localStorage.setItem("rego_switches_v3", JSON.stringify(state.switches));
-  localStorage.setItem("rego_study_v2", JSON.stringify(state.study));
+  localStorage.setItem("rego_study_v3", JSON.stringify(state.study));
 }
 function load(){
   const sw = localStorage.getItem("rego_switches_v3");
   if(sw) state.switches = safeJson(sw, state.switches);
-  const st = localStorage.getItem("rego_study_v2");
+  const st = localStorage.getItem("rego_study_v3");
   if(st) state.study = { ...state.study, ...safeJson(st, {}) };
 }
 
@@ -696,12 +741,22 @@ function renderKPIs(){
   const r = calc();
   
   $("saveTime").textContent = money(r.saveTime);
+  $("saveTime").className = "text-xl font-extrabold text-[#B7C91F]";
+  
   $("saveLife").textContent = money(r.saveLife);
+  $("saveLife").className = "text-xl font-extrabold text-[#B7C91F]";
+  
   $("saveProc").textContent = money(r.saveProc);
+  $("saveProc").className = "text-xl font-extrabold text-[#B7C91F]";
+  
   $("saveScrap").textContent = money(r.saveScrap);
+  $("saveScrap").className = "text-xl font-extrabold text-[#B7C91F]";
   
   $("grossSave").textContent = money(r.gross);
+  $("grossSave").className = "text-2xl font-extrabold text-[#B7C91F]";
+  
   $("netSave").textContent = money(r.net);
+  $("netSave").className = "text-2xl font-extrabold text-[#B7C91F]";
 
   const pb = $("payback");
   if(r.payback === null) { pb.textContent = "—"; pb.className = "text-2xl font-extrabold"; } 
@@ -709,7 +764,15 @@ function renderKPIs(){
       pb.textContent = r.payback.toFixed(1) + " meses";
       pb.className = `text-2xl font-extrabold transition-colors duration-300 ${r.payback<=6 ? 'text-[#AAC82D]' : (r.payback<=12 ? 'text-[#58D5D3]' : 'text-[#121314]')}`;
   }
-  $("roiAnnual").textContent = (r.roiAnnual===null) ? "—" : ((r.roiAnnual*100).toFixed(0) + "%");
+  
+  // NÚMEROS DE ROI EN USD
+  if(r.roiAnnual === null) {
+      $("roiAnnual").textContent = "—";
+      $("roiAnnualUsd").textContent = "—";
+  } else {
+      $("roiAnnual").textContent = (r.roiAnnual*100).toFixed(0) + "%";
+      $("roiAnnualUsd").textContent = money(r.net * 12) + " / año";
+  }
   
   renderChart(r.costoTotalActualMensual, r.costoTotalNuevoMensual);
 }
@@ -732,7 +795,8 @@ function getSummaryText() {
     "", "--- DESGLOSE DE AHORROS MENSUALES ---",
     `Tiempo: ${money(r.saveTime)} | Vida: ${money(r.saveLife)} | Proceso: ${money(r.saveProc)} | Calidad: ${money(r.saveScrap)}`,
     "", "--- ROI ESTIMADO ---",
-    `Inversión: ${money(r.invest)} | Ahorro neto: ${money(r.net)}/mes | Payback: ${r.payback===null ? "—" : (r.payback.toFixed(1)+"m")} | ROI: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")}`,
+    `Inversión: ${money(r.invest)} | Ahorro neto: ${money(r.net)}/mes | Payback: ${r.payback===null ? "—" : (r.payback.toFixed(1)+"m")}`,
+    `ROI Anual: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")} (${money(r.net * 12)} /año)`
   ].join("\n");
 }
 
@@ -842,6 +906,14 @@ function buildReportHTML(chartImageBase64){
         <div><div class="k">Ahorro Neto Mensual</div><div class="v kpi-large text-green">${esc(money(r.net))}</div></div>
         <div><div class="k">Tiempo de Retorno</div><div class="v kpi-large" style="color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+" meses"))}</div></div>
       </div>
+      
+      <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;">
+        <div class="k">ROI Anual Estimado</div>
+        <div class="v text-green" style="font-size: 18px;">
+          ${esc(r.roiAnnual===null?"—":((r.roiAnnual*100).toFixed(0)+"%"))} 
+          <span style="color: var(--rego-blue); font-size: 14px;">(${esc(money(r.net * 12))} USD)</span>
+        </div>
+      </div>
     </div>
 
     ${chartImageBase64 ? `<div class="box chart-container"><div class="k" style="margin-bottom: 8px;">Comparativa de Costo Operativo Mensual (USD)</div><img src="${chartImageBase64}" class="chart-img" /></div>` : ''}
@@ -881,6 +953,26 @@ function bindInputs(){
         state.study[k] = el.value; 
         persist(); 
     });
+  });
+
+  // Lógica del Asistente de Costo por Hora
+  const btnToggleHrCalc = $("btnToggleHrCalc");
+  const hrCalcPanel = $("hrCalcPanel");
+  if(btnToggleHrCalc) {
+    btnToggleHrCalc.addEventListener("click", () => { hrCalcPanel.classList.toggle("hidden"); });
+  }
+
+  ["calcMachine", "calcSector", "calcOperator"].forEach(id => {
+    const el = $(id);
+    if(el) {
+      el.addEventListener("change", () => {
+        const base = parseFloat($("calcMachine").value);
+        const sector = parseFloat($("calcSector").value);
+        const operador = parseFloat($("calcOperator").value);
+        $("costHour").value = Math.round((base * sector) + operador);
+        renderAll();
+      });
+    }
   });
 
   ["costHour","partsMonth","invest","consMonth","chgAct","chgNew","chgMinAct","chgMinNew","setAct","setNew","setMinAct","setMinNew","stpAct","stpNew","stpMinAct","stpMinNew","lifeAct","lifeNew","toolCost","toolCount","cycAct","cycNew","scrapAct","scrapNew","scrapCost"].forEach(id=>{
