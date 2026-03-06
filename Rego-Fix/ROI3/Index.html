@@ -126,9 +126,13 @@
           </div>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap justify-end">
           <button id="btnPdfReport" class="btn btn-primary">Exportar PDF</button>
           <button id="btnCopySummary" class="btn btn-outline">Copiar resumen</button>
+          <button id="btnWhatsApp" class="btn btn-outline border-green-500 text-green-700 hover:bg-green-50 flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
+            Enviar
+          </button>
           <button id="btnResetAll" class="btn btn-danger">Reset</button>
         </div>
       </div>
@@ -424,7 +428,7 @@
               <div><div class="label">Min/paro (actual)</div><input id="stpMinAct" class="input" type="number" min="0" step="0.1" value="18"></div>
               <div><div class="label">Min/paro (nuevo)</div><input id="stpMinNew" class="input" type="number" min="0" step="0.1" value="12"></div>
             </div>
-            <div class="kpi mt-3"><div class="muted small">Ahorro por tiempo (mensual)</div><div id="saveTime" class="text-xl font-extrabold">$0</div></div>
+            <div class="kpi mt-3"><div class="muted small">Ahorro por tiempo (mensual)</div><div id="saveTime" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
           </div>
         </div>
 
@@ -442,7 +446,7 @@
               <div><div class="label">Costo por herr. (USD)</div><input id="toolCost" class="input" type="number" min="0" step="1" value="650"></div>
               <div><div class="label">Herr. iguales en proceso</div><input id="toolCount" class="input" type="number" min="1" step="1" value="3"></div>
             </div>
-            <div class="kpi"><div class="muted small">Ahorro por vida (mensual)</div><div id="saveLife" class="text-xl font-extrabold">$0</div></div>
+            <div class="kpi"><div class="muted small">Ahorro por vida (mensual)</div><div id="saveLife" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
           </div>
         </div>
 
@@ -458,7 +462,7 @@
               <div><div class="label">Ciclo actual (min/pieza)</div><input id="cycAct" class="input" type="number" min="0" step="0.01" value="3.20"></div>
               <div><div class="label">Ciclo nuevo (min/pieza)</div><input id="cycNew" class="input" type="number" min="0" step="0.01" value="2.85"></div>
             </div>
-            <div class="kpi"><div class="muted small">Ahorro por proceso (mensual)</div><div id="saveProc" class="text-xl font-extrabold">$0</div></div>
+            <div class="kpi"><div class="muted small">Ahorro por proceso (mensual)</div><div id="saveProc" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
           </div>
         </div>
 
@@ -493,12 +497,12 @@
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div class="kpi">
           <div class="muted small">Ahorro bruto mensual</div>
-          <div id="grossSave" class="text-2xl font-extrabold">$0</div>
+          <div id="grossSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
           <div class="muted small">Tiem + Vid + Proc + Scrap</div>
         </div>
         <div class="kpi">
           <div class="muted small">Ahorro neto mensual</div>
-          <div id="netSave" class="text-2xl font-extrabold text-[#28556C]">$0</div>
+          <div id="netSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
           <div class="muted small">Bruto − consumibles</div>
         </div>
         <div class="kpi">
@@ -616,6 +620,13 @@ function calc(){
 
 /* ========= MODO IA ========= */
 async function recommendRegoFixAI() {
+  const btn = $("btnRecalcReco");
+  const originalText = btn.innerHTML;
+  
+  btn.disabled = true;
+  btn.style.opacity = "0.5";
+  btn.innerHTML = `⏳ Pensando...`;
+
   const s = state.study;
   $("regoRecoTitle").textContent = "⏳ Analizando datos...";
   $("regoRecoSubtitle").textContent = "Consultando al ingeniero IA...";
@@ -657,28 +668,38 @@ async function recommendRegoFixAI() {
     $("regoRecoTitle").textContent = "Error de conexión";
     $("regoRecoSubtitle").textContent = "Revisa tu conexión o intenta más tarde.";
     $("regoRecoEditable").value = "Hubo un problema al generar la recomendación. Intenta de nuevo.";
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.innerHTML = originalText;
   }
 }
 
 function renderChart(costoActual, costoNuevo) {
-    const ctx = document.getElementById('roiChart').getContext('2d');
-    if (roiChartInstance) roiChartInstance.destroy();
-    roiChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Situación Actual', 'Con REGO-FIX'],
-            datasets: [{ label: 'Costo (USD)', data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#B7C91F'], borderRadius: 8 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
+    if (roiChartInstance) {
+        roiChartInstance.data.datasets[0].data = [costoActual, costoNuevo];
+        roiChartInstance.update('none'); 
+    } else {
+        const ctx = document.getElementById('roiChart').getContext('2d');
+        roiChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Situación Actual', 'Con REGO-FIX'],
+                datasets: [{ label: 'Costo (USD)', data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#B7C91F'], borderRadius: 8 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
 }
 
 function renderKPIs(){
   const r = calc();
+  
   $("saveTime").textContent = money(r.saveTime);
   $("saveLife").textContent = money(r.saveLife);
   $("saveProc").textContent = money(r.saveProc);
   $("saveScrap").textContent = money(r.saveScrap);
+  
   $("grossSave").textContent = money(r.gross);
   $("netSave").textContent = money(r.net);
 
@@ -689,6 +710,7 @@ function renderKPIs(){
       pb.className = `text-2xl font-extrabold transition-colors duration-300 ${r.payback<=6 ? 'text-[#AAC82D]' : (r.payback<=12 ? 'text-[#58D5D3]' : 'text-[#121314]')}`;
   }
   $("roiAnnual").textContent = (r.roiAnnual===null) ? "—" : ((r.roiAnnual*100).toFixed(0) + "%");
+  
   renderChart(r.costoTotalActualMensual, r.costoTotalNuevoMensual);
 }
 
@@ -700,9 +722,9 @@ function renderAll(){
   renderKPIs();
 }
 
-function copySummary(){
+function getSummaryText() {
   const r = calc();
-  const lines = [
+  return [
     "ROI Holders REGO-FIX — Resumen de estudio",
     `Fecha: ${state.study.studyDate || "—"} | Empresa: ${state.study.company || "—"} | Usuario: ${state.study.userName || "—"}`,
     "", "Aplicación:", state.study.application || "—",
@@ -711,8 +733,16 @@ function copySummary(){
     `Tiempo: ${money(r.saveTime)} | Vida: ${money(r.saveLife)} | Proceso: ${money(r.saveProc)} | Calidad: ${money(r.saveScrap)}`,
     "", "--- ROI ESTIMADO ---",
     `Inversión: ${money(r.invest)} | Ahorro neto: ${money(r.net)}/mes | Payback: ${r.payback===null ? "—" : (r.payback.toFixed(1)+"m")} | ROI: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")}`,
-  ];
-  navigator.clipboard.writeText(lines.join("\n")).then(()=>alert("Copiado.")).catch(()=>alert("Error al copiar."));
+  ].join("\n");
+}
+
+function copySummary(){
+  navigator.clipboard.writeText(getSummaryText()).then(()=>alert("Copiado al portapapeles.")).catch(()=>alert("Error al copiar."));
+}
+
+function shareWhatsApp(){
+  const text = encodeURIComponent(getSummaryText());
+  window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
 function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
@@ -720,11 +750,10 @@ function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":
 function buildReportHTML(chartImageBase64){
   const r = calc();
   const s = state.study;
-
   const LOGO_URL = "/assets/regofixlogo.png";
   const BRAND_NAME = "Consultoría AlexRaSa"; 
 
-  const html = `
+  return `
 <!doctype html>
 <html lang="es">
 <head>
@@ -732,94 +761,31 @@ function buildReportHTML(chartImageBase64){
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Estudio de Ingeniería ROI — REGO-FIX</title>
 <style>
-  :root { 
-    --rego-blue: #28556C; 
-    --rego-green: #8CA015; 
-    --rego-red: #D31B23;
-    --gray-dark: #44474A;
-    --gray-light: #f9fafb;
-  }
+  :root { --rego-blue: #28556C; --rego-green: #8CA015; --rego-red: #D31B23; --gray-dark: #44474A; --gray-light: #f9fafb; }
   * { box-sizing: border-box; }
-
-  body {
-    font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-    color: #111;
-    padding: 0;
-    margin: 0;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    background: #fff;
-  }
-
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; padding: 0; margin: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: #fff; }
   .wrap { padding: 30px 40px; max-width: 800px; margin: 0 auto; }
-
-  /* Header Oficial */
-  .header {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    border-bottom: 3px solid var(--rego-blue);
-    padding-bottom: 15px;
-    margin-bottom: 25px;
-  }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--rego-blue); padding-bottom: 15px; margin-bottom: 25px; }
   .h-left h1 { font-size: 22px; margin: 0 0 5px 0; color: var(--rego-blue); letter-spacing: -0.5px; }
   .h-left .subtitle { color: var(--gray-dark); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
   .logo { height: 40px; width: auto; object-fit: contain; }
-
-  /* Tipografía y Títulos */
-  h2 { 
-    font-size: 14px; margin: 24px 0 10px; color: var(--rego-blue); 
-    text-transform: uppercase; letter-spacing: 0.5px; 
-    border-bottom: 1px solid #eee; padding-bottom: 4px;
-    page-break-after: avoid; 
-  }
-
-  /* Cajas de información */
-  .box {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-    background: var(--gray-light);
-    page-break-inside: avoid; 
-  }
-  
-  .box-highlight {
-    background: rgba(183,201,31,.08);
-    border-color: rgba(183,201,31,.3);
-  }
-
-  /* Grids */
+  h2 { font-size: 14px; margin: 24px 0 10px; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 4px; page-break-after: avoid; }
+  .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: var(--gray-light); page-break-inside: avoid; }
+  .box-highlight { background: rgba(183,201,31,.08); border-color: rgba(183,201,31,.3); }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
   .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  
   .k { font-size: 11px; color: #6b7280; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.2px; }
   .v { font-size: 13px; font-weight: 700; color: #111; }
-  
-  /* Textos largos */
-  pre {
-    white-space: pre-wrap; word-wrap: break-word;
-    font-family: inherit; font-size: 13px; line-height: 1.5;
-    margin: 0; color: #374151;
-  }
-
-  /* Colores KPI */
+  pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 13px; line-height: 1.5; margin: 0; color: #374151; }
   .text-green { color: var(--rego-green); }
   .text-blue { color: var(--rego-blue); }
   .text-red { color: var(--rego-red); }
   .kpi-large { font-size: 18px; font-weight: 900; }
-
-  /* Gráfica */
   .chart-container { text-align: center; margin-top: 15px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
   .chart-img { max-width: 100%; height: auto; max-height: 220px; }
-
-  /* Footer */
   .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #9ca3af; border-top: 1px solid #eee; padding-top: 15px; page-break-inside: avoid;}
-
-  @media print {
-    body { background: white; }
-    .wrap { padding: 0; max-width: 100%; }
-    @page { margin: 1.5cm; }
-  }
+  @media print { body { background: white; } .wrap { padding: 0; max-width: 100%; } @page { margin: 1.5cm; } }
 </style>
 </head>
 <body>
@@ -842,10 +808,7 @@ function buildReportHTML(chartImageBase64){
 
     <h2>1. Aplicación y Setup Actual</h2>
     <div class="box">
-      <div style="margin-bottom: 15px;">
-        <div class="k">Descripción de la operación</div>
-        <pre>${esc(s.application||"No especificada")}</pre>
-      </div>
+      <div style="margin-bottom: 15px;"><div class="k">Descripción de la operación</div><pre>${esc(s.application||"No especificada")}</pre></div>
       <div class="grid">
         <div><div class="k">Máquina / Interfaz</div><div class="v">${esc((s.spindleInterface||"—") + " / " + (s.coolant||"—"))}</div></div>
         <div><div class="k">Operación / Material</div><div class="v">${esc((s.operation||"—") + " / " + (s.material||"—"))}</div></div>
@@ -853,7 +816,6 @@ function buildReportHTML(chartImageBase64){
         <div><div class="k">Parámetros (Ø / RPM)</div><div class="v">${esc((s.toolDia||"—")+" mm / "+(s.rpm||"—")+" rpm")}</div></div>
       </div>
     </div>
-
     <div class="box" style="background: #fff; border-color: #fca5a5; border-left: 4px solid var(--rego-red);">
       <div class="k" style="color: var(--rego-red);">Problema detectado / Área de oportunidad</div>
       <pre>${esc(s.curProblem||"No registrado")}</pre>
@@ -865,64 +827,37 @@ function buildReportHTML(chartImageBase64){
     </div>
 
     <h2>3. Análisis Financiero y Retorno de Inversión</h2>
-    
     <div class="box">
       <div style="margin-bottom: 10px; font-weight:bold; font-size:12px; text-align:center;">DESGLOSE DE AHORROS ESTIMADOS (MENSUAL)</div>
       <div class="grid-4" style="text-align: center;">
-        <div><div class="k">Tiempo/Setup</div><div class="v">${esc(money(r.saveTime))}</div></div>
-        <div><div class="k">Vida Herramienta</div><div class="v">${esc(money(r.saveLife))}</div></div>
-        <div><div class="k">Mejora Proceso</div><div class="v">${esc(money(r.saveProc))}</div></div>
-        <div><div class="k text-green">Reducción Scrap</div><div class="v text-green">${esc(money(r.saveScrap))}</div></div>
+        <div><div class="k">Tiempo/Setup</div><div class="v text-green">${esc(money(r.saveTime))}</div></div>
+        <div><div class="k">Vida Herramienta</div><div class="v text-green">${esc(money(r.saveLife))}</div></div>
+        <div><div class="k">Mejora Proceso</div><div class="v text-green">${esc(money(r.saveProc))}</div></div>
+        <div><div class="k">Reducción Scrap</div><div class="v text-green">${esc(money(r.saveScrap))}</div></div>
       </div>
     </div>
-
     <div class="box" style="background: #fff; border: 2px solid var(--rego-blue);">
       <div class="grid-3" style="text-align: center;">
-        <div>
-          <div class="k">Inversión Propuesta</div>
-          <div class="v kpi-large text-blue">${esc(money(r.invest))}</div>
-        </div>
-        <div>
-          <div class="k">Ahorro Neto Mensual</div>
-          <div class="v kpi-large text-green">${esc(money(r.net))}</div>
-        </div>
-        <div>
-          <div class="k">Tiempo de Retorno (Payback)</div>
-          <div class="v kpi-large" style="color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+" meses"))}</div>
-        </div>
+        <div><div class="k">Inversión Propuesta</div><div class="v kpi-large text-blue">${esc(money(r.invest))}</div></div>
+        <div><div class="k">Ahorro Neto Mensual</div><div class="v kpi-large text-green">${esc(money(r.net))}</div></div>
+        <div><div class="k">Tiempo de Retorno</div><div class="v kpi-large" style="color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+" meses"))}</div></div>
       </div>
     </div>
 
-    ${chartImageBase64 ? `
-    <div class="box chart-container">
-      <div class="k" style="margin-bottom: 8px;">Comparativa de Costo Operativo Mensual (USD)</div>
-      <img src="${chartImageBase64}" class="chart-img" />
-    </div>
-    ` : ''}
+    ${chartImageBase64 ? `<div class="box chart-container"><div class="k" style="margin-bottom: 8px;">Comparativa de Costo Operativo Mensual (USD)</div><img src="${chartImageBase64}" class="chart-img" /></div>` : ''}
 
-    ${s.notes ? `
-    <div class="box" style="margin-top: 20px;">
-      <div class="k">Notas y Restricciones del Estudio</div>
-      <pre>${esc(s.notes)}</pre>
-    </div>` : ''}
+    ${s.notes ? `<div class="box" style="margin-top: 20px;"><div class="k">Notas y Restricciones del Estudio</div><pre>${esc(s.notes)}</pre></div>` : ''}
 
-    <div class="footer">
-      Documento generado automáticamente. Este cálculo es una estimación basada en los datos proporcionados y reglas empíricas del sector.
-      <br><strong>AlexRaSa.store - Soluciones CAM e Ingeniería de Manufactura</strong>
-    </div>
-
+    <div class="footer">Documento generado automáticamente. Este cálculo es una estimación basada en los datos proporcionados y reglas empíricas del sector.<br><strong>AlexRaSa.store - Soluciones CAM e Ingeniería de Manufactura</strong></div>
   </div>
 </body>
 </html>`;
-  return html;
 }
 
 function exportPdf(){
   const canvas = document.getElementById('roiChart');
   let chartImageBase64 = null;
-  if(canvas) {
-    chartImageBase64 = canvas.toDataURL('image/png', 1.0);
-  }
+  if(canvas) chartImageBase64 = canvas.toDataURL('image/png', 1.0);
 
   const w = window.open("", "_blank");
   if(!w) return alert("Por favor permite los popups (ventanas emergentes) en tu navegador para exportar el PDF.");
@@ -931,12 +866,7 @@ function exportPdf(){
   w.document.write(buildReportHTML(chartImageBase64)); 
   w.document.close();
   
-  w.onload = ()=> { 
-    setTimeout(()=> {
-      w.focus();
-      w.print(); 
-    }, 500); 
-  };
+  w.onload = ()=> { setTimeout(()=> { w.focus(); w.print(); }, 500); };
 }
 
 function bindInputs(){
@@ -946,7 +876,11 @@ function bindInputs(){
   document.querySelectorAll("[data-study]").forEach(el=>{
     const k = el.getAttribute("data-study");
     if(k && k!=="studyDate" && state.study[k]!=null) el.value = state.study[k];
-    el.addEventListener("input", ()=>{ state.study[k] = el.value; persist(); renderAll(); });
+    
+    el.addEventListener("input", ()=>{ 
+        state.study[k] = el.value; 
+        persist(); 
+    });
   });
 
   ["costHour","partsMonth","invest","consMonth","chgAct","chgNew","chgMinAct","chgMinNew","setAct","setNew","setMinAct","setMinNew","stpAct","stpNew","stpMinAct","stpMinNew","lifeAct","lifeNew","toolCost","toolCount","cycAct","cycNew","scrapAct","scrapNew","scrapCost"].forEach(id=>{
@@ -955,6 +889,10 @@ function bindInputs(){
 
   $("btnCopySummary").addEventListener("click", copySummary);
   $("btnPdfReport").addEventListener("click", exportPdf);
+  
+  const btnWa = $("btnWhatsApp");
+  if(btnWa) btnWa.addEventListener("click", shareWhatsApp);
+
   $("btnResetAll").addEventListener("click", ()=> {
     if(!confirm("¿Reset total?")) return;
     localStorage.clear(); location.reload();
