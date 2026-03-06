@@ -422,11 +422,11 @@ function renderTools() {
            </div>
            <div class="md:col-span-2">
              <div class="label text-xs text-rego-red mb-1">Problema detectado</div>
-             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Mucha vibración..." rows="2">${t.problem}</textarea>
+             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Mucha vibración, pobre acabado..." rows="2">${t.problem}</textarea>
            </div>
            <div class="md:col-span-2">
              <div class="label text-xs text-rego-green mb-1">Solución propuesta REGO-FIX</div>
-             <textarea class="input text-sm bg-green-50 tool-reco border-green-200" data-id="${t.id}" placeholder="La IA escribirá aquí..." rows="2">${t.reco}</textarea>
+             <textarea class="input text-sm bg-green-50 tool-reco border-green-200" data-id="${t.id}" placeholder="La IA escribirá aquí el dictamen técnico..." rows="2">${t.reco}</textarea>
            </div>
         </div>
       `;
@@ -527,7 +527,7 @@ function calc(){
 }
 
 /* ========================================================
-   IA CALL
+   IA CALL (Con Reglas Técnicas REGO-FIX)
 ======================================================== */
 async function recommendRegoFixAI() {
   const btn = $("btnRecalcReco");
@@ -538,14 +538,52 @@ async function recommendRegoFixAI() {
   btn.innerHTML = `⏳ Analizando todos los casos...`;
 
   const s = state.study;
-  const toolsContext = s.tools.map((t, i) => `Caso ${i+1}: Op: ${t.op} | Setup: ${t.setup} | Problema: ${t.problem}`).join("\n");
+  const toolsContext = s.tools.map((t, i) => `Caso ${i+1}: Op: ${t.op} | Setup Actual: ${t.setup} | Problema a resolver: ${t.problem}`).join("\n");
 
   const prompt = `
-  Eres un Ingeniero en maquinado CNC experto en REGO-FIX.
-  Contexto: Husillo: ${s.spindleInterface}, Ref: ${s.coolant}, Material: ${s.material}, Prioridad: ${s.priority}.
-  Casos:
+  Eres un Ingeniero de Aplicaciones Senior en maquinado CNC experto en el catálogo de sujeción REGO-FIX.
+  Tu trabajo es dar un dictamen técnico irrefutable y justificar el ROI.
+  
+  Contexto Global del Máquina:
+  - Interfaz de Husillo: ${s.spindleInterface}
+  - Refrigerante: ${s.coolant}
+  - Material: ${s.material}
+  - Prioridad: ${s.priority}
+  - Objetivo de negocio: ${s.goal}
+
+  Casos a evaluar:
   ${toolsContext}
-  Devuelve ESTRICTAMENTE JSON: {"general_pitch": "Párrafo comercial", "tools_reco": ["Reco caso 1", "Reco caso 2"], "missing_data": "Info faltante"}`;
+
+  REGLAS ESTRICTAS DE ASIGNACIÓN DE TECNOLOGÍA REGO-FIX:
+  
+  1. Sistema poweRgrip (PG):
+     - Uso: Alta vibración, fresado dinámico, titanio, inconel, acero endurecido, o cuando se pide runout ≤ 3µm y máxima fuerza de apriete.
+     - Diámetros de boquilla PG: PG 6 (hasta 3.175mm), PG 10 (hasta 6mm), PG 15 (hasta 10mm), PG 25 (hasta 16mm), PG 32 (hasta 25.4mm).
+     - Justificación: Alta amortiguación de vibración y TIR ≤ 3µm a 3xD. Evita el "pull-out".
+  
+  2. Sistema micRun (MR):
+     - Uso: Micromecanizado estricto, relojería, médico o herramientas con diámetro menor a 3mm donde el runout y balanceo son críticos (hasta 80,000 RPM).
+     - Diámetros: MR 11, MR 16, MR 25, MR 32 (Capacidad de 1mm a 20mm).
+     - Justificación: Tuerca sin ranuras para menor vibración, TIR ≤ 3µm a 3xD.
+
+  3. Sistema ER (Hi-Q / UP):
+     - Uso: Maquinado general, roscado, presupuesto ajustado, o problemas de concentricidad moderados.
+     - Diámetros: ER 8, ER 11, ER 16, ER 20, ER 25, ER 32, ER 40, ER 50 (Capacidad de 0.2mm a 36mm).
+     - Justificación: Reemplazar portaherramientas asiáticos/genéricos por ER-UP (Ultra Precisión) asegura TIR ≤ 5µm a 3xD y mayor vida útil.
+
+  INSTRUCCIONES DE SALIDA:
+  Devuelve ESTRICTAMENTE un JSON válido (sin texto fuera del JSON).
+  En la matriz "tools_reco", para cada caso debes especificar: El sistema recomendado (PG, ER o micRun), el tamaño sugerido (ej. PG 15 o ER 32) basado en la operación, y una explicación técnica persuasiva de por qué solucionará el "Problema a resolver".
+  
+  Estructura esperada:
+  {
+    "general_pitch": "Párrafo comercial/técnico de 3 a 4 líneas sobre cómo la tecnología Suiza de REGO-FIX reducirá costos operativos basándose en el material y la máquina.",
+    "tools_reco": [
+       "Sistema Recomendado (Tamaño) - Explicación detallada de cómo ataca la vibración/acabado/vida de herramienta.",
+       "Sistema Recomendado (Tamaño) - Explicación..."
+    ],
+    "missing_data": "Lista de detalles técnicos que faltan preguntar (Ej: Tipo de tirante, longitud del cono, diámetro exacto del zanco de la herramienta)"
+  }`;
 
   try {
     const response = await fetch('/api/recommend', {
@@ -560,7 +598,7 @@ async function recommendRegoFixAI() {
     const recoData = JSON.parse(jsonString);
 
     if($("aiPitch")) $("aiPitch").value = recoData.general_pitch || "";
-    if($("aiMissing")) $("aiMissing").textContent = recoData.missing_data || "Información completa.";
+    if($("aiMissing")) $("aiMissing").textContent = recoData.missing_data || "Revisión completa.";
     
     state.study.aiPitch = recoData.general_pitch;
     state.study.aiMissing = recoData.missing_data;
@@ -577,7 +615,7 @@ async function recommendRegoFixAI() {
 
   } catch (error) {
     console.error("Error:", error);
-    alert("Hubo un problema al contactar a la IA.");
+    alert("Hubo un problema al contactar a la IA. Asegúrate de que el backend en Vercel esté corriendo correctamente.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalText;
