@@ -168,7 +168,7 @@
         <div>
           <div class="label">Interfaz husillo</div>
           <input id="spindleInterface" class="input" type="text" list="lista-husillos" placeholder="Ej: CAT40 / HSK63A" data-study="spindleInterface">
-          <datalist id="lista-husillos"><option value="CAT 40"><option value="CAT 50"><option value="BT 40"><option value="HSK-A 63"><option value="Capto C6"></datalist>
+          <datalist id="lista-husillos"><option value="CAT 40"><option value="CAT 50"><option value="BT 30"><option value="BT 40"><option value="HSK-A 63"><option value="Capto C6"></datalist>
         </div>
         <div>
           <div class="label">Refrigerante</div>
@@ -196,7 +196,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1C) Casos de Herramientas a Optimizar</h2>
-          <p class="muted small mt-1">Registra las herramientas que causan problemas para analizarlas.</p>
+          <p class="muted small mt-1">Ingresa la herramienta y asegúrate de incluir el diámetro (ej. "Endmill 12mm").</p>
         </div>
         <button id="btnAddTool" class="btn btn-outline text-sm py-2 px-4 whitespace-nowrap border-dashed border-2">+ Agregar Herramienta</button>
       </div>
@@ -206,7 +206,7 @@
       <div class="mt-8 border-t pt-6">
         <button id="btnRecalcReco" class="btn btn-primary w-full flex justify-center items-center gap-2 text-lg py-3 shadow-md hover:shadow-lg transition-all">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
-          Analizar todos los casos con Inteligencia Artificial
+          Analizar y Configurar Ensambles
         </button>
         
         <div id="aiResultBox" class="mt-6 kpi bg-[#f9fafb] hidden">
@@ -217,7 +217,7 @@
             <div class="mt-4 flex items-start gap-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="shrink-0 mt-0.5"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
                <div>
-                 <div class="font-bold text-sm">Información requerida para SKU Final:</div>
+                 <div class="font-bold text-sm">Información pendiente de validar:</div>
                  <div id="aiMissing" class="text-xs mt-1">...</div>
                </div>
             </div>
@@ -414,7 +414,7 @@ function renderTools() {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
            <div>
              <div class="label text-xs mb-1">Operación y Herramienta</div>
-             <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Ej: Fresa de Carburo Ø12mm...">
+             <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Ej: Endmill de bola 12mm...">
            </div>
            <div>
              <div class="label text-xs mb-1">Setup / Sujeción Actual</div>
@@ -422,11 +422,11 @@ function renderTools() {
            </div>
            <div class="md:col-span-2">
              <div class="label text-xs text-rego-red mb-1">Problema detectado</div>
-             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Se afloja la herramienta (pull-out) por vibración..." rows="2">${t.problem}</textarea>
+             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Mucha vibración y mal acabado..." rows="2">${t.problem}</textarea>
            </div>
            <div class="md:col-span-2">
-             <div class="label text-xs text-rego-green mb-1">Solución propuesta REGO-FIX</div>
-             <textarea class="input text-sm bg-green-50 tool-reco border-green-200 text-green-900 font-medium" data-id="${t.id}" placeholder="La IA escribirá aquí el dictamen técnico o te pedirá la información que le falte..." rows="3">${t.reco}</textarea>
+             <div class="label text-xs text-rego-green mb-1">Propuesta y Configuración REGO-FIX</div>
+             <textarea class="input text-sm bg-green-50 tool-reco border-green-200 text-green-900 font-medium" data-id="${t.id}" placeholder="La IA escribirá el ensamble completo aquí..." rows="3">${t.reco}</textarea>
            </div>
         </div>
       `;
@@ -527,7 +527,7 @@ function calc(){
 }
 
 /* ========================================================
-   IA CALL (Prompt Estricto y Parser Anti-[object Object])
+   IA CALL (PROMPT NUEVO: ENSAMBLES EXACTOS)
 ======================================================== */
 async function recommendRegoFixAI() {
   const btn = $("btnRecalcReco");
@@ -535,37 +535,43 @@ async function recommendRegoFixAI() {
   const originalText = btn.innerHTML;
   
   btn.disabled = true;
-  btn.innerHTML = `⏳ Analizando todos los casos...`;
+  btn.innerHTML = `⏳ Diseñando ensambles...`;
 
   const s = state.study;
-  const toolsContext = s.tools.map((t, i) => `Caso ${i+1}: Op: ${t.op} | Setup Actual: ${t.setup} | Problema a resolver: ${t.problem}`).join("\n");
+  const toolsContext = s.tools.map((t, i) => `Caso ${i+1}: Op/Herramienta: ${t.op} | Setup Actual: ${t.setup} | Problema: ${t.problem}`).join("\n");
 
   const prompt = `
-  Eres un Ingeniero de Aplicaciones Senior en maquinado CNC experto en REGO-FIX.
-  
-  Contexto Global: Husillo: ${s.spindleInterface}, Ref: ${s.coolant}, Material: ${s.material}, Prioridad: ${s.priority}.
+  Eres un Ingeniero experto en REGO-FIX.
+  Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}.
   
   Casos a evaluar:
   ${toolsContext}
 
-  REGLAS:
-  1. poweRgrip (PG): Alta vibración, titanio, acero endurecido, runout ≤ 3µm, máxima fuerza de apriete. (Diámetros: PG6, PG10, PG15, PG25, PG32).
-  2. micRun (MR): Micromecanizado < 3mm.
-  3. ER (Hi-Q / UP): Maquinado general, roscado.
+  TU MISIÓN:
+  Lee el texto "Op/Herramienta" de cada caso y extrae lógicamente su diámetro (ej. si dice "Endmill de 12mm", el diámetro es 12mm).
+  Con ese diámetro y el "Problema", define el ENSAMBLE COMPLETO usando estas reglas de tamaño:
+  - poweRgrip (PG): PG10 (hasta 6mm), PG15 (hasta 10mm), PG25 (hasta 20mm), PG32 (hasta 25.4mm). (Para vibración, desbaste pesado, aceros duros).
+  - micRun (MR): MR11, MR16. (Para microherramientas < 3mm).
+  - ER: ER16, ER32. (Maquinado general).
 
-  INSTRUCCIÓN VITAL PARA "tools_reco":
-  Si en un caso NO tienes el diámetro de la herramienta para decidir si es PG10, PG15 o PG25, tu recomendación DEBE ser una pregunta directa. Ejemplo: "Para darte el tamaño exacto, necesito saber el diámetro del zanco de la herramienta. Con esa info te confirmaré el sistema."
+  FORMATO DE RESPUESTA OBLIGATORIO PARA CADA CASO:
+  Tu respuesta en el array 'tools_reco' debe ser exactamente así:
+  "Recomendación: [Interfaz del Husillo] [Tecnología] [Tamaño] + Boquilla [Tecnología] de [Diámetro de la herramienta]. Por qué: [1 línea justificando]."
+  
+  Ejemplo perfecto si el cliente usa HSK-A 63, una fresa de 12mm y tiene vibración:
+  "Recomendación: HSK-A 63 poweRgrip PG25 + Boquilla PG25 de 12mm. Por qué: La fuerza de sujeción extrema del sistema PG eliminará la vibración y el mal acabado."
 
-  INSTRUCCIONES DE FORMATO JSON ESTRICTO:
+  INSTRUCCIÓN CRÍTICA PARA EL JSON:
+  Devuelve SOLO un JSON válido. 'tools_reco' debe ser un array de STRINGS, nunca objetos.
   {
-    "general_pitch": "Párrafo general de venta...",
+    "general_pitch": "Argumento comercial de 2 líneas de REGO-FIX.",
     "tools_reco": [
-       "Texto de recomendación o pregunta de info faltante para el Caso 1",
-       "Texto de recomendación o pregunta de info faltante para el Caso 2"
+       "Respuesta del caso 1 en el formato exacto",
+       "Respuesta del caso 2 en el formato exacto"
     ],
-    "missing_data": "Lista de datos faltantes"
+    "missing_data": "Opcional. Datos técnicos extras a verificar en planta."
   }
-  ¡IMPORTANTE! 'tools_reco' DEBE SER UNA LISTA DE TEXTOS SIMPLES (STRINGS). NO devuelvas objetos dentro de esta lista.`;
+  `;
 
   try {
     const response = await fetch('/api/recommend.js', {
@@ -585,13 +591,12 @@ async function recommendRegoFixAI() {
     state.study.aiPitch = recoData.general_pitch;
     state.study.aiMissing = recoData.missing_data;
 
-    // EL ESCUDO ANTI [object Object] ABSOLUTO
+    // ESCUDO ANTI-OBJETOS
     if(recoData.tools_reco && Array.isArray(recoData.tools_reco)) {
         state.study.tools.forEach((t, i) => {
             if(recoData.tools_reco[i] !== undefined) {
                 let rec = recoData.tools_reco[i];
                 if(typeof rec === 'object' && rec !== null) {
-                    // Si la IA manda un objeto rebelde, lo aplastamos a un string limpio
                     try {
                        t.reco = JSON.stringify(rec, null, 2).replace(/[{}"]/g, '').trim();
                     } catch(e) {
