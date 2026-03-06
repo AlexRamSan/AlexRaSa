@@ -78,18 +78,6 @@
           <button id="btnResetAll" class="btn btn-danger">Reset</button>
         </div>
       </div>
-
-      <div class="mt-4 rounded-2xl overflow-hidden border" style="border-color:var(--border); background:linear-gradient(90deg, rgba(183,201,31,.18), rgba(88,213,211,.18), rgba(40,85,108,.10));">
-        <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div class="flex-1">
-            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: holders (sujeción) y ROI real</div>
-            <div class="muted small">Captura el estudio (cliente + aplicación), calcula ROI y genera un reporte en PDF para enviar/guardar.</div>
-          </div>
-          <div class="text-right">
-            <div class="by">by alexrasa</div>
-          </div>
-        </div>
-      </div>
     </div>
   </header>
 
@@ -208,7 +196,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1C) Casos de Herramientas a Optimizar</h2>
-          <p class="muted small mt-1">Registra todas las herramientas que causan problemas para analizarlas.</p>
+          <p class="muted small mt-1">Registra las herramientas que causan problemas para analizarlas.</p>
         </div>
         <button id="btnAddTool" class="btn btn-outline text-sm py-2 px-4 whitespace-nowrap border-dashed border-2">+ Agregar Herramienta</button>
       </div>
@@ -358,7 +346,7 @@
 
 <script>
 /* ========================================================
-   ESTADO GLOBAL (V6)
+   ESTADO GLOBAL 
 ======================================================== */
 const state = {
   switches: { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true },
@@ -387,24 +375,24 @@ function safeJson(str, fallback){ try{ return JSON.parse(str); }catch(e){ return
 
 function persist(){
   try {
-      localStorage.setItem("rego_switches_v6", JSON.stringify(state.switches));
-      localStorage.setItem("rego_study_v6", JSON.stringify(state.study));
-  } catch(e) { console.error("Error guardando datos", e); }
+      localStorage.setItem("rego_switches_v7", JSON.stringify(state.switches));
+      localStorage.setItem("rego_study_v7", JSON.stringify(state.study));
+  } catch(e) { console.error("Error guardando", e); }
 }
 
 function load(){
   try {
-      const sw = localStorage.getItem("rego_switches_v6");
+      const sw = localStorage.getItem("rego_switches_v7");
       if(sw) state.switches = safeJson(sw, state.switches);
       
-      const st = localStorage.getItem("rego_study_v6");
+      const st = localStorage.getItem("rego_study_v7");
       if(st) {
           state.study = { ...state.study, ...safeJson(st, {}) };
           if(!state.study.tools || state.study.tools.length === 0) {
               state.study.tools = [{ id: Date.now(), op: "", setup: "", problem: "", reco: "" }];
           }
       }
-  } catch(e) { console.error("Error cargando datos", e); }
+  } catch(e) { console.error("Error cargando", e); }
 }
 
 /* ========================================================
@@ -426,7 +414,7 @@ function renderTools() {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
            <div>
              <div class="label text-xs mb-1">Operación y Herramienta</div>
-             <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Ej: Broca Ø10, Fresado...">
+             <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Ej: Fresa de Carburo Ø12mm...">
            </div>
            <div>
              <div class="label text-xs mb-1">Setup / Sujeción Actual</div>
@@ -434,11 +422,11 @@ function renderTools() {
            </div>
            <div class="md:col-span-2">
              <div class="label text-xs text-rego-red mb-1">Problema detectado</div>
-             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Mucha vibración, pobre acabado..." rows="2">${t.problem}</textarea>
+             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Se afloja la herramienta (pull-out) por vibración..." rows="2">${t.problem}</textarea>
            </div>
            <div class="md:col-span-2">
              <div class="label text-xs text-rego-green mb-1">Solución propuesta REGO-FIX</div>
-             <textarea class="input text-sm bg-green-50 tool-reco border-green-200" data-id="${t.id}" placeholder="La IA escribirá aquí el dictamen técnico..." rows="2">${t.reco}</textarea>
+             <textarea class="input text-sm bg-green-50 tool-reco border-green-200 text-green-900 font-medium" data-id="${t.id}" placeholder="La IA escribirá aquí el dictamen técnico o te pedirá la información que le falte..." rows="3">${t.reco}</textarea>
            </div>
         </div>
       `;
@@ -539,7 +527,7 @@ function calc(){
 }
 
 /* ========================================================
-   IA CALL (Ruta corregida y Anti-[object Object])
+   IA CALL (Prompt Estricto y Parser Anti-[object Object])
 ======================================================== */
 async function recommendRegoFixAI() {
   const btn = $("btnRecalcReco");
@@ -553,51 +541,33 @@ async function recommendRegoFixAI() {
   const toolsContext = s.tools.map((t, i) => `Caso ${i+1}: Op: ${t.op} | Setup Actual: ${t.setup} | Problema a resolver: ${t.problem}`).join("\n");
 
   const prompt = `
-  Eres un Ingeniero de Aplicaciones Senior en maquinado CNC experto en el catálogo de sujeción REGO-FIX.
-  Tu trabajo es dar un dictamen técnico irrefutable y justificar el ROI.
+  Eres un Ingeniero de Aplicaciones Senior en maquinado CNC experto en REGO-FIX.
   
-  Contexto Global del Máquina:
-  - Interfaz de Husillo: ${s.spindleInterface}
-  - Refrigerante: ${s.coolant}
-  - Material: ${s.material}
-  - Prioridad: ${s.priority}
-  - Objetivo de negocio: ${s.goal}
-
+  Contexto Global: Husillo: ${s.spindleInterface}, Ref: ${s.coolant}, Material: ${s.material}, Prioridad: ${s.priority}.
+  
   Casos a evaluar:
   ${toolsContext}
 
-  REGLAS ESTRICTAS DE ASIGNACIÓN DE TECNOLOGÍA REGO-FIX:
-  
-  1. Sistema poweRgrip (PG):
-     - Uso: Alta vibración, fresado dinámico, titanio, inconel, acero endurecido, o cuando se pide runout ≤ 3µm y máxima fuerza de apriete.
-     - Diámetros de boquilla PG: PG 6 (hasta 3.175mm), PG 10 (hasta 6mm), PG 15 (hasta 10mm), PG 25 (hasta 16mm), PG 32 (hasta 25.4mm).
-     - Justificación: Alta amortiguación de vibración y TIR ≤ 3µm a 3xD. Evita el "pull-out".
-  
-  2. Sistema micRun (MR):
-     - Uso: Micromecanizado estricto, relojería, médico o herramientas con diámetro menor a 3mm donde el runout y balanceo son críticos (hasta 80,000 RPM).
-     - Diámetros: MR 11, MR 16, MR 25, MR 32 (Capacidad de 1mm a 20mm).
-     - Justificación: Tuerca sin ranuras para menor vibración, TIR ≤ 3µm a 3xD.
+  REGLAS:
+  1. poweRgrip (PG): Alta vibración, titanio, acero endurecido, runout ≤ 3µm, máxima fuerza de apriete. (Diámetros: PG6, PG10, PG15, PG25, PG32).
+  2. micRun (MR): Micromecanizado < 3mm.
+  3. ER (Hi-Q / UP): Maquinado general, roscado.
 
-  3. Sistema ER (Hi-Q / UP):
-     - Uso: Maquinado general, roscado, presupuesto ajustado, o problemas de concentricidad moderados.
-     - Diámetros: ER 8, ER 11, ER 16, ER 20, ER 25, ER 32, ER 40, ER 50 (Capacidad de 0.2mm a 36mm).
-     - Justificación: Reemplazar portaherramientas asiáticos/genéricos por ER-UP (Ultra Precisión) asegura TIR ≤ 5µm a 3xD y mayor vida útil.
+  INSTRUCCIÓN VITAL PARA "tools_reco":
+  Si en un caso NO tienes el diámetro de la herramienta para decidir si es PG10, PG15 o PG25, tu recomendación DEBE ser una pregunta directa. Ejemplo: "Para darte el tamaño exacto, necesito saber el diámetro del zanco de la herramienta. Con esa info te confirmaré el sistema."
 
-  INSTRUCCIONES DE SALIDA:
-  Devuelve ESTRICTAMENTE un JSON válido (sin texto fuera del JSON).
-  
-  Estructura esperada:
+  INSTRUCCIONES DE FORMATO JSON ESTRICTO:
   {
-    "general_pitch": "Párrafo comercial/técnico de 3 a 4 líneas sobre cómo la tecnología Suiza de REGO-FIX reducirá costos operativos.",
+    "general_pitch": "Párrafo general de venta...",
     "tools_reco": [
-       "Sistema Recomendado (Tamaño) - Explicación detallada de cómo ataca la vibración/acabado/vida de herramienta.",
-       "Sistema Recomendado (Tamaño) - Explicación..."
+       "Texto de recomendación o pregunta de info faltante para el Caso 1",
+       "Texto de recomendación o pregunta de info faltante para el Caso 2"
     ],
-    "missing_data": "Lista de detalles técnicos que faltan preguntar"
-  }`;
+    "missing_data": "Lista de datos faltantes"
+  }
+  ¡IMPORTANTE! 'tools_reco' DEBE SER UNA LISTA DE TEXTOS SIMPLES (STRINGS). NO devuelvas objetos dentro de esta lista.`;
 
   try {
-    // ⚠️ LA RUTA ESTÁ CORREGIDA AQUÍ PARA COINCIDIR CON VERCEL
     const response = await fetch('/api/recommend.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -615,15 +585,20 @@ async function recommendRegoFixAI() {
     state.study.aiPitch = recoData.general_pitch;
     state.study.aiMissing = recoData.missing_data;
 
-    // EL ESCUDO CONTRA EL [object Object]
+    // EL ESCUDO ANTI [object Object] ABSOLUTO
     if(recoData.tools_reco && Array.isArray(recoData.tools_reco)) {
         state.study.tools.forEach((t, i) => {
-            if(recoData.tools_reco[i]) {
+            if(recoData.tools_reco[i] !== undefined) {
                 let rec = recoData.tools_reco[i];
                 if(typeof rec === 'object' && rec !== null) {
-                    t.reco = Object.values(rec).join(" - ");
+                    // Si la IA manda un objeto rebelde, lo aplastamos a un string limpio
+                    try {
+                       t.reco = JSON.stringify(rec, null, 2).replace(/[{}"]/g, '').trim();
+                    } catch(e) {
+                       t.reco = "Error procesando el formato de la IA.";
+                    }
                 } else {
-                    t.reco = rec;
+                    t.reco = String(rec);
                 }
             }
         });
@@ -635,7 +610,7 @@ async function recommendRegoFixAI() {
 
   } catch (error) {
     console.error("Error:", error);
-    alert("Hubo un problema al contactar a la IA. Asegúrate de que el backend en Vercel esté corriendo correctamente.");
+    alert("Hubo un problema al contactar a la Inteligencia Artificial. Asegúrate de que el backend en Vercel esté corriendo correctamente.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalText;
