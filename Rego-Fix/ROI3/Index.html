@@ -28,17 +28,18 @@
       html,body{ background:#fff !important; color:#121314 !important; }
     }
     .card{ background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 20px; }
-    .btn{ border-radius: 16px; padding: .75rem 1rem; font-weight: 700; border: 1px solid transparent; transition: .15s ease; user-select:none; }
+    .btn{ border-radius: 16px; padding: .75rem 1rem; font-weight: 700; border: 1px solid transparent; transition: .15s ease; user-select:none; cursor: pointer; }
+    .btn:disabled{ opacity: 0.6; cursor: not-allowed; }
     .btn-outline{ background:#fff; border-color: var(--border); color: var(--rego-black); }
-    .btn-outline:hover{ background: rgba(183,201,31,.10); }
+    .btn-outline:hover:not(:disabled){ background: rgba(183,201,31,.10); }
     .btn-danger{ background: var(--rego-red); color:#fff; }
-    .btn-danger:hover{ filter: brightness(.95); }
+    .btn-danger:hover:not(:disabled){ filter: brightness(.95); }
     .btn-primary{ background: rgba(183,201,31,.95); color:#121314; }
-    .btn-primary:hover{ filter: brightness(.97); }
+    .btn-primary:hover:not(:disabled){ filter: brightness(.97); }
     .kpi{ border: 1px solid var(--border); border-radius: 18px; padding: .9rem 1rem; background: #fff; }
     .muted{ color: var(--rego-gm); }
     .label{ color: var(--rego-gd); font-weight: 700; font-size:.9rem; }
-    .input{ width:100%; border:1px solid var(--border); border-radius: 14px; padding: .65rem .8rem; outline: none; background:#fff; }
+    .input{ width:100%; border:1px solid var(--border); border-radius: 14px; padding: .65rem .8rem; outline: none; background:#fff; transition: border-color 0.2s; }
     .input:focus{ border-color: rgba(40,85,108,.45); box-shadow: 0 0 0 4px rgba(88,213,211,.18); }
     textarea.input{ min-height: 80px; resize: vertical; }
     .switch{ position:relative; width: 52px; height: 30px; border-radius: 999px; background: rgba(103,112,113,.25); border:1px solid var(--border); cursor:pointer; flex: 0 0 auto; }
@@ -120,7 +121,7 @@
         </div>
 
         <div><div class="label">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" min="0" step="1" value="5000"></div>
-        <div><div class="label">Inversión Múltiple (USD)</div><input id="invest" class="input mt-1" type="number" min="0" step="1" value="4500"></div>
+        <div><div class="label">Inversión Total (USD)</div><input id="invest" class="input mt-1" type="number" min="0" step="1" value="4500"></div>
         <div><div class="label">Consumibles (USD/mes)</div><input id="consMonth" class="input mt-1" type="number" min="0" step="1" value="0"></div>
         
         <div id="hrCalcPanel" class="col-span-1 sm:col-span-2 lg:col-span-4 bg-[#f9fafb] p-4 rounded-xl border border-gray-200 hidden mt-2">
@@ -128,7 +129,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                     <div class="label text-xs">Tipo de Máquina</div>
-                    <select id="calcMachine" class="input mt-1 text-sm" data-study="calcMachine">
+                    <select id="calcMachine" class="input mt-1 text-sm">
                         <option value="40">Torno CNC (2 Ejes)</option>
                         <option value="50" selected>Centro de Maquinado (3 Ejes)</option>
                         <option value="75">Centro de Maquinado (4 Ejes)</option>
@@ -138,7 +139,7 @@
                 </div>
                 <div>
                     <div class="label text-xs">Sector Industrial (Overhead)</div>
-                    <select id="calcSector" class="input mt-1 text-sm" data-study="calcSector">
+                    <select id="calcSector" class="input mt-1 text-sm">
                         <option value="1.0" selected>General / Job Shop</option>
                         <option value="1.15">Automotriz</option>
                         <option value="1.25">Moldes y Troqueles</option>
@@ -148,7 +149,7 @@
                 </div>
                 <div>
                     <div class="label text-xs">Mano de Obra</div>
-                    <select id="calcOperator" class="input mt-1 text-sm" data-study="calcOperator">
+                    <select id="calcOperator" class="input mt-1 text-sm">
                         <option value="25" selected>1 Op / 1 Máquina ($25/h)</option>
                         <option value="12.5">1 Op / 2 Máquinas ($12.5/h)</option>
                         <option value="8">Celda automatizada</option>
@@ -195,7 +196,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1C) Casos de Herramientas a Optimizar</h2>
-          <p class="muted small mt-1">Registra todas las herramientas que causan cuellos de botella para analizarlas.</p>
+          <p class="muted small mt-1">Registra todas las herramientas que causan problemas para analizarlas.</p>
         </div>
         <button id="btnAddTool" class="btn btn-outline text-sm py-2 px-4 whitespace-nowrap border-dashed border-2">+ Agregar Herramienta</button>
       </div>
@@ -211,12 +212,12 @@
         <div id="aiResultBox" class="mt-6 kpi bg-[#f9fafb] hidden">
             <div class="font-extrabold text-lg text-rego-blue mb-2">Dictamen de Ingeniería</div>
             <div class="label text-xs">Alineación Estratégica</div>
-            <textarea id="aiPitch" class="input mt-1 text-sm text-[#28556C] font-medium bg-white" data-study="aiPitch" rows="3" placeholder="Argumento comercial de la IA..."></textarea>
+            <textarea id="aiPitch" class="input mt-1 text-sm text-[#28556C] font-medium bg-white" data-study="aiPitch" rows="3" placeholder="Argumento comercial..."></textarea>
             
             <div class="mt-4 flex items-start gap-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="shrink-0 mt-0.5"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
                <div>
-                 <div class="font-bold text-sm">Información requerida para definir SKU Final:</div>
+                 <div class="font-bold text-sm">Información requerida para SKU Final:</div>
                  <div id="aiMissing" class="text-xs mt-1">...</div>
                </div>
             </div>
@@ -258,7 +259,7 @@
 
         <div class="card p-4 h-fit">
           <div class="flex items-center justify-between gap-3">
-            <div><div class="font-extrabold" style="color:var(--rego-blue)">B) Vida de herramientas en proceso</div></div>
+            <div><div class="font-extrabold" style="color:var(--rego-blue)">B) Vida de herramientas</div></div>
             <div class="switch" id="swLife" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
           </div>
           <div class="mt-3 space-y-3" id="lifeBody">
@@ -274,7 +275,7 @@
 
         <div class="card p-4 h-fit">
           <div class="flex items-center justify-between gap-3">
-            <div><div class="font-extrabold" style="color:var(--rego-blue)">C) Mejora de ciclo de maquinado</div></div>
+            <div><div class="font-extrabold" style="color:var(--rego-blue)">C) Mejora de ciclo</div></div>
             <div class="switch" id="swProc" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
           </div>
           <div class="mt-3 space-y-3" id="procBody">
@@ -288,7 +289,7 @@
 
         <div class="card p-4 h-fit">
           <div class="flex items-center justify-between gap-3">
-            <div><div class="font-extrabold" style="color:var(--rego-blue)">D) Reducción de Scrap (Calidad)</div></div>
+            <div><div class="font-extrabold" style="color:var(--rego-blue)">D) Reducción de Scrap</div></div>
             <div class="switch" id="swScrap" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
           </div>
           <div class="mt-3 space-y-3" id="scrapBody">
@@ -344,8 +345,9 @@
   </main>
 
 <script>
-/* ========= STATE ========= */
-// V4 para limpiar caché anterior al cambiar la estructura a Multi-Herramienta
+/* ========================================================
+   ESTADO GLOBAL (V5 - Versión Limpia Definitiva)
+======================================================== */
 const state = {
   switches: { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true },
   study: { 
@@ -353,11 +355,19 @@ const state = {
     spindleInterface: "", coolant: "", material: "", priority: "", goal: "", 
     calcMachine: "50", calcSector: "1.0", calcOperator: "25",
     aiPitch: "", aiMissing: "",
-    tools: [
-      { id: Date.now(), op: "", setup: "", problem: "", reco: "" }
-    ]
+    tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "" } ]
   }
 };
+
+// IDs de todos los campos numéricos (para guardarlos en caché)
+const mathIds = [
+  "costHour","partsMonth","invest","consMonth",
+  "chgAct","chgNew","chgMinAct","chgMinNew",
+  "setAct","setNew","setMinAct","setMinNew",
+  "stpAct","stpNew","stpMinAct","stpMinNew",
+  "lifeAct","lifeNew","toolCost","toolCount",
+  "cycAct","cycNew","scrapAct","scrapNew","scrapCost"
+];
 
 const $ = (id)=>document.getElementById(id);
 const clamp0 = (n)=>Math.max(0, Number(n||0));
@@ -365,27 +375,31 @@ const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency",
 function safeJson(str, fallback){ try{ return JSON.parse(str); }catch{ return fallback; } }
 
 function persist(){
-  localStorage.setItem("rego_switches_v4", JSON.stringify(state.switches));
-  localStorage.setItem("rego_study_v4", JSON.stringify(state.study));
+  localStorage.setItem("rego_switches_v5", JSON.stringify(state.switches));
+  localStorage.setItem("rego_study_v5", JSON.stringify(state.study));
 }
+
 function load(){
-  const sw = localStorage.getItem("rego_switches_v4");
+  const sw = localStorage.getItem("rego_switches_v5");
   if(sw) state.switches = safeJson(sw, state.switches);
   
-  const st = localStorage.getItem("rego_study_v4");
+  const st = localStorage.getItem("rego_study_v5");
   if(st) {
       state.study = { ...state.study, ...safeJson(st, {}) };
-      // Asegurar que siempre exista al menos una herramienta
       if(!state.study.tools || state.study.tools.length === 0) {
           state.study.tools = [{ id: Date.now(), op: "", setup: "", problem: "", reco: "" }];
       }
   }
 }
 
-/* ========= TOOLS DYNAMICS ========= */
+/* ========================================================
+   RENDERIZADO DE HERRAMIENTAS MÚLTIPLES
+======================================================== */
 function renderTools() {
    const container = $("toolsListContainer");
+   if(!container) return;
    container.innerHTML = "";
+   
    state.study.tools.forEach((t, index) => {
       const div = document.createElement("div");
       div.className = "p-4 border border-gray-200 rounded-xl relative bg-white shadow-sm transition-all";
@@ -396,27 +410,27 @@ function renderTools() {
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
            <div>
-             <div class="label text-xs mb-1">Operación y Herramienta (Ej: Broca Ø10, Fresado)</div>
-             <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Operación actual...">
+             <div class="label text-xs mb-1">Operación y Herramienta</div>
+             <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Ej: Broca Ø10, Fresado...">
            </div>
            <div>
-             <div class="label text-xs mb-1">Setup / Sujeción Actual (Ej: ER32, Weldon)</div>
-             <input class="input text-sm tool-setup" data-id="${t.id}" value="${t.setup}" placeholder="Marca y modelo del portaherramientas...">
+             <div class="label text-xs mb-1">Setup / Sujeción Actual</div>
+             <input class="input text-sm tool-setup" data-id="${t.id}" value="${t.setup}" placeholder="Ej: ER32, Weldon...">
            </div>
            <div class="md:col-span-2">
-             <div class="label text-xs text-rego-red mb-1">Problema detectado (Por qué se evalúa el cambio)</div>
-             <textarea class="input text-sm tool-problem border-red-200 focus:border-red-400" data-id="${t.id}" placeholder="Ej: Mucha vibración, pobre acabado superficial, se afloja la herramienta (pull-out)..." rows="2">${t.problem}</textarea>
+             <div class="label text-xs text-rego-red mb-1">Problema detectado</div>
+             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Mucha vibración, pobre acabado..." rows="2">${t.problem}</textarea>
            </div>
            <div class="md:col-span-2">
              <div class="label text-xs text-rego-green mb-1">Solución propuesta REGO-FIX</div>
-             <textarea class="input text-sm bg-green-50 tool-reco border-green-200" data-id="${t.id}" placeholder="La Inteligencia Artificial escribirá aquí su dictamen técnico..." rows="2">${t.reco}</textarea>
+             <textarea class="input text-sm bg-green-50 tool-reco border-green-200" data-id="${t.id}" placeholder="La IA escribirá aquí..." rows="2">${t.reco}</textarea>
            </div>
         </div>
       `;
       container.appendChild(div);
    });
 
-   // Listeners para los inputs generados dinámicamente
+   // Eventos para guardar los textos de las herramientas al vuelo
    document.querySelectorAll(".tool-op").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "op")));
    document.querySelectorAll(".tool-setup").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "setup")));
    document.querySelectorAll(".tool-problem").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "problem")));
@@ -439,31 +453,18 @@ function updateTool(e, field) {
     }
 }
 
-$("btnAddTool").addEventListener("click", () => {
-    state.study.tools.push({ id: Date.now(), op: "", setup: "", problem: "", reco: "" });
-    persist();
-    renderTools();
-});
-
-/* ========= SWITCHES ========= */
-function setSwitch(el, on){ el.dataset.on = on ? "true":"false"; }
-function getSwitch(el){ return el.dataset.on === "true"; }
-function bindSwitch(id, key){
-  const el = $(id);
-  setSwitch(el, !!state.switches[key]);
-  const toggle = ()=>{
-    const next = !getSwitch(el);
-    setSwitch(el, next);
-    state.switches[key] = next;
-    persist();
-    renderAll();
-  };
-  el.addEventListener("click", toggle);
-  el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
+const btnAddTool = $("btnAddTool");
+if(btnAddTool){
+    btnAddTool.addEventListener("click", () => {
+        state.study.tools.push({ id: Date.now(), op: "", setup: "", problem: "", reco: "" });
+        persist();
+        renderTools();
+    });
 }
 
-let roiChartInstance = null;
-
+/* ========================================================
+   MATEMÁTICAS Y CÁLCULOS
+======================================================== */
 function calc(){
   const costMin  = clamp0($("costHour").value) / 60;
   const partsMonth = clamp0($("partsMonth").value);
@@ -509,49 +510,25 @@ function calc(){
   return { invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual, costoTotalActualMensual, costoTotalNuevoMensual };
 }
 
-/* ========= MODO IA (MULTI-HERRAMIENTA) ========= */
+/* ========================================================
+   INTELIGENCIA ARTIFICIAL
+======================================================== */
 async function recommendRegoFixAI() {
   const btn = $("btnRecalcReco");
   const originalText = btn.innerHTML;
   
   btn.disabled = true;
-  btn.style.opacity = "0.5";
   btn.innerHTML = `⏳ Analizando todos los casos...`;
 
   const s = state.study;
-  
-  // Construir el contexto de todas las herramientas
-  const toolsContext = s.tools.map((t, i) => 
-      `Caso ${i+1}: Herramienta/Operación: ${t.op} | Setup Actual: ${t.setup} | Problema a resolver: ${t.problem}`
-  ).join("\n");
+  const toolsContext = s.tools.map((t, i) => `Caso ${i+1}: Op: ${t.op} | Setup: ${t.setup} | Problema: ${t.problem}`).join("\n");
 
   const prompt = `
-  Eres un Ingeniero Senior en maquinado CNC especializado en sistemas de sujeción REGO-FIX.
-  
-  Contexto Global del Taller/Máquina:
-  - Husillo: ${s.spindleInterface || 'No especificado'}
-  - Refrigerante: ${s.coolant || 'No especificado'}
-  - Material principal: ${s.material || 'No especificado'}
-  - Prioridad: ${s.priority || 'No especificada'}
-  - Objetivo de negocio: ${s.goal || 'Optimizar proceso'}
-
-  Casos específicos a evaluar (${s.tools.length} herramientas):
+  Eres un Ingeniero en maquinado CNC experto en REGO-FIX.
+  Contexto: Husillo: ${s.spindleInterface}, Ref: ${s.coolant}, Material: ${s.material}, Prioridad: ${s.priority}.
+  Casos:
   ${toolsContext}
-
-  Reglas REGO-FIX: 
-  - poweRgrip: alta vibración, titanio/inconel, runout<=3µm, evitar pull-out (deslizamiento).
-  - ER Hi-Q: maquinado general, roscado estándar, presupuestos ajustados.
-  - micRun: micromecanizado (herramientas < 3mm).
-  
-  Devuelve ESTRICTAMENTE un JSON válido con esta estructura:
-  {
-    "general_pitch": "Un párrafo comercial/técnico de 3 líneas sobre cómo REGO-FIX ayudará al objetivo global.",
-    "tools_reco": [
-       "Recomendación para Caso 1 (Ej: poweRgrip PG25 debido a la alta vibración en el voladizo largo...)",
-       "Recomendación para Caso 2 (Debe haber exactamente el mismo número de recomendaciones que de casos)"
-    ],
-    "missing_data": "Lista de detalles técnicos que faltan preguntar al cliente (Ej: Longitud del cono, tipo de tirante)"
-  }`;
+  Devuelve ESTRICTAMENTE JSON: {"general_pitch": "Párrafo comercial", "tools_reco": ["Reco caso 1", "Reco caso 2"], "missing_data": "Info faltante"}`;
 
   try {
     const response = await fetch('/api/recommend', {
@@ -560,40 +537,39 @@ async function recommendRegoFixAI() {
       body: JSON.stringify({ prompt: prompt })
     });
 
-    if (!response.ok) throw new Error("Error en el servidor");
+    if (!response.ok) throw new Error("Error en servidor");
     
     const jsonString = await response.json(); 
     const recoData = JSON.parse(jsonString);
 
-    // Llenar campos globales
-    $("aiPitch").value = recoData.general_pitch || "Propuesta generada.";
+    $("aiPitch").value = recoData.general_pitch || "";
     $("aiMissing").textContent = recoData.missing_data || "Información completa.";
     state.study.aiPitch = recoData.general_pitch;
     state.study.aiMissing = recoData.missing_data;
 
-    // Asignar recomendaciones individuales a cada herramienta
     if(recoData.tools_reco && Array.isArray(recoData.tools_reco)) {
         state.study.tools.forEach((t, i) => {
-            if(recoData.tools_reco[i]) {
-                t.reco = recoData.tools_reco[i];
-            }
+            if(recoData.tools_reco[i]) t.reco = recoData.tools_reco[i];
         });
     }
     
     persist();
     renderTools();
-    $("aiResultBox").classList.remove("hidden"); // Mostrar el recuadro de resultados
+    $("aiResultBox").classList.remove("hidden");
 
   } catch (error) {
-    console.error("Error consultando a la IA:", error);
-    alert("Hubo un problema al contactar a la IA. Revisa la conexión o intenta más tarde.");
+    console.error("Error:", error);
+    alert("Hubo un problema al contactar a la IA.");
   } finally {
     btn.disabled = false;
-    btn.style.opacity = "1";
     btn.innerHTML = originalText;
   }
 }
 
+/* ========================================================
+   RENDER UI
+======================================================== */
+let roiChartInstance = null;
 function renderChart(costoActual, costoNuevo) {
     if (roiChartInstance) {
         roiChartInstance.data.datasets[0].data = [costoActual, costoNuevo];
@@ -614,10 +590,9 @@ function renderChart(costoActual, costoNuevo) {
 function renderKPIs(){
   const r = calc();
   
-  $("saveTime").textContent = money(r.saveTime);
-  $("saveLife").textContent = money(r.saveLife);
-  $("saveProc").textContent = money(r.saveProc);
-  $("saveScrap").textContent = money(r.saveScrap);
+  ["saveTime", "saveLife", "saveProc", "saveScrap"].forEach(id => {
+      $(id).textContent = money(r[id]);
+  });
   
   $("grossSave").textContent = money(r.gross);
   $("netSave").textContent = money(r.net);
@@ -647,7 +622,6 @@ function renderAll(){
   });
   renderKPIs();
   
-  // Mostrar la caja de IA si ya hay un pitch guardado
   if(state.study.aiPitch) {
       $("aiPitch").value = state.study.aiPitch;
       $("aiMissing").textContent = state.study.aiMissing;
@@ -655,6 +629,9 @@ function renderAll(){
   }
 }
 
+/* ========================================================
+   EXPORTAR Y COMPARTIR
+======================================================== */
 function getSummaryText() {
   const r = calc();
   const toolsText = state.study.tools.map((t,i) => `\nHerramienta ${i+1}: ${t.op}\n- Problema: ${t.problem}\n- REGO-FIX: ${t.reco}`).join("\n");
@@ -671,23 +648,12 @@ function getSummaryText() {
   ].join("\n");
 }
 
-function copySummary(){
-  navigator.clipboard.writeText(getSummaryText()).then(()=>alert("Copiado al portapapeles.")).catch(()=>alert("Error al copiar."));
-}
-
-function shareWhatsApp(){
-  const text = encodeURIComponent(getSummaryText());
-  window.open(`https://wa.me/?text=${text}`, '_blank');
-}
-
+function copySummary(){ navigator.clipboard.writeText(getSummaryText()).then(()=>alert("Copiado al portapapeles.")).catch(()=>alert("Error al copiar.")); }
+function shareWhatsApp(){ window.open(`https://wa.me/?text=${encodeURIComponent(getSummaryText())}`, '_blank'); }
 function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
 function buildReportHTML(chartImageBase64){
-  const r = calc();
-  const s = state.study;
-  const LOGO_URL = "/assets/regofixlogo.png";
-  const BRAND_NAME = "Consultoría AlexRaSa"; 
-  
+  const r = calc(), s = state.study;
   const toolsRender = s.tools.map((t, i) => `
     <div class="box">
       <div style="font-weight:900; color:var(--rego-blue); margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:6px; font-size:14px;">
@@ -695,7 +661,8 @@ function buildReportHTML(chartImageBase64){
       </div>
       <div class="grid" style="row-gap: 16px;">
          <div><div class="k">Setup Actual</div><div class="v">${esc(t.setup || "—")}</div></div>
-         <div></div> <div style="grid-column: span 2;">
+         <div></div>
+         <div style="grid-column: span 2;">
            <div class="k text-red">Problema / Cuello de Botella Detectado</div>
            <div class="v" style="font-weight:500; color:#374151;">${esc(t.problem || "—")}</div>
          </div>
@@ -704,24 +671,21 @@ function buildReportHTML(chartImageBase64){
            <div class="v text-blue" style="font-weight:600; font-size:14px; margin-top:4px;">${esc(t.reco || "Por definir con asesoría...")}</div>
          </div>
       </div>
-    </div>
-  `).join("");
+    </div>`).join("");
 
   return `
 <!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Estudio de Ingeniería ROI — REGO-FIX</title>
 <style>
   :root { --rego-blue: #28556C; --rego-green: #8CA015; --rego-red: #D31B23; --gray-dark: #44474A; --gray-light: #f9fafb; }
   * { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; padding: 0; margin: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: #fff; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; padding: 0; margin: 0; background: #fff; }
   .wrap { padding: 30px 40px; max-width: 800px; margin: 0 auto; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--rego-blue); padding-bottom: 15px; margin-bottom: 25px; }
   .h-left h1 { font-size: 22px; margin: 0 0 5px 0; color: var(--rego-blue); letter-spacing: -0.5px; }
-  .h-left .subtitle { color: var(--gray-dark); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
   .logo { height: 40px; width: auto; object-fit: contain; }
   h2 { font-size: 14px; margin: 28px 0 12px; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 4px; page-break-after: avoid; }
   .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin-bottom: 15px; background: var(--gray-light); page-break-inside: avoid; }
@@ -731,15 +695,11 @@ function buildReportHTML(chartImageBase64){
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .k { font-size: 11px; color: #6b7280; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.2px; }
   .v { font-size: 13px; font-weight: 700; color: #111; }
-  pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 14px; line-height: 1.5; margin: 0; color: #374151; }
-  .text-green { color: var(--rego-green); }
-  .text-blue { color: var(--rego-blue); }
-  .text-red { color: var(--rego-red); }
-  .kpi-large { font-size: 18px; font-weight: 900; }
-  .chart-container { text-align: center; margin-top: 20px; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee; page-break-inside: avoid;}
+  pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; margin: 0; color: #374151; }
+  .text-green { color: var(--rego-green); } .text-blue { color: var(--rego-blue); } .text-red { color: var(--rego-red); }
+  .chart-container { text-align: center; margin-top: 20px; border: 1px solid #eee; padding: 15px; page-break-inside: avoid;}
   .chart-img { max-width: 100%; height: auto; max-height: 220px; }
-  .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #9ca3af; border-top: 1px solid #eee; padding-top: 15px; page-break-inside: avoid;}
-  @media print { body { background: white; } .wrap { padding: 0; max-width: 100%; } @page { margin: 1.5cm; } }
+  @media print { .wrap { padding: 0; max-width: 100%; } @page { margin: 1.5cm; } }
 </style>
 </head>
 <body>
@@ -747,7 +707,7 @@ function buildReportHTML(chartImageBase64){
     <div class="header">
       <div class="h-left">
         <h1>Estudio de Ingeniería de Sujeción</h1>
-        <div class="subtitle">Análisis de ROI y Casos de Optimización</div>
+        <div style="color: var(--gray-dark); font-size: 13px; font-weight: 600; text-transform: uppercase;">Análisis de ROI y Casos de Optimización</div>
         <div style="margin-top: 8px; font-size: 12px; color: #666;">
           <strong>Cliente:</strong> ${esc(s.company||"—")} <br>
           <strong>Atención:</strong> ${esc(s.userName||"—")} (${esc(s.userRole||"—")}) <br>
@@ -756,7 +716,7 @@ function buildReportHTML(chartImageBase64){
       </div>
       <div>
         <img class="logo" src="${LOGO_URL}" alt="REGO-FIX" onerror="this.style.display='none'" />
-        <div style="text-align: right; font-size: 10px; color: #888; margin-top: 5px;">Powered by<br><strong>${BRAND_NAME}</strong></div>
+        <div style="text-align: right; font-size: 10px; color: #888; margin-top: 5px;">Powered by<br><strong>Consultoría AlexRaSa</strong></div>
       </div>
     </div>
 
@@ -776,7 +736,7 @@ function buildReportHTML(chartImageBase64){
       <pre style="color: var(--rego-blue); font-weight: 600;">${esc(s.aiPitch)}</pre>
     </div>` : ''}
 
-    <h2>2. Análisis de Herramientas y Propuestas (Casos)</h2>
+    <h2>2. Análisis de Herramientas y Propuestas</h2>
     ${toolsRender}
 
     <h2>3. Análisis Financiero y Retorno de Inversión</h2>
@@ -789,25 +749,19 @@ function buildReportHTML(chartImageBase64){
         <div><div class="k">Reducción Scrap</div><div class="v text-green">${esc(money(r.saveScrap))}</div></div>
       </div>
     </div>
-    <div class="box" style="background: #fff; border: 2px solid var(--rego-blue);">
+    <div class="box" style="border: 2px solid var(--rego-blue);">
       <div class="grid-3" style="text-align: center;">
-        <div><div class="k">Inversión Propuesta</div><div class="v kpi-large text-blue">${esc(money(r.invest))}</div></div>
-        <div><div class="k">Ahorro Neto Mensual</div><div class="v kpi-large text-green">${esc(money(r.net))}</div></div>
-        <div><div class="k">Tiempo de Retorno</div><div class="v kpi-large" style="color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+" meses"))}</div></div>
+        <div><div class="k">Inversión Propuesta</div><div class="v text-blue" style="font-size: 18px; font-weight: 900;">${esc(money(r.invest))}</div></div>
+        <div><div class="k">Ahorro Neto Mensual</div><div class="v text-green" style="font-size: 18px; font-weight: 900;">${esc(money(r.net))}</div></div>
+        <div><div class="k">Tiempo de Retorno</div><div class="v" style="font-size: 18px; font-weight: 900; color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+" meses"))}</div></div>
       </div>
-      
       <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;">
         <div class="k">ROI Anual Estimado</div>
-        <div class="v text-green" style="font-size: 18px;">
-          ${esc(r.roiAnnual===null?"—":((r.roiAnnual*100).toFixed(0)+"%"))} 
-          <span style="color: var(--rego-blue); font-size: 14px;">(${esc(money(r.net * 12))} USD)</span>
-        </div>
+        <div class="v text-green" style="font-size: 18px;">${esc(r.roiAnnual===null?"—":((r.roiAnnual*100).toFixed(0)+"%"))} <span style="color: var(--rego-blue); font-size: 14px;">(${esc(money(r.net * 12))} USD)</span></div>
       </div>
     </div>
 
     ${chartImageBase64 ? `<div class="box chart-container"><div class="k" style="margin-bottom: 8px;">Comparativa de Costo Operativo Mensual (USD)</div><img src="${chartImageBase64}" class="chart-img" /></div>` : ''}
-
-    <div class="footer">Documento generado automáticamente. Las cifras y tiempos son estimaciones y varían según la aplicación final.<br><strong>AlexRaSa.store - Consultoría de Manufactura CNC</strong></div>
   </div>
 </body>
 </html>`;
@@ -819,71 +773,93 @@ function exportPdf(){
   if(canvas) chartImageBase64 = canvas.toDataURL('image/png', 1.0);
 
   const w = window.open("", "_blank");
-  if(!w) return alert("Por favor permite los popups en tu navegador para generar el reporte en PDF.");
-  
-  w.document.open(); 
-  w.document.write(buildReportHTML(chartImageBase64)); 
-  w.document.close();
-  
+  if(!w) return alert("Permite los popups para exportar el PDF.");
+  w.document.open(); w.document.write(buildReportHTML(chartImageBase64)); w.document.close();
   w.onload = ()=> { setTimeout(()=> { w.focus(); w.print(); }, 500); };
+}
+
+function bindSwitches() {
+  ["swTime","swTimeChanges","swTimeSetups","swTimeStops","swLife","swProc","swScrap"].forEach(id => {
+      bindSwitch(id, id.replace('sw','').charAt(0).toLowerCase() + id.replace('sw','').slice(1));
+  });
 }
 
 function bindInputs(){
   if(!state.study.studyDate) state.study.studyDate = new Date().toISOString().split('T')[0];
   $("studyDate").value = state.study.studyDate;
 
+  // Llenar campos de texto globales
   document.querySelectorAll("[data-study]").forEach(el=>{
     const k = el.getAttribute("data-study");
-    if(k && k!=="studyDate" && state.study[k]!=null && !el.classList.contains("tool-op")) el.value = state.study[k];
-    
+    if(k && k!=="studyDate" && state.study[k]!=null && !el.classList.contains("tool-op")) {
+        el.value = state.study[k];
+    }
     el.addEventListener("input", ()=>{ 
         state.study[k] = el.value; 
         persist(); 
     });
   });
 
+  // Lógica Matemática - Guardar persistencia y Recalcular
+  mathIds.forEach(id => {
+      const el = $(id);
+      if(el) {
+          if(state.study[id] !== undefined) el.value = state.study[id]; // Hidratar si existe guardado
+          
+          el.addEventListener("input", () => {
+              state.study[id] = el.value; // Guardar valor
+              persist();
+              renderAll(); // Recalcular gráfica y UI
+          });
+      }
+  });
+
+  // ASISTENTE DE COSTO REPARADO
   const btnToggleHrCalc = $("btnToggleHrCalc");
   const hrCalcPanel = $("hrCalcPanel");
   if(btnToggleHrCalc) {
     btnToggleHrCalc.addEventListener("click", () => { hrCalcPanel.classList.toggle("hidden"); });
   }
 
+  const updateCalc = () => {
+    const base = parseFloat($("calcMachine").value) || 0;
+    const sector = parseFloat($("calcSector").value) || 1;
+    const operador = parseFloat($("calcOperator").value) || 0;
+    $("costHour").value = Math.round((base * sector) + operador);
+    
+    // Guardar el nuevo costo en la memoria y recalcular
+    state.study.costHour = $("costHour").value;
+    persist();
+    renderAll();
+  };
+
   ["calcMachine", "calcSector", "calcOperator"].forEach(id => {
     const el = $(id);
     if(el) {
+      if(state.study[id]) el.value = state.study[id]; // Hidratar select
       el.addEventListener("change", () => {
-        const base = parseFloat($("calcMachine").value);
-        const sector = parseFloat($("calcSector").value);
-        const operador = parseFloat($("calcOperator").value);
-        $("costHour").value = Math.round((base * sector) + operador);
-        renderAll();
+          state.study[id] = el.value;
+          updateCalc();
       });
     }
   });
 
-  ["costHour","partsMonth","invest","consMonth","chgAct","chgNew","chgMinAct","chgMinNew","setAct","setNew","setMinAct","setMinNew","stpAct","stpNew","stpMinAct","stpMinNew","lifeAct","lifeNew","toolCost","toolCount","cycAct","cycNew","scrapAct","scrapNew","scrapCost"].forEach(id=>{
-    $(id).addEventListener("input", renderAll);
-  });
-
+  // Botones de acción
   $("btnCopySummary").addEventListener("click", copySummary);
   $("btnPdfReport").addEventListener("click", exportPdf);
+  $("btnWhatsApp").addEventListener("click", shareWhatsApp);
+  $("btnRecalcReco").addEventListener("click", recommendRegoFixAI);
   
-  const btnWa = $("btnWhatsApp");
-  if(btnWa) btnWa.addEventListener("click", shareWhatsApp);
-
   $("btnResetAll").addEventListener("click", ()=> {
-    if(!confirm("¿Borrar todo y empezar de nuevo?")) return;
+    if(!confirm("¿Borrar todo y empezar un estudio nuevo?")) return;
     localStorage.clear(); location.reload();
-  });
-  
-  $("btnRecalcReco").addEventListener("click", async ()=>{
-    await recommendRegoFixAI();
   });
 }
 
+// Inicialización de la aplicación
 load();
-["swTime","swTimeChanges","swTimeSetups","swTimeStops","swLife","swProc","swScrap"].forEach(id => bindSwitch(id, id.replace('sw','').charAt(0).toLowerCase() + id.replace('sw','').slice(1)));
-renderTools(); // Renderizar lista dinámica de herramientas
+bindSwitches();
+renderTools();
 bindInputs();
 renderAll();
 </script>
