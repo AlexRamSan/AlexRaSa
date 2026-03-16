@@ -2,91 +2,66 @@ import jsforce from 'jsforce';
 import { OpenAI } from 'openai';
 
 export default async function handler(req, res) {
-  // 1. Bloque de Seguridad y Parseo de datos
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido. Usa POST.' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Usa POST' });
 
-  // Traductor automático: Si el iPhone manda texto plano o formulario, lo convertimos a objeto
   let body = req.body;
-  if (typeof body === 'string') {
-    try {
-      body = JSON.parse(body);
-    } catch (e) {
-      // Si no es JSON, intentamos procesarlo como datos de formulario
-      console.log("Los datos no llegaron como JSON, procesando como string...");
-    }
-  }
-
+  if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) {} }
   const { textoVisita, nombreCliente } = body;
 
-  // 2. Validación con respuesta de diagnóstico
-  if (!textoVisita || !nombreCliente) {
-    return res.status(400).json({ 
-      error: 'Faltan datos: textoVisita o nombreCliente.',
-      recibido: body 
-    });
-  }
-
   try {
-    // 3. Configuración de OpenAI (Especialista REGO-FIX)
+    // 1. Resumen con OpenAI
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const completion = await openai.chat.completions.create({
       model: "gpt-4", 
       messages: [
-        { 
-          role: "system", 
-          content: "Eres un consultor técnico senior de REGO-FIX. Resume visitas técnicas de venta de sistemas de sujeción. Estructura el resumen en: 1. Diagnóstico Técnico, 2. Solución REGO-FIX (powRgrip, ER, SecuRgrip), 3. Compromisos comerciales. Tono profesional y conciso." 
-        },
-        { role: "user", content: `Cliente: ${nombreCliente}. Reporte dictado: ${textoVisita}` }
+        { role: "system", content: "Eres un experto en herramientas de corte y sistemas powRgrip y ER. Resume esta visita de manera técnica y profesional." },
+        { role: "user", content: `Cliente: ${nombreCliente}. Reporte de visita: ${textoVisita}` }
       ],
     });
-
     const resumenIA = completion.choices[0].message.content;
 
-    // 4. Conexión a Salesforce (OAuth2)
-    const conn = new jsforce.Connection({
-      oauth2: {
-        clientId: process.env.SF_CLIENT_ID,
-        clientSecret: process.env.SF_CLIENT_SECRET,
-        redirectUri: 'https://localhost:3000'
-      },
-      loginUrl: 'https://rego-fix.my.salesforce.com'
+    // 2. Autenticación "Modo Dios" (Client Credentials)
+    const tokenUrl = 'https://rego-fix.my.salesforce.com/services/oauth2/token';
+    const params = new URLSearchParams();
+    params.append('grant_type', 'client_credentials');
+    params.append('client_id', process.env.SF_CLIENT_ID.trim());
+    params.append('client_secret', process.env.SF_CLIENT_SECRET.trim());
+
+    const authResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params
     });
 
-    await conn.login(
-      process.env.SF_USERNAME, 
-      process.env.SF_PASSWORD + process.env.SF_TOKEN
-    );
+    const authData = await authResponse.json();
 
-    // 5. Buscar la Cuenta en Salesforce
-    const account = await conn.sobject("Account")
-      .find({ Name: { $like: `%${nombreCliente}%` } })
-      .limit(1);
-    
-    if (account.length === 0) {
-      return res.status(404).json({ error: `Cliente '${nombreCliente}' no encontrado.` });
+    if (!authData.access_token) {
+      return res.status(401).json({ error: "Fallo Auth Server-to-Server", detalle: authData });
     }
 
-    // 6. Crear la Nota (Método compatible con todas las versiones de SF)
+    // 3. Conexión a Salesforce con el Token
+    const conn = new jsforce.Connection({
+      instanceUrl: authData.instance_url,
+      accessToken: authData.access_token
+    });
+
+    // 4. Buscar la cuenta y guardar el reporte
+    const account = await conn.sobject("Account").find({ Name: { $like: `%${nombreCliente}%` } }).limit(1);
+    
+    if (account.length === 0) {
+        return res.status(404).json({ error: `Cliente '${nombreCliente}' no encontrado en Salesforce.` });
+    }
+
     await conn.sobject("Note").create({
       ParentId: account[0].Id,
-      Title: `Resumen REGO-FIX - ${new Date().toLocaleDateString()}`,
-      Body: resumenIA,
-      IsPrivate: false
+      Title: `Visita Técnica - ${new Date().toLocaleDateString()}`,
+      Body: resumenIA
     });
 
-    return res.status(200).json({ 
-      success: true, 
-      message: "¡Logrado! Reporte en Salesforce.",
-      resumen: resumenIA 
-    });
+    // ¡ÉXITO!
+    return res.status(200).json({ success: true, message: "¡REPORTADO EN SALESFORCE!" });
 
   } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({ 
-      error: "Error en el servidor", 
-      detalle: error.message 
-    });
+    return res.status(500).json({ error: "Error interno", detalle: error.message });
   }
 }
