@@ -2,6 +2,9 @@ import jsforce from 'jsforce';
 import OpenAI from 'openai';
 
 export default async function handler(req, res) {
+  // Encabezado de seguridad para que el iPhone siempre reciba JSON
+  res.setHeader('Content-Type', 'application/json');
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Solo POST' });
 
   let body = req.body;
@@ -14,17 +17,16 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // FASE 1: ANALIZAR DICTADO (Simplificada para evitar trabas)
+    // FASE 1: ANALIZAR DICTADO
     if (textoDictado && !resumenAprobado) {
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
-              content: `Analiza este dictado de ventas. 
-              Devuelve un JSON con:
-              1. "resumen": Formato técnico y corto.
+              content: `Eres un experto en ventas de REGO-FIX. Analiza el dictado. 
+              Devuelve un JSON con estas llaves exactas:
+              1. "draft": Un resumen técnico corto.
               2. "etapa": Una de estas: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido, MANTENER.`
             },
             { role: "user", content: `Cliente: ${nombreCliente}. Dictado: ${textoDictado}` }
@@ -32,10 +34,9 @@ export default async function handler(req, res) {
           response_format: { type: "json_object" }
         });
 
-        const respuesta = completion.choices[0].message.content;
-        console.log("IA respondió:", respuesta); // Esto te ayudará a ver qué pasa en los logs de Vercel
-        
-        return res.status(200).send(respuesta); // Usamos .send() para enviar el JSON puro directamente
+        // Enviamos la respuesta limpia como objeto JSON
+        const respuestaIA = JSON.parse(completion.choices[0].message.content);
+        return res.status(200).json(respuestaIA);
     }
 
     // FASE 2: GUARDAR EN SALESFORCE
@@ -49,6 +50,9 @@ export default async function handler(req, res) {
 
         const authRes = await fetch(tokenUrl, { method: 'POST', body: params });
         const authData = await authRes.json();
+        
+        if (!authData.access_token) return res.status(401).json({ error: "Fallo Auth en Salesforce" });
+
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
         // Búsqueda de Cliente
@@ -60,12 +64,12 @@ export default async function handler(req, res) {
             .find({ AccountId: account[0].Id, IsClosed: false })
             .sort({ CreatedDate: -1 }).limit(1);
 
-        if (opp.length === 0) return res.status(404).json({ error: "No hay oportunidades abiertas" });
+        if (opp.length === 0) return res.status(404).json({ error: "No hay oportunidades abiertas para este cliente" });
 
         const oppId = opp[0].Id;
         let logEtapa = "";
 
-        // Actualizar Oportunidad y Cotización vinculada
+        // Actualizar Oportunidad y Cotización
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
             await conn.sobject("Opportunity").update({ Id: oppId, StageName: etapaDetectada });
             logEtapa = ` | Etapa: ${etapaDetectada}`;
@@ -80,7 +84,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // Crear Tarea de seguimiento
+        // Crear Tarea
         await conn.sobject("Task").create({
             WhatId: oppId,
             Subject: `Seguimiento Cotización - ${new Date().toLocaleDateString('es-MX')}`,
@@ -88,7 +92,9 @@ export default async function handler(req, res) {
             Status: 'Completed'
         });
 
-        return res.status(200).json({ success: true, message: `Actualizado: ${opp[0].Name}${logEtapa}` });
+        return res.status(200).json({ success: true, message: `¡Éxito! ${opp[0].Name}${logEtapa}` });
     }
-  } catch (e) { return res.status(500).json({ error: e.message }); }
+  } catch (e) { 
+    return res.status(500).json({ success: false, error: e.message }); 
+  }
 }
