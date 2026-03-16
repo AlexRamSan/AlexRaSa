@@ -51,7 +51,7 @@ export default async function handler(req, res) {
         clientSecret: process.env.SF_CLIENT_SECRET,
         redirectUri: 'https://localhost:3000'
       },
-      loginUrl: 'https://login.salesforce.com'
+      loginUrl: 'https://rego-fix.my.salesforce.com'
     });
 
     await conn.login(
