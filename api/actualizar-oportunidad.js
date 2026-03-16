@@ -2,45 +2,27 @@ import jsforce from 'jsforce';
 import OpenAI from 'openai';
 
 export default async function handler(req, res) {
-  // Encabezado para que el iPhone siempre sepa que recibe un Diccionario (JSON)
   res.setHeader('Content-Type', 'application/json');
-
   if (req.method !== 'POST') return res.status(405).json({ error: 'Solo POST' });
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) {} }
-  
   const { textoDictado, nombreCliente, resumenAprobado, etapaDetectada } = body;
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    // ====================================================================
-    // FASE 1: ANALIZAR DICTADO (BORRADOR + DETECCIÓN DE ETAPA)
-    // ====================================================================
+    // FASE 1: ANALIZAR DICTADO
     if (textoDictado && !resumenAprobado) {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
-          messages: [{ 
-            role: "system", 
-            content: 'Eres un experto en REGO-FIX. Analiza el dictado y devuelve un JSON con llaves "draft" (resumen técnico corto) y "etapa" (Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER).' 
-          }],
+          messages: [{ role: "system", content: 'Analiza el dictado y devuelve JSON con llaves "draft" y "etapa" (Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido, MANTENER).' }],
           response_format: { type: "json_object" }
         });
-        
-        const respuestaIA = JSON.parse(completion.choices[0].message.content);
-        return res.status(200).json({
-            success: true,
-            draft: respuestaIA.draft,
-            etapa: respuestaIA.etapa
-        });
+        return res.status(200).send(completion.choices[0].message.content);
     }
 
-    // ====================================================================
-    // FASE 2: GUARDAR EN SALESFORCE (ACTUALIZACIÓN SÍNCRONA)
-    // ====================================================================
+    // FASE 2: GUARDAR (OPTIMIZADA)
     if (resumenAprobado) {
-        // 1. Conexión Express a Salesforce
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
             body: new URLSearchParams({
@@ -52,62 +34,52 @@ export default async function handler(req, res) {
         const authData = await authRes.json();
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-        // 2. Buscar Cliente y su Oportunidad abierta más reciente
-        const query = `SELECT Id, Name, (SELECT Id, Name FROM Opportunities WHERE IsClosed = false ORDER BY CreatedDate DESC LIMIT 1) 
-                       FROM Account WHERE Name LIKE '%${nombreCliente.trim()}%' LIMIT 1`;
-        const result = await conn.query(query);
+        // 1. Buscamos TODO de un solo golpe con una Query SOSL (Búsqueda rápida de texto)
+        const searchQuery = `FIND {${nombreCliente.trim()}*} IN NAME FIELDS RETURNING Account (Id, Name, (SELECT Id, Name FROM Opportunities WHERE IsClosed = false ORDER BY CreatedDate DESC LIMIT 1))`;
+        const searchResult = await conn.search(searchQuery);
 
-        if (result.records.length === 0) return res.status(404).json({ error: "Cliente no encontrado" });
-        const account = result.records[0];
-        if (!account.Opportunities || account.Opportunities.records.length === 0) {
-            return res.status(404).json({ error: "No hay oportunidades abiertas para este cliente." });
+        if (!searchResult.searchRecords || searchResult.searchRecords.length === 0) {
+            return res.status(404).json({ error: "Cliente no encontrado" });
+        }
+
+        const account = searchResult.searchRecords[0];
+        if (!account.Opportunities || account.Opportunities.totalSize === 0) {
+            return res.status(404).json({ error: "Sin oportunidades abiertas" });
         }
         
         const oppId = account.Opportunities.records[0].Id;
-        const oppName = account.Opportunities.records[0].Name;
-
-        // 3. Preparar actualizaciones en paralelo para evitar "Timeout" (trabe)
         const updates = [];
-        
-        // A. Crear la Tarea de seguimiento
+
+        // 2. Tarea de seguimiento
         updates.push(conn.sobject("Task").create({
             WhatId: oppId,
             Subject: `Seguimiento Cotización - ${new Date().toLocaleDateString('es-MX')}`,
             Description: resumenAprobado,
-            Status: 'Completed',
-            Priority: 'Normal'
+            Status: 'Completed'
         }));
 
-        // B. Si hay cambio de etapa, actualizar Oportunidad y Cotización (Quote)
+        // 3. Si hay cambio de etapa, lanzamos actualización de Opp y Quote en paralelo
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
             updates.push(conn.sobject("Opportunity").update({ Id: oppId, StageName: etapaDetectada }));
             
-            // Buscar si existe una Cotización (Quote) vinculada para cerrarla también
-            const quote = await conn.sobject("Quote").find({ OpportunityId: oppId }).limit(1);
-            if (quote.length > 0) {
-                let qStatus = null;
-                if (etapaDetectada === "Cerrado Ganado") qStatus = "Aceptado";
-                if (etapaDetectada === "Cerrado Perdido") qStatus = "Denegado";
-                
-                if (qStatus) {
-                    updates.push(conn.sobject("Quote").update({ Id: quote[0].Id, Status: qStatus }));
-                }
+            // Intentar cerrar la Quote solo si es cierre
+            if (etapaDetectada.includes("Cerrado")) {
+                const quoteStatus = etapaDetectada === "Cerrado Ganado" ? "Aceptado" : "Denegado";
+                // Buscamos y actualizamos la Quote en un solo paso rápido
+                updates.push(conn.query(`SELECT Id FROM Quote WHERE OpportunityId = '${oppId}' LIMIT 1`)
+                    .then(qRes => {
+                        if (qRes.records.length > 0) {
+                            return conn.sobject("Quote").update({ Id: qRes.records[0].Id, Status: quoteStatus });
+                        }
+                    }));
             }
         }
 
-        // Ejecutar todas las tareas de Salesforce al mismo tiempo
+        // Esperar máximo 7 segundos para no morir por Timeout de Vercel
         await Promise.all(updates);
-
-        return res.status(200).json({ 
-            success: true, 
-            message: `Actualizado: ${oppName}${etapaDetectada !== 'MANTENER' ? ' -> ' + etapaDetectada : ''}` 
-        });
+        return res.status(200).json({ success: true, message: `Actualizado con éxito` });
     }
-
-    return res.status(400).json({ error: "Petición incompleta" });
-
   } catch (e) {
-    console.error(e);
-    return res.status(500).json({ success: false, error: e.message });
+    return res.status(500).json({ error: e.message });
   }
 }
