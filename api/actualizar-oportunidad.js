@@ -12,15 +12,20 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // FASE 1: ANALIZAR DICTADO
     if (textoDictado && !resumenAprobado) {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
-          messages: [{ role: "system", content: 'Resume el dictado para REGO-FIX y detecta la etapa. JSON: {"draft":"...","etapa":"..."}' }],
+          messages: [{ 
+            role: "system", 
+            content: 'Eres experto en REGO-FIX. Resume el dictado y detecta etapa: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. JSON: {"draft":"...","etapa":"..."}' 
+          }],
           response_format: { type: "json_object" }
         });
         return res.status(200).json(JSON.parse(completion.choices[0].message.content));
     }
 
+    // FASE 2: GUARDAR EN SALESFORCE
     if (resumenAprobado) {
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
@@ -34,35 +39,45 @@ export default async function handler(req, res) {
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
         const result = await conn.query(`SELECT Id, Name FROM Opportunity WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false ORDER BY CreatedDate DESC LIMIT 1`);
-        if (result.records.length === 0) return res.status(200).json({ success: false, message: "No se halló oportunidad." });
         
+        if (result.records.length === 0) return res.status(200).json({ success: false, message: "No se halló oportunidad abierta." });
         const oppId = result.records[0].Id;
         const updates = [];
 
-        // 1. Tarea
+        // 1. Tarea de historial
         updates.push(conn.sobject("Task").create({ WhatId: oppId, Subject: `Seguimiento - ${new Date().toLocaleDateString()}`, Description: resumenAprobado, Status: 'Completed' }));
 
-        // 2. Mapeo de Etapas (Traducción técnico-comercial)
+        // 2. Mapeo a Nombres de API según tu imagen
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
-            let sfStage = etapaDetectada;
+            let sfStage = "";
             let sfQuoteStatus = "";
 
-            // TRADUCTOR PARA SALESFORCE
-            if (etapaDetectada === "Cerrado Ganado") { 
-                sfStage = "Closed Won"; // Nombre API típico
-                sfQuoteStatus = "Accepted"; 
-            } else if (etapaDetectada === "Cerrado Perdido") { 
-                sfStage = "Closed Lost"; // Nombre API típico
-                sfQuoteStatus = "Denied"; 
+            // Diccionario de traducción según tu configuración de Salesforce
+            const mapeoEtapas = {
+                "Calificación": "Qualification",
+                "Necesita Análisis": "Needs Analysis",
+                "Propuesta": "Proposal",
+                "Negociación": "Negotiation",
+                "Cerrado Ganado": "Closed Won",
+                "Cerrado Perdido": "Closed Lost"
+            };
+
+            sfStage = mapeoEtapas[etapaDetectada] || etapaDetectada;
+
+            let oppUpdate = { Id: oppId, StageName: sfStage };
+            
+            if (sfStage === "Closed Won") {
+                oppUpdate.Probability = 100;
+                oppUpdate.ForecastCategoryName = "Closed";
+                sfQuoteStatus = "Accepted";
+            } else if (sfStage === "Closed Lost") {
+                oppUpdate.Probability = 0;
+                sfQuoteStatus = "Denied";
             }
 
-            updates.push(conn.sobject("Opportunity").update({ 
-                Id: oppId, 
-                StageName: sfStage,
-                Probability: sfStage === "Closed Won" ? 100 : (sfStage === "Closed Lost" ? 0 : undefined)
-            }));
+            updates.push(conn.sobject("Opportunity").update(oppUpdate));
 
-            // 3. Actualizar Quote
+            // 3. Actualizar Cotización (Quote)
             const quotes = await conn.sobject("Quote").find({ OpportunityId: oppId }).limit(1);
             if (quotes.length > 0 && sfQuoteStatus) {
                 updates.push(conn.sobject("Quote").update({ Id: quotes[0].Id, Status: sfQuoteStatus }));
@@ -70,7 +85,7 @@ export default async function handler(req, res) {
         }
 
         await Promise.all(updates);
-        return res.status(200).json({ success: true, message: "¡Sincronización total completada!" });
+        return res.status(200).json({ success: true, message: `¡Sincronización exitosa! Oportunidad actualizada a ${etapaDetectada}.` });
     }
   } catch (e) {
     return res.status(200).json({ success: false, message: `Error: ${e.message}` });
