@@ -18,7 +18,7 @@ export default async function handler(req, res) {
           model: "gpt-4o-mini",
           messages: [{ 
             role: "system", 
-            content: 'Eres un experto en REGO-FIX. Resume el dictado técnico. Detecta la etapa EXACTA: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido. Si no hay cambio, usa MANTENER. JSON: {"draft":"...","etapa":"..."}' 
+            content: 'Eres un experto en REGO-FIX. Resume el dictado técnico. Detecta la etapa EXACTA de estas opciones: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido. Si no hay cambio, usa MANTENER. JSON: {"draft":"...","etapa":"..."}' 
           }, { role: "user", content: `Dictado: ${textoDictado}` }],
           response_format: { type: "json_object" }
         });
@@ -38,21 +38,21 @@ export default async function handler(req, res) {
         const authData = await authRes.json();
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-        // Buscamos la Oportunidad y la Cotización Sincronizada
-        const query = `SELECT Id, Name, (SELECT Id, Status FROM Quotes WHERE IsSyncing = true LIMIT 1) 
+        // Buscamos la Oportunidad y la Cotización que esté SINCRONIZANDO (IsSyncing)
+        const query = `SELECT Id, Name, (SELECT Id FROM Quotes WHERE IsSyncing = true LIMIT 1) 
                        FROM Opportunity 
                        WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false 
                        ORDER BY CreatedDate DESC LIMIT 1`;
         const result = await conn.query(query);
 
         if (result.records.length === 0) {
-            return res.status(200).json({ success: false, message: "No se encontró oportunidad abierta." });
+            return res.status(200).json({ success: false, message: "No se encontró oportunidad abierta para este cliente." });
         }
 
         const opp = result.records[0];
         const updates = [];
 
-        // 1. Crear Tarea
+        // 1. Crear la Tarea de historial (Siempre se crea)
         updates.push(conn.sobject("Task").create({
             WhatId: opp.Id,
             Subject: `Seguimiento de Cotización - ${new Date().toLocaleDateString('es-MX')}`,
@@ -60,26 +60,26 @@ export default async function handler(req, res) {
             Status: 'Completed'
         }));
 
-        // 2. Lógica de Etapa "Fuerza Bruta"
+        // 2. Lógica Maestra de Etapas
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
-            // Actualizar Oportunidad
+            // Actualizar la Oportunidad con el nombre exacto de tu barra azul
             updates.push(conn.sobject("Opportunity").update({ 
                 Id: opp.Id, 
                 StageName: etapaDetectada.trim() 
             }));
 
-            // Actualizar Cotización si existe una sincronizada
+            // Si hay una cotización sincronizando y es un cierre, la actualizamos
             if (opp.Quotes && opp.Quotes.records.length > 0) {
                 const quoteId = opp.Quotes.records[0].Id;
-                let newQuoteStatus = "";
+                let statusQuote = "";
                 
-                if (etapaDetectada === "Cerrado Ganado") newQuoteStatus = "Aceptado";
-                if (etapaDetectada === "Cerrado Perdido") newQuoteStatus = "Denegado";
+                if (etapaDetectada === "Cerrado Ganado") statusQuote = "Aceptado";
+                if (etapaDetectada === "Cerrado Perdido") statusQuote = "Denegado";
                 
-                if (newQuoteStatus) {
+                if (statusQuote) {
                     updates.push(conn.sobject("Quote").update({ 
                         Id: quoteId, 
-                        Status: newQuoteStatus 
+                        Status: statusQuote 
                     }));
                 }
             }
@@ -88,10 +88,10 @@ export default async function handler(req, res) {
         await Promise.all(updates);
         return res.status(200).json({ 
             success: true, 
-            message: `Actualizado: ${opp.Name} a etapa ${etapaDetectada}` 
+            message: `¡Éxito! Oportunidad ${opp.Name} actualizada a ${etapaDetectada}.` 
         });
     }
   } catch (e) {
-    return res.status(200).json({ success: false, message: `Error: ${e.message}` });
+    return res.status(200).json({ success: false, message: `Error técnico: ${e.message}` });
   }
 }
