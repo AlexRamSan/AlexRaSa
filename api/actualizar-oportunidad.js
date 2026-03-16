@@ -14,26 +14,28 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // FASE 1: ANALIZAR DICTADO
+    // FASE 1: ANALIZAR DICTADO (Simplificada para evitar trabas)
     if (textoDictado && !resumenAprobado) {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
-              content: `Eres un experto en ventas de REGO-FIX. Analiza el dictado sobre una cotización.
-              1. Resume de forma técnica y profesional (sin firmas ni saludos).
-              2. Detecta la ETAPA de la oportunidad: "Calificación", "Necesita Análisis", "Propuesta", "Negociación", "Cerrado Ganado", "Cerrado Perdido".
-              Si no se menciona cambio, usa "MANTENER".
-              Responde en JSON: {"resumen": "...", "etapa": "..."}`
+              content: `Analiza este dictado de ventas. 
+              Devuelve un JSON con:
+              1. "resumen": Formato técnico y corto.
+              2. "etapa": Una de estas: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido, MANTENER.`
             },
             { role: "user", content: `Cliente: ${nombreCliente}. Dictado: ${textoDictado}` }
           ],
           response_format: { type: "json_object" }
         });
 
-        const result = JSON.parse(completion.choices[0].message.content);
-        return res.status(200).json({ success: true, draft: result.resumen, etapa: result.etapa });
+        const respuesta = completion.choices[0].message.content;
+        console.log("IA respondió:", respuesta); // Esto te ayudará a ver qué pasa en los logs de Vercel
+        
+        return res.status(200).send(respuesta); // Usamos .send() para enviar el JSON puro directamente
     }
 
     // FASE 2: GUARDAR EN SALESFORCE
