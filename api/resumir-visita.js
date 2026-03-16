@@ -81,7 +81,7 @@ export default async function handler(req, res) {
         // Crear la Actividad en Salesforce
         await conn.sobject("Task").create({
           WhatId: accountId,
-          Subject: `Visita Técnica IA - ${new Date().toLocaleDateString('es-MX')} (${nombreOficial})`,
+          Subject: `Resumen de Actividades - ${new Date().toLocaleDateString('es-MX')} (${nombreOficial})`,
           Description: resumenAprobado, // ¡Se guarda exactamente lo que tú modificaste!
           Status: 'Completed',
           Priority: 'Normal'
