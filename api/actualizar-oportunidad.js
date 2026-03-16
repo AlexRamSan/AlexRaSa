@@ -12,22 +12,17 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // FASE 1: ANALIZAR DICTADO (BORRADOR + ETAPA)
+    // FASE 1: ANALIZAR DICTADO
     if (textoDictado && !resumenAprobado) {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
-          messages: [{ 
-            role: "system", 
-            content: 'Eres un experto en REGO-FIX. Resume el dictado técnico de forma concisa (viñetas) y detecta la etapa: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. Responde SOLO en JSON con llaves "draft" y "etapa".' 
-          },
-          { role: "user", content: `Cliente: ${nombreCliente}. Dictado: ${textoDictado}` }],
+          messages: [{ role: "system", content: 'Resume el dictado técnico para REGO-FIX. Detecta etapa EXACTA: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. JSON: {"draft":"...","etapa":"..."}' }],
           response_format: { type: "json_object" }
         });
-        const respuestaIA = JSON.parse(completion.choices[0].message.content);
-        return res.status(200).json(respuestaIA);
+        return res.status(200).send(completion.choices[0].message.content);
     }
 
-    // FASE 2: GUARDAR EN SALESFORCE (ACTUALIZACIÓN SINCRO)
+    // FASE 2: GUARDAR EN SALESFORCE
     if (resumenAprobado) {
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
@@ -40,43 +35,46 @@ export default async function handler(req, res) {
         const authData = await authRes.json();
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-        // Query rápida para obtener Account y la Opportunity abierta
-        const result = await conn.query(`SELECT Id, (SELECT Id, Name FROM Opportunities WHERE IsClosed = false ORDER BY CreatedDate DESC LIMIT 1) FROM Account WHERE Name LIKE '%${nombreCliente.trim()}%' LIMIT 1`);
+        // Búsqueda del cliente y su oportunidad
+        const result = await conn.query(`SELECT Id, (SELECT Id, Name, StageName FROM Opportunities WHERE IsClosed = false ORDER BY CreatedDate DESC LIMIT 1) FROM Account WHERE Name LIKE '%${nombreCliente.trim()}%' LIMIT 1`);
         
         if (!result.records[0] || !result.records[0].Opportunities) {
-            return res.status(404).json({ error: "No se encontró cliente u oportunidad abierta." });
+            return res.status(200).json({ success: false, message: "No se encontró cliente u oportunidad abierta." });
         }
         
         const oppId = result.records[0].Opportunities.records[0].Id;
-        const oppName = result.records[0].Opportunities.records[0].Name;
-
         const updates = [];
-        
-        // A. Crear Tarea de seguimiento
+
+        // Registro de la tarea
         updates.push(conn.sobject("Task").create({
             WhatId: oppId,
-            Subject: `Seguimiento Cotización - ${new Date().toLocaleDateString('es-MX')}`,
+            Subject: `Seguimiento - ${new Date().toLocaleDateString('es-MX')}`,
             Description: resumenAprobado,
             Status: 'Completed'
         }));
 
-        // B. Actualizar Etapa de Oportunidad y Estado de Cotización si aplica
+        // Lógica de Etapa "Blindada"
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
-            updates.push(conn.sobject("Opportunity").update({ Id: oppId, StageName: etapaDetectada }));
-            
-            if (etapaDetectada.includes("Cerrado")) {
-                const quoteStatus = etapaDetectada === "Cerrado Ganado" ? "Aceptado" : "Denegado";
-                const quote = await conn.sobject("Quote").find({ OpportunityId: oppId }).limit(1);
-                if (quote.length > 0) {
-                    updates.push(conn.sobject("Quote").update({ Id: quote[0].Id, Status: quoteStatus }));
+            // Solo actualizamos si la etapa es una de las válidas de tu Salesforce
+            const etapasValidas = ["Calificación", "Necesita Análisis", "Propuesta", "Negociación", "Cerrado Ganado", "Cerrado Perdido"];
+            if (etapasValidas.includes(etapaDetectada)) {
+                updates.push(conn.sobject("Opportunity").update({ Id: oppId, StageName: etapaDetectada }));
+                
+                // Si es cierre, intentamos cerrar la cotización también
+                if (etapaDetectada.includes("Cerrado")) {
+                    const quote = await conn.sobject("Quote").find({ OpportunityId: oppId }).limit(1);
+                    if (quote.length > 0) {
+                        const qStat = etapaDetectada === "Cerrado Ganado" ? "Aceptado" : "Denegado";
+                        updates.push(conn.sobject("Quote").update({ Id: quote[0].Id, Status: qStat }));
+                    }
                 }
             }
         }
 
         await Promise.all(updates);
-        return res.status(200).json({ success: true, message: `¡Éxito! Oportunidad ${oppName} actualizada.` });
+        return res.status(200).json({ success: true, message: `¡Proceso completado! Oportunidad actualizada en Salesforce.` });
     }
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(200).json({ success: false, message: `Error: ${e.message}` });
   }
 }
