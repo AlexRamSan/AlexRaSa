@@ -12,16 +12,17 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // FASE 1: ANALIZAR (Aquí es donde se te está trabando el iPhone)
+    // FASE 1: RESUMEN SENCILLO PARA EL IPHONE
     if (textoDictado && !resumenAprobado) {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
-          messages: [{ role: "system", content: 'Eres un experto en REGO-FIX. Resume el dictado y detecta la etapa: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. Responde en JSON con llaves "draft" y "etapa".' }],
+          messages: [{ 
+            role: "system", 
+            content: 'Eres un asistente técnico. Resume el dictado en puntos clave. También detecta la etapa (Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER). Responde SOLO en JSON con este formato: {"draft": "resumen aquí", "etapa": "etapa aquí"}' 
+          }],
           response_format: { type: "json_object" }
         });
-        
-        // Enviamos el JSON puro y directo
-        return res.status(200).send(completion.choices[0].message.content);
+        return res.status(200).json(JSON.parse(completion.choices[0].message.content));
     }
 
     // FASE 2: GUARDAR EN SALESFORCE
@@ -37,24 +38,20 @@ export default async function handler(req, res) {
         const authData = await authRes.json();
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-        // Búsqueda SOSL (la más rápida en Salesforce)
-        const search = await conn.search(`FIND {${nombreCliente.trim()}*} IN NAME FIELDS RETURNING Account (Id, (SELECT Id FROM Opportunities WHERE IsClosed = false ORDER BY CreatedDate DESC LIMIT 1))`);
-
-        if (!search.searchRecords[0] || !search.searchRecords[0].Opportunities) {
-            return res.status(404).json({ error: "No hay cliente u opp abierta" });
-        }
-
-        const oppId = search.searchRecords[0].Opportunities.records[0].Id;
-
-        // Tarea y Etapa en un solo golpe
-        const p = [conn.sobject("Task").create({ WhatId: oppId, Subject: `Seguimiento Cotización - ${new Date().toLocaleDateString('es-MX')}`, Description: resumenAprobado, Status: 'Completed' })];
+        // Buscar cuenta y oportunidad abierta
+        const result = await conn.query(`SELECT Id, (SELECT Id FROM Opportunities WHERE IsClosed = false ORDER BY CreatedDate DESC LIMIT 1) FROM Account WHERE Name LIKE '%${nombreCliente}%' LIMIT 1`);
         
+        if (!result.records[0] || !result.records[0].Opportunities) return res.status(404).json({ error: "No se halló registro" });
+        const oppId = result.records[0].Opportunities.records[0].Id;
+
+        // Actualizar Salesforce
+        const tasks = [conn.sobject("Task").create({ WhatId: oppId, Subject: `Seguimiento - ${new Date().toLocaleDateString()}`, Description: resumenAprobado, Status: 'Completed' })];
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
-            p.push(conn.sobject("Opportunity").update({ Id: oppId, StageName: etapaDetectada }));
+            tasks.push(conn.sobject("Opportunity").update({ Id: oppId, StageName: etapaDetectada }));
         }
 
-        await Promise.all(p);
-        return res.status(200).json({ success: true, message: "¡Actualizado!" });
+        await Promise.all(tasks);
+        return res.status(200).json({ success: true, message: "¡Listo! Salesforce actualizado." });
     }
   } catch (e) {
     return res.status(500).json({ error: e.message });
