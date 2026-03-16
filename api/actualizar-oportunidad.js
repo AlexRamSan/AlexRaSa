@@ -18,14 +18,14 @@ export default async function handler(req, res) {
           model: "gpt-4o-mini",
           messages: [{ 
             role: "system", 
-            content: 'Eres un experto en REGO-FIX. Resume el dictado técnico. Detecta la etapa EXACTA de estas opciones: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido. Si no hay cambio, usa MANTENER. JSON: {"draft":"...","etapa":"..."}' 
+            content: 'Eres experto en REGO-FIX. Resume el dictado y detecta etapa: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. JSON: {"draft":"...","etapa":"..."}' 
           }, { role: "user", content: `Dictado: ${textoDictado}` }],
           response_format: { type: "json_object" }
         });
         return res.status(200).json(JSON.parse(completion.choices[0].message.content));
     }
 
-    // FASE 2: GUARDAR EN SALESFORCE
+    // FASE 2: GUARDAR EN SALESFORCE (ACTUALIZADO PARA CERRAR CORRECTAMENTE)
     if (resumenAprobado) {
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
@@ -38,60 +38,43 @@ export default async function handler(req, res) {
         const authData = await authRes.json();
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-        // Buscamos la Oportunidad y la Cotización que esté SINCRONIZANDO (IsSyncing)
-        const query = `SELECT Id, Name, (SELECT Id FROM Quotes WHERE IsSyncing = true LIMIT 1) 
+        const result = await conn.query(`SELECT Id, Name, (SELECT Id FROM Quotes WHERE IsSyncing = true LIMIT 1) 
                        FROM Opportunity 
                        WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false 
-                       ORDER BY CreatedDate DESC LIMIT 1`;
-        const result = await conn.query(query);
-
-        if (result.records.length === 0) {
-            return res.status(200).json({ success: false, message: "No se encontró oportunidad abierta para este cliente." });
-        }
-
+                       ORDER BY CreatedDate DESC LIMIT 1`);
+        
+        if (result.records.length === 0) return res.status(200).json({ success: false, message: "No se halló oportunidad abierta." });
         const opp = result.records[0];
         const updates = [];
 
-        // 1. Crear la Tarea de historial (Siempre se crea)
-        updates.push(conn.sobject("Task").create({
-            WhatId: opp.Id,
-            Subject: `Seguimiento de Cotización - ${new Date().toLocaleDateString('es-MX')}`,
-            Description: resumenAprobado,
-            Status: 'Completed'
-        }));
+        // Registro de Tarea
+        updates.push(conn.sobject("Task").create({ WhatId: opp.Id, Subject: `Seguimiento - ${new Date().toLocaleDateString()}`, Description: resumenAprobado, Status: 'Completed' }));
 
-        // 2. Lógica Maestra de Etapas
+        // LÓGICA DE CIERRE COMPLETA
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
-            // Actualizar la Oportunidad con el nombre exacto de tu barra azul
-            updates.push(conn.sobject("Opportunity").update({ 
-                Id: opp.Id, 
-                StageName: etapaDetectada.trim() 
-            }));
+            let oppUpdate = { Id: opp.Id, StageName: etapaDetectada };
 
-            // Si hay una cotización sincronizando y es un cierre, la actualizamos
+            // Si es Ganada, forzamos los campos que activan la barra azul
+            if (etapaDetectada === "Cerrado Ganado") {
+                oppUpdate.Probability = 100;
+                oppUpdate.ForecastCategoryName = "Closed";
+            } else if (etapaDetectada === "Cerrado Perdido") {
+                oppUpdate.Probability = 0;
+            }
+
+            updates.push(conn.sobject("Opportunity").update(oppUpdate));
+
+            // Actualizar Cotización vinculada
             if (opp.Quotes && opp.Quotes.records.length > 0) {
-                const quoteId = opp.Quotes.records[0].Id;
-                let statusQuote = "";
-                
-                if (etapaDetectada === "Cerrado Ganado") statusQuote = "Aceptado";
-                if (etapaDetectada === "Cerrado Perdido") statusQuote = "Denegado";
-                
-                if (statusQuote) {
-                    updates.push(conn.sobject("Quote").update({ 
-                        Id: quoteId, 
-                        Status: statusQuote 
-                    }));
-                }
+                const qStat = etapaDetectada === "Cerrado Ganado" ? "Aceptado" : (etapaDetectada === "Cerrado Perdido" ? "Denegado" : null);
+                if (qStat) updates.push(conn.sobject("Quote").update({ Id: opp.Quotes.records[0].Id, Status: qStat }));
             }
         }
 
         await Promise.all(updates);
-        return res.status(200).json({ 
-            success: true, 
-            message: `¡Éxito! Oportunidad ${opp.Name} actualizada a ${etapaDetectada}.` 
-        });
+        return res.status(200).json({ success: true, message: `Oportunidad ${opp.Name} cerrada con éxito.` });
     }
   } catch (e) {
-    return res.status(200).json({ success: false, message: `Error técnico: ${e.message}` });
+    return res.status(200).json({ success: false, message: `Error: ${e.message}` });
   }
 }
