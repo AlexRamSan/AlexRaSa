@@ -1,54 +1,80 @@
 import jsforce from 'jsforce';
 import { OpenAI } from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  // 1. Bloque de Seguridad: Solo permitir POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método no permitido. Usa POST desde el Atajo de iPhone.' });
+  }
 
   const { textoVisita, nombreCliente } = req.body;
 
+  // 2. Validación de datos recibidos
+  if (!textoVisita || !nombreCliente) {
+    return res.status(400).json({ error: 'Faltan datos: textoVisita o nombreCliente.' });
+  }
+
   try {
-    // 1. Procesamiento con IA especializado en REGO-FIX
+    // 3. Configuración de OpenAI (Especialista en REGO-FIX)
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4", 
       messages: [
         { 
           role: "system", 
-          content: "Eres un consultor técnico senior de REGO-FIX. Resume reportes de visitas enfocándote en sistemas de sujeción (powRgrip, ER, SecuRgrip). Identifica problemas de runout, vibración o vida útil y cómo REGO-FIX los resuelve. Estructura en: Diagnóstico, Propuesta Técnica y Compromisos." 
+          content: "Eres un consultor técnico senior de REGO-FIX. Tu objetivo es resumir visitas técnicas de venta de sistemas de sujeción (powRgrip, ER, SecuRgrip). Estructura el resumen en: 1. Situación Actual (máquinas/problemas), 2. Solución REGO-FIX propuesta, 3. Próximos pasos. Usa un tono profesional y técnico." 
         },
-        { role: "user", content: `Cliente: ${nombreCliente}. Reporte: ${textoVisita}` }
+        { role: "user", content: `Cliente: ${nombreCliente}. Reporte dictado: ${textoVisita}` }
       ],
     });
 
     const resumenIA = completion.choices[0].message.content;
 
-    // 2. Conexión a Salesforce
-    const conn = new jsforce.Connection({ loginUrl: 'https://login.salesforce.com' });
-    await conn.login(process.env.SF_USERNAME, process.env.SF_PASSWORD + process.env.SF_TOKEN);
+    // 4. Conexión Segura a Salesforce (OAuth2)
+    const conn = new jsforce.Connection({
+      oauth2: {
+        clientId: process.env.SF_CLIENT_ID,
+        clientSecret: process.env.SF_CLIENT_SECRET,
+        redirectUri: 'https://localhost:3000'
+      },
+      loginUrl: 'https://login.salesforce.com'
+    });
 
-    // 3. Insertar la nota en Salesforce
-    // Buscamos la cuenta por nombre
-    const account = await conn.sobject("Account").find({ Name: { $like: `%${nombreCliente}%` } }).limit(1);
+    // Login usando Usuario + (Password + Token)
+    await conn.login(
+      process.env.SF_USERNAME, 
+      process.env.SF_PASSWORD + process.env.SF_TOKEN
+    );
+
+    // 5. Buscar la Cuenta del cliente en Salesforce
+    const account = await conn.sobject("Account")
+      .find({ Name: { $like: `%${nombreCliente}%` } })
+      .limit(1);
     
-    if (account.length > 0) {
-      await conn.sobject("ContentNote").create({
-        Title: `Visita REGO-FIX - ${new Date().toLocaleDateString()}`,
-        Content: Buffer.from(resumenIA).toString('base64') // Salesforce requiere base64 para notas
-      }).then(async (note) => {
-        // Vinculamos la nota con la cuenta
-        await conn.sobject("ContentDocumentLink").create({
-          LinkedEntityId: account[0].Id,
-          ContentDocumentId: note.id,
-          ShareType: 'V'
-        });
-      });
-
-      res.status(200).json({ success: true, message: "Nota guardada en Salesforce" });
-    } else {
-      res.status(404).json({ error: "Cliente no encontrado" });
+    if (account.length === 0) {
+      return res.status(404).json({ error: `No se encontró el cliente '${nombreCliente}' en Salesforce.` });
     }
+
+    // 6. Crear la Nota en la Cuenta encontrada
+    await conn.sobject("Note").create({
+      ParentId: account[0].Id,
+      Title: `Resumen Visita REGO-FIX - ${new Date().toLocaleDateString()}`,
+      Body: resumenIA,
+      IsPrivate: false
+    });
+
+    // 7. Respuesta Exitosa
+    return res.status(200).json({ 
+      success: true, 
+      message: "Reporte guardado en Salesforce",
+      resumen: resumenIA 
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error detallado:", error);
+    return res.status(500).json({ 
+      error: "Error en el proceso", 
+      detalle: error.message 
+    });
   }
 }
