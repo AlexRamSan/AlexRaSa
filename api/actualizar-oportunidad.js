@@ -12,20 +12,28 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // FASE 1: ANALIZAR DICTADO
+    // FASE 1: ANALIZAR DICTADO (Prioridad absoluta al usuario)
     if (textoDictado && !resumenAprobado) {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           messages: [{ 
             role: "system", 
-            content: 'Eres experto en REGO-FIX. Resume el dictado y detecta etapa: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. JSON: {"draft":"...","etapa":"..."}' 
-          }],
+            content: `Eres un transcriptor técnico para REGO-FIX. 
+            REGLAS DE ORO:
+            1. Si el usuario menciona una etapa (ej. "Cerrado Ganado", "Negociación"), USA ESA ETAPA obligatoriamente.
+            2. NO inventes seguimientos, visitas ni propuestas si el usuario dice que el proceso ya terminó o se aceptó.
+            3. Si el usuario dice que se aceptó la propuesta, la etapa DEBE SER "Cerrado Ganado".
+            4. Resumen: Máximo 3 viñetas cortas de lo que el usuario DIJO.
+            Etapas válidas: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido.
+            Responde SOLO en JSON: {"draft": "resumen", "etapa": "Etapa Exacta"}` 
+          },
+          { role: "user", content: `Cliente: ${nombreCliente}. Dictado: ${textoDictado}` }],
           response_format: { type: "json_object" }
         });
         return res.status(200).json(JSON.parse(completion.choices[0].message.content));
     }
 
-    // FASE 2: GUARDAR EN SALESFORCE
+    // FASE 2: GUARDAR EN SALESFORCE (Mapeo técnico Bilingüe)
     if (resumenAprobado) {
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
@@ -38,22 +46,23 @@ export default async function handler(req, res) {
         const authData = await authRes.json();
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-        const result = await conn.query(`SELECT Id, Name FROM Opportunity WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false ORDER BY CreatedDate DESC LIMIT 1`);
+        // Buscamos la Oportunidad y la Cotización sincronizada
+        const result = await conn.query(`SELECT Id, Name, (SELECT Id FROM Quotes WHERE IsSyncing = true LIMIT 1) 
+                       FROM Opportunity 
+                       WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false 
+                       ORDER BY CreatedDate DESC LIMIT 1`);
         
         if (result.records.length === 0) return res.status(200).json({ success: false, message: "No se halló oportunidad abierta." });
-        const oppId = result.records[0].Id;
+        
+        const opp = result.records[0];
         const updates = [];
 
-        // 1. Tarea de historial
-        updates.push(conn.sobject("Task").create({ WhatId: oppId, Subject: `Seguimiento - ${new Date().toLocaleDateString()}`, Description: resumenAprobado, Status: 'Completed' }));
+        // 1. Tarea
+        updates.push(conn.sobject("Task").create({ WhatId: opp.Id, Subject: `Seguimiento - ${new Date().toLocaleDateString()}`, Description: resumenAprobado, Status: 'Completed' }));
 
-        // 2. Mapeo a Nombres de API según tu imagen
+        // 2. Mapeo de nombres API (Basado en tus imágenes)
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
-            let sfStage = "";
-            let sfQuoteStatus = "";
-
-            // Diccionario de traducción según tu configuración de Salesforce
-            const mapeoEtapas = {
+            const mapeo = {
                 "Calificación": "Qualification",
                 "Necesita Análisis": "Needs Analysis",
                 "Propuesta": "Proposal",
@@ -62,30 +71,28 @@ export default async function handler(req, res) {
                 "Cerrado Perdido": "Closed Lost"
             };
 
-            sfStage = mapeoEtapas[etapaDetectada] || etapaDetectada;
+            const sfStage = mapeo[etapaDetectada] || etapaDetectada;
+            let oppUpdate = { Id: opp.Id, StageName: sfStage };
 
-            let oppUpdate = { Id: oppId, StageName: sfStage };
-            
             if (sfStage === "Closed Won") {
                 oppUpdate.Probability = 100;
                 oppUpdate.ForecastCategoryName = "Closed";
-                sfQuoteStatus = "Accepted";
             } else if (sfStage === "Closed Lost") {
                 oppUpdate.Probability = 0;
-                sfQuoteStatus = "Denied";
             }
 
             updates.push(conn.sobject("Opportunity").update(oppUpdate));
 
-            // 3. Actualizar Cotización (Quote)
-            const quotes = await conn.sobject("Quote").find({ OpportunityId: oppId }).limit(1);
-            if (quotes.length > 0 && sfQuoteStatus) {
-                updates.push(conn.sobject("Quote").update({ Id: quotes[0].Id, Status: sfQuoteStatus }));
+            // 3. ACTUALIZAR COTIZACIÓN (Forzado con nombres API: Accepted/Denied)
+            if (opp.Quotes && opp.Quotes.records.length > 0) {
+                const quoteId = opp.Quotes.records[0].Id;
+                let qStatus = (sfStage === "Closed Won") ? "Accepted" : (sfStage === "Closed Lost" ? "Denied" : null);
+                if (qStatus) updates.push(conn.sobject("Quote").update({ Id: quoteId, Status: qStatus }));
             }
         }
 
         await Promise.all(updates);
-        return res.status(200).json({ success: true, message: `¡Sincronización exitosa! Oportunidad actualizada a ${etapaDetectada}.` });
+        return res.status(200).json({ success: true, message: `Éxito: ${opp.Name} actualizado a ${etapaDetectada}` });
     }
   } catch (e) {
     return res.status(200).json({ success: false, message: `Error: ${e.message}` });
