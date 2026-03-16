@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // FASE 1: ANALIZAR DICTADO
     if (textoDictado && !resumenAprobado) {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
         return res.status(200).json(JSON.parse(completion.choices[0].message.content));
     }
 
+    // FASE 2: SALESFORCE + DATOS PARA CALENDARIO
     if (resumenAprobado) {
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
@@ -37,14 +39,13 @@ export default async function handler(req, res) {
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
         const result = await conn.query(`SELECT Id, Name FROM Opportunity WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false ORDER BY CreatedDate DESC LIMIT 1`);
-        if (result.records.length === 0) return res.status(200).json({ success: false, message: "No se halló oportunidad." });
+        if (result.records.length === 0) return res.status(200).json({ success: false, message: "No se encontró oportunidad abierta." });
         
         const opp = result.records[0];
-        
-        // Mapeo técnico y días de seguimiento
         const mapeo = { "Calificación": "Qualification", "Necesita Análisis": "Needs Analysis", "Propuesta": "Proposal", "Negociación": "Negotiation", "Cerrado Ganado": "Closed Won", "Cerrado Perdido": "Closed Lost" };
         const sfStage = mapeo[etapaDetectada] || etapaDetectada;
         
+        // Lógica de días
         let dias = 0;
         if (etapaDetectada === "Negociación") dias = 1;
         else if (etapaDetectada === "Propuesta" || etapaDetectada === "Necesita Análisis") dias = 3;
@@ -56,13 +57,13 @@ export default async function handler(req, res) {
             Probability: sfStage === "Closed Won" ? 100 : (sfStage === "Closed Lost" ? 0 : undefined)
         });
 
-        // Devolvemos la info para que el iPhone cree el evento
+        // Respuesta enriquecida para el Atajo
         return res.status(200).json({ 
             success: true, 
-            message: `Salesforce actualizado.`,
+            message: `Salesforce actualizado: ${opp.Name}`,
             diasParaSeguimiento: dias,
-            tituloEvento: `📞 Seguimiento REGO-FIX: ${opp.Name}`,
-            notasEvento: `Etapa: ${etapaDetectada}. \nResumen: ${resumenAprobado}`
+            tituloEvento: `📞 Seg. REGO-FIX: ${opp.Name}`,
+            notasEvento: `Resumen: ${resumenAprobado}\n\n🔗 Abrir en Salesforce: https://rego-fix.lightning.force.com/lightning/r/Opportunity/${opp.Id}/view`
         });
     }
   } catch (e) {
