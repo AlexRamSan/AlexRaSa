@@ -12,20 +12,26 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // FASE 1: ANALIZAR DICTADO
+    // ====================================================================
+    // FASE 1: ANALIZAR DICTADO (BORRADOR + DETECCIÓN DE ETAPA)
+    // ====================================================================
     if (textoDictado && !resumenAprobado) {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
           messages: [{ 
             role: "system", 
-            content: 'Eres experto en REGO-FIX. Resume el dictado y detecta etapa: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. JSON: {"draft":"...","etapa":"..."}' 
-          }, { role: "user", content: `Dictado: ${textoDictado}` }],
+            content: 'Eres un experto consultor de REGO-FIX. Resume el dictado técnico en viñetas cortas. Detecta la etapa: Calificación, Necesita Análisis, Propuesta, Negociación, Cerrado Ganado, Cerrado Perdido o MANTENER. Responde SOLO en JSON con llaves "draft" y "etapa".' 
+          },
+          { role: "user", content: `Cliente: ${nombreCliente}. Dictado: ${textoDictado}` }],
           response_format: { type: "json_object" }
         });
-        return res.status(200).json(JSON.parse(completion.choices[0].message.content));
+        const respuestaIA = JSON.parse(completion.choices[0].message.content);
+        return res.status(200).json(respuestaIA);
     }
 
-    // FASE 2: GUARDAR EN SALESFORCE (ACTUALIZADO PARA CERRAR CORRECTAMENTE)
+    // ====================================================================
+    // FASE 2: GUARDAR EN SALESFORCE (ACTUALIZACIÓN INTEGRAL)
+    // ====================================================================
     if (resumenAprobado) {
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
@@ -38,23 +44,30 @@ export default async function handler(req, res) {
         const authData = await authRes.json();
         const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-        const result = await conn.query(`SELECT Id, Name, (SELECT Id FROM Quotes WHERE IsSyncing = true LIMIT 1) 
-                       FROM Opportunity 
-                       WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false 
-                       ORDER BY CreatedDate DESC LIMIT 1`);
+        // Buscamos la Oportunidad abierta más reciente de la cuenta
+        const result = await conn.query(`SELECT Id, Name FROM Opportunity WHERE Account.Name LIKE '%${nombreCliente.trim()}%' AND IsClosed = false ORDER BY CreatedDate DESC LIMIT 1`);
         
-        if (result.records.length === 0) return res.status(200).json({ success: false, message: "No se halló oportunidad abierta." });
-        const opp = result.records[0];
+        if (result.records.length === 0) {
+            return res.status(200).json({ success: false, message: "No se encontró oportunidad abierta para este cliente." });
+        }
+        
+        const oppId = result.records[0].Id;
+        const oppName = result.records[0].Name;
         const updates = [];
 
-        // Registro de Tarea
-        updates.push(conn.sobject("Task").create({ WhatId: opp.Id, Subject: `Seguimiento - ${new Date().toLocaleDateString()}`, Description: resumenAprobado, Status: 'Completed' }));
+        // 1. Crear Tarea de Historial
+        updates.push(conn.sobject("Task").create({
+            WhatId: oppId,
+            Subject: `Seguimiento de Cotización - ${new Date().toLocaleDateString('es-MX')}`,
+            Description: resumenAprobado,
+            Status: 'Completed'
+        }));
 
-        // LÓGICA DE CIERRE COMPLETA
+        // 2. Lógica de Sincronización Oportunidad + Cotización
         if (etapaDetectada && etapaDetectada !== "MANTENER") {
-            let oppUpdate = { Id: opp.Id, StageName: etapaDetectada };
+            let oppUpdate = { Id: oppId, StageName: etapaDetectada };
 
-            // Si es Ganada, forzamos los campos que activan la barra azul
+            // Forzar cierre técnico en la Oportunidad
             if (etapaDetectada === "Cerrado Ganado") {
                 oppUpdate.Probability = 100;
                 oppUpdate.ForecastCategoryName = "Closed";
@@ -64,17 +77,32 @@ export default async function handler(req, res) {
 
             updates.push(conn.sobject("Opportunity").update(oppUpdate));
 
-            // Actualizar Cotización vinculada
-            if (opp.Quotes && opp.Quotes.records.length > 0) {
-                const qStat = etapaDetectada === "Cerrado Ganado" ? "Aceptado" : (etapaDetectada === "Cerrado Perdido" ? "Denegado" : null);
-                if (qStat) updates.push(conn.sobject("Quote").update({ Id: opp.Quotes.records[0].Id, Status: qStat }));
+            // Buscar CUALQUIER cotización vinculada para cerrarla también
+            const quoteResult = await conn.sobject("Quote").find({ OpportunityId: oppId }).limit(1);
+            if (quoteResult.length > 0) {
+                let qStatus = "";
+                if (etapaDetectada === "Cerrado Ganado") qStatus = "Aceptado";
+                if (etapaDetectada === "Cerrado Perdido") qStatus = "Denegado";
+                
+                if (qStatus) {
+                    updates.push(conn.sobject("Quote").update({ 
+                        Id: quoteResult[0].Id, 
+                        Status: qStatus 
+                    }));
+                }
             }
         }
 
         await Promise.all(updates);
-        return res.status(200).json({ success: true, message: `Oportunidad ${opp.Name} cerrada con éxito.` });
+        return res.status(200).json({ 
+            success: true, 
+            message: `Actualizado: ${oppName} ${etapaDetectada !== 'MANTENER' ? ' -> ' + etapaDetectada : ''}` 
+        });
     }
+
+    return res.status(400).json({ error: "Petición incompleta" });
+
   } catch (e) {
-    return res.status(200).json({ success: false, message: `Error: ${e.message}` });
+    return res.status(500).json({ success: false, message: `Error: ${e.message}` });
   }
 }
