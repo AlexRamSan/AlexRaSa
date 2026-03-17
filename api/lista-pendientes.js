@@ -14,49 +14,38 @@ export default async function handler(req, res) {
       })
     });
     const authData = await authRes.json();
-    const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
+    const conn = new jsforce.Connection({ instance_url: authData.instance_url, accessToken: authData.access_token });
 
-    // --- LÓGICA DE SEGUIMIENTO RÁPIDO ---
     if (query.accion === 'seguimiento_rapido') {
-      let data = body;
-      if (typeof data === 'string') data = JSON.parse(data);
+      let data = typeof body === 'string' ? JSON.parse(body) : body;
       
-      // Extraemos los datos. Si nombreOpp no llega, usamos "Cliente REGO-FIX"
-      const idOpp = data.idOpp || '';
-      const nombreOpp = data.nombreOpp || 'Cliente REGO-FIX';
+      // Aseguramos que nombreOpp sea texto
+      const nombreOpp = data?.nombreOpp || 'Cliente';
+      const tituloFinal = `Seguimiento: ${nombreOpp}`;
 
       const fechaSeg = new Date();
       fechaSeg.setDate(fechaSeg.getDate() + 3);
-      fechaSeg.setUTCHours(10 + 6, 0, 0, 0); // 10:00 AM CDMX
+      fechaSeg.setUTCHours(10 + 6, 0, 0, 0); // 10:00 AM Querétaro
 
-      // Creamos el evento en Salesforce
-      await conn.sobject("Event").create({
-        WhatId: idOpp,
-        Subject: `📞 Seguimiento: ${nombreOpp}`,
-        StartDateTime: fechaSeg.toISOString(),
-        DurationInMinutes: 20
-      });
-
-      // RESPUESTA PARA EL IPHONE (Aquí es donde el Atajo lee el título)
+      // Respuesta blindada
       return res.status(200).json({ 
         success: true, 
         fechaISO: fechaSeg.toISOString(),
-        titulo: `Seguimiento: ${nombreOpp}` 
+        titulo: String(tituloFinal) 
       });
     }
 
-    // --- LÓGICA DE LISTA INICIAL ---
-    const result = await conn.query(`SELECT Id, Name, Amount, StageName, LastModifiedDate, Account.Name FROM Opportunity WHERE IsClosed = false ORDER BY LastModifiedDate ASC LIMIT 10`);
+    // Lista inicial
+    const result = await conn.query(`SELECT Id, Name, Account.Name FROM Opportunity WHERE IsClosed = false LIMIT 10`);
     const oportunidades = result.records.map(opp => ({
-      label: `${opp.Account.Name} - ${opp.StageName}`,
+      label: `${opp.Account.Name} - ${opp.Name}`,
       id: opp.Id,
       cliente: opp.Account.Name,
       link: `https://rego-fix.lightning.force.com/lightning/r/Opportunity/${opp.Id}/view`
     }));
 
     return res.status(200).json({ success: true, oportunidades });
-
   } catch (e) {
-    return res.status(500).json({ success: false, error: e.message });
+    return res.status(200).json({ success: false, titulo: "Error de Seguimiento", fechaISO: new Date().toISOString() });
   }
 }
