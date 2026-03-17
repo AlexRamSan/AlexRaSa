@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const authData = await authRes.json();
     const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-    // Consultamos las oportunidades abiertas de REGO-FIX
+    // Traemos lo que necesitas: Cuenta, Oportunidad y Fecha de modificación
     const result = await conn.query(`
       SELECT Id, Name, LastModifiedDate, Account.Name 
       FROM Opportunity 
@@ -25,22 +25,17 @@ export default async function handler(req, res) {
     `);
 
     const oportunidades = result.records.map(opp => {
-      // Cálculo de días de inactividad
-      const fechaMod = new Date(opp.LastModifiedDate);
-      const hoy = new Date();
-      const diferencia = hoy - fechaMod;
-      const diasInactiva = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-
+      const dias = Math.floor((new Date() - new Date(opp.LastModifiedDate)) / (1000 * 60 * 60 * 24));
+      
       return {
-        // Esto es lo que verás en la lista del iPhone
-        label: `${opp.Account.Name} | ${opp.Name} (${diasInactiva} días)`,
+        // Esta etiqueta es la que verás en la lista
+        label: `${opp.Account.Name} | ${opp.Name} (${dias} días)`,
         cliente: opp.Account.Name,
         id: opp.Id,
         link: `https://rego-fix.lightning.force.com/lightning/r/Opportunity/${opp.Id}/view`
       };
     });
 
-    // IMPORTANTE: Devolvemos un objeto que contiene el ARRAY "oportunidades"
     return res.status(200).json({ oportunidades });
 
   } catch (e) {
