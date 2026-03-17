@@ -15,27 +15,23 @@ export default async function handler(req, res) {
     const authData = await authRes.json();
     const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-    // Traemos las 5 oportunidades abiertas con más tiempo sin tocarse
     const result = await conn.query(`
-        SELECT Id, Name, Amount, StageName, LastModifiedDate, Account.Name, CloseDate 
+        SELECT Id, Name, Amount, StageName, LastModifiedDate, Account.Name, Account.Phone 
         FROM Opportunity 
         WHERE IsClosed = false 
         ORDER BY LastModifiedDate ASC 
-        LIMIT 5
+        LIMIT 10
     `);
 
     const oportunidades = result.records.map(opp => {
         const diasInactiva = Math.floor((new Date() - new Date(opp.LastModifiedDate)) / (1000 * 60 * 60 * 24));
         
-        // Lógica Pro: Sugerencia inteligente
-        let sugerencia = "Podrías llamar para dar seguimiento.";
-        if (diasInactiva > 7) sugerencia = "Esta cuenta está muy fría. Te sugiero agendar una visita presencial urgente.";
-        if (opp.StageName === "Proposal" && diasInactiva > 3) sugerencia = "Ya enviamos propuesta y no han respondido. Llama para confirmar recepción técnica.";
-
         return {
-            resumenVoz: `Oportunidad de ${opp.Account.Name} por ${opp.Amount || 'monto no definido'}. Etapa: ${opp.StageName}. Lleva ${diasInactiva} días sin movimiento. ${sugerencia}`,
+            label: `${opp.Account.Name} ($${opp.Amount || 0}) - ${diasInactiva}d sin mov.`,
             id: opp.Id,
             cliente: opp.Account.Name,
+            telefono: opp.Account.Phone || "",
+            etapa: opp.StageName,
             link: `https://rego-fix.lightning.force.com/lightning/r/Opportunity/${opp.Id}/view`
         };
     });
