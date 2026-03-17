@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // FASE 1: ANALIZAR DICTADO
     if (textoDictado && !resumenAprobado) {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
         return res.status(200).json(JSON.parse(completion.choices[0].message.content));
     }
 
+    // FASE 2: SALESFORCE + AGENDA INTELIGENTE
     if (resumenAprobado) {
         const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
             method: 'POST',
@@ -43,32 +45,61 @@ export default async function handler(req, res) {
         const mapeo = { "Calificación": "Qualification", "Necesita Análisis": "Needs Analysis", "Propuesta": "Proposal", "Negociación": "Negotiation", "Cerrado Ganado": "Closed Won", "Cerrado Perdido": "Closed Lost" };
         const sfStage = mapeo[etapaDetectada] || etapaDetectada;
         
-        let dias = 0;
-        if (etapaDetectada === "Negociación") dias = 1;
-        else if (etapaDetectada === "Propuesta" || etapaDetectada === "Necesita Análisis") dias = 3;
-        else if (etapaDetectada === "Calificación") dias = 5;
+        let dias = (etapaDetectada === "Negociación") ? 1 : (etapaDetectada === "Propuesta" || etapaDetectada === "Necesita Análisis" ? 3 : (etapaDetectada === "Calificación" ? 5 : 0));
 
         const updates = [];
-
-        // 1. Actualizar Etapa y Probabilidad
         updates.push(conn.sobject("Opportunity").update({ 
-            Id: opp.Id, 
-            StageName: sfStage,
+            Id: opp.Id, StageName: sfStage,
             Probability: sfStage === "Closed Won" ? 100 : (sfStage === "Closed Lost" ? 0 : undefined)
         }));
 
-        // 2. CREAR EVENTO EN EL CALENDARIO DE SALESFORCE (Sincronización manual automática)
+        let horaFinalISO = "";
+        let mensajeCalendario = "";
+
         if (dias > 0) {
-            const fechaSujeto = new Date();
-            fechaSujeto.setDate(fechaSujeto.getDate() + dias);
-            fechaSujeto.setHours(10, 0, 0); // 10:00 AM
+            // 1. Calcular el día objetivo
+            const fechaBase = new Date();
+            fechaBase.setDate(fechaBase.getDate() + dias);
+            const yyyy = fechaBase.getFullYear();
+            const mm = String(fechaBase.getMonth() + 1).padStart(2, '0');
+            const dd = String(fechaBase.getDate()).padStart(2, '0');
+            const startOfDay = `${yyyy}-${mm}-${dd}T00:00:00Z`;
+            const endOfDay = `${yyyy}-${mm}-${dd}T23:59:59Z`;
+
+            // 2. Revisar eventos existentes en Salesforce para ese día
+            const eventos = await conn.query(`SELECT StartDateTime FROM Event WHERE StartDateTime >= ${startOfDay} AND StartDateTime <= ${endOfDay} ORDER BY StartDateTime ASC`);
+            
+            // 3. Buscar primer hueco libre desde las 10:00 AM (Central Time = +6h para UTC)
+            let horaIntento = 10; 
+            let minutoIntento = 0;
+            let huecoEncontrado = false;
+
+            while (!huecoEncontrado) {
+                let checkTime = new Date(fechaBase);
+                checkTime.setUTCHours(horaIntento + 6, minutoIntento, 0, 0);
+                
+                // ¿Hay algo a esta hora? (Margen de 29 min)
+                const ocupado = eventos.records.some(e => {
+                    const eTime = new Date(e.StartDateTime).getTime();
+                    return Math.abs(eTime - checkTime.getTime()) < 25 * 60000;
+                });
+
+                if (!ocupado) {
+                    horaFinalISO = checkTime.toISOString();
+                    huecoEncontrado = true;
+                    mensajeCalendario = `Agendado a las ${horaIntento}:${minutoIntento === 0 ? '00' : minutoIntento}`;
+                } else {
+                    minutoIntento += 30;
+                    if (minutoIntento >= 60) { horaIntento++; minutoIntento = 0; }
+                }
+            }
 
             updates.push(conn.sobject("Event").create({
                 WhatId: opp.Id,
                 Subject: `Seguimiento: ${opp.Name}`,
-                StartDateTime: fechaSujeto.toISOString(),
+                StartDateTime: horaFinalISO,
                 DurationInMinutes: 30,
-                Description: `Agendado vía iPhone.\nResumen: ${resumenAprobado}`
+                Description: `Agendado automáticamente.\nNotas: ${resumenAprobado}`
             }));
         }
 
@@ -76,8 +107,9 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ 
             success: true, 
-            message: `Salesforce actualizado (Calendario incluido).`,
+            message: `Salesforce actualizado. ${mensajeCalendario}`,
             diasParaSeguimiento: dias,
+            fechaISO: horaFinalISO, // El Atajo usará esta fecha exacta
             tituloEvento: `📞 Seg. REGO-FIX: ${opp.Name}`,
             notasEvento: `Resumen: ${resumenAprobado}\n\n🔗 Abrir: https://rego-fix.lightning.force.com/lightning/r/Opportunity/${opp.Id}/view`
         });
