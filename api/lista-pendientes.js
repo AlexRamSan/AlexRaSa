@@ -15,38 +15,34 @@ export default async function handler(req, res) {
     const authData = await authRes.json();
     const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-    // Traemos Oportunidades, Cuentas y Cotizaciones sincronizadas
+    // Consultamos las oportunidades abiertas de REGO-FIX
     const result = await conn.query(`
-      SELECT Id, Name, LastModifiedDate, Account.Name, 
-             (SELECT QuoteNumber FROM Quotes WHERE IsSyncing = true LIMIT 1)
+      SELECT Id, Name, LastModifiedDate, Account.Name 
       FROM Opportunity 
       WHERE IsClosed = false 
       ORDER BY LastModifiedDate ASC 
-      LIMIT 15
+      LIMIT 20
     `);
 
-    // Creamos la lista de "Etiquetas" (lo que verás en el iPhone)
-    const listaParaMostrar = result.records.map(opp => {
-      const dias = Math.floor((new Date() - new Date(opp.LastModifiedDate)) / (1000 * 60 * 60 * 24));
-      const cot = opp.Quotes?.records[0]?.QuoteNumber || "Sin Cot.";
-      return `${opp.Account.Name} | ${opp.Name} | ${dias}d | Q:${cot}`;
-    });
+    const oportunidades = result.records.map(opp => {
+      // Cálculo de días de inactividad
+      const fechaMod = new Date(opp.LastModifiedDate);
+      const hoy = new Date();
+      const diferencia = hoy - fechaMod;
+      const diasInactiva = Math.floor(diferencia / (1000 * 60 * 60 * 24));
 
-    // Creamos un diccionario con la info real para usarla después
-    const infoDetallada = {};
-    result.records.forEach(opp => {
-      const etiqueta = `${opp.Account.Name} | ${opp.Name} | ${Math.floor((new Date() - new Date(opp.LastModifiedDate)) / (1000 * 60 * 60 * 24))}d | Q:${opp.Quotes?.records[0]?.QuoteNumber || "Sin Cot."}`;
-      infoDetallada[etiqueta] = {
-        id: opp.Id,
+      return {
+        // Esto es lo que verás en la lista del iPhone
+        label: `${opp.Account.Name} | ${opp.Name} (${diasInactiva} días)`,
         cliente: opp.Account.Name,
+        id: opp.Id,
         link: `https://rego-fix.lightning.force.com/lightning/r/Opportunity/${opp.Id}/view`
       };
     });
 
-    return res.status(200).json({ 
-      opciones: listaParaMostrar, // Esta es la lista que verá el iPhone
-      detalles: infoDetallada     // Esta es la info técnica
-    });
+    // IMPORTANTE: Devolvemos un objeto que contiene el ARRAY "oportunidades"
+    return res.status(200).json({ oportunidades });
+
   } catch (e) {
     return res.status(200).json({ error: e.message });
   }
