@@ -5,7 +5,6 @@ export default async function handler(req, res) {
   const { method, query, body } = req;
 
   try {
-    // 1. Autenticación con Salesforce (REGO-FIX)
     const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
       method: 'POST',
       body: new URLSearchParams({
@@ -17,46 +16,39 @@ export default async function handler(req, res) {
     const authData = await authRes.json();
     const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-    // --- LÓGICA 1: AGENDAR SEGUIMIENTO RÁPIDO ---
+    // --- LÓGICA DE SEGUIMIENTO RÁPIDO ---
     if (query.accion === 'seguimiento_rapido') {
       let data = body;
       if (typeof data === 'string') data = JSON.parse(data);
       
-      const { idOpp, nombreOpp } = data;
+      // Extraemos los datos. Si nombreOpp no llega, usamos "Cliente REGO-FIX"
+      const idOpp = data.idOpp || '';
+      const nombreOpp = data.nombreOpp || 'Cliente REGO-FIX';
 
-      // Calculamos 3 días a partir de hoy a las 10:00 AM (GMT-6 para Querétaro)
       const fechaSeg = new Date();
       fechaSeg.setDate(fechaSeg.getDate() + 3);
-      fechaSeg.setUTCHours(10 + 6, 0, 0, 0); 
+      fechaSeg.setUTCHours(10 + 6, 0, 0, 0); // 10:00 AM CDMX
 
-      // Opcional: Crear el registro en Salesforce para que quede el historial
+      // Creamos el evento en Salesforce
       await conn.sobject("Event").create({
         WhatId: idOpp,
         Subject: `📞 Seguimiento: ${nombreOpp}`,
         StartDateTime: fechaSeg.toISOString(),
-        DurationInMinutes: 20,
-        Description: "Evento generado automáticamente desde el Atajo en la Jeep Renegade."
+        DurationInMinutes: 20
       });
 
-      // RESPUESTA CRUCIAL PARA EL IPHONE
+      // RESPUESTA PARA EL IPHONE (Aquí es donde el Atajo lee el título)
       return res.status(200).json({ 
         success: true, 
         fechaISO: fechaSeg.toISOString(),
-        titulo: `📞 Seg. ${nombreOpp || 'Cliente'}` 
+        titulo: `Seguimiento: ${nombreOpp}` 
       });
     }
 
-    // --- LÓGICA 2: OBTENER LISTA DE OPORTUNIDADES ---
-    const result = await conn.query(`
-      SELECT Id, Name, Amount, StageName, LastModifiedDate, Account.Name 
-      FROM Opportunity 
-      WHERE IsClosed = false 
-      ORDER BY LastModifiedDate ASC 
-      LIMIT 10
-    `);
-
+    // --- LÓGICA DE LISTA INICIAL ---
+    const result = await conn.query(`SELECT Id, Name, Amount, StageName, LastModifiedDate, Account.Name FROM Opportunity WHERE IsClosed = false ORDER BY LastModifiedDate ASC LIMIT 10`);
     const oportunidades = result.records.map(opp => ({
-      label: `${opp.Account.Name} ($${opp.Amount || 0}) - ${opp.StageName}`,
+      label: `${opp.Account.Name} - ${opp.StageName}`,
       id: opp.Id,
       cliente: opp.Account.Name,
       link: `https://rego-fix.lightning.force.com/lightning/r/Opportunity/${opp.Id}/view`
@@ -65,7 +57,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, oportunidades });
 
   } catch (e) {
-    console.error(e);
     return res.status(500).json({ success: false, error: e.message });
   }
 }
