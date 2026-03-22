@@ -5,52 +5,44 @@ export default async function handler(req, res) {
   const d = parseFloat(diametro);
   const l = parseFloat(largo);
   const maxRpmVal = parseInt(max_rpm) || 99999;
+  const numZ = parseInt(z) || 4;
 
-  const condicionesActualesText = tiene_actuales 
-    ? `\n- CONDICIONES ACTUALES: RPM = ${rpm_actual}, Avance = ${avance_actual} mm/min.` 
-    : `\n- CONDICIONES ACTUALES: No proporcionadas.`;
+  // Base de datos de ingeniería física (Matemáticas 100% controladas en JS)
+  const MAT_DB = {
+    'P': { vc: 150, fz: 0.08 }, // Aceros
+    'M': { vc: 80,  fz: 0.05 }, // Inoxidables
+    'K': { vc: 120, fz: 0.10 }, // Fundiciones
+    'N': { vc: 400, fz: 0.15 }, // Aluminio / No ferrosos
+    'S': { vc: 40,  fz: 0.04 }, // Inconel / Titanio
+    'H': { vc: 30,  fz: 0.02 }  // Aceros Endurecidos
+  };
 
-  const promptIngenieria = `
-    Eres el motor de cálculo de REGO-FIX. Analiza:
-    - Pieza: ${material}
-    - Herramienta: ${herramienta}
-    - Interfaz: ${interfaz}
-    - Operación: ${operacion}
-    - Ø Herramienta: ${d} mm
-    - Proyección (L): ${l} mm
-    - Filos (Z): ${z}
-    - Lubricación: ${lubricacion}
-    - Límite RPM: ${maxRpmVal} ${condicionesActualesText}
+  const promptSeleccion = `
+    Eres ingeniero de aplicaciones REGO-FIX.
+    DATOS: Pieza: ${material}, Herramienta: ${herramienta}, Interfaz: ${interfaz}, Operación: ${operacion}, Ø: ${d}mm, Largo: ${l}mm.
 
-    REGLAS DE CATÁLOGO:
-    1. Si Ø < 3mm -> "micRun (MR)".
-    2. Si Desbaste/HPC en Titanio/Inconel/Inox Y Ø >= 10mm -> OBLIGATORIO "secuRgrip (SG)". 
-       - HSK-A 63 soporta 15-SG, 25-SG, 32-SG.
-       - CAT 40/BT 40/SK 40 saltan a PG 25-SG o 32-SG. (No uses 15-SG).
-       - ER-SG es válido si el cono es ER.
-    3. Resto de casos -> "powRgrip (PG) Estándar".
-    4. Lubricación "Interna/Centro" -> Añade "Estanca" o "Cool-Flow".
+    TAREAS:
+    1. Clasifica el material en una categoría ISO exacta: "P", "M", "K", "N", "S" o "H".
+    2. Selecciona el Sistema REGO-FIX usando estas REGLAS DE CATÁLOGO:
+       - Si Ø < 3mm -> "micRun (MR)".
+       - Si Desbaste/HPC en Titanio/Inconel/Inox (S o M) Y Ø >= 10mm -> OBLIGATORIO "secuRgrip (SG)". 
+         * HSK-A 63 soporta 15-SG, 25-SG, 32-SG.
+         * CAT/BT/SK saltan a PG 25-SG o 32-SG. (No uses 15-SG).
+       - Resto de casos -> "powRgrip (PG) Estándar".
+       - Si lubricación es "Interna", añade "Estanca" o "Cool-Flow" a la pinza.
+    3. Escribe un dictamen de 2 líneas justificando el portaherramientas y cómo el TIR < 3µm salva la herramienta (ratio L/D es ${(l/d).toFixed(1)}).
 
-    FÍSICA DE CORTE: 
-    - Deduce Vc y fz.
-    - RPM Teóricas = (Vc * 1000) / (PI * Ø).
-    - CAPPING: Si RPM Teóricas > ${maxRpmVal}, limita las RPM a ${maxRpmVal} y pon "capping_activado": true.
-    - Avance (mm/min) = RPM (limitadas) * Z * fz * (1.25 para PG, 1.40 para SG).
-    - Compara Avance calculado vs Avance actual (${avance_actual || 0}) para dar el % de mejora.
-
-    Responde en JSON:
+    RESPONDE SOLO EN JSON:
     {
-      "sistema_recomendado": "Ej: HSK-A 63 / powRgrip PG 25-SG",
-      "pinza_sugerida": "Ej: Pinza PG 25-SG Estanca",
-      "rpm_calculado": 0,
-      "avance_calculado": 0,
-      "capping_activado": false,
-      "mejora_esperada": "Ej: +25%",
-      "dictamen_tecnico": "2 líneas justificando la selección y mejora de MRR."
+      "iso": "S",
+      "sistema_recomendado": "CAT 40 / powRgrip PG 25-SG",
+      "pinza_sugerida": "PG 25-SG Estanca",
+      "dictamen_tecnico": "Dictamen aquí..."
     }
   `;
 
   try {
+    // 1. La IA SOLO clasifica y selecciona catálogo
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -59,16 +51,53 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4o", 
-        messages: [{ role: "system", content: "Devuelve solo JSON." }, { role: "user", content: promptIngenieria }],
+        messages: [{ role: "system", content: "Devuelve solo JSON." }, { role: "user", content: promptSeleccion }],
         response_format: { type: "json_object" },
         temperature: 0.1 
       })
     });
 
-    const data = await aiRes.json();
-    res.status(200).json(JSON.parse(data.choices[0].message.content));
+    const aiData = JSON.parse((await aiRes.json()).choices[0].message.content);
+    
+    // 2. MATEMÁTICAS ESTRICTAS EN JAVASCRIPT
+    const baseCut = MAT_DB[aiData.iso] || MAT_DB['P'];
+    const toolFactor = herramienta.toUpperCase().includes('HSS') ? 0.4 : 1.0;
+    
+    let rpm_calc = Math.round((baseCut.vc * toolFactor * 1000) / (Math.PI * d));
+    let capping = false;
+    
+    // Aplicamos Capping si se pasa del límite de la máquina
+    if (rpm_calc > maxRpmVal) {
+        rpm_calc = maxRpmVal;
+        capping = true;
+    }
+
+    // Factor de Rigidez REGO-FIX
+    let k_rigidez = 1.25; // Base powRgrip
+    if (aiData.sistema_recomendado.includes('SG') || aiData.pinza_sugerida.includes('SG')) k_rigidez = 1.40;
+    if (aiData.sistema_recomendado.includes('MR')) k_rigidez = 1.15;
+
+    let avance_calc = Math.round(rpm_calc * numZ * baseCut.fz * k_rigidez);
+
+    // Cálculo de mejora real
+    let mejora = "+25% Productividad";
+    if (tiene_actuales && avance_actual > 0) {
+        const pct = Math.round(((avance_calc / parseFloat(avance_actual)) - 1) * 100);
+        mejora = pct > 0 ? `+${pct}% de Avance` : "Mejora en Estabilidad y Vida";
+    }
+
+    // Enviamos el paquete completo y seguro al frontend
+    res.status(200).json({
+      sistema_recomendado: aiData.sistema_recomendado,
+      pinza_sugerida: aiData.pinza_sugerida,
+      rpm_calculado: rpm_calc,
+      avance_calculado: avance_calc,
+      capping_activado: capping,
+      mejora_esperada: mejora,
+      dictamen_tecnico: aiData.dictamen_tecnico
+    });
 
   } catch (error) {
-    res.status(500).json({ error: "Error en servidor." });
+    res.status(500).json({ error: "Error en servidor calculando cinemática." });
   }
 }
