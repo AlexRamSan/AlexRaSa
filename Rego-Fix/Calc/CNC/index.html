@@ -2,199 +2,140 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>REGO-FIX Cutting Expert | AlexRaSa</title>
-  
+  <title>REGO-FIX Smart Engineering | Miguel Ramirez</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  
   <style>
-    :root { --rego-red: #D31B23; --rego-blue: #28556C; --rego-green: #B7C91F; }
-    body { background-color: #f8fafc; color: #1e293b; font-family: 'Inter', sans-serif; }
-    .rego-card { background: white; border-radius: 24px; box-shadow: 0 20px 50px rgba(40,85,108,0.1); border: 1px solid rgba(40,85,108,0.1); }
-    .input-rego { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.8rem; outline: none; transition: 0.2s; background: #fff; font-size: 0.95rem; }
-    .input-rego:focus { border-color: var(--rego-blue); box-shadow: 0 0 0 4px rgba(40,85,108,0.08); }
-    .btn-rego { background: var(--rego-red); color: white; font-weight: 800; border-radius: 14px; padding: 1.2rem; transition: 0.3s; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; }
-    .btn-rego:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(211,27,35,0.25); }
-    .label-rego { display: block; font-size: 0.75rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; margin-bottom: 0.5rem; }
+    :root { --rego-red: #D31B23; --rego-blue: #28556C; }
+    body { background: #f1f5f9; font-family: 'Inter', sans-serif; }
+    .input-pro { width: 100%; background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 1rem; outline: none; transition: 0.3s; font-weight: 600; }
+    .input-pro:focus { border-color: var(--rego-blue); box-shadow: 0 0 0 5px rgba(40,85,108,0.1); }
+    .btn-rego { background: var(--rego-red); color: white; font-weight: 900; border-radius: 18px; padding: 1.2rem; width: 100%; transition: 0.3s; text-transform: uppercase; }
   </style>
 </head>
 <body class="py-10 px-4">
 
-  <main class="max-w-4xl mx-auto" id="area-reporte">
-    
-    <div class="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
-      <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-12" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
-      <div class="text-center md:text-right">
-        <h2 class="text-xl font-black text-[#28556C] italic uppercase tracking-tighter">Guía de Ingeniería Inteligente</h2>
-        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Consultor: Miguel Alejandro Ramirez</p>
-      </div>
-    </div>
+  <main class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-[32px] shadow-2xl overflow-hidden border border-gray-100">
+      
+      <div class="p-8 md:p-12">
+        <header class="mb-10">
+            <img src="/assets/regofixlogo.png" class="h-10 mb-4" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
+            <h1 class="text-3xl font-black text-[#28556C]">Engineering Command Center</h1>
+            <p class="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Miguel Alejandro Ramirez | Sales Technician</p>
+        </header>
 
-    <div class="rego-card overflow-hidden">
-      <div class="p-6 md:p-10 border-b border-gray-100 no-print" id="form-calculadora">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <label class="label-rego">Material de la Pieza</label>
-            <input id="material" class="input-rego" placeholder="Ej: P20, 4140, Inox 304">
-          </div>
-          <div>
-            <label class="label-rego">Tipo de Operación</label>
-            <select id="aplicacion" class="input-rego font-bold">
-              <option value="Desbaste">Desbaste Pesado (HD)</option>
-              <option value="Acabado">Acabado Superficial</option>
-              <option value="Trocoidal">Alta Eficiencia (HEM)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div><label class="label-rego">Ø Herr. (mm)</label><input id="diametro" type="number" step="0.1" class="input-rego" placeholder="12"></div>
-          <div><label class="label-rego">Stick-out (mm)</label><input id="largo" type="number" class="input-rego" placeholder="45"></div>
-          <div><label class="label-rego">Filos (Z)</label><input id="z" type="number" class="input-rego" value="4"></div>
-          <div><label class="label-rego">RPM Actual</label><input id="rpm_act" type="number" class="input-rego" placeholder="5000"></div>
-        </div>
-
-        <div class="mb-8">
-            <label class="label-rego">Avance Actual (mm/min)</label>
-            <input id="feed_act" type="number" class="input-rego" placeholder="1200">
-        </div>
-
-        <button id="btnEjecutar" class="btn-rego" onclick="calcularOptimizacion()">
-          Analizar y Optimizar con IA
-        </button>
-      </div>
-
-      <div id="loading" class="hidden p-20 text-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-100 border-t-red-600"></div>
-        <p class="mt-4 text-xs font-black text-gray-400 uppercase tracking-widest italic">Calculando Deflexión...</p>
-      </div>
-
-      <div id="resultado" class="hidden p-6 md:p-10 bg-slate-50">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase mb-4 inline-block" id="badge-mejora">+0%</span>
-            <canvas id="graficaProductividad" height="250"></canvas>
-          </div>
-
-          <div class="space-y-6">
-            <div class="bg-[#28556C] text-white p-8 rounded-3xl shadow-xl">
-              <h4 class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Ensamble Recomendado</h4>
-              <p id="txt-holder" class="text-2xl font-black italic mb-1">PG --</p>
-              <p id="txt-boquilla" class="text-sm font-bold text-[#B7C91F]">Boquilla: --</p>
-              <div class="mt-6 flex gap-3 text-center">
-                <div class="bg-white/10 rounded-xl p-3 flex-1"><span class="block text-[8px] font-bold opacity-60 uppercase italic">TIR</span><span class="text-xs font-black">&lt; 0.003mm</span></div>
-                <div class="bg-white/10 rounded-xl p-3 flex-1"><span class="block text-[8px] font-bold opacity-60 uppercase italic">Balanceo</span><span class="text-xs font-black">G2.5 @ 25k</span></div>
-              </div>
+        <div class="space-y-6">
+            <div>
+                <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 ml-2">Describe el Material (Texto Libre)</label>
+                <input id="material_texto" class="input-pro" placeholder="Ej: Acero inoxidable 316L con 30 HRC de dureza...">
             </div>
 
-            <div class="bg-white p-6 rounded-3xl border border-gray-100">
-              <table class="w-full text-xs">
-                <tr class="border-b border-gray-50 text-gray-400 font-bold uppercase"><td class="py-2">Parámetro</td><td class="text-right">Base</td><td class="text-right text-red-600">REGO-FIX</td></tr>
-                <tr class="border-b border-gray-50"><td class="py-3 font-bold">RPM</td><td id="val-rpm-a" class="text-right">---</td><td id="val-rpm-n" class="text-right font-black text-blue-900 text-sm">---</td></tr>
-                <tr><td class="py-3 font-bold">Avance</td><td id="val-feed-a" class="text-right">---</td><td id="val-feed-n" class="text-right font-black text-blue-900 text-sm">---</td></tr>
-              </table>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 ml-2">Material de Herramienta</label>
+                    <select id="tool_material" class="input-pro">
+                        <option value="Carburo">Carburo Sólido (HM)</option>
+                        <option value="HSS">HSS / Cobalto</option>
+                        <option value="Ceramica">Cerámica / PCD</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 ml-2">Operación Específica</label>
+                    <select id="aplicacion" class="input-pro">
+                        <option value="Desbaste">Desbaste (HD)</option>
+                        <option value="Acabado">Acabado (Finishing)</option>
+                        <option value="Trocoidal">Trocoidal (HEM)</option>
+                        <option value="Ramping">Rampas (Ramping)</option>
+                        <option value="Slotting">Ranurado Total (Slotting)</option>
+                    </select>
+                </div>
             </div>
-          </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div><label class="text-[10px] font-black uppercase text-gray-400">Ø (mm)</label><input id="diametro" type="number" class="input-pro" value="12"></div>
+                <div><label class="text-[10px] font-black uppercase text-gray-400">Largo (mm)</label><input id="largo" type="number" class="input-pro" value="45"></div>
+                <div><label class="text-[10px] font-black uppercase text-gray-400">Dientes (Z)</label><input id="z" type="number" class="input-pro" value="4"></div>
+            </div>
+
+            <button onclick="calcularTodo()" id="btnMain" class="btn-rego hover:scale-[1.02] active:scale-95 shadow-xl shadow-red-200">
+                Optimizar Proceso
+            </button>
+        </div>
+      </div>
+
+      <div id="loading" class="hidden p-20 text-center"><div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-100 border-t-red-600"></div></div>
+      
+      <div id="resultado" class="hidden p-8 md:p-12 bg-gray-50 border-t border-gray-100">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-[#28556C] rounded-[24px] p-8 text-white shadow-2xl">
+                <span class="text-[10px] font-black uppercase opacity-50">Ensamble Recomendado</span>
+                <h2 id="res-holder" class="text-3xl font-black italic mt-2">PG 15</h2>
+                <div class="mt-6 space-y-2 border-t border-white/10 pt-4">
+                    <p class="text-xs">Material Detectado: <span id="res-mat" class="font-bold text-[#B7C91F]">---</span></p>
+                    <p class="text-xs text-blue-200">Precisión TIR: <span class="font-bold">&lt; 0.003mm</span></p>
+                </div>
+            </div>
+
+            <div class="flex flex-col justify-center space-y-4">
+                <div class="bg-white p-6 rounded-[20px] shadow-sm flex justify-between items-center border border-gray-200">
+                    <span class="text-[10px] font-black uppercase text-gray-400 italic">Velocidad</span>
+                    <span class="text-2xl font-black text-[#28556C]"><span id="res-rpm">0</span> <small class="text-xs">RPM</small></span>
+                </div>
+                <div class="bg-white p-6 rounded-[20px] shadow-sm flex justify-between items-center border border-gray-200">
+                    <span class="text-[10px] font-black uppercase text-gray-400 italic">Avance</span>
+                    <span class="text-2xl font-black text-[#28556C]"><span id="res-feed">0</span> <small class="text-xs">mm/min</small></span>
+                </div>
+            </div>
         </div>
 
-        <div class="mt-10 bg-white border-l-8 border-[#B7C91F] p-8 rounded-2xl shadow-sm">
-          <p id="txt-nota" class="text-sm text-slate-600 leading-relaxed font-medium italic"></p>
-        </div>
-
-        <div class="mt-8 no-print flex gap-4">
-            <button onclick="generarPDF()" class="bg-black text-white text-[10px] font-black px-6 py-4 rounded-xl uppercase flex-1">Exportar PDF</button>
-            <button onclick="window.location.reload()" class="bg-gray-200 text-gray-600 text-[10px] font-black px-6 py-4 rounded-xl uppercase">Reset</button>
+        <div class="mt-8 bg-white p-8 rounded-[24px] border-l-[12px] border-[#B7C91F] shadow-sm">
+            <h4 class="text-[10px] font-black uppercase text-blue-900 mb-2">Análisis Técnico y Guía de Aplicación</h4>
+            <p id="res-nota" class="text-sm font-medium italic text-gray-600 leading-relaxed"></p>
         </div>
       </div>
     </div>
   </main>
 
   <script>
-    let chartInstance = null;
+    async function calcularTodo() {
+        const btn = document.getElementById('btnMain');
+        const data = {
+            material_texto: document.getElementById('material_texto').value,
+            tool_material: document.getElementById('tool_material').value,
+            aplicacion: document.getElementById('aplicacion').value,
+            diametro: document.getElementById('diametro').value,
+            largo: document.getElementById('largo').value,
+            z: document.getElementById('z').value
+        };
 
-    async function calcularOptimizacion() {
-      // Elementos de la UI
-      const btn = document.getElementById('btnEjecutar');
-      const resultadoDiv = document.getElementById('resultado');
-      const loadingDiv = document.getElementById('loading');
+        if(!data.material_texto) return alert("Describe el material para que la IA pueda clasificarlo.");
 
-      // Obtener valores con validación
-      const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value : null;
+        btn.disabled = true;
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('resultado').classList.add('hidden');
 
-      const params = {
-        material: getVal('material'),
-        aplicacion: getVal('aplicacion'),
-        diametro: getVal('diametro'),
-        largo: getVal('largo'),
-        z: getVal('z'), // Aquí era el error
-        rpm_act: getVal('rpm_act'),
-        feed_act: getVal('feed_act')
-      };
+        try {
+            const res = await fetch('/api/cut-conditions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const resData = await res.json();
 
-      if (!params.material || !params.diametro || !params.z) {
-          alert("Faltan datos críticos para el cálculo.");
-          return;
-      }
+            document.getElementById('res-holder').innerText = resData.holder;
+            document.getElementById('res-mat').innerText = resData.material_detectado;
+            document.getElementById('res-rpm').innerText = resData.new_rpm;
+            document.getElementById('res-feed').innerText = resData.new_feed;
+            document.getElementById('res-nota').innerText = resData.nota;
 
-      btn.disabled = true;
-      loadingDiv.classList.remove('hidden');
-      resultadoDiv.classList.add('hidden');
-
-      try {
-        const response = await fetch('/api/cut-conditions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(params)
-        });
-
-        const data = await response.json();
-
-        // Inyectar Resultados
-        document.getElementById('txt-holder').innerText = data.holder_reco;
-        document.getElementById('txt-boquilla').innerText = "Boquilla Sugerida: " + data.boquilla_reco;
-        document.getElementById('val-rpm-a').innerText = params.rpm_act || "---";
-        document.getElementById('val-feed-a').innerText = params.feed_act || "---";
-        document.getElementById('val-rpm-n').innerText = data.new_rpm;
-        document.getElementById('val-feed-n').innerText = data.new_feed;
-        document.getElementById('badge-mejora').innerText = "+" + data.pct_gain + "% Productividad";
-        document.getElementById('txt-nota').innerText = data.nota;
-
-        dibujarGrafica(params.feed_act || 1000, data.new_feed);
-
-        resultadoDiv.classList.remove('hidden');
-      } catch (err) {
-        alert("Error en el servidor de ingeniería. Verifica tu API de Vercel.");
-      } finally {
-        btn.disabled = false;
-        loadingDiv.classList.add('hidden');
-      }
-    }
-
-    function dibujarGrafica(actual, optimo) {
-      const ctx = document.getElementById('graficaProductividad').getContext('2d');
-      if (chartInstance) chartInstance.destroy();
-      chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Actual', 'REGO-FIX'],
-          datasets: [{
-            data: [actual, optimo],
-            backgroundColor: ['#e2e8f0', '#28556C'],
-            borderRadius: 12
-          }]
-        },
-        options: { plugins: { legend: { display: false } }, scales: { y: { display: false } } }
-      });
-    }
-
-    function generarPDF() {
-        const element = document.getElementById('area-reporte');
-        document.querySelectorAll('.no-print').forEach(el => el.classList.add('hidden'));
-        html2pdf().from(element).save().then(() => {
-            document.querySelectorAll('.no-print').forEach(el => el.classList.remove('hidden'));
-        });
+            document.getElementById('resultado').classList.remove('hidden');
+        } catch (e) {
+            alert("Error en el comando central.");
+        } finally {
+            btn.disabled = false;
+            document.getElementById('loading').classList.add('hidden');
+        }
     }
   </script>
 </body>
