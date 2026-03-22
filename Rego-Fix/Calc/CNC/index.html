@@ -2,135 +2,102 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>REGO-FIX Engineering Guide | Miguel Ramirez</title>
+  <title>REGO-FIX Quick Guide | AlexRaSa</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root { --rego-red: #D31B23; --rego-blue: #28556C; }
-    body { background-color: #fcfcfc; color: #1a1a1a; font-family: 'Inter', sans-serif; }
-    .card-rego { background: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
-    .input-rego { width: 100%; border: 1px solid #d1d5db; border-radius: 10px; padding: 0.8rem; outline: none; transition: 0.2s; background: #fff; font-weight: 600; font-size: 0.9rem; }
-    .input-rego:focus { border-color: var(--rego-blue); box-shadow: 0 0 0 4px rgba(40,85,108,0.1); }
-    .btn-primary { background: var(--rego-red); color: white; font-weight: 800; border-radius: 12px; padding: 1.2rem; transition: 0.3s; width: 100%; text-transform: uppercase; letter-spacing: 1px; }
-    .btn-primary:hover { filter: brightness(0.9); transform: translateY(-1px); }
-    .label-rego { font-size: 0.7rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+    body { background: #f4f4f4; font-family: 'Inter', sans-serif; }
+    .label-f { font-size: 0.7rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; margin-bottom: 4px; display: block; }
+    .input-f { width: 100%; border: 1px solid #ccc; border-radius: 8px; padding: 0.6rem; font-weight: 600; outline: none; }
+    .input-f:focus { border-color: var(--rego-red); }
+    .card-res { background: var(--rego-blue); color: white; border-radius: 16px; padding: 1.5rem; }
   </style>
 </head>
-<body class="py-12 px-4">
+<body class="py-10 px-4">
 
-  <main class="max-w-4xl mx-auto" id="area-impresion">
-    
-    <div class="flex items-center justify-between mb-8 px-2">
-      <img src="/assets/regofixlogo.png" class="h-10" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
-      <div class="text-right">
-        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Smart Engineering Report</p>
-        <p class="text-xs font-bold text-[#28556C]">Consultor: Miguel Alejandro Ramirez</p>
-      </div>
+  <main class="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+    <div class="bg-gray-50 p-6 flex justify-between items-center border-b">
+        <img src="/assets/regofixlogo.png" class="h-8" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
+        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Calculadora de Condiciones Óptimas</span>
     </div>
 
-    <div class="card-rego overflow-hidden">
-      <div class="p-8 md:p-10 no-print">
-        <h1 class="text-2xl font-black text-[#28556C] mb-8 italic">Configuración de Proceso Óptimo</h1>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="md:col-span-2">
-                <label class="label-rego">Descripción de Material de la Pieza</label>
-                <input id="material_texto" class="input-rego" placeholder="Ej: Acero 4140 templado a 35 HRC o Inoxidable 316L...">
-            </div>
-            <div>
-                <label class="label-rego">Interfaz de Husillo (Cono)</label>
-                <select id="cono" class="input-rego">
-                    <option value="HSK-A 63">HSK-A 63</option>
-                    <option value="CAT 40">CAT 40</option>
-                    <option value="BT 40">BT 40</option>
-                    <option value="CAPTO C6">CAPTO C6</option>
-                </select>
-            </div>
-            <div>
-                <label class="label-rego">Material de Herramienta</label>
-                <select id="tool_material" class="input-rego">
-                    <option value="Carburo">Carburo Sólido (HM)</option>
-                    <option value="HSS">HSS-Cobalto</option>
-                    <option value="Ceramica">Cerámica / PCD</option>
-                </select>
-            </div>
-            <div class="md:col-span-2">
-                <label class="label-rego">Estrategia de Maquinado</label>
-                <select id="aplicacion" class="input-rego">
-                    <option value="Desbaste Pesado">Desbaste Pesado (HPC)</option>
-                    <option value="Acabado Fino">Acabado Super-Fino</option>
-                    <option value="Trocoidal">Trocoidal / HEM</option>
-                    <option value="Slotting">Ranurado Total (Slotting)</option>
-                </select>
-            </div>
-            <div class="grid grid-cols-3 gap-4 md:col-span-2">
-                <div><label class="label-rego">Ø mm</label><input id="diametro" type="number" class="input-rego text-center" value="12"></div>
-                <div><label class="label-rego">Largo mm</label><input id="largo" type="number" class="input-rego text-center" value="45"></div>
-                <div><label class="label-rego">Filos (Z)</label><input id="z" type="number" class="input-rego text-center" value="4"></div>
-            </div>
+    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="md:col-span-2">
+            <label class="label-f">Material de la Pieza (Manual)</label>
+            <input id="material_texto" class="input-f" placeholder="Escriba material y dureza...">
         </div>
+        <div>
+            <label class="label-f">Interfaz Husillo</label>
+            <select id="cono" class="input-f">
+                <option value="HSK-A 63">HSK-A 63</option>
+                <option value="CAT 40">CAT 40</option>
+                <option value="BT 40">BT 40</option>
+                <option value="CAPTO C6">CAPTO C6</option>
+            </select>
+        </div>
+        <div>
+            <label class="label-f">Material Herramienta</label>
+            <select id="tool_material" class="input-f">
+                <option value="Carburo">Carburo Sólido</option>
+                <option value="HSS">HSS / Cobalto</option>
+            </select>
+        </div>
+        <div>
+            <label class="label-f">Ø (mm)</label>
+            <input id="diametro" type="number" class="input-f" value="12">
+        </div>
+        <div>
+            <label class="label-f">Filos (Z)</label>
+            <input id="z" type="number" class="input-f" value="4">
+        </div>
+        <div class="md:col-span-2">
+            <label class="label-f">Operación</label>
+            <select id="aplicacion" class="input-f">
+                <option value="Desbaste">Desbaste (HPC)</option>
+                <option value="Acabado">Acabado</option>
+                <option value="Trocoidal">Trocoidal (HEM)</option>
+            </select>
+        </div>
+        <button onclick="calcular()" class="md:col-span-2 bg-[#D31B23] text-white font-black py-4 rounded-xl uppercase tracking-widest hover:brightness-90 transition-all">Optimizar Condiciones</button>
+    </div>
 
-        <button onclick="calcularTodo()" id="btnAction" class="btn-primary">Generar Informe Técnico</button>
-      </div>
-
-      <div id="loading" class="hidden p-20 text-center"><div class="h-10 w-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin inline-block"></div></div>
-
-      <div id="resultado" class="hidden p-8 md:p-12 border-t border-gray-100 bg-gray-50">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div class="bg-[#28556C] rounded-3xl p-8 text-white shadow-lg">
-                <span class="text-[10px] font-black uppercase opacity-60 tracking-widest">Ensamble Sugerido</span>
-                <h2 id="res-sistema" class="text-2xl font-black italic mt-2 uppercase">---</h2>
-                <p id="res-pinza" class="text-[#B7C91F] font-bold text-sm mt-1">---</p>
-                
-                <div class="mt-8 grid grid-cols-2 gap-4 text-center">
-                    <div class="bg-white/10 p-3 rounded-xl"><span class="block text-[8px] font-bold opacity-60 uppercase">Concentricidad</span><span id="res-tir" class="text-xs font-black">---</span></div>
-                    <div class="bg-white/10 p-3 rounded-xl"><span class="block text-[8px] font-bold opacity-60 uppercase">Balanceo</span><span class="text-xs font-black">G2.5 @ 25k</span></div>
+    <div id="resultado" class="hidden p-8 border-t bg-gray-50">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="card-res">
+                <span class="text-[9px] uppercase font-bold opacity-70 tracking-widest">Ensamble Recomendado</span>
+                <h3 id="res-holder" class="text-xl font-black italic mt-1 uppercase">---</h3>
+                <p id="res-pinza" class="text-[#B7C91F] text-xs font-bold mt-1 uppercase tracking-tight italic">---</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-gray-200 text-center">
+                    <span class="label-f m-0">RPM</span>
+                    <span id="res-rpm" class="text-xl font-black text-[#28556C]">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 text-center">
+                    <span class="label-f m-0">Avance</span>
+                    <span id="res-feed" class="text-xl font-black text-[#28556C]">0</span>
                 </div>
             </div>
-
-            <div class="space-y-4">
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 flex justify-between items-center">
-                    <span class="text-[10px] font-black uppercase text-gray-400">Velocidad (RPM)</span>
-                    <span id="res-rpm" class="text-3xl font-black text-[#28556C]">0</span>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 flex justify-between items-center">
-                    <span class="text-[10px] font-black uppercase text-gray-400">Avance (mm/min)</span>
-                    <span id="res-feed" class="text-3xl font-black text-[#28556C]">0</span>
-                </div>
-                <p class="text-[10px] text-gray-400 px-2 font-bold uppercase">Material: <span id="res-mat" class="text-red-600">---</span></p>
-            </div>
         </div>
-
-        <div class="bg-white p-8 rounded-2xl border-l-[10px] border-[#B7C91F] shadow-sm">
-            <h5 class="text-[10px] font-black text-[#28556C] uppercase mb-2 tracking-widest italic">Dictamen de Ingeniería</h5>
-            <p id="res-nota" class="text-sm font-medium leading-relaxed text-gray-600 italic"></p>
+        <div class="bg-white p-6 rounded-xl border-l-4 border-[#B7C91F]">
+            <span id="res-mejora" class="text-[10px] font-black text-green-600 uppercase block mb-1 tracking-widest">---</span>
+            <p id="res-nota" class="text-xs font-bold italic text-gray-600 leading-snug"></p>
         </div>
-
-        <div class="mt-8 flex gap-4 no-print">
-            <button onclick="exportarPDF()" class="bg-gray-800 text-white text-[10px] font-black px-8 py-4 rounded-xl uppercase flex-1">Exportar Ficha PDF</button>
-            <button onclick="location.reload()" class="bg-gray-200 text-gray-500 text-[10px] font-black px-8 py-4 rounded-xl uppercase hover:bg-gray-300">Nuevo</button>
-        </div>
-      </div>
     </div>
   </main>
 
   <script>
-    async function calcularTodo() {
-        const btn = document.getElementById('btnAction');
+    async function calcular() {
         const data = {
             material_texto: document.getElementById('material_texto').value,
             cono: document.getElementById('cono').value,
             tool_material: document.getElementById('tool_material').value,
-            aplicacion: document.getElementById('aplicacion').value,
             diametro: document.getElementById('diametro').value,
-            largo: document.getElementById('largo').value,
-            z: document.getElementById('z').value
+            z: document.getElementById('z').value,
+            aplicacion: document.getElementById('aplicacion').value
         };
+        if(!data.material_texto) return alert("Escribe el material.");
 
-        if(!data.material_texto) return alert("Ingrese material para el análisis.");
-
-        btn.disabled = true;
-        document.getElementById('loading').classList.remove('hidden');
         document.getElementById('resultado').classList.add('hidden');
 
         try {
@@ -139,27 +106,16 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            const result = await res.json();
-
-            document.getElementById('res-sistema').innerText = result.sistema;
-            document.getElementById('res-pinza').innerText = result.pinza;
-            document.getElementById('res-tir').innerText = result.tir;
-            document.getElementById('res-rpm').innerText = result.new_rpm.toLocaleString();
-            document.getElementById('res-feed').innerText = result.new_feed.toLocaleString();
-            document.getElementById('res-mat').innerText = result.mat_info;
-            document.getElementById('res-nota').innerText = result.nota;
-
+            const r = await res.json();
+            
+            document.getElementById('res-holder').innerText = r.holder;
+            document.getElementById('res-pinza').innerText = r.pinza;
+            document.getElementById('res-rpm').innerText = r.rpm.toLocaleString();
+            document.getElementById('res-feed').innerText = r.feed.toLocaleString();
+            document.getElementById('res-mejora').innerText = r.mejora + " — TIR < 3µm Garantizado";
+            document.getElementById('res-nota').innerText = r.nota;
             document.getElementById('resultado').classList.remove('hidden');
-        } catch (e) { alert("Error en el núcleo de ingeniería."); } 
-        finally { btn.disabled = false; document.getElementById('loading').classList.add('hidden'); }
-    }
-
-    function exportarPDF() {
-        const element = document.getElementById('area-impresion');
-        document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-        html2pdf().from(element).save().then(() => {
-            document.querySelectorAll('.no-print').forEach(el => el.style.display = 'flex');
-        });
+        } catch(e) { alert("Error."); }
     }
   </script>
 </body>
