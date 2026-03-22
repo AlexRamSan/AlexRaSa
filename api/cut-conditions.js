@@ -1,83 +1,83 @@
 // api/cut-conditions.js
 
-const ISO_MAP = {
-  P: { name: "Aceros", vc_base: 160, fz_base: 0.06 },
-  M: { name: "Inoxidables", vc_base: 95, fz_base: 0.045 },
-  K: { name: "Fundiciones", vc_base: 180, fz_base: 0.10 },
-  N: { name: "No Ferrosos", vc_base: 550, fz_base: 0.18 },
-  S: { name: "Superaleaciones / Ti", vc_base: 50, fz_base: 0.035 },
-  H: { name: "Duros >50HRC", vc_base: 45, fz_base: 0.02 }
+const ISO_DATA = {
+  P: { name: "Aceros", vc: 160, fz: 0.06 },
+  M: { name: "Inoxidables", vc: 95, fz: 0.045 },
+  K: { name: "Fundiciones", vc: 180, fz: 0.10 },
+  N: { name: "No Ferrosos", vc: 550, fz: 0.18 },
+  S: { name: "Superaleaciones / Ti", vc: 50, fz: 0.035 },
+  H: { name: "Duros >50HRC", vc: 45, fz: 0.02 }
 };
 
-const TOOL_FACTORS = { "Carburo": 1.0, "HSS": 0.35, "Ceramica": 2.2 };
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
-
   const { material_texto, tool_material, aplicacion, diametro, largo, z, coolant } = req.body;
   const d = parseFloat(diametro);
 
-  // 1. Clasificación del Material vía IA
+  // 1. CLASIFICACIÓN IA DEL MATERIAL
   const aiClass = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      messages: [{ role: "system", content: "Clasifica el material en categoría ISO (P,M,K,N,S,H) y estima HRC. Devuelve JSON: {iso: 'P', hrc: '32'}" }],
+      messages: [{ role: "system", content: "Clasifica material en categoría ISO (P,M,K,N,S,H). Devuelve JSON: {iso: 'P', hrc: '30'}" }],
       response_format: { type: "json_object" }
     })
   });
   const { iso, hrc } = JSON.parse((await aiClass.json()).choices[0].message.content);
-  const base = ISO_MAP[iso] || ISO_MAP.P;
+  const base = ISO_DATA[iso] || ISO_DATA.P;
 
-  // 2. Selección de Ensamble (Educado por Catálogo REGO-FIX)
-  let holder = "";
-  let collet = "";
+  // 2. MATRIZ DE DECISIÓN DE SISTEMA (ER vs PG vs SG)
+  let sistema = "";
+  let pinza = "";
   let tir = "0.003mm";
+  let factor_rigidez = 1.0;
 
-  // Lógica secuRgrip (SG) vs powRgrip (PG) vs micRun (MR)
-  if (d < 3) {
-    holder = "micRun (MR) High Precision";
-    collet = `MR ${d <= 1.5 ? '11' : '16'} Ultra-Precision`;
+  if (aplicacion.includes("Roscado")) {
+    sistema = "ER-TAP o PG-TAP";
+    pinza = `Pinza con Cuadradillo (GT)`;
+    tir = "0.010mm";
+  } else if (d < 3) {
+    sistema = "micRun (MR)";
+    pinza = `MR ${d <= 1.5 ? '11' : '16'} (UP)`;
     tir = "0.002mm";
+    factor_rigidez = 1.15;
+  } else if ((iso === 'S' || iso === 'M') && aplicacion.includes("Desbaste") && d >= 10) {
+    sistema = "secuRgrip (SG) - Anti Pull-out";
+    pinza = `PG-SG Heavy Duty`;
+    factor_rigidez = 1.40;
+  } else if (aplicacion.includes("Acabado") && d > 6) {
+    sistema = "powRgrip (PG) Standard";
+    pinza = `PG ${d <= 12 ? '15' : '25'} Standard`;
+    factor_rigidez = 1.25;
   } else {
-    // Rango de Diámetros PG (image_7.png)
-    let pg_size = d <= 6 ? "10" : d <= 12 ? "15" : d <= 20 ? "25" : "32";
-    
-    // Activación de secuRgrip (SG) - image_8.png
-    const requiereSG = (iso === 'S' || iso === 'M' || aplicacion.includes("Desbaste")) && d >= 10;
-    
-    if (requiereSG) {
-      holder = `PG ${pg_size} HD-SG (Heavy Duty)`;
-      collet = `PG ${pg_size}-SG secuRgrip`;
-    } else {
-      holder = `powRgrip (PG) ${pg_size}`;
-      collet = `PG ${pg_size} Standard / ${coolant.includes("Interno") ? 'DM' : 'CF'}`;
-    }
+    sistema = "ER Ultra-Precisión (UP)";
+    pinza = `ER ${d <= 10 ? '16' : '32'} UP`;
+    tir = "0.005mm";
+    factor_rigidez = 1.10;
   }
 
-  // 3. Cálculos de Ingeniería (Fórmulas Reales)
-  const t_factor = TOOL_FACTORS[tool_material] || 1.0;
-  const v_opt = Math.round((base.vc_base * t_factor * 1000) / (Math.PI * d));
-  const f_opt = Math.round(v_opt * parseInt(z) * (base.fz_base * 1.30)); // +30% por rigidez suiza
+  // 3. CÁLCULOS TÉCNICOS
+  const t_factor = tool_material === "HSS" ? 0.35 : (tool_material === "Ceramica" ? 2.2 : 1.0);
+  const v_opt = Math.round((base.vc * t_factor * 1000) / (Math.PI * d));
+  const f_opt = Math.round(v_opt * parseInt(z) * (base.fz * factor_rigidez));
 
-  // 4. Dictamen Final
+  // 4. DICTAMEN IA BASADO EN CATÁLOGO
   const aiDictamen = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: `Material: ${material_texto} (${iso}). Holder: ${holder}. RPM: ${v_opt}, Feed: ${f_opt}. Explica por qué TIR < 3um y el balanceo G2.5 benefician esta operación de ${aplicacion}.` }]
+      messages: [{ role: "user", content: `Material: ${material_texto}. Operación: ${aplicacion}. Sistema Elegido: ${sistema}. RPM: ${v_opt}, Feed: ${f_opt}. Justifica técnicamente por qué este sistema (ER, PG o SG) es el ideal según los estándares suizos de REGO-FIX.` }]
     })
   });
 
   const finalRes = await aiDictamen.json();
 
   res.status(200).json({
-    holder, collet, tir,
+    sistema, pinza, tir,
     new_rpm: v_opt,
     new_feed: f_opt,
-    mat_info: `${base.name} (~${hrc} HRC)`,
+    material_detectado: `${base.name} (~${hrc} HRC)`,
     nota: finalRes.choices[0].message.content
   });
 }
