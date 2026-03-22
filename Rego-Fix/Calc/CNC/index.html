@@ -6,104 +6,152 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root { --rego-red: #D31B23; --rego-blue: #28556C; }
+    :root { --rego-red: #D31B23; --rego-blue: #28556C; --rego-green: #B7C91F; }
     body { background: #f4f4f5; font-family: 'Inter', sans-serif; }
     .input-libre { width: 100%; border: 1px solid #d4d4d8; border-radius: 8px; padding: 0.75rem; font-weight: 600; outline: none; transition: 0.2s; color: #18181b; }
     .input-libre:focus { border-color: var(--rego-red); box-shadow: 0 0 0 3px rgba(211,27,35,0.1); }
     .lbl { font-size: 0.65rem; font-weight: 900; color: var(--rego-blue); text-transform: uppercase; margin-bottom: 4px; display: block; letter-spacing: 0.5px; }
-    .data-box { background: white; border: 1px solid #e4e4e7; border-radius: 12px; padding: 1.5rem; }
-    
-    /* Toggle Switch Styles */
     .toggle-checkbox:checked { right: 0; border-color: var(--rego-red); background-color: var(--rego-red); }
     .toggle-checkbox:checked + .toggle-label { background-color: #fca5a5; }
+    
+    /* Infographic Styles */
+    .info-box { border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; text-align: center; background: white; }
+    .info-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
   </style>
 </head>
 <body class="py-10 px-4">
 
-  <main class="max-w-5xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+  <main class="max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-200">
     
-    <div class="bg-gray-50 p-6 flex justify-between items-center border-b border-gray-200">
-        <img src="/assets/regofixlogo.png" class="h-8" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
-        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Diagnóstico de Ingeniería a Pie de Máquina</span>
+    <div class="bg-white p-6 flex justify-between items-center border-b border-gray-200">
+        <img src="/assets/regofixlogo.png" class="h-10" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
+        <div class="text-right">
+            <h1 class="text-lg font-black text-[#28556C] uppercase tracking-tighter">Diagnóstico de Ingeniería a Pie de Máquina</h1>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Consultor: Miguel Ramirez</span>
+        </div>
     </div>
 
-    <div class="p-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div><label class="lbl">Material de Pieza</label><input id="material" type="text" class="input-libre" placeholder="Ej: Inconel 718"></div>
+    <div class="p-8 bg-gray-50/50">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div><label class="lbl">Material y Dureza</label><input id="material" type="text" class="input-libre" placeholder="Ej: Inconel 718"></div>
             <div><label class="lbl">Material de Herramienta</label><input id="herramienta" type="text" class="input-libre" placeholder="Ej: Carburo Sólido"></div>
-            <div><label class="lbl">Interfaz de Máquina</label><input id="interfaz" type="text" class="input-libre" placeholder="Ej: CAT 40 / HSK 63"></div>
+            <div><label class="lbl">Interfaz de Husillo</label><input id="interfaz" type="text" class="input-libre" placeholder="Ej: CAT 40 / HSK 63"></div>
+            <div><label class="lbl">Operación a Realizar</label><input id="operacion" type="text" class="input-libre" placeholder="Ej: Desbaste HPC"></div>
             
-            <div><label class="lbl">Operación</label><input id="operacion" type="text" class="input-libre" placeholder="Ej: Desbaste HPC"></div>
-            <div><label class="lbl">Lubricación</label><input id="lubricacion" type="text" class="input-libre" placeholder="Ej: Interna Alta Presión"></div>
-            <div><label class="lbl">RPM Máximas (Máquina)</label><input id="max_rpm" type="number" class="input-libre font-bold text-red-600" value="12000" placeholder="Límite del husillo"></div>
-
-            <div class="lg:col-span-3 grid grid-cols-3 gap-4">
-                <div><label class="lbl">Ø (mm)</label><input id="diametro" type="number" step="0.1" class="input-libre text-center" value="12"></div>
-                <div><label class="lbl">Voladizo (mm)</label><input id="largo" type="number" step="1" class="input-libre text-center" value="50"></div>
-                <div><label class="lbl">Filos (Z)</label><input id="z" type="number" class="input-libre text-center" value="4"></div>
+            <div><label class="lbl">Lubricación / Refrigerante</label><input id="lubricacion" type="text" class="input-libre" placeholder="Ej: Interna Alta Presión"></div>
+            <div><label class="lbl">Ø (mm)</label><input id="diametro" type="number" step="0.1" class="input-libre text-center" value="12"></div>
+            <div><label class="lbl">Voladizo (mm)</label><input id="largo" type="number" step="1" class="input-libre text-center" value="50"></div>
+            <div class="flex gap-2">
+                <div class="w-1/2"><label class="lbl">Filos (Z)</label><input id="z" type="number" class="input-libre text-center" value="4"></div>
+                <div class="w-1/2"><label class="lbl">RPM Max</label><input id="max_rpm" type="number" class="input-libre text-center text-red-600 font-bold" value="12000"></div>
             </div>
         </div>
 
-        <div class="bg-slate-50 border border-slate-200 p-5 rounded-xl mb-8">
-            <div class="flex items-center mb-4">
-                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+        <div class="flex flex-col lg:flex-row gap-6 items-center bg-white p-5 rounded-xl border border-gray-200">
+            <div class="flex items-center w-full lg:w-auto">
+                <div class="relative inline-block w-10 mr-3 align-middle select-none transition duration-200 ease-in">
                     <input type="checkbox" name="toggle" id="toggle_actuales" onchange="toggleActuales()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10"/>
                     <label for="toggle_actuales" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
                 </div>
-                <label class="text-sm font-black text-slate-700 uppercase tracking-tight cursor-pointer" for="toggle_actuales">Tengo condiciones actuales a mejorar</label>
+                <label class="text-[11px] font-black text-slate-700 uppercase tracking-tight cursor-pointer" for="toggle_actuales">Tengo condiciones actuales a mejorar</label>
             </div>
-            
-            <div id="panel_actuales" class="hidden grid grid-cols-2 gap-4 transition-all">
-                <div><label class="lbl">RPM Actuales</label><input id="rpm_actual" type="number" class="input-libre" placeholder="Ej: 4500"></div>
-                <div><label class="lbl">Avance Actual (mm/min)</label><input id="avance_actual" type="number" class="input-libre" placeholder="Ej: 1200"></div>
+            <div id="panel_actuales" class="hidden flex-1 grid grid-cols-2 gap-4 w-full">
+                <input id="rpm_actual" type="number" class="input-libre text-sm" placeholder="RPM Actuales">
+                <input id="avance_actual" type="number" class="input-libre text-sm" placeholder="Avance Actual (mm/min)">
             </div>
         </div>
         
-        <button onclick="procesarDatos()" id="btnGo" class="w-full bg-[#D31B23] text-white font-black py-4 rounded-xl uppercase tracking-widest hover:bg-red-800 transition-colors shadow-lg">
-            Generar Diagnóstico y Gráfica
+        <button onclick="procesarDatos()" id="btnGo" class="mt-6 w-full bg-[#D31B23] text-white font-black py-4 rounded-xl uppercase tracking-widest hover:bg-red-800 transition-colors shadow-lg">
+            Generar Diagnóstico Técnico y Ficha de Proceso
         </button>
     </div>
 
-    <div id="loader" class="hidden p-10 text-center text-[#28556C] font-black text-sm uppercase animate-pulse">Analizando Física de Corte y Límites de Husillo...</div>
+    <div id="loader" class="hidden p-12 text-center text-[#28556C] font-black text-sm uppercase animate-pulse">Analizando Cinemática de Corte y Límites de Husillo...</div>
 
-    <div id="resultado" class="hidden border-t bg-gray-50 flex flex-col lg:flex-row">
+    <div id="resultado" class="hidden border-t border-gray-200 bg-white">
         
-        <div class="p-8 lg:w-1/2 flex flex-col gap-6">
-            <div class="bg-[#28556C] text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
-                <span class="text-[9px] uppercase font-bold opacity-70 tracking-widest">Ensamble Sugerido</span>
-                <h3 id="res-sistema" class="text-xl font-black mt-2">---</h3>
-                <p id="res-pinza" class="text-[#B7C91F] text-sm font-bold mt-1">---</p>
-                <div class="mt-4 pt-4 border-t border-white/20 flex justify-between">
-                    <span class="text-xs font-bold text-blue-200">TIR &lt; 3µm</span>
-                    <span class="text-xs font-bold text-blue-200">G 2.5 @ 25k</span>
-                </div>
-            </div>
+        <div class="p-8 border-b border-gray-100 bg-slate-50">
+            <h2 class="text-center text-lg font-black text-[#28556C] uppercase tracking-widest mb-6">Diagnóstico de Mejora del Proceso de Mecanizado</h2>
             
-            <div class="grid grid-cols-2 gap-4">
-                <div class="data-box text-center flex flex-col justify-center relative">
-                    <span class="lbl m-0">RPM Sugeridas</span>
-                    <span id="res-rpm" class="text-3xl font-black text-[#28556C]">0</span>
-                    <span id="res-capping" class="hidden absolute top-2 right-2 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500" title="Topado al límite de máquina"></span></span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+                <div class="hidden md:flex absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 bg-white rounded-full p-2 shadow-lg">
+                    <span class="text-2xl">➡️</span>
                 </div>
-                <div class="data-box text-center flex flex-col justify-center">
-                    <span class="lbl m-0">Avance (mm/min)</span>
-                    <span id="res-feed" class="text-3xl font-black text-[#28556C]">0</span>
-                </div>
-            </div>
 
-            <div class="bg-white p-6 rounded-2xl border-l-[6px] border-[#B7C91F] shadow-sm">
-                <p id="res-nota" class="text-sm font-medium text-gray-700 leading-relaxed italic"></p>
+                <div class="info-box border-red-200 bg-red-50/30">
+                    <h3 class="text-xs font-black text-red-700 uppercase mb-4">Proceso Actual (Riesgos)</h3>
+                    <div class="flex justify-around">
+                        <div><span class="info-icon">🎯❌</span><span class="text-[9px] font-bold uppercase text-gray-600 block">Alto TIR<br>(Desgaste)</span></div>
+                        <div><span class="info-icon">🔧⚠️</span><span class="text-[9px] font-bold uppercase text-gray-600 block">Fuerza Apriete<br>(Pull-out)</span></div>
+                        <div><span class="info-icon">📉📳</span><span class="text-[9px] font-bold uppercase text-gray-600 block">Límite Avance<br>(Vibración)</span></div>
+                    </div>
+                </div>
+
+                <div class="info-box border-green-200 bg-green-50/30 shadow-md">
+                    <h3 class="text-xs font-black text-green-700 uppercase mb-4">Optimizado con REGO-FIX</h3>
+                    <div class="flex justify-around">
+                        <div><span class="info-icon">🎯✅</span><span class="text-[9px] font-bold uppercase text-gray-800 block">&lt;3µm TIR<br>(Precisión)</span></div>
+                        <div><span class="info-icon">🛡️✅</span><span class="text-[9px] font-bold uppercase text-gray-800 block">secuRgrip<br>(Anti-Extracción)</span></div>
+                        <div><span class="info-icon">🚀📈</span><span class="text-[9px] font-bold uppercase text-gray-800 block">Avance Max<br>(Estabilidad)</span></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="area_grafica" class="hidden p-8 lg:w-1/2 bg-white border-l border-gray-200 flex-col justify-center items-center">
-            <span id="res-mejora" class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-xs font-black uppercase mb-6 tracking-widest shadow-sm">---</span>
-            <div class="w-full h-64">
-                <canvas id="chartMRR"></canvas>
-            </div>
-            <p class="text-[10px] text-gray-400 font-bold uppercase mt-4 text-center">Comparativa de Productividad de Avance (Vf)</p>
-        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3">
+            
+            <div class="p-8 lg:col-span-2 flex flex-col gap-6 border-r border-gray-100">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-[#28556C] text-white rounded-2xl p-6 shadow-md flex flex-col justify-center">
+                        <span class="text-[9px] uppercase font-bold text-blue-300 tracking-widest mb-1">Sujeción Sugerida</span>
+                        <h3 id="res-sistema" class="text-xl font-black mt-1">---</h3>
+                        <p id="res-pinza" class="text-[#B7C91F] text-xs font-bold mt-2">---</p>
+                        <p class="text-xs font-bold text-blue-200 mt-2 pt-2 border-t border-white/20">TIR &lt; 3µm Garantizado</p>
+                    </div>
 
+                    <div class="border border-[#28556C] rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                        <div class="bg-[#28556C] text-white text-[10px] font-black uppercase tracking-widest p-2 text-center">Condiciones Sugeridas (Óptimas)</div>
+                        <div class="p-4 text-center bg-white flex-1 flex flex-col justify-center relative">
+                            <span id="res-capping" class="hidden text-[10px] bg-red-100 text-red-700 font-bold px-2 py-1 rounded-full absolute top-2 right-2">Capping ⚙️</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">RPM Sugeridas</span>
+                            <span id="res-rpm" class="text-2xl font-black text-[#D31B23]">0</span>
+                        </div>
+                        <div class="grid grid-cols-3 bg-slate-100 divide-x divide-gray-200 border-t border-gray-200">
+                            <div class="p-2 text-center">
+                                <span class="block text-[8px] font-black uppercase text-gray-500">pulg/min (ipm)</span>
+                                <span id="res-feed-inch" class="font-black text-[#28556C]">0.0</span>
+                            </div>
+                            <div class="p-2 text-center">
+                                <span class="block text-[8px] font-black uppercase text-gray-500">m/min</span>
+                                <span id="res-feed-m" class="font-black text-[#28556C]">0.0</span>
+                            </div>
+                            <div class="p-2 text-center bg-blue-50">
+                                <span class="block text-[8px] font-black uppercase text-blue-800">mm/min</span>
+                                <span id="res-feed-mm" class="font-black text-[#28556C]">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border-l-4 border-[#B7C91F] shadow-sm">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Dictamen de Ingeniería</span>
+                    <p id="res-nota" class="text-sm font-medium text-gray-700 leading-relaxed italic"></p>
+                </div>
+            </div>
+
+            <div id="area_grafica" class="hidden p-8 bg-white flex-col justify-center items-center relative">
+                <h4 class="text-[10px] font-black text-gray-800 uppercase tracking-widest text-center mb-6">Comparación de Productividad</h4>
+                <span id="res-mejora" class="absolute top-16 bg-green-500 text-white px-4 py-1 rounded-full text-xs font-black uppercase shadow-md z-10">---</span>
+                <div class="w-full h-48 mt-4">
+                    <canvas id="chartMRR"></canvas>
+                </div>
+                <div class="w-full flex justify-between px-8 mt-2 text-[9px] font-black uppercase text-gray-400">
+                    <span>Actual</span>
+                    <span class="text-[#28556C]">Optimizado</span>
+                </div>
+            </div>
+
+        </div>
     </div>
   </main>
 
@@ -142,7 +190,7 @@
         };
 
         if(!data.material || !data.diametro || !data.largo) return alert("Material, Diámetro y Voladizo son requeridos.");
-        if(isChecked && !data.avance_actual) return alert("Si activas las condiciones actuales, ingresa el Avance Actual para graficar.");
+        if(isChecked && !data.avance_actual) return alert("Ingresa el Avance Actual para generar la gráfica.");
 
         btn.disabled = true;
         document.getElementById('loader').classList.remove('hidden');
@@ -157,26 +205,28 @@
             });
             const r = await res.json();
             
-            // Inyectar datos de texto
+            // Textos
             document.getElementById('res-sistema').innerText = r.sistema_recomendado;
             document.getElementById('res-pinza').innerText = r.pinza_sugerida;
             document.getElementById('res-rpm').innerText = Number(r.rpm_calculado).toLocaleString();
-            document.getElementById('res-feed').innerText = Number(r.avance_calculado).toLocaleString();
             document.getElementById('res-nota').innerText = r.dictamen_tecnico;
             document.getElementById('res-mejora').innerText = r.mejora_esperada;
 
-            // Mostrar punto rojo si se activó el Capping de RPM
-            if(r.capping_activado) {
-                document.getElementById('res-capping').classList.remove('hidden');
-            } else {
-                document.getElementById('res-capping').classList.add('hidden');
-            }
+            // Multi-Unidad Math (Frontend based on mm/min from backend)
+            const vf_mm = Number(r.avance_calculado);
+            document.getElementById('res-feed-mm').innerText = vf_mm.toLocaleString();
+            document.getElementById('res-feed-inch').innerText = (vf_mm / 25.4).toFixed(2);
+            document.getElementById('res-feed-m').innerText = (vf_mm / 1000).toFixed(2);
 
-            // Dibujar gráfica si hay condiciones actuales
+            // Capping Badge
+            if(r.capping_activado) document.getElementById('res-capping').classList.remove('hidden');
+            else document.getElementById('res-capping').classList.add('hidden');
+
+            // Gráfica
             if(isChecked && data.avance_actual) {
                 document.getElementById('area_grafica').classList.remove('hidden');
                 document.getElementById('area_grafica').classList.add('flex');
-                renderChart(parseFloat(data.avance_actual), parseFloat(r.avance_calculado));
+                renderChart(parseFloat(data.avance_actual), vf_mm);
             }
             
             document.getElementById('resultado').classList.remove('hidden');
@@ -195,22 +245,23 @@
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Proceso Actual', 'REGO-FIX Optimizado'],
+                labels: ['Actual', 'REGO-FIX'],
                 datasets: [{
                     data: [actual, optimo],
-                    backgroundColor: ['#cbd5e1', '#28556C'],
-                    borderRadius: 8,
-                    barThickness: 60
+                    backgroundColor: ['#e5e7eb', '#28556C'],
+                    borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
+                    barThickness: 70
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: { legend: { display: false }, tooltip: { enabled: true } },
                 scales: { 
-                    y: { display: false, grid: { display: false } },
-                    x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 11, family: 'Inter' } } }
-                }
+                    y: { display: false, grid: { display: false }, min: 0 },
+                    x: { display: false, grid: { display: false } }
+                },
+                animation: { duration: 1500, easing: 'easeOutQuart' }
             }
         });
     }
