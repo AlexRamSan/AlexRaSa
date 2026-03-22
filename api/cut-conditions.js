@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   const l = parseFloat(largo);
 
   const promptIngenieria = `
-    Eres el motor de cálculo técnico de REGO-FIX. Analiza estas entradas libres del operador:
+    Eres el motor de cálculo técnico de REGO-FIX. Analiza estas entradas del usuario:
     - Pieza: ${material}
     - Herramienta: ${herramienta}
     - Interfaz Máquina: ${interfaz}
@@ -20,36 +20,40 @@ export default async function handler(req, res) {
     
     1. REGLA DE MICRO-MECANIZADO: Si Ø < 3mm -> Sistema: "micRun (MR)".
 
-    2. REGLA SECURGRIP (SG) - PROTECCIÓN ANTI PULL-OUT:
-       - Se activa SI Y SOLO SI la operación es HPC/Desbaste pesado EN materiales duros (Titanio, Inconel, Inox) Y el diámetro (Ø) está soportado.
-       - TAMAÑOS SOPORTADOS PARA PG-SG (Basado en catálogo oficial):
-         * PG 15-SG: Solo soporta Ø 10mm.
-         * PG 25-SG: Soporta Ø 10, 12, 14, 16, 18, 20mm (o pulgadas 1/2", 5/8", 3/4").
-         * PG 32-SG: Soporta Ø 10, 12, 14, 16, 18, 20, 25mm (o pulgadas 1/2" a 1").
-       - TAMAÑOS SOPORTADOS PARA ER-SG: ER 32-SG o ER 40-SG (A partir de Ø 10mm).
-       - Si el Ø es menor a 10mm, ES IMPOSIBLE USAR secuRgrip. Pasa a la Regla 3.
-       - Nomenclatura obligatoria de la pinza: "PG [Tamaño]-SG secuRgrip" o "ER [Tamaño]-SG secuRgrip".
+    2. REGLA SECURGRIP (SG) - ANTI PULL-OUT:
+       - Se activa OBLIGATORIAMENTE si la operación es Desbaste/HPC EN materiales duros (Titanio, Inconel, Inox) Y Ø >= 10mm.
+       - RESTRICCIONES DE HUSILLO PARA PG-SG (Crucial):
+         * Si Interfaz es HSK-A 63: Soporta PG 15-SG, PG 25-SG, PG 32-SG.
+         * Si Interfaz es CAT 40, BT 40, SK 40, Capto C6: Soporta PRINCIPALMENTE PG 25-SG y PG 32-SG. (No uses PG 15-SG aquí, salta al 25).
+         * Si Interfaz es CAT 50, BT 50, HSK-A 100: Soporta PG 25-SG, PG 32-SG, PG 48-SG.
+       - TAMAÑOS DE BOQUILLA PARA PG-SG:
+         * PG 15-SG: Solo para Ø 10mm.
+         * PG 25-SG: Para Ø 10, 12, 14, 16, 18, 20mm (o 1/2", 5/8", 3/4").
+         * PG 32-SG: Para Ø 10 al 25mm (o 1/2" a 1").
+       - También puedes sugerir ER-SG (ER 32-SG o ER 40-SG) si el usuario especifica interfaz ER.
+       - Nomenclatura del Sistema: "[Interfaz] / powRgrip PG [Tamaño]-SG"
+       - Nomenclatura de Pinza: "Pinza PG [Tamaño]-SG secuRgrip para Ø${d}mm"
 
     3. REGLA POWRGRIP (PG) ESTÁNDAR: Para el resto de los casos.
-       - TAMAÑOS: PG10 (hasta 6mm), PG15 (hasta 12mm), PG25 (hasta 20mm), PG32 (hasta 25.4mm).
+       - Tamaños: PG10 (hasta 6mm), PG15 (hasta 12mm), PG25 (hasta 20mm), PG32 (hasta 25.4mm).
     
-    4. REGLA DE LUBRICACIÓN: Si el usuario indica lubricación "Interna" o "Centro", añade a la pinza sugerida el sufijo DM (Estanca para ER) o Cool-Flow/Estanca (para PG).
+    4. REGLA DE LUBRICACIÓN: Si indica "Interna" o "Centro", añade "Estanca" o "Cool-Flow".
 
-    5. FÍSICA DE CORTE Y DEFLEXIÓN: 
+    5. FÍSICA Y DEFLEXIÓN: 
        - Deduce Velocidad de Corte (Vc) y avance por diente (fz).
-       - Calcula RPM = (Vc * 1000) / (PI * Ø).
-       - Calcula Avance (Vf) = RPM * Z * fz.
-       - Incrementa el avance 25% por la rigidez de REGO-FIX.
-       - Ratio L/D actual es ${l/d}. Si es > 3.5, justifica en el dictamen cómo el TIR < 3µm del portaherramientas salva la vida de la herramienta frente a la deflexión.
+       - RPM = (Vc * 1000) / (PI * Ø).
+       - Avance (Vf) = RPM * Z * fz.
+       - Incrementa el avance 25% gracias a la rigidez REGO-FIX.
+       - Ratio L/D actual es ${l/d}. Si es > 3.5, justifica en el dictamen cómo la fuerza de sujeción salva la herramienta.
 
-    Devuelve ÚNICAMENTE un JSON con esta estructura exacta (rpm y avance como enteros):
+    Devuelve ÚNICAMENTE JSON con esta estructura (rpm y avance enteros):
     {
-      "sistema_recomendado": "Ej: HSK-A 63 / powRgrip PG 25-SG",
-      "pinza_sugerida": "Ej: Pinza PG 25-SG Estanca",
+      "sistema_recomendado": "Ej: CAT 40 / powRgrip PG 25-SG",
+      "pinza_sugerida": "Ej: Pinza PG 25-SG Estanca Ø12mm",
       "rpm_calculado": 0,
       "avance_calculado": 0,
-      "mejora_esperada": "Ej: +25% de Avance y 100% Anti Pull-out",
-      "dictamen_tecnico": "2 líneas: Justifica la selección considerando deflexión (L/D) y lubricación."
+      "mejora_esperada": "Ej: +25% Avance y Anti Pull-out",
+      "dictamen_tecnico": "2 líneas: Justifica la selección (cono, SG, etc) considerando deflexión y material."
     }
   `;
 
@@ -61,13 +65,13 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o", 
         messages: [
           { role: "system", content: "Eres ingeniero de aplicaciones REGO-FIX. Responde solo en JSON válido." },
           { role: "user", content: promptIngenieria }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.1 // Casi cero para forzar exactitud de catálogo
+        temperature: 0.1 
       })
     });
 
