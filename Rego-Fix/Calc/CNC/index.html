@@ -3,196 +3,246 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>REGO-FIX Engineering Expert | AlexRaSa</title>
+  <title>REGO-FIX Cutting Expert | AlexRaSa</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
   <style>
     :root { --rego-red: #D31B23; --rego-blue: #28556C; --rego-green: #B7C91F; }
-    body { background-color: #f9fafb; color: #1a1a1a; font-family: 'Inter', sans-serif; }
-    .rego-card { background: white; border-radius: 24px; box-shadow: 0 15px 40px rgba(40,85,108,0.08); border: 1px solid rgba(40,85,108,0.1); }
-    .input-rego { width: 100%; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0.8rem; outline: none; transition: 0.2s; }
-    .input-rego:focus { border-color: var(--rego-blue); box-shadow: 0 0 0 4px rgba(40,85,108,0.05); }
-    .btn-rego { background: var(--rego-red); color: white; font-weight: 800; border-radius: 16px; padding: 1.2rem; transition: 0.3s; width: 100%; text-transform: uppercase; }
-    .btn-rego:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(211,27,35,0.3); }
+    body { background-color: #f8fafc; color: #1e293b; font-family: 'Inter', system-ui, sans-serif; }
+    .rego-card { background: white; border-radius: 24px; box-shadow: 0 20px 50px rgba(40,85,108,0.1); border: 1px solid rgba(40,85,108,0.1); }
+    .input-rego { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.8rem; outline: none; transition: 0.2s; background: #fff; font-size: 0.95rem; }
+    .input-rego:focus { border-color: var(--rego-blue); box-shadow: 0 0 0 4px rgba(40,85,108,0.08); }
+    .btn-rego { background: var(--rego-red); color: white; font-weight: 800; border-radius: 14px; padding: 1.2rem; transition: 0.3s; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-rego:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(211,27,35,0.25); }
+    .btn-rego:disabled { opacity: 0.5; cursor: wait; }
     .label-rego { display: block; font-size: 0.75rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .badge-rego { padding: 4px 12px; border-radius: 99px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+    
+    @media print { .no-print { display: none !important; } }
   </style>
 </head>
-<body class="py-12 px-4">
+<body class="py-10 px-4">
 
-  <main class="max-w-4xl mx-auto">
-    <div class="flex flex-col sm:flex-row items-center justify-between mb-10 gap-4">
+  <main class="max-w-4xl mx-auto" id="area-reporte">
+    
+    <div class="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
       <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-12" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
-      <div class="flex items-center gap-4">
-        <div class="text-right border-r pr-4 border-gray-200">
-          <span class="block text-[10px] font-black text-gray-400 uppercase">Consultor de Manufactura</span>
-          <span class="text-sm font-bold text-[#28556C]">Miguel Alejandro Ramirez</span>
-        </div>
-        <img src="https://alexrasa.store/favicon.ico" class="h-8 w-8 grayscale opacity-50">
+      <div class="text-center md:text-right">
+        <h2 class="text-xl font-black text-[#28556C] italic uppercase tracking-tighter">Guía de Ingeniería Inteligente</h2>
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Consultor: Miguel Alejandro Ramirez</p>
       </div>
     </div>
 
     <div class="rego-card overflow-hidden">
-      <div class="p-6 md:p-10 border-b border-gray-100">
-        <h1 class="text-3xl font-black text-[#28556C] mb-8 italic">Calculador de Alta Eficiencia</h1>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="md:col-span-2">
-            <label class="label-rego">¿Qué estamos comparando?</label>
-            <select id="tipo_comparativa" class="input-rego bg-blue-50 border-blue-100 font-bold">
-              <option value="competencia">Contra Holder Estándar (ER/Weldon)</option>
-              <option value="optimizacion_pg">Ya tengo powRgrip (Quiero optimizar)</option>
-            </select>
+      
+      <div class="p-6 md:p-10 border-b border-gray-100 no-print" id="form-calculadora">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label class="label-rego">Material de la Pieza</label>
+            <input id="material" class="input-rego" placeholder="Ej: P20, 4140, Inox 304">
           </div>
           <div>
-            <label class="label-rego">Aplicación</label>
-            <select id="aplicacion" class="input-rego">
-              <option value="Desbaste">Desbaste (HD)</option>
-              <option value="Acabado">Acabado (Finishing)</option>
-              <option value="Trocoidal">HEM / Trocoidal</option>
+            <label class="label-rego">Tipo de Operación</label>
+            <select id="aplicacion" class="input-rego font-bold">
+              <option value="Desbaste">Desbaste Pesado (HD)</option>
+              <option value="Acabado">Acabado Superficial</option>
+              <option value="Trocoidal">Alta Eficiencia (HEM)</option>
+              <option value="Ranurado">Ranurado (Slotting)</option>
             </select>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div><label class="label-rego">Material</label><input id="material" class="input-rego" placeholder="P20, 304, etc."></div>
-          <div><label class="label-rego">Ø Herr. (mm)</label><input id="diametro" class="input-rego" placeholder="12"></div>
-          <div><label class="label-rego">Stick-out (mm)</label><input id="largo" class="input-rego" placeholder="45"></div>
-          <div><label class="label-rego">Filos (Z)</label><input id="z" class="input-rego" value="4"></div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div><label class="label-rego">Ø Herr. (mm)</label><input id="diametro" type="number" step="0.1" class="input-rego" placeholder="12"></div>
+          <div><label class="label-rego">Stick-out (mm)</label><input id="largo" type="number" class="input-rego" placeholder="45"></div>
+          <div><label class="label-rego">RPM Actual</label><input id="rpm_act" type="number" class="input-rego" placeholder="5000"></div>
+          <div><label class="label-rego">Feed Actual</label><input id="feed_act" type="number" class="input-rego" placeholder="1200"></div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-          <div class="col-span-1 md:col-span-1"><label class="label-rego">RPM Actual</label><input id="current_rpm" class="input-rego" placeholder="Ej: 5000"></div>
-          <div class="col-span-1 md:col-span-1"><label class="label-rego">Avance Actual (mm/min)</label><input id="current_feed" class="input-rego" placeholder="Ej: 1200"></div>
-          <div class="col-span-2 md:col-span-1"><label class="label-rego">Coolant</label><select id="coolant" class="input-rego"><option value="Interno">Interno</option><option value="Externo">Externo</option><option value="MQL">MQL/Aire</option></select></div>
-        </div>
-
-        <button id="btnCalcular" class="btn-rego mt-10" onclick="generarPropuestaIA()">Analizar y Mejorar Parámetros</button>
+        <button id="btnEjecutar" class="btn-rego" onclick="calcularOptimizacion()">
+          Analizar y Optimizar con IA
+        </button>
       </div>
 
-      <div id="loading" class="hidden p-20 text-center"><div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-100 border-t-red-600"></div></div>
+      <div id="loading" class="hidden p-20 text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-100 border-t-red-600"></div>
+        <p class="mt-4 text-xs font-black text-gray-400 uppercase tracking-widest italic">Calculando Deflexión y TIR...</p>
+      </div>
 
-      <div id="resultado" class="hidden p-6 md:p-10 bg-slate-50">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div id="resultado" class="hidden p-6 md:p-10 bg-slate-50 animate-fade-in">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
           
           <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <span class="badge-rego bg-green-100 text-green-700 mb-4 inline-block">Productividad +<span id="pct-mejora">0</span>%</span>
-            <canvas id="chartProductividad" height="250"></canvas>
+            <div class="flex items-center justify-between mb-6">
+              <span class="text-[10px] font-black uppercase text-gray-400 tracking-wider text-blue-900">Productividad Estimada</span>
+              <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase" id="badge-mejora">+0%</span>
+            </div>
+            <canvas id="graficaProductividad" height="250"></canvas>
           </div>
 
-          <div class="space-y-4">
-            <div class="bg-[#28556C] text-white p-6 rounded-3xl">
-              <h4 class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Configuración REGO-FIX</h4>
-              <p id="res-ensamble" class="text-xl font-black mb-1 italic">Cargando...</p>
-              <div class="flex gap-4 mt-4">
-                <div class="bg-white/10 p-2 rounded-xl flex-1 text-center border border-white/10">
-                  <span class="block text-[8px] uppercase font-bold text-blue-200">Boquilla</span>
-                  <span id="res-boquilla" class="text-sm font-black">---</span>
+          <div class="space-y-6">
+            <div class="bg-[#28556C] text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+              <div class="absolute top-0 right-0 p-4 opacity-10">
+                <svg width="60" height="60" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.901-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.433 2.541 2.54l.292.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.9 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.9-3.434-2.541-2.54l-.292-.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg>
+              </div>
+              <h4 class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Ensamble powRgrip Sugerido</h4>
+              <p id="txt-holder" class="text-2xl font-black italic mb-1">PG --</p>
+              <p id="txt-boquilla" class="text-sm font-bold text-[#B7C91F]">Boquilla: --</p>
+              
+              <div class="mt-6 flex gap-3">
+                <div class="bg-white/10 rounded-xl p-3 flex-1 text-center">
+                  <span class="block text-[8px] uppercase font-bold text-blue-200">Precisión TIR</span>
+                  <span class="text-xs font-black">&lt; 0.003mm</span>
                 </div>
-                <div class="bg-white/10 p-2 rounded-xl flex-1 text-center border border-white/10">
-                  <span class="block text-[8px] uppercase font-bold text-blue-200">Precisión (TIR)</span>
-                  <span class="text-sm font-black">&lt; 0.003mm</span>
+                <div class="bg-white/10 rounded-xl p-3 flex-1 text-center">
+                  <span class="block text-[8px] uppercase font-bold text-blue-200">Balanceo</span>
+                  <span class="text-xs font-black">G 2.5 @ 25k</span>
                 </div>
               </div>
             </div>
 
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                <table class="w-full text-xs">
-                    <tr class="border-b border-gray-50"><td class="py-3 font-bold text-gray-400 uppercase">Parámetro</td><td class="text-right font-bold text-gray-400 uppercase">Actual</td><td class="text-right font-black text-red-600 uppercase">Mejorado</td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-3 font-bold">RPM</td><td id="td-rpm-act" class="text-right">---</td><td id="td-rpm-new" class="text-right font-black text-blue-900 text-sm">---</td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-3 font-bold">Avance (mm/min)</td><td id="td-feed-act" class="text-right">---</td><td id="td-feed-new" class="text-right font-black text-blue-900 text-sm">---</td></tr>
-                    <tr><td class="py-3 font-bold">Ciclo/Pieza Est.</td><td class="text-right">100%</td><td id="td-ciclo" class="text-right font-black text-green-600 text-sm">---</td></tr>
-                </table>
+              <table class="w-full text-xs">
+                <tr class="border-b border-gray-50 text-gray-400 font-bold uppercase">
+                  <td class="py-3">Parámetro</td>
+                  <td class="text-right">Actual</td>
+                  <td class="text-right text-red-600">REGO-FIX</td>
+                </tr>
+                <tr class="border-b border-gray-50">
+                  <td class="py-4 font-bold text-gray-500 italic">RPM Husillo</td>
+                  <td id="val-rpm-a" class="text-right">---</td>
+                  <td id="val-rpm-n" class="text-right font-black text-blue-900 text-sm">---</td>
+                </tr>
+                <tr>
+                  <td class="py-4 font-bold text-gray-500 italic">Avance (mm/min)</td>
+                  <td id="val-feed-a" class="text-right">---</td>
+                  <td id="val-feed-n" class="text-right font-black text-blue-900 text-sm">---</td>
+                </tr>
+              </table>
             </div>
           </div>
         </div>
 
-        <div class="mt-8 bg-blue-50 border-l-4 border-[#28556C] p-6 rounded-r-2xl">
-          <span class="block text-[10px] font-black text-[#28556C] uppercase mb-1">Nota Técnica de Ingeniería:</span>
-          <p id="res-nota" class="text-xs text-slate-600 leading-relaxed font-medium italic"></p>
+        <div class="mt-10 bg-white border-l-8 border-[#B7C91F] p-8 rounded-2xl shadow-sm">
+          <h5 class="text-[10px] font-black text-[#28556C] uppercase mb-2 tracking-widest italic">Dictamen de Ingeniería y Seguridad</h5>
+          <p id="txt-nota" class="text-sm text-slate-600 leading-relaxed font-medium italic"></p>
         </div>
+
+        <div class="mt-10 flex flex-col sm:flex-row gap-4 no-print">
+          <button onclick="generarPDF()" class="bg-slate-900 text-white text-[10px] font-black px-8 py-4 rounded-xl uppercase hover:bg-black transition-all flex-1">
+            Descargar Ficha Técnica (PDF)
+          </button>
+          <button onclick="location.reload()" class="bg-gray-100 text-gray-500 text-[10px] font-black px-8 py-4 rounded-xl uppercase hover:bg-gray-200 transition-all">
+            Nuevo Análisis
+          </button>
+        </div>
+
       </div>
     </div>
+
+    <footer class="mt-10 text-center no-print">
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest tracking-widest italic">alexrasa.store | © 2026 REGO-FIX Solutions México</p>
+    </footer>
   </main>
 
   <script>
     let chartInstance = null;
 
-    async function generarPropuestaIA() {
-      const btn = document.getElementById('btnCalcular');
-      const dataReq = {
-        comparativa: document.getElementById('tipo_comparativa').value,
+    async function calcularOptimizacion() {
+      const btn = document.getElementById('btnEjecutar');
+      const params = {
         material: document.getElementById('material').value,
+        aplicacion: document.getElementById('aplicacion').value,
         diametro: document.getElementById('diametro').value,
         largo: document.getElementById('largo').value,
         z: document.getElementById('z').value,
-        current_rpm: document.getElementById('current_rpm').value,
-        current_feed: document.getElementById('current_feed').value,
-        aplicacion: document.getElementById('aplicacion').value,
-        coolant: document.getElementById('coolant').value
+        rpm_act: document.getElementById('rpm_act').value,
+        feed_act: document.getElementById('feed_act').value
       };
 
-      if(!dataReq.material || !dataReq.diametro) return alert("Ingresa Material y Diámetro.");
+      if (!params.material || !params.diametro || !params.largo) return alert("Completa los datos técnicos básicos.");
 
       btn.disabled = true;
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('resultado').classList.add('hidden');
 
-      const prompt = `Eres un experto técnico de REGO-FIX.
-      Datos: Comp: ${dataReq.comparativa}, Material: ${dataReq.material}, D: ${dataReq.diametro}mm, Largo: ${dataReq.largo}mm, Z: ${dataReq.z}, RPM Act: ${dataReq.current_rpm}, Feed Act: ${dataReq.current_feed}, Op: ${dataReq.aplicacion}.
-      
-      MISIÓN:
-      1. Si es 'competencia', mejora RPM en 15% y Avance en 25% gracias a TIR < 3um.
-      2. Si es 'optimizacion_pg', busca el límite del carburo mejorando avance un 10% adicional.
-      3. Determina el Holder PG ideal (PG10, PG15, PG25 o PG32) y la boquilla exacta.
-      
-      Devuelve SOLO un JSON:
-      { "new_rpm": num, "new_feed": num, "holder_reco": "string", "boquilla_reco": "string", "pct_mejora": num, "nota": "string" }`;
-
       try {
-        const res = await fetch('/api/recommend.js', {
+        // LLAMADA A TU NUEVA RUTA DE API
+        const response = await fetch('/api/cut-conditions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: prompt })
+          body: JSON.stringify(params)
         });
 
-        const json = await res.json();
-        const data = JSON.parse(json);
+        const data = await response.json();
 
-        // UI
-        document.getElementById('res-ensamble').innerText = data.holder_reco;
-        document.getElementById('res-boquilla').innerText = data.boquilla_reco;
-        document.getElementById('res-nota').innerText = data.nota;
-        document.getElementById('pct-mejora').innerText = data.pct_mejora;
-        
-        document.getElementById('td-rpm-act').innerText = dataReq.current_rpm || "---";
-        document.getElementById('td-feed-act').innerText = dataReq.current_feed || "---";
-        document.getElementById('td-rpm-new').innerText = data.new_rpm;
-        document.getElementById('td-feed-new').innerText = data.new_feed;
-        document.getElementById('td-ciclo').innerText = "-" + (100 - (100/(1+(data.pct_mejora/100)))).toFixed(1) + "%";
+        // Actualizar UI con datos calculados
+        document.getElementById('txt-holder').innerText = data.holder_reco;
+        document.getElementById('txt-boquilla').innerText = "Pinza: " + data.boquilla_reco;
+        document.getElementById('val-rpm-a').innerText = params.rpm_act || "---";
+        document.getElementById('val-feed-a').innerText = params.feed_act || "---";
+        document.getElementById('val-rpm-n').innerText = data.new_rpm;
+        document.getElementById('val-feed-n').innerText = data.new_feed;
+        document.getElementById('badge-mejora').innerText = "+" + data.pct_gain + "% Productividad";
+        document.getElementById('txt-nota').innerText = data.nota;
 
-        renderChart(dataReq.current_feed || 1000, data.new_feed);
+        // Renderizar Gráfica
+        dibujarGrafica(params.feed_act || 1000, data.new_feed);
 
         document.getElementById('resultado').classList.remove('hidden');
-      } catch (e) { alert("Error con la IA."); }
-      finally { btn.disabled = false; document.getElementById('loading').classList.add('hidden'); }
+      } catch (err) {
+        alert("Error al conectar con el servidor de ingeniería.");
+      } finally {
+        btn.disabled = false;
+        document.getElementById('loading').classList.add('hidden');
+      }
     }
 
-    function renderChart(act, nxt) {
-      const ctx = document.getElementById('chartProductividad').getContext('2d');
-      if(chartInstance) chartInstance.destroy();
+    function dibujarGrafica(actual, optimo) {
+      const ctx = document.getElementById('graficaProductividad').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Actual', 'Optimizado'],
+          labels: ['Sujeción Actual', 'REGO-FIX Optimized'],
           datasets: [{
-            label: 'Tasa de Remoción (MRR)',
-            data: [act, nxt],
+            data: [actual, optimo],
             backgroundColor: ['#e2e8f0', '#28556C'],
-            borderRadius: 12
+            borderRadius: 15,
+            borderSkipped: false,
+            barThickness: 60
           }]
         },
-        options: { plugins: { legend: { display: false } }, scales: { y: { display: false } } }
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { 
+            y: { display: false, grid: { display: false } },
+            x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function generarPDF() {
+      const element = document.getElementById('area-reporte');
+      const opt = {
+        margin: 0.5,
+        filename: `REGOFIX-Optimización-${document.getElementById('material').value}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 3, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      
+      // Ocultar elementos innecesarios antes de PDF
+      document.querySelectorAll('.no-print').forEach(e => e.classList.add('hidden'));
+      
+      html2pdf().set(opt).from(element).save().then(() => {
+        document.querySelectorAll('.no-print').forEach(e => e.classList.remove('hidden'));
       });
     }
   </script>
