@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Solo POST' });
 
-  // Recibimos textos 100% libres desde el frontend
+  // Recibimos los datos libres
   const { material, herramienta, interfaz, operacion, diametro, z } = req.body;
   const d = parseFloat(diametro);
 
@@ -15,25 +15,38 @@ export default async function handler(req, res) {
     - Filos (Z): ${z}
 
     REGLAS ESTRICTAS DE CATÁLOGO REGO-FIX A APLICAR:
-    1. SELECCIÓN DE SISTEMA:
-       - Si Ø < 3mm: Selecciona "micRun (MR)".
-       - Si Operación implica "Desbaste" y la Pieza es dura (Titanio, Inconel, Inoxidable, >45 HRC) y Ø >= 10mm: Selecciona obligatoriamente "secuRgrip (PG-SG)" para protección anti pull-out.
-       - Resto de casos: Selecciona "powRgrip (PG) Estándar".
-    2. TAMAÑO DE HOLDER PG (si aplica): PG10 (hasta 6mm), PG15 (hasta 12mm), PG25 (hasta 20mm), PG32 (hasta 25.4mm).
+    
+    1. TAMAÑOS DE SISTEMA: 
+       - PG (powRgrip): PG10 (hasta 6mm), PG15 (hasta 12mm), PG25 (hasta 20mm), PG32 (hasta 25.4mm).
+       - MR (micRun): MR11 (hasta 6mm), MR16 (hasta 10mm).
+
+    2. MATRIZ DE SELECCIÓN DE HOLDER Y PINZA:
+       - REGLA A (Micro): Si Ø < 3mm -> 
+         * Sistema: "micRun (MR)"
+         * Pinza: "MR [11 o 16] - ${d}mm"
+       
+       - REGLA B (secuRgrip): Si Operación implica "Desbaste" o alta remoción, Y la Pieza es dura (Titanio, Inconel, Inoxidable, Acero tratado >45 HRC), Y Ø >= 10mm ->
+         * Sistema: "secuRgrip (PG-SG) Heavy Duty"
+         * Pinza: "PG [15, 25 o 32]-SG secuRgrip para ${d}mm" (ES VITAL QUE LA PINZA INCLUYA EL SUFIJO -SG).
+       
+       - REGLA C (Estándar): Para el resto de los casos ->
+         * Sistema: "powRgrip (PG) Estándar"
+         * Pinza: "PG [10, 15, 25 o 32] Estándar para ${d}mm"
+
     3. FÍSICA DE CORTE: 
-       - Deduce la Velocidad de Corte (Vc) y el avance por diente (fz) adecuados para esa combinación de material y herramienta.
+       - Deduce la Velocidad de Corte (Vc) y el avance por diente (fz) adecuados para el material y herramienta.
        - Calcula RPM = (Vc * 1000) / (PI * Ø).
        - Calcula Avance de mesa (Vf) = RPM * Z * fz.
-       - IMPORTANTE: Incrementa el Avance (Vf) un 25% gracias a la rigidez y el TIR < 3µm del sistema suizo.
+       - Incrementa el Avance (Vf) un 25% por la alta rigidez y TIR < 3µm del sistema.
 
     Devuelve ÚNICAMENTE un JSON con esta estructura exacta:
     {
-      "sistema_recomendado": "Ej: HSK-A 63 / powRgrip PG 15",
-      "pinza_sugerida": "Ej: PG 15-12mm Estándar",
+      "sistema_recomendado": "Ej: HSK-A 63 / secuRgrip (PG-SG)",
+      "pinza_sugerida": "Ej: Pinza PG 25-SG secuRgrip",
       "rpm_calculado": 0,
       "avance_calculado": 0,
-      "mejora_esperada": "Ej: +25% Productividad",
-      "dictamen_tecnico": "1 sola línea justificando la selección del sistema y el TIR."
+      "mejora_esperada": "Ej: +25% y 100% Anti Pull-out",
+      "dictamen_tecnico": "1 sola línea justificando la selección del sistema y la boquilla."
     }
   `;
 
@@ -45,12 +58,13 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "gpt-4o", // Usamos gpt-4o para máxima precisión técnica
+        model: "gpt-4o", // gpt-4o es necesario para seguir reglas lógicas estrictas
         messages: [
-          { role: "system", content: "Eres un ingeniero de aplicaciones experto. Responde solo en JSON." },
+          { role: "system", content: "Eres un ingeniero de aplicaciones experto de REGO-FIX. Responde solo en JSON." },
           { role: "user", content: promptIngenieria }
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        temperature: 0.2 // Temperatura baja para que no se ponga "creativo" con los nombres
       })
     });
 
