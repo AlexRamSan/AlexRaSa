@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de Corte Especializada | REGO-FIX & AlexRaSa</title>
+  <title>Calculadora de Condiciones REGO-FIX | AlexRaSa</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
@@ -12,116 +12,172 @@
       --rego-green: #B7C91F;
       --rego-black: #121314;
     }
-    body { background-color: #f8f9fa; color: var(--rego-black); }
-    .input-rego { width: 100%; border: 1px solid rgba(40,85,108,.2); border-radius: 12px; padding: 0.75rem; outline: none; transition: all 0.2s; }
-    .input-rego:focus { border-color: var(--rego-blue); box-shadow: 0 0 0 4px rgba(40,85,108,.1); }
-    .card-rego { background: white; border-radius: 24px; border: 1px solid rgba(40,85,108,.1); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-    .btn-rego { background: var(--rego-red); color: white; font-weight: 700; border-radius: 12px; padding: 1rem; transition: 0.2s; width: 100%; }
-    .btn-rego:hover { filter: brightness(0.9); transform: translateY(-1px); }
-    .btn-rego:disabled { opacity: 0.5; cursor: not-allowed; }
+    body { background-color: #f3f4f6; color: var(--rego-black); font-family: 'Inter', sans-serif; }
+    .rego-card { background: white; border-radius: 20px; border: 1px solid rgba(40,85,108,.15); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .input-rego { width: 100%; border: 1px solid #d1d5db; border-radius: 12px; padding: 0.75rem; outline: none; transition: 0.2s; background: #fff; }
+    .input-rego:focus { border-color: var(--rego-blue); ring: 3px rgba(40,85,108,0.1); }
+    .btn-rego { background: var(--rego-red); color: white; font-weight: 800; border-radius: 14px; padding: 1.2rem; transition: 0.3s; width: 100%; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-rego:hover { filter: brightness(0.9); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(211,27,35,0.3); }
+    .btn-rego:disabled { opacity: 0.5; cursor: wait; }
+    .label-rego { display: block; font-size: 0.7rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.5px; }
   </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
+<body class="min-h-screen py-10 px-4">
 
-  <main class="max-w-2xl mx-auto">
-    <div class="flex items-center justify-between mb-8 px-2">
-      <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-10" onerror="this.style.display='none'">
-      <span class="text-xs font-bold text-gray-400 tracking-widest uppercase">Cutting Conditions Tool</span>
+  <main class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-12" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
+      <div class="text-right">
+        <span class="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Engineering Tool</span>
+        <span class="text-xs font-bold text-[#28556C]">by Miguel Ramirez</span>
+      </div>
     </div>
 
-    <div class="card-rego p-6 md:p-8">
-      <h1 class="text-2xl font-black text-[#28556C] mb-2">Calculadora de Parámetros</h1>
-      <p class="text-sm text-gray-500 mb-8">Optimización basada en rigidez y tecnología REGO-FIX.</p>
+    <div class="rego-card p-6 md:p-10">
+      <header class="mb-10">
+        <h1 class="text-3xl font-black text-[#28556C] leading-tight">Optimización de <br>Condiciones de Corte</h1>
+        <p class="text-gray-500 text-sm mt-2 font-medium">Compara tu setup actual vs. la tecnología de precisión REGO-FIX.</p>
+      </header>
 
       <div class="space-y-6">
-        <div>
-          <label class="block text-xs font-bold uppercase mb-2 text-gray-600">Material de la Pieza</label>
-          <input id="material" type="text" class="input-rego" placeholder="Ej: Inox 304, Aluminio 6061, Acero 4140">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="label-rego">Material de la Pieza</label>
+            <input id="material" type="text" class="input-rego" placeholder="Ej: Acero 4140, Inox 316">
+          </div>
+          <div>
+            <label class="label-rego">Tipo de Aplicación</label>
+            <select id="aplicacion" class="input-rego">
+              <option value="Desbaste Pesado">Desbaste (Heavy Duty)</option>
+              <option value="Acabado">Acabado (Finishing)</option>
+              <option value="Ranurado">Ranurado (Slotting)</option>
+              <option value="Alta Eficiencia (HEM)">Trocoidal / HEM</option>
+            </select>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs font-bold uppercase mb-2 text-gray-600">Diámetro (mm/pulg)</label>
+            <label class="label-rego">Diámetro (mm/in)</label>
             <input id="diametro" type="text" class="input-rego" placeholder="12mm o 1/2">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase mb-2 text-gray-600">Dientes (Z)</label>
+            <label class="label-rego">Largo Voladizo (mm)</label>
+            <input id="largo" type="number" class="input-rego" placeholder="Stick-out">
+          </div>
+          <div class="col-span-2 md:col-span-1">
+            <label class="label-rego">Nº de Filos (Z)</label>
             <input id="z" type="number" class="input-rego" value="4">
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold uppercase mb-2 text-gray-600">Largo Voladizo (Stick-out mm)</label>
-          <input id="largo" type="number" class="input-rego" placeholder="Ej: 45">
-          <p class="text-[10px] text-gray-400 mt-1 italic">El largo es crítico para calcular la deflexión.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="label-rego">Coolant</label>
+            <select id="coolant" class="input-rego">
+              <option value="Interno (TSC)">Interno (Alta Presión)</option>
+              <option value="Externo (Flood)">Externo (Flood)</option>
+              <option value="MQL / Aire">MQL o Aire</option>
+              <option value="Seco">Maquinado en Seco</option>
+            </select>
+          </div>
+          <div>
+            <label class="label-rego">Sujeción Actual (Competencia)</label>
+            <input id="holder_actual" type="text" class="input-rego" placeholder="Ej: ER32 Standard">
+          </div>
         </div>
 
-        <button id="btnCalcular" class="btn-rego shadow-lg shadow-red-200" onclick="obtenerCondiciones()">
-          Calcular con IA REGO-FIX
+        <button id="btnCalcular" class="btn-rego mt-4" onclick="calcularCondiciones()">
+          Calcular Mejora Técnica
         </button>
       </div>
 
-      <div id="loading" class="hidden mt-8 text-center py-4">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-red-600"></div>
-        <p class="text-xs font-bold text-gray-500 mt-2">Analizando rigidez...</p>
+      <div id="loading" class="hidden mt-12 text-center py-10">
+        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-red-600"></div>
+        <p class="text-xs font-black text-gray-400 mt-4 uppercase tracking-widest">Analizando Deflexión y Rigidez...</p>
       </div>
 
-      <div id="resultado" class="hidden mt-8 space-y-4">
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-6">
-          <div class="grid grid-cols-2 gap-6 mb-6">
-            <div>
-              <span class="block text-[10px] uppercase font-black text-gray-400">Velocidad Sugerida</span>
-              <span id="res-rpm" class="text-2xl font-black text-[#28556C]">---</span> <span class="text-xs font-bold">RPM</span>
-            </div>
-            <div>
-              <span class="block text-[10px] uppercase font-black text-gray-400">Avance de Mesa</span>
-              <span id="res-avance" class="text-2xl font-black text-[#28556C]">---</span> <span class="text-xs font-bold">mm/min</span>
-            </div>
-          </div>
-          
-          <div class="border-t border-dashed border-gray-300 pt-4">
-            <span class="block text-[10px] uppercase font-black text-gray-400 mb-2">Configuración REGO-FIX Recomendada</span>
-            <p id="res-reco" class="text-sm font-bold text-green-700 leading-relaxed italic"></p>
-          </div>
+      <div id="resultado" class="hidden mt-12 space-y-6">
+        <h3 class="text-lg font-black text-[#28556C] uppercase tracking-tighter italic">Comparativa de Rendimiento</h3>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b-2 border-gray-100">
+                <th class="py-3 text-[10px] font-black text-gray-400 uppercase">Parámetro</th>
+                <th class="py-3 text-[10px] font-black text-gray-400 uppercase">Setup Actual</th>
+                <th class="py-3 text-[10px] font-black text-red-600 uppercase">REGO-FIX Optimized</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr class="border-b border-gray-50">
+                <td class="py-4 font-bold text-gray-500">Velocidad (RPM)</td>
+                <td id="base-rpm" class="py-4">---</td>
+                <td id="rego-rpm" class="py-4 font-black text-blue-900">---</td>
+              </tr>
+              <tr class="border-b border-gray-50">
+                <td class="py-4 font-bold text-gray-500">Avance (mm/min)</td>
+                <td id="base-avance" class="py-4">---</td>
+                <td id="rego-avance" class="py-4 font-black text-blue-900">---</td>
+              </tr>
+              <tr>
+                <td class="py-4 font-bold text-gray-500">Vida Herramienta</td>
+                <td class="py-4">1.0x (Base)</td>
+                <td id="rego-vida" class="py-4 font-black text-green-600">+20-40% Est.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div id="alerta-deflexion" class="p-4 rounded-xl border flex gap-3 items-start hidden">
-          <span class="text-xl">⚠️</span>
+        <div class="bg-blue-900 text-white p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <span class="block font-bold text-sm uppercase">Nota de Ingeniería</span>
-            <p id="res-nota" class="text-xs leading-normal opacity-80"></p>
+            <span class="text-[10px] font-black uppercase opacity-60">Incremento en Productividad</span>
+            <div id="rego-gain" class="text-4xl font-black text-[#B7C91F]">0%</div>
+          </div>
+          <div class="text-right md:max-w-[60%]">
+            <span id="rego-holder-reco" class="block font-black text-sm mb-1">PG15 + PG Collet</span>
+            <p id="rego-nota" class="text-[11px] leading-relaxed opacity-80 italic"></p>
           </div>
         </div>
       </div>
     </div>
     
-    <footer class="mt-8 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-      by alexrasa | rego-fix solutions tecnico de ventas
+    <footer class="mt-8 text-center">
+      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Rego-Fix Sales Technician Tool | alexrasa.store</p>
     </footer>
   </main>
 
   <script>
-    async function obtenerCondiciones() {
+    async function calcularCondiciones() {
       const btn = document.getElementById('btnCalcular');
       const material = document.getElementById('material').value;
       const d = document.getElementById('diametro').value;
-      const z = document.getElementById('z').value;
       const largo = document.getElementById('largo').value;
+      const z = document.getElementById('z').value;
+      const aplicacion = document.getElementById('aplicacion').value;
+      const coolant = document.getElementById('coolant').value;
+      const holder_actual = document.getElementById('holder_actual').value;
 
-      if(!material || !d || !largo) return alert("Llena los datos clave.");
+      if(!material || !d || !largo) return alert("Por favor ingresa material, diámetro y largo.");
 
       btn.disabled = true;
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('resultado').classList.add('hidden');
 
-      // Prompt para tu API de Vercel
-      const prompt = `Actúa como ingeniero de REGO-FIX. Calcula condiciones de corte para:
-      Material: ${material}, Diámetro: ${d}, Filos: ${z}, Largo Voladizo: ${largo}mm.
+      const prompt = `Actúa como Ingeniero de Aplicaciones de REGO-FIX.
+      Calcula y compara condiciones de corte para:
+      - Material: ${material}
+      - Operación: ${aplicacion}
+      - Herramienta: D=${d}, Z=${z}, Largo Voladizo=${largo}mm
+      - Coolant: ${coolant}
+      - Setup Actual: ${holder_actual}
+
+      REGLAS TÉCNICAS REGO-FIX:
+      1. Debido al runout < 3 micras y alta rigidez del sistema powRgrip (PG), el avance por diente (fz) puede aumentar un 25% y la Vc un 15% respecto a un porta ER estándar.
+      2. Si el largo/diámetro > 3, advierte que el sistema PG es crítico para evitar deflexión.
       
-      IMPORTANTE:
-      1. Si el largo/diámetro > 3, recomienda powRgrip (PG) obligatoriamente.
-      2. Calcula RPM y Avance (mm/min).
-      3. Devuelve SOLO un JSON con: rpm, avance, ensamble_rego, nota_tecnica, riesgo_alto (boolean).`;
+      Devuelve SOLO un JSON con: 
+      base_rpm, base_avance, rego_rpm, rego_avance, incremento_prod (número), holder_reco, nota_tecnica.`;
 
       try {
         const response = await fetch('/api/recommend.js', {
@@ -130,28 +186,22 @@
           body: JSON.stringify({ prompt: prompt })
         });
 
-        const jsonRes = await response.json();
-        const data = JSON.parse(jsonRes);
+        const jsonString = await response.json();
+        const data = JSON.parse(jsonString);
 
-        // Llenar UI
-        document.getElementById('res-rpm').innerText = data.rpm;
-        document.getElementById('res-avance').innerText = data.avance;
-        document.getElementById('res-reco').innerText = data.ensamble_rego;
-        document.getElementById('res-nota').innerText = data.nota_tecnica;
-
-        // Mostrar Alerta si el riesgo es alto
-        const alerta = document.getElementById('alerta-deflexion');
-        if(data.riesgo_alto) {
-          alerta.classList.remove('hidden');
-          alerta.classList.add('bg-red-50', 'border-red-200', 'text-red-800');
-        } else {
-          alerta.classList.remove('hidden');
-          alerta.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-800');
-        }
+        // Mapeo de datos a la UI
+        document.getElementById('base-rpm').innerText = data.base_rpm;
+        document.getElementById('base-avance').innerText = data.base_avance;
+        document.getElementById('rego-rpm').innerText = data.rego_rpm;
+        document.getElementById('rego-avance').innerText = data.rego_avance;
+        document.getElementById('rego-gain').innerText = "+" + data.incremento_prod + "%";
+        document.getElementById('rego-holder-reco').innerText = data.holder_reco;
+        document.getElementById('rego-nota').innerText = data.nota_tecnica;
 
         document.getElementById('resultado').classList.remove('hidden');
       } catch (err) {
-        alert("Error consultando a la IA.");
+        console.error(err);
+        alert("Error de conexión con la IA. Revisa tu API en Vercel.");
       } finally {
         btn.disabled = false;
         document.getElementById('loading').classList.add('hidden');
