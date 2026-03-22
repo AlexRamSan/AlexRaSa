@@ -15,7 +15,7 @@
 </head>
 <body class="py-10 px-4">
 
-  <main class="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+  <main class="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
     
     <div class="bg-gray-50 p-6 flex justify-between items-center border-b border-gray-200">
         <img src="/assets/regofixlogo.png" class="h-8" onerror="this.src='https://alexrasa.store/assets/regofixlogo.png'">
@@ -24,7 +24,7 @@
 
     <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <label class="lbl">Material y Dureza</label>
+            <label class="lbl">Material de Pieza</label>
             <input id="material" type="text" class="input-libre" placeholder="Ej: Inconel 718 a 40 HRC">
         </div>
         <div>
@@ -32,53 +32,61 @@
             <input id="herramienta" type="text" class="input-libre" placeholder="Ej: Fresa Carburo AlTiN">
         </div>
         <div>
-            <label class="lbl">Interfaz / Cono de Máquina</label>
-            <input id="interfaz" type="text" class="input-libre" placeholder="Ej: HSK-A 63">
+            <label class="lbl">Interfaz de Máquina</label>
+            <input id="interfaz" type="text" class="input-libre" placeholder="Ej: CAT 40 / HSK-A 63">
         </div>
         <div>
             <label class="lbl">Operación a Realizar</label>
-            <input id="operacion" type="text" class="input-libre" placeholder="Ej: Desbaste agresivo HPC">
+            <input id="operacion" type="text" class="input-libre" placeholder="Ej: Desbaste HPC">
         </div>
-        <div class="grid grid-cols-2 gap-4 md:col-span-2">
+        <div>
+            <label class="lbl">Lubricación / Refrigerante</label>
+            <input id="lubricacion" type="text" class="input-libre" placeholder="Ej: Interna Alta Presión / MQL">
+        </div>
+        <div class="grid grid-cols-3 gap-3">
             <div>
-                <label class="lbl">Diámetro de Corte (mm)</label>
-                <input id="diametro" type="number" step="0.1" class="input-libre" value="12">
+                <label class="lbl">Ø (mm)</label>
+                <input id="diametro" type="number" step="0.1" class="input-libre text-center" value="12">
             </div>
             <div>
-                <label class="lbl">Número de Filos (Z)</label>
-                <input id="z" type="number" class="input-libre" value="4">
+                <label class="lbl">Voladizo (mm)</label>
+                <input id="largo" type="number" step="1" class="input-libre text-center" value="50" placeholder="Largo">
+            </div>
+            <div>
+                <label class="lbl">Filos (Z)</label>
+                <input id="z" type="number" class="input-libre text-center" value="4">
             </div>
         </div>
         
         <button onclick="procesarDatos()" id="btnGo" class="md:col-span-2 bg-[#D31B23] text-white font-black py-4 rounded-xl uppercase tracking-widest hover:bg-red-800 transition-colors">
-            Analizar y Extraer Parámetros
+            Generar Diagnóstico Técnico
         </button>
     </div>
 
-    <div id="loader" class="hidden p-10 text-center text-red-600 font-bold text-sm uppercase">Procesando reglas de ingeniería...</div>
+    <div id="loader" class="hidden p-10 text-center text-red-600 font-bold text-sm uppercase">Analizando Reglas de Catálogo y Deflexión...</div>
 
     <div id="resultado" class="hidden p-8 border-t bg-gray-50">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div class="bg-[#28556C] text-white rounded-xl p-6 shadow-md">
-                <span class="text-[9px] uppercase font-bold opacity-70 tracking-widest">Sujeción Recomendada</span>
-                <h3 id="res-sistema" class="text-xl font-black mt-1">---</h3>
-                <p id="res-pinza" class="text-[#B7C91F] text-xs font-bold mt-1">---</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-[#28556C] text-white rounded-2xl p-6 shadow-md">
+                <span class="text-[9px] uppercase font-bold opacity-70 tracking-widest">Sistema Sugerido</span>
+                <h3 id="res-sistema" class="text-xl font-black mt-2">---</h3>
+                <p id="res-pinza" class="text-[#B7C91F] text-xs font-bold mt-2">---</p>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div class="data-box text-center flex flex-col justify-center">
                     <span class="lbl m-0">RPM Sugeridas</span>
-                    <span id="res-rpm" class="text-2xl font-black text-[#28556C]">0</span>
+                    <span id="res-rpm" class="text-3xl font-black text-[#28556C]">0</span>
                 </div>
                 <div class="data-box text-center flex flex-col justify-center">
                     <span class="lbl m-0">Avance (mm/min)</span>
-                    <span id="res-feed" class="text-2xl font-black text-[#28556C]">0</span>
+                    <span id="res-feed" class="text-3xl font-black text-[#28556C]">0</span>
                 </div>
             </div>
         </div>
         
-        <div class="bg-white p-5 rounded-xl border-l-4 border-[#B7C91F] shadow-sm">
-            <span id="res-mejora" class="text-[10px] font-black text-green-600 uppercase block mb-1">---</span>
-            <p id="res-nota" class="text-xs font-bold text-gray-600"></p>
+        <div class="bg-white p-6 rounded-2xl border-l-[6px] border-[#B7C91F] shadow-sm">
+            <span id="res-mejora" class="text-[10px] font-black text-green-600 uppercase block mb-2 tracking-wider">---</span>
+            <p id="res-nota" class="text-sm font-medium text-gray-700 leading-relaxed"></p>
         </div>
     </div>
   </main>
@@ -91,11 +99,13 @@
             herramienta: document.getElementById('herramienta').value,
             interfaz: document.getElementById('interfaz').value,
             operacion: document.getElementById('operacion').value,
+            lubricacion: document.getElementById('lubricacion').value,
             diametro: document.getElementById('diametro').value,
+            largo: document.getElementById('largo').value,
             z: document.getElementById('z').value
         };
 
-        if(!data.material || !data.diametro) return alert("Material y diámetro son obligatorios.");
+        if(!data.material || !data.diametro || !data.largo) return alert("Material, Diámetro y Voladizo son obligatorios.");
 
         btn.disabled = true;
         document.getElementById('loader').classList.remove('hidden');
@@ -111,14 +121,14 @@
             
             document.getElementById('res-sistema').innerText = r.sistema_recomendado;
             document.getElementById('res-pinza').innerText = r.pinza_sugerida;
-            document.getElementById('res-rpm').innerText = r.rpm_calculado.toLocaleString();
-            document.getElementById('res-feed').innerText = r.avance_calculado.toLocaleString();
-            document.getElementById('res-mejora').innerText = r.mejora_esperada + " | TIR < 3µm";
+            document.getElementById('res-rpm').innerText = Number(r.rpm_calculado).toLocaleString();
+            document.getElementById('res-feed').innerText = Number(r.avance_calculado).toLocaleString();
+            document.getElementById('res-mejora').innerText = r.mejora_esperada;
             document.getElementById('res-nota').innerText = r.dictamen_tecnico;
             
             document.getElementById('resultado').classList.remove('hidden');
         } catch(e) { 
-            alert("Error conectando con el servidor."); 
+            alert("Error conectando con el servidor de IA."); 
         } finally {
             btn.disabled = false;
             document.getElementById('loader').classList.add('hidden');
