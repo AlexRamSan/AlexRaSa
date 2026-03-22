@@ -1,81 +1,65 @@
 // api/cut-conditions.js
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Post only' });
 
-  const { material, diametro, largo, z, rpm_act, feed_act, aplicacion, coolant } = req.body;
+const ISO_MAP = {
+  P: { name: "Aceros", vc_base: 160, fz_base: 0.06 },
+  M: { name: "Inoxidables", vc_base: 90, fz_base: 0.04 },
+  K: { name: "Fundiciones", vc_base: 180, fz_base: 0.10 },
+  N: { name: "No Ferrosos", vc_base: 450, fz_base: 0.15 },
+  S: { name: "Superaleaciones", vc_base: 45, fz_base: 0.03 },
+  H: { name: "Duros >50HRC", vc_base: 50, fz_base: 0.02 }
+};
+
+export default async function handler(req, res) {
+  const { material_texto, tool_material, aplicacion, diametro, largo, z } = req.body;
   const d = parseFloat(diametro);
 
-  // --- 1. EDUCACIÓN TÉCNICA: TABLA DE SELECCIÓN REGO-FIX ---
-  let holder = "";
-  let boquilla = "";
-  let tir = "0.003mm";
+  // 1. LLAMADA A IA PARA CLASIFICACIÓN TÉCNICA
+  const aiClassification = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "Eres un experto en materiales ISO (P,M,K,N,S,H). Clasifica el material del usuario y devuelve JSON: {iso_cat: 'P', dureza_est: '30HRC', factor_abrasion: 1.0}" },
+        { role: "user", content: `Clasifica este material: ${material_texto}` }
+      ],
+      response_format: { type: "json_object" }
+    })
+  });
 
-  if (d <= 4) { holder = "PG 6"; boquilla = `PG 6 / ${d}mm`; }
-  else if (d <= 6) { holder = "PG 10"; boquilla = `PG 10 / ${d}mm`; }
-  else if (d <= 12) { holder = "PG 15"; boquilla = `PG 15 / ${d}mm`; }
-  else if (d <= 20) { holder = "PG 25"; boquilla = `PG 25 / ${d}mm`; }
-  else if (d <= 25.4) { holder = "PG 32"; boquilla = `PG 32 / ${d}mm`; }
-  else if (d <= 40) { holder = "PG 48"; boquilla = `PG 48 / ${d}mm`; }
-  else { return res.status(400).json({ error: "Diámetro fuera de rango de catálogo PG." }); }
+  const { iso_cat, dureza_est } = (await aiClassification.json()).choices[0].message.content;
+  const base = ISO_MAP[iso_cat] || ISO_MAP.P;
 
-  // --- 2. LÓGICA DE INGENIERÍA (OPTIMIZACIÓN REAL) ---
-  // Factor de mejora REGO-FIX por rigidez y runout
-  const k_rego = 1.25; 
+  // 2. AJUSTE POR MATERIAL DE HERRAMIENTA
+  let tool_factor = tool_material === "HSS" ? 0.3 : (tool_material === "Ceramica" ? 2.5 : 1.0);
   
-  // Estimación de condiciones óptimas (Simulación de tabla de carburo)
-  // Nota: Estos valores se pueden ajustar según una base de datos de materiales más amplia
-  const v_opt = Math.round(rpm_act * 1.15); // +15% Velocidad sugerida por estabilidad
-  const f_opt = Math.round(feed_act * k_rego); // +25% Avance por concentricidad TIR
+  // 3. SELECCIÓN DE HOLDER (Educada por catálogo REGO-FIX)
+  let holder = d <= 6 ? "PG 10" : d <= 12 ? "PG 15" : d <= 20 ? "PG 25" : "PG 32";
+  if (d >= 12 && (iso_cat === 'S' || iso_cat === 'M')) holder += " secuRgrip (SG)";
 
-  // --- 3. CONSULTA A OPENAI PARA EL DICTAMEN ---
-  const promptIA = `
-    Actúa como Ingeniero de Aplicaciones Senior de REGO-FIX.
-    CONTEXTO:
-    - Cliente usa: ${material} con una operación de ${aplicacion}.
-    - Herramienta: Ø${d}mm con stick-out de ${largo}mm.
-    - Setup Actual: RPM ${rpm_act}, Avance ${feed_act} mm/min.
-    
-    TUS CÁLCULOS TÉCNICOS RESULTANTES:
-    - Ensamble propuesto: ${holder} con Boquilla ${boquilla}.
-    - Parámetros Óptimos: RPM ${v_opt}, Avance ${f_opt} mm/min.
-    
-    TAREA:
-    Escribe un Dictamen Técnico breve (máx 3 líneas). 
-    Si el Stick-out (${largo}mm) es > 3 veces el Ø (${d}mm), DEBES mencionar que el sistema powRgrip es MANDATORIO para absorber vibración y compensar la deflexión radial. 
-    Responde estrictamente en JSON.
-  `;
+  // 4. CÁLCULO DE CONDICIONES ÓPTIMAS
+  let v_opt = Math.round((base.vc_base * tool_factor * 1000) / (Math.PI * d));
+  let f_opt = Math.round(v_opt * parseInt(z) * (base.fz_base * 1.30)); // +30% por rigidez PG
 
-  try {
-    const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "Eres un experto en herramientas CNC y sistemas REGO-FIX. Responde en JSON puro." },
-          { role: "user", content: promptIA }
-        ],
-        response_format: { type: "json_object" }
-      })
-    });
+  const promptFinal = `Como Ingeniero REGO-FIX, justifica por qué para ${material_texto} (${iso_cat}) con herramienta de ${tool_material}, el ensamble ${holder} es la mejor opción. 
+  RPM: ${v_opt}, Avance: ${f_opt}. Menciona que la operación de ${aplicacion} se verá beneficiada por el TIR < 3um.`;
 
-    const aiData = await aiRes.json();
-    const dictamen = JSON.parse(aiData.choices[0].message.content);
+  const dictamen = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: promptFinal }]
+    })
+  });
 
-    // Unimos los datos calculados por el backend con el dictamen de la IA
-    res.status(200).json({
-      holder_reco: holder,
-      boquilla_reco: boquilla,
-      new_rpm: v_opt,
-      new_feed: f_opt,
-      pct_gain: Math.round(((f_opt / feed_act) - 1) * 100),
-      nota: dictamen.dictamen_tecnico || dictamen.nota || "Optimización calculada bajo estándares PG."
-    });
+  const finalRes = await dictamen.json();
 
-  } catch (error) {
-    res.status(500).json({ error: "Error en el cálculo de ingeniería." });
-  }
+  res.status(200).json({
+    holder,
+    new_rpm: v_opt,
+    new_feed: f_opt,
+    material_detectado: `${base.name} (~${dureza_est})`,
+    nota: finalRes.choices[0].message.content
+  });
 }
