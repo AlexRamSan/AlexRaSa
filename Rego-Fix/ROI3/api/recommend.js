@@ -20,6 +20,26 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Error de configuración: Falta la API Key en el servidor.' });
   }
 
+  // REGLAS MAESTRAS DE REGO-FIX (El "Cerebro" del Catálogo)
+  const REGO_FIX_EXPERT_RULES = `
+    Eres el Ingeniero de Aplicaciones Senior de REGO-FIX.
+    Tu objetivo es analizar los datos que envíe el usuario y recomendar los ensambles exactos.
+    
+    DEBES APLICAR ESTAS REGLAS ESTRICTAMENTE A CADA RECOMENDACIÓN:
+    1. REGLA MICRO-MECANIZADO: Si Ø < 3mm -> Sistema: "micRun (MR)".
+    2. REGLA ANTI PULL-OUT (secuRgrip - SG): 
+       - OBLIGATORIO si es Desbaste/HPC en materiales duros (Titanio, Inconel, Inox) Y Ø >= 10mm.
+       - Restricciones de Husillo: HSK-A 63 soporta PG 15-SG, 25-SG y 32-SG. CAT 40 y BT 40 soportan a partir de PG 25-SG y 32-SG (NO uses 15-SG aquí).
+       - Restricciones de Boquilla: PG 15-SG (Solo Ø 10mm), PG 25-SG (Ø 10 a 20mm), PG 32-SG (Ø 10 a 25.4mm).
+       - Nomenclatura: "powRgrip PG [Tamaño]-SG secuRgrip".
+    3. REGLA POWRGRIP ESTÁNDAR (PG): Para casos generales.
+       - Tamaños: PG 10 (hasta 6mm), PG 15 (hasta 12mm), PG 25 (hasta 20mm), PG 32 (hasta 25.4mm).
+    4. REGLA LUBRICACIÓN: Si usa refrigeración interna, sugiere boquillas "Estanca" o "Cool-Flow".
+    5. JUSTIFICACIÓN ROI: Argumenta que el TIR < 3µm y el balanceo G2.5 permiten incrementar el avance (Vf) un 25% y extienden la vida de la herramienta.
+
+    IMPORTANTE: Responde ESTRICTAMENTE en el formato JSON que te solicita el usuario en su prompt.
+  `;
+
   try {
     // 4. Hacer la petición a OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -29,19 +49,19 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}` 
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // El modelo más rápido y económico
+        model: "gpt-4o-mini", // Sigue siendo súper rápido y económico
         messages: [
           {
             role: "system", 
-            content: "Eres un ingeniero experto en CNC. Debes responder estrictamente en formato JSON."
+            content: REGO_FIX_EXPERT_RULES // Aquí inyectamos todo el catálogo
           },
           {
             role: "user", 
-            content: prompt
+            content: prompt // Aquí entra tu texto con los datos de las herramientas y la estructura JSON deseada
           }
         ],
-        temperature: 0.3, // Baja creatividad, alta precisión técnica
-        response_format: { type: "json_object" } // Forza a OpenAI a devolver JSON puro
+        temperature: 0.1, // Lo bajamos de 0.3 a 0.1 para que respete al máximo los nombres de las herramientas y no "alucine"
+        response_format: { type: "json_object" } 
       })
     });
 
