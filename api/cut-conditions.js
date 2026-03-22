@@ -1,9 +1,9 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Solo POST' });
 
-  // Recibimos los datos libres
-  const { material, herramienta, interfaz, operacion, diametro, z } = req.body;
+  const { material, herramienta, interfaz, operacion, diametro, z, largo, lubricacion } = req.body;
   const d = parseFloat(diametro);
+  const l = parseFloat(largo);
 
   const promptIngenieria = `
     Eres el motor de cálculo técnico de REGO-FIX. Analiza estas entradas libres del operador:
@@ -12,41 +12,44 @@ export default async function handler(req, res) {
     - Interfaz Máquina: ${interfaz}
     - Operación: ${operacion}
     - Ø Herramienta: ${d} mm
+    - Proyección (Largo): ${l} mm
     - Filos (Z): ${z}
+    - Lubricación: ${lubricacion}
 
-    REGLAS ESTRICTAS DE CATÁLOGO REGO-FIX A APLICAR:
+    REGLAS ESTRICTAS DE CATÁLOGO REGO-FIX (NUNCA INVENTES MEDIDAS):
     
-    1. TAMAÑOS DE SISTEMA: 
-       - PG (powRgrip): PG10 (hasta 6mm), PG15 (hasta 12mm), PG25 (hasta 20mm), PG32 (hasta 25.4mm).
-       - MR (micRun): MR11 (hasta 6mm), MR16 (hasta 10mm).
+    1. REGLA DE MICRO-MECANIZADO: Si Ø < 3mm -> Sistema: "micRun (MR)".
 
-    2. MATRIZ DE SELECCIÓN DE HOLDER Y PINZA:
-       - REGLA A (Micro): Si Ø < 3mm -> 
-         * Sistema: "micRun (MR)"
-         * Pinza: "MR [11 o 16] - ${d}mm"
-       
-       - REGLA B (secuRgrip): Si Operación implica "Desbaste" o alta remoción, Y la Pieza es dura (Titanio, Inconel, Inoxidable, Acero tratado >45 HRC), Y Ø >= 10mm ->
-         * Sistema: "secuRgrip (PG-SG) Heavy Duty"
-         * Pinza: "PG [15, 25 o 32]-SG secuRgrip para ${d}mm" (ES VITAL QUE LA PINZA INCLUYA EL SUFIJO -SG).
-       
-       - REGLA C (Estándar): Para el resto de los casos ->
-         * Sistema: "powRgrip (PG) Estándar"
-         * Pinza: "PG [10, 15, 25 o 32] Estándar para ${d}mm"
+    2. REGLA SECURGRIP (SG) - PROTECCIÓN ANTI PULL-OUT:
+       - Se activa SI Y SOLO SI la operación es HPC/Desbaste pesado EN materiales duros (Titanio, Inconel, Inox) Y el diámetro (Ø) está soportado.
+       - TAMAÑOS SOPORTADOS PARA PG-SG (Basado en catálogo oficial):
+         * PG 15-SG: Solo soporta Ø 10mm.
+         * PG 25-SG: Soporta Ø 10, 12, 14, 16, 18, 20mm (o pulgadas 1/2", 5/8", 3/4").
+         * PG 32-SG: Soporta Ø 10, 12, 14, 16, 18, 20, 25mm (o pulgadas 1/2" a 1").
+       - TAMAÑOS SOPORTADOS PARA ER-SG: ER 32-SG o ER 40-SG (A partir de Ø 10mm).
+       - Si el Ø es menor a 10mm, ES IMPOSIBLE USAR secuRgrip. Pasa a la Regla 3.
+       - Nomenclatura obligatoria de la pinza: "PG [Tamaño]-SG secuRgrip" o "ER [Tamaño]-SG secuRgrip".
 
-    3. FÍSICA DE CORTE: 
-       - Deduce la Velocidad de Corte (Vc) y el avance por diente (fz) adecuados para el material y herramienta.
+    3. REGLA POWRGRIP (PG) ESTÁNDAR: Para el resto de los casos.
+       - TAMAÑOS: PG10 (hasta 6mm), PG15 (hasta 12mm), PG25 (hasta 20mm), PG32 (hasta 25.4mm).
+    
+    4. REGLA DE LUBRICACIÓN: Si el usuario indica lubricación "Interna" o "Centro", añade a la pinza sugerida el sufijo DM (Estanca para ER) o Cool-Flow/Estanca (para PG).
+
+    5. FÍSICA DE CORTE Y DEFLEXIÓN: 
+       - Deduce Velocidad de Corte (Vc) y avance por diente (fz).
        - Calcula RPM = (Vc * 1000) / (PI * Ø).
-       - Calcula Avance de mesa (Vf) = RPM * Z * fz.
-       - Incrementa el Avance (Vf) un 25% por la alta rigidez y TIR < 3µm del sistema.
+       - Calcula Avance (Vf) = RPM * Z * fz.
+       - Incrementa el avance 25% por la rigidez de REGO-FIX.
+       - Ratio L/D actual es ${l/d}. Si es > 3.5, justifica en el dictamen cómo el TIR < 3µm del portaherramientas salva la vida de la herramienta frente a la deflexión.
 
-    Devuelve ÚNICAMENTE un JSON con esta estructura exacta:
+    Devuelve ÚNICAMENTE un JSON con esta estructura exacta (rpm y avance como enteros):
     {
-      "sistema_recomendado": "Ej: HSK-A 63 / secuRgrip (PG-SG)",
-      "pinza_sugerida": "Ej: Pinza PG 25-SG secuRgrip",
+      "sistema_recomendado": "Ej: HSK-A 63 / powRgrip PG 25-SG",
+      "pinza_sugerida": "Ej: Pinza PG 25-SG Estanca",
       "rpm_calculado": 0,
       "avance_calculado": 0,
-      "mejora_esperada": "Ej: +25% y 100% Anti Pull-out",
-      "dictamen_tecnico": "1 sola línea justificando la selección del sistema y la boquilla."
+      "mejora_esperada": "Ej: +25% de Avance y 100% Anti Pull-out",
+      "dictamen_tecnico": "2 líneas: Justifica la selección considerando deflexión (L/D) y lubricación."
     }
   `;
 
@@ -58,13 +61,13 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "gpt-4o", // gpt-4o es necesario para seguir reglas lógicas estrictas
+        model: "gpt-4o",
         messages: [
-          { role: "system", content: "Eres un ingeniero de aplicaciones experto de REGO-FIX. Responde solo en JSON." },
+          { role: "system", content: "Eres ingeniero de aplicaciones REGO-FIX. Responde solo en JSON válido." },
           { role: "user", content: promptIngenieria }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.2 // Temperatura baja para que no se ponga "creativo" con los nombres
+        temperature: 0.1 // Casi cero para forzar exactitud de catálogo
       })
     });
 
