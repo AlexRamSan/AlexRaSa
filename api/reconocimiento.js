@@ -3,13 +3,12 @@ import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export default async function handler(req, res) {
-  // Habilitar CORS para que alexrasa.store pueda consultar a Vercel
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Configuración de CORS para permitir peticiones desde alexrasa.store
+  res.setHeader('Access-Control-Allow-Origin', 'https://alexrasa.store');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { image } = req.body; 
@@ -19,7 +18,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: "Eres un extractor de datos de tarjetas de presentación para un ingeniero de ventas. Devuelve un JSON con: firstName, lastName, email, phone, company."
+          content: "Extrae datos de tarjetas de presentación. Devuelve un JSON con: firstName, lastName, email, phone."
         },
         {
           role: "user",
