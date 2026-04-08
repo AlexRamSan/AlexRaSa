@@ -1,8 +1,5 @@
 // Archivo: /api/contactos.js
-const axios = require('axios');
-
 export default async function handler(req, res) {
-  // Solo permitimos peticiones GET
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
@@ -14,29 +11,44 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Autenticación con las variables de Vercel
-    const authResponse = await axios.post('https://api.snov.io/v1/oauth/access_token', {
-      grant_type: 'client_credentials',
-      client_id: process.env.SNOVIO_CLIENT_ID,
-      client_secret: process.env.SNOVIO_CLIENT_SECRET
+    // 1. Validar que las variables existen en Vercel
+    if (!process.env.SNOVIO_CLIENT_ID || !process.env.SNOVIO_CLIENT_SECRET) {
+      console.error("FALTAN VARIABLES DE ENTORNO EN VERCEL");
+      return res.status(500).json({ error: 'Faltan credenciales de Snov.io en Vercel.' });
+    }
+
+    // 2. Autenticación nativa
+    const authReq = await fetch('https://api.snov.io/v1/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type: 'client_credentials',
+        client_id: process.env.SNOVIO_CLIENT_ID,
+        client_secret: process.env.SNOVIO_CLIENT_SECRET
+      })
     });
 
-    const token = authResponse.data.access_token;
+    if (!authReq.ok) {
+      return res.status(500).json({ error: 'Credenciales de Snov.io incorrectas o rechazadas.' });
+    }
 
-    // 2. Búsqueda de correos en el dominio
-    const searchResponse = await axios.get('https://api.snov.io/v2/domain-emails-with-info', {
-      params: {
-        domain: dominio,
-        type: 'all',
-        limit: 15 // Límite para no quemar créditos de más en empresas gigantes
-      },
-      headers: { 
-        'Authorization': `Bearer ${token}` 
-      }
+    const authData = await authReq.json();
+    const token = authData.access_token;
+
+    // 3. Búsqueda nativa
+    const searchReq = await fetch(`https://api.snov.io/v2/domain-emails-with-info?domain=${dominio}&type=all&limit=15`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    // 3. Limpieza de datos para tu frontend
-    const contactosLimpios = searchResponse.data.emails.map(c => ({
+    if (!searchReq.ok) {
+      return res.status(500).json({ error: 'Snov.io rechazó la búsqueda del dominio.' });
+    }
+
+    const searchData = await searchReq.json();
+
+    // 4. Limpieza de datos
+    const contactosLimpios = (searchData.emails || []).map(c => ({
       nombre: c.firstName || 'Sin Nombre',
       apellido: c.lastName || '',
       puesto: c.position || 'No especificado',
@@ -44,11 +56,10 @@ export default async function handler(req, res) {
       estado: c.emailStatus === 'valid' ? 'Verificado' : 'Riesgo / Catch-all'
     }));
 
-    // Enviar resultados al frontend
     res.status(200).json(contactosLimpios);
 
   } catch (error) {
-    console.error('Error en la API de Snov.io:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Error al conectar con el servidor de prospección.' });
+    console.error('Error del servidor:', error);
+    res.status(500).json({ error: 'Error interno del servidor.' });
   }
 }
