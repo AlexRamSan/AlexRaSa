@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar de Contactos | REGO-FIX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <header class="bg-slate-900 text-white p-6 shadow-md border-b-4 border-blue-600">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Radar de Prospección B2B</h1>
+                <p class="text-slate-400 text-sm mt-1">Conectado a Snov.io API v2</p>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 py-2 px-4 rounded-lg flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-sm font-medium">Sistema Activo</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-sm border border-slate-200">
+        
+        <div class="mb-8 p-6 bg-slate-50 rounded-lg border border-slate-200">
+            <h2 class="text-lg font-semibold mb-4 text-slate-800">Extraer Tomadores de Decisión</h2>
+            <div class="flex gap-4">
+                <input type="text" id="domainInput" placeholder="ej. magnum2000.com o bocar.com" 
+                    class="w-full p-4 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-lg placeholder-slate-400">
+                <button onclick="buscarContactos()" id="btnBuscar"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg transition duration-200 shadow-md whitespace-nowrap flex items-center justify-center min-w-[140px]">
+                    Buscar
+                </button>
+            </div>
+            <p id="statusMsg" class="text-sm text-blue-600 mt-3 hidden font-medium flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Consultando base de datos y verificando correos...
+            </p>
+        </div>
+
+        <div>
+            <div class="flex justify-between items-end mb-4 border-b border-slate-200 pb-2">
+                <h3 class="text-xl font-bold text-slate-800">Resultados Obtenidos</h3>
+                <span id="contadorResultados" class="text-sm text-slate-500 font-medium">0 contactos</span>
+            </div>
+            
+            <div class="overflow-hidden rounded-lg border border-slate-200">
+                <table class="w-full text-left border-collapse bg-white">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                            <th class="p-4 font-semibold">Nombre</th>
+                            <th class="p-4 font-semibold">Puesto</th>
+                            <th class="p-4 font-semibold">Correo Corporativo</th>
+                            <th class="p-4 font-semibold">Estado</th>
+                            <th class="p-4 font-semibold text-center w-36">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaResultados" class="divide-y divide-slate-100">
+                        <tr>
+                            <td colspan="5" class="p-8 text-center text-slate-400 italic">
+                                Ingresa un dominio web para comenzar la extracción.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function buscarContactos() {
+            let dominio = document.getElementById('domainInput').value.trim();
+            const btn = document.getElementById('btnBuscar');
+            const statusMsg = document.getElementById('statusMsg');
+            const tabla = document.getElementById('tablaResultados');
+            const contador = document.getElementById('contadorResultados');
+
+            // Limpiar "http://" o "www." si lo pegas por error
+            dominio = dominio.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "").split('/')[0];
+
+            if (!dominio) {
+                alert("Por favor ingresa un dominio válido.");
+                return;
+            }
+
+            // Estado de carga
+            btn.disabled = true;
+            btn.innerHTML = "Extrayendo...";
+            btn.classList.replace('bg-blue-600', 'bg-slate-400');
+            statusMsg.classList.remove('hidden');
+            tabla.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-blue-600 font-medium">Conectando con servidor seguro...</td></tr>`;
+            contador.innerText = "Calculando...";
+
+            try {
+                // Llamada real a TU API en Vercel
+                const response = await fetch(`/api/contactos?dominio=${dominio}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const contactos = await response.json();
+                
+                if (contactos.error) {
+                    throw new Error(contactos.error);
+                }
+
+                renderizarTabla(contactos);
+                contador.innerText = `${contactos.length} contactos`;
+
+            } catch (error) {
+                console.error("Error en prospección:", error);
+                tabla.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 font-medium">Error: ${error.message}. Verifica que el backend esté configurado correctamente.</td></tr>`;
+                contador.innerText = "Error";
+            } finally {
+                // Restaurar botón
+                btn.disabled = false;
+                btn.innerHTML = "Buscar";
+                btn.classList.replace('bg-slate-400', 'bg-blue-600');
+                statusMsg.classList.add('hidden');
+            }
+        }
+
+        function renderizarTabla(contactos) {
+            const tabla = document.getElementById('tablaResultados');
+            tabla.innerHTML = '';
+
+            if (contactos.length === 0) {
+                tabla.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 font-medium">No se encontraron contactos para este dominio.</td></tr>`;
+                return;
+            }
+
+            contactos.forEach((c, index) => {
+                const badgeColor = c.estado === 'Verificado' 
+                    ? 'bg-green-100 text-green-700 border-green-200' 
+                    : 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                
+                // Limpieza de nombres vacíos
+                const nombreCompleto = `${c.nombre} ${c.apellido}`.trim();
+                const iniciales = nombreCompleto !== "Sin Nombre" ? c.nombre.charAt(0) : "?";
+
+                tabla.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition duration-150 group">
+                        <td class="p-4 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs">
+                                ${iniciales}
+                            </div>
+                            <span class="font-semibold text-slate-800">${nombreCompleto}</span>
+                        </td>
+                        <td class="p-4 text-slate-600 text-sm capitalize">${c.puesto.toLowerCase()}</td>
+                        <td class="p-4">
+                            <span class="text-blue-600 font-mono text-sm bg-blue-50 px-2 py-1 rounded">${c.correo}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full border ${badgeColor}">
+                                ${c.estado}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <button id="btn-sf-${index}" onclick="simularEnvioSF('btn-sf-${index}')" class="text-xs bg-white border border-slate-300 hover:border-blue-500 hover:text-blue-600 px-4 py-2 rounded-md text-slate-700 transition font-medium w-full shadow-sm">
+                                + Salesforce
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function simularEnvioSF(btnId) {
+            const btn = document.getElementById(btnId);
+            btn.innerHTML = "✓ Agregado";
+            btn.classList.replace('border-slate-300', 'border-green-500');
+            btn.classList.replace('text-slate-700', 'text-green-600');
+            btn.classList.replace('hover:text-blue-600', 'hover:text-green-700');
+            btn.classList.replace('hover:border-blue-500', 'hover:border-green-600');
+            btn.disabled = true;
+        }
+    </script>
+</body>
+</html>
