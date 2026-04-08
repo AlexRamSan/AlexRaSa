@@ -1,6 +1,5 @@
 // Archivo: /api/contactos.js
 module.exports = async function handler(req, res) {
-  // Evitamos que Vercel rechace la conexión por seguridad (CORS)
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   if (req.method !== 'GET') {
@@ -18,41 +17,43 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const apolloReq = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+    // Intentamos con el endpoint de búsqueda de personas por organización
+    // Este es el más compatible con los créditos de "Enrichment" que tienes
+    const apolloReq = await fetch('https://api.apollo.io/v1/people/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache',
-        // AQUÍ ES DONDE APOLLO EXIGE LA LLAVE AHORA:
         'X-Api-Key': process.env.APOLLO_API_KEY 
       },
       body: JSON.stringify({
-        // La llave ya no va aquí, solo los datos de búsqueda
         q_organization_domains: dominio,
         page: 1,
-        per_page: 15
+        per_page: 15,
+        display_mode: "explorer" // Modo compatible con planes iniciales
       })
     });
 
+    const responseData = await apolloReq.json();
+
     if (!apolloReq.ok) {
-      const errorText = await apolloReq.text();
-      console.error("Error de Apollo:", errorText);
-      return res.status(400).json({ error: 'Apollo rechazó la petición. Revisa los logs de Vercel.' });
+      console.error("Error detallado de Apollo:", responseData);
+      return res.status(400).json({ 
+        error: responseData.error || 'Apollo rechazó la petición.' 
+      });
     }
 
-    const apolloData = await apolloReq.json();
-
-    const contactosLimpios = (apolloData.people || []).map(p => {
-      let estadoTraducido = 'Desconocido';
-      if (p.email_status === 'verified') estadoTraducido = 'Verificado';
-      if (p.email_status === 'extrapolated') estadoTraducido = 'Extrapolado / Riesgo';
+    // Mapeamos los resultados al formato de tu tabla REGO-FIX
+    const contactosLimpios = (responseData.people || []).map(p => {
+      let estadoTraducido = 'Verificado';
+      if (p.email_status === 'extrapolated') estadoTraducido = 'Extrapolado';
       if (p.email_status === 'catch_all') estadoTraducido = 'Catch-all';
 
       return {
         nombre: p.first_name || 'Usuario',
         apellido: p.last_name || '',
         puesto: p.title || 'Perfil Técnico/Advo.',
-        correo: p.email || p.obfuscated_email || 'Requiere Reveal',
+        correo: p.email || 'Email Privado (Usa Apollo para revelar)',
         estado: estadoTraducido
       };
     });
@@ -60,7 +61,7 @@ module.exports = async function handler(req, res) {
     res.status(200).json(contactosLimpios);
 
   } catch (error) {
-    console.error('Error interno del código:', error);
+    console.error('Error interno:', error);
     res.status(500).json({ error: `Fallo interno del servidor: ${error.message}` });
   }
 };
