@@ -2,66 +2,57 @@
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Método no permitido' });
-  }
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido' });
 
   const { dominio } = req.query;
-
-  if (!dominio) {
-    return res.status(400).json({ error: 'Debes proporcionar un dominio válido.' });
-  }
-
-  if (!process.env.APOLLO_API_KEY) {
-    return res.status(400).json({ error: 'Falta la variable APOLLO_API_KEY en Vercel.' });
-  }
+  const API_KEY = process.env.APOLLO_API_KEY;
 
   try {
-    // Intentamos con el endpoint de búsqueda de personas por organización
-    // Este es el más compatible con los créditos de "Enrichment" que tienes
-    const apolloReq = await fetch('https://api.apollo.io/v1/people/search', {
+    // PASO 1: Buscar la Organización por dominio para obtener su ID
+    const orgRes = await fetch('https://api.apollo.io/v1/organizations/bulk_enrich', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'X-Api-Key': process.env.APOLLO_API_KEY 
-      },
+      headers: { 'Content-Type': 'application/json', 'X-Api-Key': API_KEY },
+      body: JSON.stringify({ domains: [dominio] })
+    });
+
+    const orgData = await orgRes.json();
+    const orgId = orgData[0]?.id;
+
+    if (!orgId) {
+        return res.status(400).json({ error: `No se encontró la empresa con el dominio ${dominio}` });
+    }
+
+    // PASO 2: Buscar personas asociadas a esa Organización específica
+    // Este método es mucho más amigable con los planes gratuitos
+    const peopleRes = await fetch('https://api.apollo.io/v1/mixed_people/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Api-Key': API_KEY },
       body: JSON.stringify({
-        q_organization_domains: dominio,
+        organization_ids: [orgId],
         page: 1,
-        per_page: 15,
-        display_mode: "explorer" // Modo compatible con planes iniciales
+        per_page: 12,
+        prospective_hub_user_ids: [] 
       })
     });
 
-    const responseData = await apolloReq.json();
+    const peopleData = await peopleRes.json();
 
-    if (!apolloReq.ok) {
-      console.error("Error detallado de Apollo:", responseData);
-      return res.status(400).json({ 
-        error: responseData.error || 'Apollo rechazó la petición.' 
-      });
+    if (!peopleRes.ok) {
+        return res.status(400).json({ error: "Apollo limitó la búsqueda de personas. Intenta con otro dominio." });
     }
 
-    // Mapeamos los resultados al formato de tu tabla REGO-FIX
-    const contactosLimpios = (responseData.people || []).map(p => {
-      let estadoTraducido = 'Verificado';
-      if (p.email_status === 'extrapolated') estadoTraducido = 'Extrapolado';
-      if (p.email_status === 'catch_all') estadoTraducido = 'Catch-all';
+    const contactos = (peopleData.people || []).map(p => ({
+      nombre: p.first_name || 'Usuario',
+      apellido: p.last_name || '',
+      puesto: p.title || 'Ingeniería/Mantenimiento',
+      // En plan gratuito, Apollo suele devolver el correo ofuscado hasta que lo "revelas"
+      correo: p.email || 'Click en Apollo para revelar',
+      estado: p.email_status === 'verified' ? 'Verificado' : 'Consultar'
+    }));
 
-      return {
-        nombre: p.first_name || 'Usuario',
-        apellido: p.last_name || '',
-        puesto: p.title || 'Perfil Técnico/Advo.',
-        correo: p.email || 'Email Privado (Usa Apollo para revelar)',
-        estado: estadoTraducido
-      };
-    });
-
-    res.status(200).json(contactosLimpios);
+    res.status(200).json(contactos);
 
   } catch (error) {
-    console.error('Error interno:', error);
-    res.status(500).json({ error: `Fallo interno del servidor: ${error.message}` });
+    res.status(500).json({ error: `Error en el proceso: ${error.message}` });
   }
 };
