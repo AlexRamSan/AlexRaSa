@@ -22,10 +22,12 @@ module.exports = async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        // AQUÍ ES DONDE APOLLO EXIGE LA LLAVE AHORA:
+        'X-Api-Key': process.env.APOLLO_API_KEY 
       },
       body: JSON.stringify({
-        api_key: process.env.APOLLO_API_KEY,
+        // La llave ya no va aquí, solo los datos de búsqueda
         q_organization_domains: dominio,
         page: 1,
         per_page: 15
@@ -35,7 +37,7 @@ module.exports = async function handler(req, res) {
     if (!apolloReq.ok) {
       const errorText = await apolloReq.text();
       console.error("Error de Apollo:", errorText);
-      return res.status(400).json({ error: 'Apollo rechazó la llave. Verifica que no tenga espacios.' });
+      return res.status(400).json({ error: 'Apollo rechazó la petición. Revisa los logs de Vercel.' });
     }
 
     const apolloData = await apolloReq.json();
