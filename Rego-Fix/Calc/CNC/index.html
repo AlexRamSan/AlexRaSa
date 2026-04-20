@@ -49,49 +49,61 @@
     
     .row-flex { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px dashed #e2e8f0; }
     .row-flex:last-child { border-bottom: none; }
+
+    .lang-btn { filter: grayscale(100%); opacity: 0.5; transition: all 0.2s ease; cursor: pointer; }
+    .lang-btn:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.1); }
+    .lang-btn.active { filter: grayscale(0%); opacity: 1; transform: scale(1.15); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; }
   </style>
 </head>
 <body class="py-10 px-4 md:px-8">
 
   <main class="max-w-7xl mx-auto">
     
-    <header class="flex flex-col md:flex-row justify-between items-center mb-10 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-        <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-10 mb-4 md:mb-0" alt="REGO-FIX" onerror="this.src='https://via.placeholder.com/150x40?text=REGO-FIX'">
-        <div class="text-center md:text-right">
-            <h1 class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente de Mecanizado</h1>
-            <p class="text-sm text-gray-500 font-bold">Diagnóstico de Productividad y Estabilidad</p>
+    <div class="mb-10 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative">
+        <div class="absolute top-4 right-6 flex gap-3 text-3xl">
+            <span onclick="setLanguage('es')" id="btn_es" class="lang-btn active" title="Español (México)">🇲🇽</span>
+            <span onclick="setLanguage('en')" id="btn_en" class="lang-btn" title="English (USA)">🇺🇸</span>
+            <span onclick="setLanguage('pt')" id="btn_pt" class="lang-btn" title="Português (Brasil)">🇧🇷</span>
         </div>
-    </header>
+        
+        <div class="flex flex-col md:flex-row justify-between items-center mt-6 md:mt-0">
+            <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-10 mb-4 md:mb-0" alt="REGO-FIX" onerror="this.src='https://via.placeholder.com/150x40?text=REGO-FIX'">
+            <div class="text-center md:text-right mt-4 md:mt-0 md:mr-32">
+                <h1 id="t_main_title" class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente de Mecanizado</h1>
+                <p id="t_main_sub" class="text-sm text-gray-500 font-bold">Diagnóstico de Productividad y Estabilidad</p>
+            </div>
+        </div>
+    </div>
 
     <div class="flex justify-center md:justify-end mb-8 gap-4">
         <label class="flex items-center gap-2 cursor-pointer bg-white px-5 py-3 border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition">
-            <input type="radio" name="unit_system" value="mm" checked onchange="updateLabels('mm')" class="w-5 h-5 accent-[#D31B23]">
-            <span class="text-sm font-bold text-[#28556C]">Métrico (mm)</span>
+            <input type="radio" name="unit_system" value="mm" checked onchange="updateLabels()" class="w-5 h-5 accent-[#D31B23]">
+            <span id="t_unit_mm" class="text-sm font-bold text-[#28556C]">Métrico (mm)</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer bg-white px-5 py-3 border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition">
-            <input type="radio" name="unit_system" value="inch" onchange="updateLabels('inch')" class="w-5 h-5 accent-[#D31B23]">
-            <span class="text-sm font-bold text-[#28556C]">Imperial (pulg)</span>
+            <input type="radio" name="unit_system" value="inch" onchange="updateLabels()" class="w-5 h-5 accent-[#D31B23]">
+            <span id="t_unit_in" class="text-sm font-bold text-[#28556C]">Imperial (pulg)</span>
         </label>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
         <div class="step-card">
-            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">1. Tu Proyecto</h2>
+            <h2 id="t_card1_title" class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">1. Tu Proyecto</h2>
             <div class="space-y-4">
                 <div>
-                    <label class="lbl-title">Material a cortar</label>
+                    <label id="t_lbl_mat" class="lbl-title">Material a cortar</label>
                     <input id="material" type="text" class="input-friendly text-sm" value="Acero al carbono" placeholder="Ej. Aluminio, Inconel...">
                 </div>
                 <div>
-                    <label class="lbl-title">Operación</label>
+                    <label id="t_lbl_op" class="lbl-title">Operación</label>
                     <input id="operacion" type="text" class="input-friendly text-sm" value="Desbaste" placeholder="Ej. Acabado, Desbaste...">
                 </div>
             </div>
         </div>
 
         <div class="step-card">
-            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">2. La Fresa</h2>
+            <h2 id="t_card2_title" class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">2. La Fresa</h2>
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -99,18 +111,18 @@
                         <input id="diametro" type="number" step="0.001" class="input-friendly text-sm text-center" value="10">
                     </div>
                     <div>
-                        <label class="lbl-title">Filos (Z)</label>
+                        <label id="t_lbl_z" class="lbl-title">Filos (Z)</label>
                         <input id="z" type="number" class="input-friendly text-sm text-center" value="4">
                     </div>
                 </div>
                 <div>
                     <label id="lbl_proyeccion" class="lbl-title">Proyección</label>
-                    <span class="lbl-micro">¿Cuánto sale la fresa del chuck?</span>
+                    <span id="t_help_proj" class="lbl-micro">¿Cuánto sale la fresa del chuck?</span>
                     <input id="proyeccion" type="number" step="0.1" class="input-friendly text-sm" value="35">
                 </div>
                 <div>
-                    <label class="lbl-title">Límite de la Máquina</label>
-                    <span class="lbl-micro">RPM Máximas de tu husillo</span>
+                    <label id="t_lbl_rpmmax" class="lbl-title">Límite de la Máquina</label>
+                    <span id="t_help_rpmmax" class="lbl-micro">RPM Máximas de tu husillo</span>
                     <input id="max_rpm" type="number" class="input-friendly text-sm font-black text-[#D31B23]" value="12000">
                 </div>
             </div>
@@ -118,8 +130,8 @@
 
         <div class="step-card accent relative">
             <div class="flex justify-between items-center mb-2 border-b border-red-100 pb-2">
-                <h2 class="text-md font-black text-[#D31B23]">3. Datos del Fabricante</h2>
-                <div class="relative inline-block w-10 align-middle select-none" title="Activar/Desactivar datos de cajita">
+                <h2 id="t_card3_title" class="text-md font-black text-[#D31B23]">3. Datos del Fabricante</h2>
+                <div class="relative inline-block w-10 align-middle select-none">
                     <input type="checkbox" id="toggle_catalogo" checked onchange="toggleCatalogo()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10"/>
                     <label for="toggle_catalogo" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-200 cursor-pointer transition-colors"></label>
                 </div>
@@ -131,36 +143,36 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label id="lbl_ap" class="lbl-title">Corte Abajo</label>
-                        <span class="lbl-micro">Profundidad (Ap)</span>
+                        <span id="t_help_ap" class="lbl-micro">Profundidad (Ap)</span>
                         <input id="ap" type="number" step="0.1" class="input-friendly text-sm text-center" value="2">
                     </div>
                     <div>
                         <label id="lbl_ae" class="lbl-title">Corte Lateral</label>
-                        <span class="lbl-micro">Ancho (Ae)</span>
+                        <span id="t_help_ae" class="lbl-micro">Ancho (Ae)</span>
                         <input id="ae" type="number" step="0.1" class="input-friendly text-sm text-center" value="5">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 mt-2">
                     <div>
-                        <label class="lbl-title">Velocidad (Vc)</label>
-                        <span class="lbl-micro">Suele decir m/min</span>
+                        <label id="t_lbl_vc" class="lbl-title">Velocidad (Vc)</label>
+                        <span id="t_help_vc" class="lbl-micro">Suele decir m/min</span>
                         <input id="vc_base" type="number" class="input-friendly text-sm text-center" value="180">
                     </div>
                     <div>
-                        <label class="lbl-title">Carga (Fz)</label>
-                        <span class="lbl-micro">Avance por diente</span>
+                        <label id="t_lbl_fz" class="lbl-title">Carga (Fz)</label>
+                        <span id="t_help_fz" class="lbl-micro">Avance por diente</span>
                         <input id="fz_base" type="number" step="0.001" class="input-friendly text-sm text-center" value="0.065">
                     </div>
                 </div>
             </div>
             <div id="msg_catalogo_off" class="hidden absolute top-1/2 left-0 right-0 text-center px-4">
-                <span class="text-xs font-bold text-gray-400 uppercase">Sin datos de catálogo.<br>Usaremos tu proceso actual.</span>
+                <span id="t_msg_cat_off" class="text-xs font-bold text-gray-400 uppercase">Sin datos de catálogo.<br>Usaremos tu proceso actual.</span>
             </div>
         </div>
 
         <div class="step-card">
             <div class="flex justify-between items-center mb-5 border-b border-gray-100 pb-2">
-                <h2 class="text-md font-black text-[#28556C]">4. Proceso Actual</h2>
+                <h2 id="t_card4_title" class="text-md font-black text-[#28556C]">4. Proceso Actual</h2>
                 <div class="relative inline-block w-10 align-middle select-none">
                     <input type="checkbox" id="toggle_actuales" onchange="toggleActuales()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10"/>
                     <label for="toggle_actuales" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-200 cursor-pointer transition-colors"></label>
@@ -169,11 +181,11 @@
             
             <div id="panel_actuales" class="space-y-4 hidden opacity-50">
                 <div>
-                    <label class="lbl-title">Tus RPM actuales</label>
+                    <label id="t_lbl_rpmact" class="lbl-title">Tus RPM actuales</label>
                     <input id="rpm_actual" type="number" class="input-friendly text-sm" placeholder="Ej: 4500" disabled>
                 </div>
                 <div>
-                    <label class="lbl-title">Tu Avance actual</label>
+                    <label id="t_lbl_vfact" class="lbl-title">Tu Avance actual</label>
                     <div class="flex gap-2">
                         <input id="avance_actual" type="number" class="input-friendly text-sm w-2/3" placeholder="Ej: 1200" disabled>
                         <select id="unidad_avance" class="input-friendly text-sm w-1/3 p-1 font-bold text-[#28556C]" disabled>
@@ -193,19 +205,17 @@
         </button>
     </div>
 
-    <div id="loader" class="hidden text-center py-10 text-[#28556C] font-black uppercase animate-pulse">Analizando rigidez y frecuencias de corte...</div>
+    <div id="loader" class="hidden text-center py-10 text-[#28556C] font-black uppercase animate-pulse" id="t_loader">Analizando rigidez y frecuencias de corte...</div>
 
     <div id="resultado" class="hidden res-dashboard mb-10">
-        
         <div class="flex flex-col lg:flex-row gap-10">
             
             <div class="w-full lg:w-1/3">
-                <h3 class="res-title border-b-2 border-[#28556C] inline-block pb-1">Diagnóstico</h3>
-                <ul id="lista-diagnostico" class="list-disc pl-5 space-y-3 text-sm text-gray-700 leading-relaxed mb-8 mt-4 font-medium">
-                    </ul>
+                <h3 id="t_res_diag" class="res-title border-b-2 border-[#28556C] inline-block pb-1">Diagnóstico</h3>
+                <ul id="lista-diagnostico" class="list-disc pl-5 space-y-3 text-sm text-gray-700 leading-relaxed mb-8 mt-4 font-medium"></ul>
 
                 <div class="bg-[#28556C] p-5 rounded-2xl border border-[#1d3d4d] shadow-lg text-white">
-                    <div class="text-blue-200 text-xs font-bold uppercase mb-2">Código CNC Sugerido</div>
+                    <div id="t_res_code" class="text-blue-200 text-xs font-bold uppercase mb-2">Código CNC Sugerido</div>
                     <div class="font-mono text-sm">
                         <div class="text-green-400 font-bold mb-1">S<span id="code-s">0</span> &nbsp; F<span id="code-f">0</span></div>
                         <div class="text-blue-300 text-[11px]">; <span id="code-mat"></span></div>
@@ -217,55 +227,55 @@
             <div class="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 <div class="res-card shadow-sm">
-                    <h4 class="res-title text-[#D31B23]">Velocidad (RPM)</h4>
+                    <h4 id="t_res_rpm" class="res-title text-[#D31B23]">Velocidad (RPM)</h4>
                     <div class="row-flex text-gray-500">
-                        <span class="text-sm font-bold">Mínimo / Seguro</span>
+                        <span id="t_res_min1" class="text-sm font-bold">Mínimo / Seguro</span>
                         <span class="badge-val badge-min" id="res-rpm-min">0</span>
                     </div>
                     <div class="row-flex">
-                        <span class="text-sm font-black text-[#28556C]">Óptimo (Alta Precisión)</span>
+                        <span id="t_res_opt1" class="text-sm font-black text-[#28556C]">Óptimo (Alta Precisión)</span>
                         <span class="badge-val badge-opt text-lg" id="res-rpm-opt">0</span>
                     </div>
                     <div class="row-flex text-gray-500">
-                        <span class="text-sm font-bold">Límite Agresivo</span>
+                        <span id="t_res_max1" class="text-sm font-bold">Límite Agresivo</span>
                         <span class="badge-val badge-max" id="res-rpm-max">0</span>
                     </div>
                 </div>
 
                 <div class="res-card shadow-sm">
-                    <h4 class="res-title text-[#D31B23]">Avance de Corte</h4>
+                    <h4 id="t_res_vf" class="res-title text-[#D31B23]">Avance de Corte</h4>
                     <div class="row-flex text-gray-500">
-                        <span class="text-sm font-bold">Mínimo / Seguro</span>
+                        <span id="t_res_min2" class="text-sm font-bold">Mínimo / Seguro</span>
                         <span class="badge-val badge-min" id="res-vf-min">0</span>
                     </div>
                     <div class="row-flex">
-                        <span class="text-sm font-black text-[#28556C]">Óptimo (Alta Precisión)</span>
+                        <span id="t_res_opt2" class="text-sm font-black text-[#28556C]">Óptimo (Alta Precisión)</span>
                         <span class="badge-val badge-opt text-lg" id="res-vf-opt">0</span>
                     </div>
                     <div class="row-flex text-gray-500">
-                        <span class="text-sm font-bold">Límite Agresivo</span>
+                        <span id="t_res_max2" class="text-sm font-bold">Límite Agresivo</span>
                         <span class="badge-val badge-max" id="res-vf-max">0</span>
                     </div>
                     <div class="row-flex mt-2 pt-2 text-gray-400 text-xs font-bold" id="row-vf-actual" style="display:none;">
-                        <span>Tu programa actual:</span>
+                        <span id="t_res_act_prog">Tu programa actual:</span>
                         <span id="res-vf-act">---</span>
                     </div>
                 </div>
 
                 <div class="res-card shadow-sm md:col-span-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="w-full md:w-1/2">
-                        <h4 class="res-title text-[#28556C] mb-2">Vibración</h4>
+                        <h4 id="t_res_vib" class="res-title text-[#28556C] mb-2">Vibración</h4>
                         <div class="row-flex">
-                            <span class="text-sm font-bold text-gray-600">Paso de Diente (TPF)</span>
+                            <span id="t_res_tpf" class="text-sm font-bold text-gray-600">Paso de Diente (TPF)</span>
                             <span class="font-black text-[#28556C]" id="res-tpf">0 Hz</span>
                         </div>
                         <div class="row-flex">
-                            <span class="text-sm font-bold text-gray-600">Estado Calculado</span>
-                            <span class="badge-val" id="res-riesgo">Analizando...</span>
+                            <span id="t_res_state" class="text-sm font-bold text-gray-600">Estado Calculado</span>
+                            <span class="badge-val" id="res-riesgo">---</span>
                         </div>
                     </div>
                     <div class="w-full md:w-1/2 bg-white p-4 rounded-xl border border-gray-200 text-center">
-                        <h4 class="text-xs font-black text-gray-400 uppercase mb-1">Volumen Removido (MRR)</h4>
+                        <h4 id="t_res_mrr" class="text-xs font-black text-gray-400 uppercase mb-1">Volumen Removido (MRR)</h4>
                         <div class="text-4xl font-black text-[#B7C91F] drop-shadow-sm" id="res-mrr-opt">0.0</div>
                         <div class="text-xs font-bold text-gray-500 mt-1 uppercase" id="res-mrr-unit">cm³/min</div>
                     </div>
@@ -278,24 +288,173 @@
   </main>
 
   <script>
-    function updateLabels(unit) {
-        const isInch = unit === 'inch';
+    // --- LÓGICA DE MULTI-IDIOMA ---
+    let currentLang = 'es';
+
+    const i18n = {
+        es: {
+            title: "Asistente de Mecanizado",
+            sub: "Diagnóstico de Productividad y Estabilidad",
+            unit_mm: "Métrico (mm)", unit_in: "Imperial (pulg)",
+            c1_title: "1. Tu Proyecto", lbl_mat: "Material a cortar", lbl_op: "Operación",
+            c2_title: "2. La Fresa", lbl_diam: "Grosor (Ø)", lbl_z: "Filos (Z)", lbl_proj: "Proyección", help_proj: "¿Cuánto sale la fresa del chuck?", lbl_rpmmax: "Límite de la Máquina", help_rpmmax: "RPM Máximas de tu husillo",
+            c3_title: "3. Datos del Fabricante", txt_cat_help: "Copia estos datos de la cajita de tu fresa o del catálogo web. ¡Son clave!", lbl_ap: "Corte Abajo", help_ap: "Profundidad (Ap)", lbl_ae: "Corte Lateral", help_ae: "Ancho (Ae)", lbl_vc: "Velocidad (Vc)", help_vc: "Suele decir m/min o sfm", lbl_fz: "Carga (Fz)", help_fz: "Avance por diente", msg_cat_off: "Sin datos de catálogo.<br>Usaremos tu proceso actual.",
+            c4_title: "4. Proceso Actual", lbl_rpmact: "Tus RPM actuales", lbl_vfact: "Tu Avance actual",
+            btn_go: "Analizar Proceso y Estabilidad",
+            loader: "Analizando rigidez y frecuencias de corte...",
+            res_diag: "Diagnóstico", res_code: "Código CNC Sugerido",
+            res_rpm: "Velocidad (RPM)", res_vf: "Avance de Corte", res_vib: "Vibración", res_mrr: "Volumen Removido (MRR)",
+            res_min: "Mínimo / Seguro", res_opt: "Óptimo (Alta Precisión)", res_max: "Límite Agresivo", res_act_prog: "Tu programa actual:", res_tpf: "Paso de Diente (TPF)", res_state: "Estado Calculado",
+            diag_stable: "Estable (Bajo Riesgo)", diag_attn: "Atención (Requiere Rigidez)",
+            err_cat_off: "¡Hola! Si apagas los 'Datos del Fabricante', necesitas prender el 'Proceso Actual' para que la calculadora tenga números de dónde partir.",
+            err_missing: "Por favor, asegúrate de llenar el Grosor (Ø) y los Filos de la fresa.",
+            err_cat_data: "Revisa la sección de 'Datos del Fabricante', faltan números ahí.",
+            err_act_data: "Por favor, ingresa tus RPM y Avance actuales.",
+            msg_diag_1: "⚡ El uso de un <b>sistema de sujeción de alta precisión (TIR < 3µm)</b> es fundamental aquí. Al absorber micro-vibraciones, te garantiza que puedas correr en el escenario 'Óptimo' sin desgastar tu herramienta prematuramente.",
+            msg_diag_2: "Tomando como base cómo cortas actualmente, la alta rigidez del portaherramientas te permite escalar tus parámetros (RPM y Avance) un 15% de forma segura.",
+            msg_diag_3: "⚠️ Notamos que tu fresa sale bastante del chuck (Proyección larga). Un buen portaherramientas evitará que la herramienta se doble o vibre (deflexión).",
+            pl_mat: "Ej. Aluminio, Inconel...", pl_op: "Ej. Acabado, Desbaste...", val_mat: "Acero al carbono", val_op: "Desbaste"
+        },
+        en: {
+            title: "Machining Assistant",
+            sub: "Productivity & Stability Diagnostics",
+            unit_mm: "Metric (mm)", unit_in: "Imperial (inch)",
+            c1_title: "1. Your Project", lbl_mat: "Workpiece Material", lbl_op: "Operation",
+            c2_title: "2. The Endmill", lbl_diam: "Diameter (Ø)", lbl_z: "Flutes (Z)", lbl_proj: "Stick-out", help_proj: "How much sticks out of the chuck?", lbl_rpmmax: "Machine Limit", help_rpmmax: "Max Spindle RPM",
+            c3_title: "3. Manufacturer Data", txt_cat_help: "Copy these from the tool box or website. They are key!", lbl_ap: "Axial Depth", help_ap: "Depth of Cut (Ap)", lbl_ae: "Radial Width", help_ae: "Width of Cut (Ae)", lbl_vc: "Cutting Speed (Vc)", help_vc: "Usually m/min or sfm", lbl_fz: "Chip Load (Fz)", help_fz: "Feed per tooth", msg_cat_off: "No catalog data.<br>We will use your current process.",
+            c4_title: "4. Current Process", lbl_rpmact: "Your current RPM", lbl_vfact: "Your current Feed",
+            btn_go: "Analyze Process & Stability",
+            loader: "Analyzing rigidity and cutting frequencies...",
+            res_diag: "Diagnostics", res_code: "Suggested CNC Code",
+            res_rpm: "Speed (RPM)", res_vf: "Cutting Feed", res_vib: "Vibration", res_mrr: "Material Removal Rate (MRR)",
+            res_min: "Minimum / Safe", res_opt: "Optimum (High Precision)", res_max: "Aggressive Limit", res_act_prog: "Your current program:", res_tpf: "Tooth Pass Frequency (TPF)", res_state: "Calculated State",
+            diag_stable: "Stable (Low Risk)", diag_attn: "Attention (Needs Rigidity)",
+            err_cat_off: "Hello! If you turn off 'Manufacturer Data', you must turn on 'Current Process' to give the calculator a baseline.",
+            err_missing: "Please ensure Diameter (Ø) and Flutes are filled in.",
+            err_cat_data: "Check the 'Manufacturer Data' section, some numbers are missing.",
+            err_act_data: "Please enter your current RPM and Feed.",
+            msg_diag_1: "⚡ Using a <b>high precision toolholder (TIR < 3µm)</b> is crucial here. By absorbing micro-vibrations, it ensures you can run the 'Optimum' scenario without premature tool wear.",
+            msg_diag_2: "Based on your current cutting parameters, the high rigidity of the toolholder allows you to safely scale up your parameters (RPM and Feed) by 15%.",
+            msg_diag_3: "⚠️ We noticed your endmill has a long stick-out. A high-quality toolholder will prevent the tool from bending or vibrating (deflection).",
+            pl_mat: "E.g. Aluminum, Inconel...", pl_op: "E.g. Roughing, Finishing...", val_mat: "Carbon Steel", val_op: "Roughing"
+        },
+        pt: {
+            title: "Assistente de Usinagem",
+            sub: "Diagnóstico de Produtividade e Estabilidade",
+            unit_mm: "Métrico (mm)", unit_in: "Imperial (pol)",
+            c1_title: "1. Seu Projeto", lbl_mat: "Material a cortar", lbl_op: "Operação",
+            c2_title: "2. A Fresa", lbl_diam: "Diâmetro (Ø)", lbl_z: "Facas (Z)", lbl_proj: "Balanço", help_proj: "Quanto a fresa sai do mandril?", lbl_rpmmax: "Limite da Máquina", help_rpmmax: "RPM Máximo do spindle",
+            c3_title: "3. Dados do Fabricante", txt_cat_help: "Copie esses dados da caixa da fresa ou do site. São essenciais!", lbl_ap: "Corte Profundo", help_ap: "Profundidade (Ap)", lbl_ae: "Corte Lateral", help_ae: "Largura (Ae)", lbl_vc: "Velocidade (Vc)", help_vc: "Geralmente m/min ou sfm", lbl_fz: "Carga (Fz)", help_fz: "Avanço por faca", msg_cat_off: "Sem dados de catálogo.<br>Usaremos seu processo atual.",
+            c4_title: "4. Processo Atual", lbl_rpmact: "Seu RPM atual", lbl_vfact: "Seu Avanço atual",
+            btn_go: "Analisar Processo e Estabilidade",
+            loader: "Analisando rigidez e frequências de corte...",
+            res_diag: "Diagnóstico", res_code: "Código CNC Sugerido",
+            res_rpm: "Velocidade (RPM)", res_vf: "Avanço de Corte", res_vib: "Vibração", res_mrr: "Taxa de Remoção (MRR)",
+            res_min: "Mínimo / Seguro", res_opt: "Ótimo (Alta Precisão)", res_max: "Limite Agressivo", res_act_prog: "Seu programa atual:", res_tpf: "Frequência de Passagem (TPF)", res_state: "Estado Calculado",
+            diag_stable: "Estável (Baixo Risco)", diag_attn: "Atenção (Requer Rigidez)",
+            err_cat_off: "Olá! Se você desligar 'Dados do Fabricante', precisará ligar 'Processo Atual' para que a calculadora tenha uma base.",
+            err_missing: "Por favor, preencha o Diâmetro (Ø) e as Facas da fresa.",
+            err_cat_data: "Verifique a seção 'Dados do Fabricante', faltam números.",
+            err_act_data: "Por favor, insira seu RPM e Avanço atuais.",
+            msg_diag_1: "⚡ O uso de um <b>sistema de fixação de alta precisão (TIR < 3µm)</b> é fundamental aqui. Ao absorver micro-vibrações, garante que você possa operar no cenário 'Ótimo' sem desgaste prematuro da ferramenta.",
+            msg_diag_2: "Com base em como você corta atualmente, a alta rigidez do mandril permite escalar seus parâmetros (RPM e Avanço) em 15% de forma segura.",
+            msg_diag_3: "⚠️ Notamos que sua fresa tem um balanço longo. Um bom sistema de fixação evitará que a ferramenta dobre ou vibre (deflexão).",
+            pl_mat: "Ex. Alumínio, Inconel...", pl_op: "Ex. Desbaste, Acabamento...", val_mat: "Aço Carbono", val_op: "Desbaste"
+        }
+    };
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        const dict = i18n[lang];
+
+        // UI Updates
+        document.getElementById('t_main_title').innerText = dict.title;
+        document.getElementById('t_main_sub').innerText = dict.sub;
+        document.getElementById('t_unit_mm').innerText = dict.unit_mm;
+        document.getElementById('t_unit_in').innerText = dict.unit_in;
+        document.getElementById('t_card1_title').innerText = dict.c1_title;
+        document.getElementById('t_lbl_mat').innerText = dict.lbl_mat;
+        document.getElementById('t_lbl_op').innerText = dict.lbl_op;
+        document.getElementById('t_card2_title').innerText = dict.c2_title;
+        document.getElementById('t_lbl_z').innerText = dict.lbl_z;
+        document.getElementById('t_help_proj').innerText = dict.help_proj;
+        document.getElementById('t_lbl_rpmmax').innerText = dict.lbl_rpmmax;
+        document.getElementById('t_help_rpmmax').innerText = dict.help_rpmmax;
+        document.getElementById('t_card3_title').innerText = dict.c3_title;
+        document.getElementById('txt_ayuda_catalogo').innerText = dict.txt_cat_help;
+        document.getElementById('t_help_ap').innerText = dict.help_ap;
+        document.getElementById('t_help_ae').innerText = dict.help_ae;
+        document.getElementById('t_lbl_vc').innerText = dict.lbl_vc;
+        document.getElementById('t_help_vc').innerText = dict.help_vc;
+        document.getElementById('t_lbl_fz').innerText = dict.lbl_fz;
+        document.getElementById('t_help_fz').innerText = dict.help_fz;
+        document.getElementById('t_msg_cat_off').innerHTML = dict.msg_cat_off;
+        document.getElementById('t_card4_title').innerText = dict.c4_title;
+        document.getElementById('t_lbl_rpmact').innerText = dict.lbl_rpmact;
+        document.getElementById('t_lbl_vfact').innerText = dict.lbl_vfact;
+        document.getElementById('btnGo').innerText = dict.btn_go;
+        document.getElementById('loader').innerText = dict.loader;
         
-        document.getElementById('lbl_diametro').innerText = isInch ? 'Grosor (Ø pulg)' : 'Grosor (Ø mm)';
-        document.getElementById('lbl_proyeccion').innerText = isInch ? 'Proyección (pulg)' : 'Proyección (mm)';
-        document.getElementById('lbl_ap').innerText = isInch ? 'Corte Abajo (pulg)' : 'Corte Abajo (mm)';
-        document.getElementById('lbl_ae').innerText = isInch ? 'Corte Lateral (pulg)' : 'Corte Lateral (mm)';
+        document.getElementById('t_res_diag').innerText = dict.res_diag;
+        document.getElementById('t_res_code').innerText = dict.res_code;
+        document.getElementById('t_res_rpm').innerText = dict.res_rpm;
+        document.getElementById('t_res_vf').innerText = dict.res_vf;
+        document.getElementById('t_res_vib').innerText = dict.res_vib;
+        document.getElementById('t_res_mrr').innerText = dict.res_mrr;
+        
+        document.getElementById('t_res_min1').innerText = dict.res_min;
+        document.getElementById('t_res_opt1').innerText = dict.res_opt;
+        document.getElementById('t_res_max1').innerText = dict.res_max;
+        document.getElementById('t_res_min2').innerText = dict.res_min;
+        document.getElementById('t_res_opt2').innerText = dict.res_opt;
+        document.getElementById('t_res_max2').innerText = dict.res_max;
+        document.getElementById('t_res_act_prog').innerText = dict.res_act_prog;
+        document.getElementById('t_res_tpf').innerText = dict.res_tpf;
+        document.getElementById('t_res_state').innerText = dict.res_state;
+
+        document.getElementById('material').placeholder = dict.pl_mat;
+        document.getElementById('operacion').placeholder = dict.pl_op;
+
+        // Button states
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn_${lang}`).classList.add('active');
+
+        // Trigger label update to refresh units depending on the radio button
+        updateLabels();
+        
+        // Hide results if language changed to avoid mixed translation issues
+        document.getElementById('resultado').classList.add('hidden');
+    }
+
+    // --- LÓGICA DE UI Y CÁLCULO ---
+    function updateLabels() {
+        const isInch = document.querySelector('input[name="unit_system"]:checked').value === 'inch';
+        const dict = i18n[currentLang];
+        
+        document.getElementById('lbl_diametro').innerText = dict.lbl_diam + (isInch ? ' (pulg)' : ' (mm)');
+        document.getElementById('lbl_proyeccion').innerText = dict.lbl_proj + (isInch ? ' (pulg)' : ' (mm)');
+        document.getElementById('lbl_ap').innerText = dict.lbl_ap + (isInch ? ' (pulg)' : ' (mm)');
+        document.getElementById('lbl_ae').innerText = dict.lbl_ae + (isInch ? ' (pulg)' : ' (mm)');
         
         document.getElementById('code-fz-unit').innerText = isInch ? 'pulg' : 'mm';
         document.getElementById('code-ap-unit').innerText = isInch ? 'pulg' : 'mm';
         document.getElementById('res-mrr-unit').innerText = isInch ? 'pulg³/min' : 'cm³/min';
 
-        const setVal = (id, valInch, valMm) => document.getElementById(id).value = isInch ? valInch : valMm;
-
-        if(isInch) {
-            setVal('diametro', '0.5', '10'); setVal('proyeccion', '1.5', '35'); setVal('ap', '0.1', '2'); setVal('ae', '0.25', '5'); setVal('vc_base', '500', '180'); setVal('fz_base', '0.002', '0.065');
-        } else {
-            setVal('diametro', '10', '0.5'); setVal('proyeccion', '35', '1.5'); setVal('ap', '2', '0.1'); setVal('ae', '5', '0.25'); setVal('vc_base', '180', '500'); setVal('fz_base', '0.065', '0.002');
+        // Set defaults if user switches
+        if(isInch && document.getElementById('diametro').value == "10") {
+            document.getElementById('diametro').value = '0.5';
+            document.getElementById('proyeccion').value = '1.5';
+            document.getElementById('ap').value = '0.1';
+            document.getElementById('ae').value = '0.25';
+            document.getElementById('vc_base').value = '500';
+            document.getElementById('fz_base').value = '0.002';
+        } else if(!isInch && document.getElementById('diametro').value == "0.5") {
+            document.getElementById('diametro').value = '10';
+            document.getElementById('proyeccion').value = '35';
+            document.getElementById('ap').value = '2';
+            document.getElementById('ae').value = '5';
+            document.getElementById('vc_base').value = '180';
+            document.getElementById('fz_base').value = '0.065';
         }
     }
 
@@ -339,14 +498,13 @@
         const isInch = document.querySelector('input[name="unit_system"]:checked').value === 'inch';
         const useCatalog = document.getElementById('toggle_catalogo').checked;
         const hasActuales = document.getElementById('toggle_actuales').checked;
+        const dict = i18n[currentLang];
         const strUnidadVf = isInch ? 'pulg/min' : 'mm/min';
 
-        if(!useCatalog && !hasActuales) {
-            return alert("¡Hola! Si apagas los 'Datos del Fabricante', necesitas prender el 'Proceso Actual' para que la calculadora tenga números de dónde partir.");
-        }
+        if(!useCatalog && !hasActuales) return alert(dict.err_cat_off);
 
         const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
-        const mat = document.getElementById('material').value || 'Desconocido';
+        const mat = document.getElementById('material').value || dict.val_mat;
         
         let d = getVal('diametro');
         let z = getVal('z');
@@ -354,8 +512,8 @@
         let ae = getVal('ae');
         let maxRpm = getVal('max_rpm');
 
-        if(!d || !z) return alert("Por favor, asegúrate de llenar el Grosor (Ø) y los Filos de la fresa.");
-        if(ae === 0) ae = d; // Asume ranurado completo si está en cero
+        if(!d || !z) return alert(dict.err_missing);
+        if(ae === 0) ae = d; 
 
         let baseRpm = 0, baseFeed = 0;
         let vcInfo = 0, fzInfo = 0;
@@ -363,7 +521,7 @@
         if(useCatalog) {
             let vc = getVal('vc_base');
             let fz = getVal('fz_base');
-            if(!vc || !fz) return alert("Revisa la sección de 'Datos del Fabricante', faltan números ahí.");
+            if(!vc || !fz) return alert(dict.err_cat_data);
             vcInfo = vc; fzInfo = fz;
             
             baseRpm = isInch ? (vc * 3.82) / d : (vc * 1000) / (Math.PI * d);
@@ -373,7 +531,7 @@
             let vf_act = getVal('avance_actual');
             let u_act = document.getElementById('unidad_avance').value;
             
-            if(!baseRpm || !vf_act) return alert("Por favor, ingresa tus RPM y Avance actuales.");
+            if(!baseRpm || !vf_act) return alert(dict.err_act_data);
             
             baseFeed = vf_act;
             if(!isInch && u_act === 'ipm') baseFeed = vf_act * 25.4;
@@ -390,8 +548,6 @@
         document.getElementById('resultado').classList.add('hidden');
 
         setTimeout(() => {
-            
-            // Si el usuario usa los datos actuales como base, asumimos que con un chuck de alta precisión puede subir un 15% seguro.
             let optRpm = useCatalog ? baseRpm : baseRpm * 1.15;
             let optFeed = useCatalog ? baseFeed : baseFeed * 1.15;
             
@@ -438,23 +594,16 @@
             let msgs = [];
             
             if(tpf >= 600 && tpf <= 900) {
-                riesgoBadge.innerText = 'Estable (Bajo Riesgo)';
+                riesgoBadge.innerText = dict.diag_stable;
                 riesgoBadge.className = 'badge-val bg-green-100 text-green-700 border border-green-200';
             } else {
-                riesgoBadge.innerText = 'Atención (Requiere Rigidez)';
+                riesgoBadge.innerText = dict.diag_attn;
                 riesgoBadge.className = 'badge-val bg-yellow-100 text-yellow-700 border border-yellow-200';
             }
 
-            // Diagnóstico amigable y de alta precisión
-            msgs.push(`⚡ El uso de un <b>sistema de sujeción de alta precisión (TIR < 3µm)</b> es fundamental aquí. Al absorber micro-vibraciones, te garantiza que puedas correr en el escenario "Óptimo" sin desgastar tu herramienta prematuramente.`);
-            
-            if(hasActuales && !useCatalog) {
-                msgs.push(`Tomando como base cómo cortas actualmente, la alta rigidez del portaherramientas te permite escalar tus parámetros (RPM y Avance) un 15% de forma segura.`);
-            }
-
-            if(getVal('proyeccion') > (d * 3)) {
-                msgs.push(`⚠️ Notamos que tu fresa sale bastante del chuck (Proyección larga). Un buen portaherramientas evitará que la herramienta se doble o vibre (deflexión).`);
-            }
+            msgs.push(dict.msg_diag_1);
+            if(hasActuales && !useCatalog) msgs.push(dict.msg_diag_2);
+            if(getVal('proyeccion') > (d * 3)) msgs.push(dict.msg_diag_3);
 
             msgs.forEach(m => {
                 let li = document.createElement('li');
@@ -471,7 +620,8 @@
         }, 800);
     }
 
-    updateLabels('mm');
+    // Inicializar todo
+    setLanguage('es');
   </script>
 </body>
 </html>
