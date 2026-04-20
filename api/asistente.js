@@ -22,12 +22,15 @@ export default async function handler(req, res) {
         if (err) return res.status(500).json({ error: "Error al procesar audio" });
 
         try {
-            // Usamos tu ID de Salesforce desde las variables de entorno de Vercel
-            // Asegúrate de agregar SF_OWNER_ID en Vercel con tu ID (empieza con 005)
+            // VALIDACIÓN: Si no hay ID, detenemos el proceso con un mensaje claro
             const myOwnerId = process.env.SF_OWNER_ID; 
+            if (!myOwnerId || myOwnerId === "undefined") {
+                throw new Error("Configuración incompleta: Falta la variable SF_OWNER_ID en Vercel.");
+            }
+
             const audioPath = files.audio[0].path;
 
-            // 1. Transcribir el dictado con Whisper
+            // 1. Transcribir con Whisper
             const transcription = await openai.audio.transcriptions.create({
                 file: fs.createReadStream(audioPath),
                 model: "whisper-1",
@@ -36,19 +39,18 @@ export default async function handler(req, res) {
 
             const text = transcription.text;
 
-            // 2. Interpretar con GPT-4o para mapear a Salesforce
+            // 2. Interpretar con GPT-4o
             const aiResponse = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
                         content: `Eres el asistente de voz de REGO-FIX para Miguel. Hoy es ${new Date().toLocaleDateString()}.
-                        Tu tarea es clasificar la voz en una de estas acciones:
-                        - REGISTRAR_VISITA: (Resumen de visita). Crea Tarea completada. Necesitas: cliente, resumen.
-                        - AGENDAR_CITA: (Citas futuras). Crea Evento. Necesitas: cliente, fecha (YYYY-MM-DD), hora (HH:mm).
-                        - CREAR_SEGUIMIENTO: (Pendientes nuevos). Crea Tarea abierta. Necesitas: tarea, fecha_vencimiento.
-                        - CONSULTAR_PENDIENTES: (Ver qué hay hoy). No requiere datos extra.
-                        
+                        Acciones:
+                        - REGISTRAR_VISITA: Crea Tarea completada. Necesitas: cliente, resumen.
+                        - AGENDAR_CITA: Crea Evento. Necesitas: cliente, fecha (YYYY-MM-DD), hora (HH:mm).
+                        - CREAR_SEGUIMIENTO: Crea Tarea abierta. Necesitas: tarea, fecha_vencimiento.
+                        - CONSULTAR_PENDIENTES: Leer tareas. No requiere datos.
                         Devuelve JSON: { "accion", "cliente", "fecha", "hora", "resumen", "tarea" }`
                     },
                     { role: "user", content: text }
@@ -58,7 +60,7 @@ export default async function handler(req, res) {
 
             const plan = JSON.parse(aiResponse.choices[0].message.content);
 
-            // 3. Conexión Maestra a Salesforce
+            // 3. Conexión a Salesforce
             const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
                 method: 'POST',
                 body: new URLSearchParams({
@@ -72,16 +74,15 @@ export default async function handler(req, res) {
 
             let finalMsg = `Procesado: "${text}"`;
 
-            // 4. Ejecución de Acciones
+            // 4. Ejecución (Consulta corregida)
             if (plan.accion === 'REGISTRAR_VISITA') {
                 await conn.sobject("Task").create({
-                    Subject: `Resumen de Visita: ${plan.cliente}`,
+                    Subject: `Resumen Visita: ${plan.cliente}`,
                     Description: plan.resumen,
                     Status: 'Completed',
-                    OwnerId: myOwnerId,
-                    Priority: 'Normal'
+                    OwnerId: myOwnerId
                 });
-                finalMsg = `✅ Resumen de visita en ${plan.cliente} guardado correctamente.`;
+                finalMsg = `✅ Visita en ${plan.cliente} registrada.`;
             } 
             else if (plan.accion === 'AGENDAR_CITA') {
                 await conn.sobject("Event").create({
@@ -90,26 +91,19 @@ export default async function handler(req, res) {
                     DurationInMinutes: 60,
                     OwnerId: myOwnerId
                 });
-                finalMsg = `📅 Cita agendada con ${plan.cliente} para el día ${plan.fecha} a las ${plan.hora}.`;
-            }
-            else if (plan.accion === 'CREAR_SEGUIMIENTO') {
-                await conn.sobject("Task").create({
-                    Subject: `Seguimiento: ${plan.tarea}`,
-                    ActivityDate: plan.fecha || null,
-                    Status: 'Not Started',
-                    OwnerId: myOwnerId
-                });
-                finalMsg = `🔔 Seguimiento creado: ${plan.tarea}.`;
+                finalMsg = `📅 Cita con ${plan.cliente} agendada para el ${plan.fecha}.`;
             }
             else if (plan.accion === 'CONSULTAR_PENDIENTES') {
+                // CONSULTA CORREGIDA: Agregamos IsClosed = false
                 const tasks = await conn.query(`SELECT Subject FROM Task WHERE OwnerId = '${myOwnerId}' AND IsClosed = false LIMIT 5`);
                 const lista = tasks.records.map(t => t.Subject).join("\n• ");
-                finalMsg = lista ? `📋 Tus pendientes actuales:\n• ${lista}` : "No tienes pendientes abiertos.";
+                finalMsg = lista ? `📋 Pendientes hoy:\n• ${lista}` : "No hay pendientes abiertos.";
             }
 
             res.status(200).json({ success: true, message: finalMsg, transcript: text });
 
         } catch (error) {
+            console.error("Error en Asistente:", error.message);
             res.status(500).json({ error: error.message });
         }
     });
