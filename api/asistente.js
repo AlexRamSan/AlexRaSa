@@ -9,8 +9,7 @@ export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
     const origin = req.headers.origin;
-    const allowedOrigins = ['https://alexrasa.store', 'https://www.alexrasa.store'];
-    if (allowedOrigins.includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -19,14 +18,19 @@ export default async function handler(req, res) {
     const form = new multiparty.Form();
     
     form.parse(req, async (err, fields, files) => {
-        if (err && !fields.action) return res.status(500).json({ error: "Error al procesar solicitud" });
+        if (err) {
+            console.error("Error parseando el form:", err);
+            return res.status(500).json({ success: false, error: "Error al leer los datos enviados" });
+        }
 
         try {
             const myOwnerId = process.env.SF_OWNER_ID;
+            console.log("Iniciando proceso para Owner:", myOwnerId);
 
-            // --- PASO 2: CONFIRMACIÓN FINAL (Guardar en Salesforce) ---
+            // --- ACCIÓN: CONFIRMAR Y GUARDAR ---
             if (fields.action && fields.action[0] === 'confirmar') {
-                const { accountId, subject, description, taskType, fecha, hora } = JSON.parse(fields.payload[0]);
+                console.log("Acción: Confirmar registro");
+                const payload = JSON.parse(fields.payload[0]);
                 
                 const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
                     method: 'POST',
@@ -39,53 +43,55 @@ export default async function handler(req, res) {
                 const authData = await authRes.json();
                 const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-                if (taskType === 'EVENTO') {
+                if (payload.taskType === 'EVENTO') {
                     await conn.sobject("Event").create({
-                        Subject: subject,
-                        Description: description,
-                        StartDateTime: `${fecha}T${hora || '09:00'}:00`,
+                        Subject: payload.subject,
+                        Description: payload.description,
+                        StartDateTime: `${payload.fecha}T${payload.hora || '09:00'}:00`,
                         DurationInMinutes: 60,
-                        WhatId: accountId,
+                        WhatId: payload.accountId,
                         OwnerId: myOwnerId
                     });
                 } else {
                     await conn.sobject("Task").create({
-                        Subject: subject,
-                        Description: description,
+                        Subject: payload.subject,
+                        Description: payload.description,
                         Status: 'Completed',
-                        WhatId: accountId,
+                        WhatId: payload.accountId,
                         OwnerId: myOwnerId
                     });
                 }
-                return res.status(200).json({ success: true, message: "✅ ¡Registro completado con éxito!" });
+                return res.status(200).json({ success: true, message: "Guardado con éxito" });
             }
 
-            // --- PASO 1: PROCESAMIENTO DE VOZ Y BÚSQUEDA ---
-            const audioPath = files.audio[0].path;
+            // --- ACCIÓN: PROCESAR AUDIO ---
+            if (!files.audio) throw new Error("No se recibió el archivo de audio");
+            
+            console.log("Enviando a Whisper...");
             const transcription = await openai.audio.transcriptions.create({
-                file: fs.createReadStream(audioPath),
+                file: fs.createReadStream(files.audio[0].path),
                 model: "whisper-1",
                 language: "es"
             });
+            console.log("Transcripción lista:", transcription.text);
 
-            const userText = transcription.text;
-
+            console.log("Enviando a GPT-4o...");
             const aiResponse = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content: `Eres el Asistente de REGO-FIX. Analiza el dictado. 
-                        Detecta si es un comentario, visita, cita o consulta.
-                        Devuelve JSON: { "intent", "empresa_busqueda", "asunto", "detalles", "fecha", "hora" }`
+                        content: "Extrae intención (comentario, visita, cita) y empresa_busqueda. Devuelve JSON."
                     },
-                    { role: "user", content: userText }
+                    { role: "user", content: transcription.text }
                 ],
                 response_format: { type: "json_object" }
             });
 
             const plan = JSON.parse(aiResponse.choices[0].message.content);
+            console.log("Plan de IA:", plan);
 
+            console.log("Buscando en Salesforce...");
             const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
                 method: 'POST',
                 body: new URLSearchParams({
@@ -97,21 +103,22 @@ export default async function handler(req, res) {
             const authData = await authRes.json();
             const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-            // Buscar cuentas candidatas
             const searchResults = await conn.query(
                 `SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%${plan.empresa_busqueda}%' LIMIT 5`
             );
+            console.log("Resultados encontrados:", searchResults.totalSize);
 
             res.status(200).json({ 
                 success: true, 
-                transcript: userText,
+                transcript: transcription.text,
                 plan: plan,
-                accounts: searchResults.records, // Mandamos la lista de cuentas encontradas
+                accounts: searchResults.records,
                 needSelection: searchResults.records.length > 0
             });
 
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error("ERROR EN EL BACKEND:", error.message);
+            res.status(500).json({ success: false, error: error.message });
         }
     });
 }
