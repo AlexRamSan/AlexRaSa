@@ -5,27 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REGO-FIX Scanner | Salesforce</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; padding: 20px; display: flex; justify-content: center; }
-        .card { background: #1e1e1e; padding: 25px; border-radius: 16px; max-width: 400px; width: 100%; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #ffcc00; text-align: center; margin-top: 0; letter-spacing: 1px; }
-        .logo-sub { text-align: center; font-size: 12px; color: #888; margin-bottom: 20px; text-transform: uppercase; }
+        /* PALETA DE COLORES REGO-FIX */
+        :root {
+            --rf-red: #E30613; /* Rojo corporativo principal */
+            --rf-black: #000000;
+            --rf-dark-grey: #1A1A1A;
+            --rf-mid-grey: #333333;
+            --rf-light-grey: #D1D3D4;
+            --rf-white: #FFFFFF;
+        }
+
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Tipografía más limpia y profesional */
+            background: var(--rf-black); 
+            color: var(--rf-white); 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center;
+            margin: 0;
+        }
+
+        .card { 
+            background: var(--rf-dark-grey); 
+            padding: 30px; 
+            border-radius: 4px; /* Bordes menos redondeados, más industriales */
+            max-width: 420px; 
+            width: 100%; 
+            border-top: 4px solid var(--rf-red); /* Acento superior en rojo */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7); 
+        }
+
+        h2 { 
+            color: var(--rf-white); 
+            text-align: center; 
+            margin-top: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        .logo-sub { 
+            text-align: center; 
+            font-size: 11px; 
+            color: var(--rf-light-grey); 
+            margin-bottom: 25px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
         
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; box-sizing: border-box; font-size: 15px; }
-        input[type="text"], input[type="email"] { background: #2a2a2a; color: white; border: 1px solid #444; transition: border 0.3s; }
-        input[type="text"]:focus, input[type="email"]:focus { border-color: #ffcc00; outline: none; }
+        /* Estilo para el input de archivo personalizado */
+        input[type="file"] {
+            background: var(--rf-mid-grey);
+            border: 1px solid var(--rf-mid-grey);
+            color: var(--rf-white);
+            cursor: pointer;
+        }
+
+        input, button { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 8px 0; 
+            border-radius: 2px; /* Bordes rectos */
+            border: none; 
+            box-sizing: border-box; 
+            font-size: 15px; 
+        }
+
+        /* Estilos de los campos de texto al estilo REGO-FIX */
+        input[type="text"], input[type="email"] { 
+            background: var(--rf-white); /* Fondo blanco para inputs para máximo contraste y legibilidad */
+            color: var(--rf-black); 
+            border: 1px solid var(--rf-light-grey); 
+            transition: border-color 0.3s, box-shadow 0.3s; 
+        }
+
+        input[type="text"]:focus, input[type="email"]:focus { 
+            border-color: var(--rf-red); /* Foco en rojo */
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.2);
+        }
         
-        button { background: #ffcc00; color: black; font-weight: bold; cursor: pointer; transition: background 0.3s, transform 0.1s; }
-        button:hover { background: #e6b800; }
-        button:active { transform: scale(0.98); }
-        button:disabled { background: #555; cursor: not-allowed; color: #888; }
+        /* Botón Principal en Rojo REGO-FIX */
+        button { 
+            background: var(--rf-red); 
+            color: var(--rf-white); 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer; 
+            transition: background 0.3s, transform 0.1s; 
+            margin-top: 15px;
+        }
+
+        button:hover { 
+            background: #b3050f; /* Un rojo más oscuro al pasar el mouse */
+        }
+
+        button:active { 
+            transform: scale(0.98); 
+        }
+
+        button:disabled { 
+            background: var(--rf-mid-grey); 
+            cursor: not-allowed; 
+            color: var(--rf-light-grey); 
+        }
         
-        #preview { width: 100%; border-radius: 10px; display: none; margin-bottom: 15px; border: 2px solid #333; }
-        .loading { text-align: center; color: #ffcc00; display: none; font-weight: bold; padding: 15px; }
-        label { font-size: 11px; color: #ffcc00; margin-left: 5px; font-weight: bold; text-transform: uppercase; }
+        #preview { 
+            width: 100%; 
+            border-radius: 2px; 
+            display: none; 
+            margin-bottom: 20px; 
+            border: 1px solid var(--rf-mid-grey); 
+        }
+
+        .loading { 
+            text-align: center; 
+            color: var(--rf-red); /* Texto de carga en rojo */
+            display: none; 
+            font-weight: bold; 
+            padding: 15px; 
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        label { 
+            font-size: 11px; 
+            color: var(--rf-light-grey); /* Etiquetas sutiles */
+            margin-left: 2px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            display: block;
+            margin-top: 12px;
+            margin-bottom: 2px;
+        }
         
-        .status-msg { padding: 10px; border-radius: 6px; margin-top: 10px; display: none; text-align: center; font-size: 14px; }
-        .error { background: #441111; color: #ff9999; border: 1px solid #662222; }
-        .success { background: #114411; color: #99ff99; border: 1px solid #226622; }
+        /* Mensajes de estado integrados */
+        .status-msg { 
+            padding: 12px; 
+            border-radius: 2px; 
+            margin-top: 15px; 
+            display: none; 
+            text-align: center; 
+            font-size: 14px; 
+            font-weight: bold;
+        }
+
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            border: 1px solid #f5c6cb; 
+        }
+
+        .success { 
+            background: #d4edda; 
+            color: #155724; 
+            border: 1px solid #c3e6cb; 
+        }
     </style>
 </head>
 <body>
@@ -35,7 +171,8 @@
     <div class="logo-sub">Salesforce Integration</div>
     
     <input type="file" id="camera" accept="image/*" capture="environment">
-    <img id="preview" alt="Vista previa">
+    
+    <img id="preview" alt="Vista previa de la tarjeta">
     
     <div id="loader" class="loading">Procesando con GPT-4o...</div>
     <div id="statusBox" class="status-msg"></div>
@@ -68,6 +205,7 @@
     const sendBtn = document.getElementById('sendBtn');
     const statusBox = document.getElementById('statusBox');
 
+    // Mantenemos tu URL de Vercel actual
     const API_URL = 'https://alex-ra-sa.vercel.app/api/reconocimiento';
     let base64Image = "";
 
