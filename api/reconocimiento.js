@@ -42,13 +42,14 @@ export default async function handler(req, res) {
                     {
                         role: "system",
                         content: `Eres un experto en inteligencia comercial. Extrae e investiga los datos de la tarjeta.
-                        Devuelve estrictamente un JSON con las siguientes propiedades. Si no hay datos, usa "":
+                        MUY IMPORTANTE: Investiga, deduce o busca en tu base de conocimientos el RFC corporativo (Registro Federal de Contribuyentes para México) o CNPJ de la empresa detectada.
+                        Devuelve estrictamente un JSON con las siguientes propiedades. Si no logras conseguir algún dato, usa "":
                         { "firstName", "lastName", "title", "email", "phone", "mobilePhone", "company", "website", "industry", "type", "rfc", "machines", "productInterest", "companyPhone", "street", "city", "state", "country", "description" }`
                     },
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Analiza e investiga los datos de esta tarjeta. Si ves un RFC o Tipo de empresa, inclúyelo." },
+                            { type: "text", text: "Analiza e investiga los datos de esta tarjeta. Asegúrate de investigar y proponer el RFC de la empresa." },
                             { type: "image_url", image_url: { url: image, detail: "high" } }
                         ]
                     }
@@ -63,7 +64,6 @@ export default async function handler(req, res) {
             let accountId = confirmData.accountId;
 
             if (!accountId) {
-                // ATENCIÓN: Confirma que los nombres con "__c" coincidan en tu Configuración de Salesforce
                 const accountPayload = { 
                     Name: confirmData.company || 'Empresa Sin Nombre',
                     Type: confirmData.type || '',
