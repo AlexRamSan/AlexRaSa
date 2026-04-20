@@ -6,9 +6,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export default async function handler(req, res) {
     const origin = req.headers.origin;
     const allowedOrigins = ['https://alexrasa.store', 'https://www.alexrasa.store'];
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
+    if (allowedOrigins.includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -17,31 +15,31 @@ export default async function handler(req, res) {
     try {
         const { image, confirmData } = req.body;
 
-        // PASO 1: ANALIZAR CON IA (Si solo llega la imagen)
+        // --- PASO 1: ESCANEO E INVESTIGACIÓN INICIAL ---
         if (!confirmData && image) {
-            const response = await openai.chat.completions.create({
+            const aiResponse = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content: "Extrae datos de tarjetas. JSON: {firstName, lastName, email, phone, company}."
+                        content: `Eres un asistente de ventas experto. Extrae datos de la tarjeta. 
+                        Además, si identificas la empresa, investiga o deduce: sitio web, industria y una breve descripción.
+                        Devuelve JSON: {firstName, lastName, email, phone, company, website, industry, description}`
                     },
                     {
                         role: "user",
-                        content: [
-                            { type: "text", text: "Extrae la información." },
-                            { type: "image_url", image_url: { url: image, detail: "low" } }
-                        ],
-                    },
+                        content: [{ type: "text", text: "Extrae e investiga la info de esta tarjeta." }, { type: "image_url", image_url: { url: image, detail: "low" } }]
+                    }
                 ],
                 response_format: { type: "json_object" }
             });
-            return res.status(200).json({ success: true, cardData: JSON.parse(response.choices[0].message.content) });
+            
+            const cardData = JSON.parse(aiResponse.choices[0].message.content);
+            return res.status(200).json({ success: true, cardData });
         }
 
-        // PASO 2: GUARDAR EN SALESFORCE (Usando tu método de Client Credentials)
+        // --- PASO 2: GUARDADO EN SALESFORCE ---
         if (confirmData) {
-            // 1. Obtener Token igual que en tu app de Oportunidades
             const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
                 method: 'POST',
                 body: new URLSearchParams({
@@ -50,48 +48,41 @@ export default async function handler(req, res) {
                     client_secret: process.env.SF_CLIENT_SECRET.trim()
                 })
             });
-            
             const authData = await authRes.json();
-            
-            if (!authData.access_token) {
-                throw new Error("Error de acceso a Salesforce: " + (authData.error_description || "Token no generado"));
-            }
+            const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-            const conn = new jsforce.Connection({ 
-                instanceUrl: authData.instance_url, 
-                accessToken: authData.access_token 
-            });
-
-            // 2. Lógica de Cuenta (Búsqueda o Creación)
-            const companyName = confirmData.company ? confirmData.company.trim() : "Empresa Desconocida";
-            const safeCompanyName = companyName.replace(/'/g, "\\'");
-            
-            const accountResult = await conn.query(
-                `SELECT Id FROM Account WHERE Name = '${safeCompanyName}' LIMIT 1`
-            );
+            const safeCompanyName = confirmData.company.replace(/'/g, "\\'");
+            const accountResult = await conn.query(`SELECT Id FROM Account WHERE Name = '${safeCompanyName}' LIMIT 1`);
 
             let accountId;
+            let statusNote = "";
+
             if (accountResult.totalSize > 0) {
                 accountId = accountResult.records[0].Id;
+                statusNote = "Cuenta existente vinculada.";
             } else {
-                const newAcc = await conn.sobject("Account").create({ Name: companyName });
+                // CREAR CUENTA CON INFO INVESTIGADA
+                const newAcc = await conn.sobject("Account").create({ 
+                    Name: confirmData.company,
+                    Website: confirmData.website || '',
+                    Industry: confirmData.industry || '',
+                    Description: confirmData.description || 'Creado vía Scanner AI'
+                });
                 accountId = newAcc.id;
+                statusNote = "Nueva cuenta creada con info de IA.";
             }
 
-            // 3. Crear Contacto vinculado
             const contact = await conn.sobject("Contact").create({
-                FirstName: confirmData.firstName || '',
-                LastName: confirmData.lastName || 'Apellido', // Requerido por SF
-                Email: confirmData.email || '',
-                Phone: confirmData.phone || '',
+                FirstName: confirmData.firstName,
+                LastName: confirmData.lastName || 'Apellido',
+                Email: confirmData.email,
+                Phone: confirmData.phone,
                 AccountId: accountId
             });
 
-            return res.status(200).json({ success: true, contactId: contact.id });
+            return res.status(200).json({ success: true, statusNote, contactId: contact.id });
         }
-
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: error.message });
     }
 }
