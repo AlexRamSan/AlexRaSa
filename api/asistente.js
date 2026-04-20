@@ -22,15 +22,12 @@ export default async function handler(req, res) {
         if (err) return res.status(500).json({ error: "Error al procesar audio" });
 
         try {
-            // VALIDACIÓN: Si no hay ID, detenemos el proceso con un mensaje claro
             const myOwnerId = process.env.SF_OWNER_ID; 
-            if (!myOwnerId || myOwnerId === "undefined") {
-                throw new Error("Configuración incompleta: Falta la variable SF_OWNER_ID en Vercel.");
-            }
+            if (!myOwnerId) throw new Error("Falta la variable SF_OWNER_ID en Vercel.");
 
             const audioPath = files.audio[0].path;
 
-            // 1. Transcribir con Whisper
+            // 1. Transcribir dictado
             const transcription = await openai.audio.transcriptions.create({
                 file: fs.createReadStream(audioPath),
                 model: "whisper-1",
@@ -45,13 +42,13 @@ export default async function handler(req, res) {
                 messages: [
                     {
                         role: "system",
-                        content: `Eres el asistente de voz de REGO-FIX para Miguel. Hoy es ${new Date().toLocaleDateString()}.
-                        Acciones:
-                        - REGISTRAR_VISITA: Crea Tarea completada. Necesitas: cliente, resumen.
-                        - AGENDAR_CITA: Crea Evento. Necesitas: cliente, fecha (YYYY-MM-DD), hora (HH:mm).
-                        - CREAR_SEGUIMIENTO: Crea Tarea abierta. Necesitas: tarea, fecha_vencimiento.
-                        - CONSULTAR_PENDIENTES: Leer tareas. No requiere datos.
-                        Devuelve JSON: { "accion", "cliente", "fecha", "hora", "resumen", "tarea" }`
+                        content: `Eres el asistente de voz de REGO-FIX. Hoy es ${new Date().toLocaleDateString()}.
+                        Tu tarea es detectar qué quiere el usuario:
+                        - REGISTRAR_VISITA: Crear Tarea completada.
+                        - AGENDAR_CITA: Crear Evento. (Asegúrate de extraer fecha YYYY-MM-DD y hora HH:mm).
+                        - CONSULTAR_RESUMEN: El usuario pregunta "¿Qué hice último?", "¿Cuál fue la última cuenta que visité?" o "¿Qué actividades tengo?".
+                        
+                        Devuelve JSON: { "accion", "cliente", "fecha", "hora", "resumen" }`
                     },
                     { role: "user", content: text }
                 ],
@@ -74,36 +71,50 @@ export default async function handler(req, res) {
 
             let finalMsg = `Procesado: "${text}"`;
 
-            // 4. Ejecución (Consulta corregida)
+            // --- ACCIÓN: REGISTRAR VISITA ---
             if (plan.accion === 'REGISTRAR_VISITA') {
                 await conn.sobject("Task").create({
-                    Subject: `Resumen Visita: ${plan.cliente}`,
+                    Subject: `Visita: ${plan.cliente}`,
                     Description: plan.resumen,
                     Status: 'Completed',
                     OwnerId: myOwnerId
                 });
-                finalMsg = `✅ Visita en ${plan.cliente} registrada.`;
+                finalMsg = `✅ Visita en ${plan.cliente} registrada en Salesforce.`;
             } 
+            
+            // --- ACCIÓN: AGENDAR CITA (Corrección de hora local) ---
             else if (plan.accion === 'AGENDAR_CITA') {
+                // Eliminamos la 'Z' final para que Salesforce use la hora local de tu configuración
+                const startDT = `${plan.fecha}T${plan.hora || '09:00'}:00`; 
                 await conn.sobject("Event").create({
                     Subject: `Cita: ${plan.cliente}`,
-                    StartDateTime: `${plan.fecha}T${plan.hora || '09:00'}:00Z`,
+                    StartDateTime: startDT,
                     DurationInMinutes: 60,
                     OwnerId: myOwnerId
                 });
-                finalMsg = `📅 Cita con ${plan.cliente} agendada para el ${plan.fecha}.`;
+                finalMsg = `📅 Cita agendada con ${plan.cliente} para el ${plan.fecha} a las ${plan.hora}.`;
             }
-            else if (plan.accion === 'CONSULTAR_PENDIENTES') {
-                // CONSULTA CORREGIDA: Agregamos IsClosed = false
-                const tasks = await conn.query(`SELECT Subject FROM Task WHERE OwnerId = '${myOwnerId}' AND IsClosed = false LIMIT 5`);
-                const lista = tasks.records.map(t => t.Subject).join("\n• ");
-                finalMsg = lista ? `📋 Pendientes hoy:\n• ${lista}` : "No hay pendientes abiertos.";
+
+            // --- ACCIÓN: CONSULTAR RESUMEN (Nueva función) ---
+            else if (plan.accion === 'CONSULTAR_RESUMEN') {
+                // Buscamos la última tarea completada para saber cuál fue la última visita
+                const lastTask = await conn.query(
+                    `SELECT Subject, Description, CreatedDate FROM Task 
+                     WHERE OwnerId = '${myOwnerId}' AND Status = 'Completed' 
+                     ORDER BY CreatedDate DESC LIMIT 1`
+                );
+
+                if (lastTask.records.length > 0) {
+                    const task = lastTask.records[0];
+                    finalMsg = `Tu última actividad registrada fue: "${task.Subject}". \nNotas: ${task.Description || 'Sin notas'}.`;
+                } else {
+                    finalMsg = "No encontré actividades recientes registradas a tu nombre.";
+                }
             }
 
             res.status(200).json({ success: true, message: finalMsg, transcript: text });
 
         } catch (error) {
-            console.error("Error en Asistente:", error.message);
             res.status(500).json({ error: error.message });
         }
     });
