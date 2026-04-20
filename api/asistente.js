@@ -27,30 +27,39 @@ export default async function handler(req, res) {
 
             const audioPath = files.audio[0].path;
 
-            // 1. Transcribir dictado
+            // 1. Transcribir Audio
             const transcription = await openai.audio.transcriptions.create({
                 file: fs.createReadStream(audioPath),
                 model: "whisper-1",
                 language: "es"
             });
 
-            const text = transcription.text;
+            const userText = transcription.text;
 
-            // 2. Interpretar con GPT-4o
+            // 2. Analizar Intención y extraer parámetros
             const aiResponse = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content: `Eres el asistente de voz de REGO-FIX. Hoy es ${new Date().toLocaleDateString()}.
-                        Tu tarea es detectar qué quiere el usuario:
-                        - REGISTRAR_VISITA: Crear Tarea completada.
-                        - AGENDAR_CITA: Crear Evento. (Asegúrate de extraer fecha YYYY-MM-DD y hora HH:mm).
-                        - CONSULTAR_RESUMEN: El usuario pregunta "¿Qué hice último?", "¿Cuál fue la última cuenta que visité?" o "¿Qué actividades tengo?".
+                        content: `Eres el Asistente Ejecutivo de REGO-FIX para Miguel. Hoy es ${new Date().toLocaleDateString()}.
+                        Tu objetivo es mapear el lenguaje natural del usuario a acciones de Salesforce.
                         
-                        Devuelve JSON: { "accion", "cliente", "fecha", "hora", "resumen" }`
+                        ACCIONES DISPONIBLES:
+                        - CONSULTAR_OPORTUNIDADES: Listar oportunidades abiertas.
+                        - CONSULTAR_PENDIENTES: Listar tareas/seguimientos no cerrados.
+                        - AGREGAR_COMENTARIO_CUENTA: Crear una tarea de tipo nota en una cuenta específica.
+                        - REGISTRAR_ACTIVIDAD: Crear tarea completada (visita, llamada).
+                        - AGENDAR_CITA: Crear un Evento en el calendario.
+                        
+                        Devuelve un JSON con esta estructura:
+                        { 
+                          "accion": "NOMBRE_ACCION", 
+                          "cliente_busqueda": "Nombre de la empresa si aplica", 
+                          "datos": { "asunto", "descripcion", "fecha", "hora" } 
+                        }`
                     },
-                    { role: "user", content: text }
+                    { role: "user", content: userText }
                 ],
                 response_format: { type: "json_object" }
             });
@@ -69,50 +78,57 @@ export default async function handler(req, res) {
             const authData = await authRes.json();
             const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-            let finalMsg = `Procesado: "${text}"`;
+            let responseMessage = "";
 
-            // --- ACCIÓN: REGISTRAR VISITA ---
-            if (plan.accion === 'REGISTRAR_VISITA') {
-                await conn.sobject("Task").create({
-                    Subject: `Visita: ${plan.cliente}`,
-                    Description: plan.resumen,
-                    Status: 'Completed',
-                    OwnerId: myOwnerId
-                });
-                finalMsg = `✅ Visita en ${plan.cliente} registrada en Salesforce.`;
-            } 
-            
-            // --- ACCIÓN: AGENDAR CITA (Corrección de hora local) ---
-            else if (plan.accion === 'AGENDAR_CITA') {
-                // Eliminamos la 'Z' final para que Salesforce use la hora local de tu configuración
-                const startDT = `${plan.fecha}T${plan.hora || '09:00'}:00`; 
-                await conn.sobject("Event").create({
-                    Subject: `Cita: ${plan.cliente}`,
-                    StartDateTime: startDT,
-                    DurationInMinutes: 60,
-                    OwnerId: myOwnerId
-                });
-                finalMsg = `📅 Cita agendada con ${plan.cliente} para el ${plan.fecha} a las ${plan.hora}.`;
+            // --- LÓGICA DE EJECUCIÓN POR ACCIÓN ---
+
+            switch (plan.accion) {
+                case 'CONSULTAR_OPORTUNIDADES':
+                    const opps = await conn.query(`SELECT Name, Amount, StageName FROM Opportunity WHERE OwnerId = '${myOwnerId}' AND IsClosed = false LIMIT 5`);
+                    responseMessage = opps.records.length > 0 
+                        ? "Tus oportunidades abiertas:\n" + opps.records.map(o => `• ${o.Name}: $${o.Amount || 0} (${o.StageName})`).join("\n")
+                        : "No tienes oportunidades abiertas actualmente.";
+                    break;
+
+                case 'CONSULTAR_PENDIENTES':
+                    const tasks = await conn.query(`SELECT Subject, ActivityDate FROM Task WHERE OwnerId = '${myOwnerId}' AND IsClosed = false ORDER BY ActivityDate ASC LIMIT 5`);
+                    responseMessage = tasks.records.length > 0 
+                        ? "Tus pendientes:\n" + tasks.records.map(t => `• ${t.Subject} (Vence: ${t.ActivityDate || 'Sin fecha'})`).join("\n")
+                        : "No tienes tareas pendientes.";
+                    break;
+
+                case 'AGREGAR_COMENTARIO_CUENTA':
+                case 'REGISTRAR_ACTIVIDAD':
+                    // Primero buscamos el ID de la cuenta por nombre
+                    const accSearch = await conn.query(`SELECT Id, Name FROM Account WHERE Name LIKE '%${plan.cliente_busqueda}%' LIMIT 1`);
+                    const accId = accSearch.records.length > 0 ? accSearch.records[0].Id : null;
+                    const accName = accSearch.records.length > 0 ? accSearch.records[0].Name : plan.cliente_busqueda;
+
+                    await conn.sobject("Task").create({
+                        Subject: plan.accion === 'AGREGAR_COMENTARIO_CUENTA' ? `Comentario: ${plan.datos.asunto || 'Nota'}` : `Actividad: ${plan.datos.asunto}`,
+                        Description: plan.datos.descripcion || userText,
+                        Status: 'Completed',
+                        WhatId: accId,
+                        OwnerId: myOwnerId
+                    });
+                    responseMessage = `✅ He guardado el registro en la cuenta de ${accName}.`;
+                    break;
+
+                case 'AGENDAR_CITA':
+                    await conn.sobject("Event").create({
+                        Subject: `Cita: ${plan.cliente_busqueda}`,
+                        StartDateTime: `${plan.datos.fecha}T${plan.datos.hora || '09:00'}:00`,
+                        DurationInMinutes: 60,
+                        OwnerId: myOwnerId
+                    });
+                    responseMessage = `📅 Cita agendada para el ${plan.datos.fecha} a las ${plan.datos.hora}.`;
+                    break;
+
+                default:
+                    responseMessage = "Entendido, pero no estoy seguro de qué acción realizar en Salesforce. ¿Podrías ser más específico?";
             }
 
-            // --- ACCIÓN: CONSULTAR RESUMEN (Nueva función) ---
-            else if (plan.accion === 'CONSULTAR_RESUMEN') {
-                // Buscamos la última tarea completada para saber cuál fue la última visita
-                const lastTask = await conn.query(
-                    `SELECT Subject, Description, CreatedDate FROM Task 
-                     WHERE OwnerId = '${myOwnerId}' AND Status = 'Completed' 
-                     ORDER BY CreatedDate DESC LIMIT 1`
-                );
-
-                if (lastTask.records.length > 0) {
-                    const task = lastTask.records[0];
-                    finalMsg = `Tu última actividad registrada fue: "${task.Subject}". \nNotas: ${task.Description || 'Sin notas'}.`;
-                } else {
-                    finalMsg = "No encontré actividades recientes registradas a tu nombre.";
-                }
-            }
-
-            res.status(200).json({ success: true, message: finalMsg, transcript: text });
+            res.status(200).json({ success: true, message: responseMessage, transcript: userText });
 
         } catch (error) {
             res.status(500).json({ error: error.message });
