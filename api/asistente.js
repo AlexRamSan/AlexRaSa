@@ -18,18 +18,13 @@ export default async function handler(req, res) {
     const form = new multiparty.Form();
     
     form.parse(req, async (err, fields, files) => {
-        if (err) {
-            console.error("Error parseando el form:", err);
-            return res.status(500).json({ success: false, error: "Error al leer los datos enviados" });
-        }
+        if (err) return res.status(500).json({ success: false, error: "Error al leer el formulario" });
 
         try {
             const myOwnerId = process.env.SF_OWNER_ID;
-            console.log("Iniciando proceso para Owner:", myOwnerId);
 
-            // --- ACCIÓN: CONFIRMAR Y GUARDAR ---
+            // --- PASO 2: CONFIRMAR REGISTRO ---
             if (fields.action && fields.action[0] === 'confirmar') {
-                console.log("Acción: Confirmar registro");
                 const payload = JSON.parse(fields.payload[0]);
                 
                 const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
@@ -47,7 +42,7 @@ export default async function handler(req, res) {
                     await conn.sobject("Event").create({
                         Subject: payload.subject,
                         Description: payload.description,
-                        StartDateTime: `${payload.fecha}T${payload.hora || '09:00'}:00`,
+                        StartDateTime: `${payload.fecha}T${payload.hora || '09:00'}:00`, // Sin 'Z' para usar hora local
                         DurationInMinutes: 60,
                         WhatId: payload.accountId,
                         OwnerId: myOwnerId
@@ -61,27 +56,28 @@ export default async function handler(req, res) {
                         OwnerId: myOwnerId
                     });
                 }
-                return res.status(200).json({ success: true, message: "Guardado con éxito" });
+                return res.status(200).json({ success: true, message: "Sincronizado con éxito" });
             }
 
-            // --- ACCIÓN: PROCESAR AUDIO ---
-            if (!files.audio) throw new Error("No se recibió el archivo de audio");
-            
-            console.log("Enviando a Whisper...");
+            // --- PASO 1: PROCESAR AUDIO ---
+            if (!files.audio) throw new Error("No se recibió el audio");
+
+            // 1. Whisper: Voz a Texto
             const transcription = await openai.audio.transcriptions.create({
                 file: fs.createReadStream(files.audio[0].path),
                 model: "whisper-1",
                 language: "es"
             });
-            console.log("Transcripción lista:", transcription.text);
 
-            console.log("Enviando a GPT-4o...");
+            // 2. GPT-4o: Entender Intención
             const aiResponse = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content: "Extrae intención (comentario, visita, cita) y empresa_busqueda. Devuelve JSON."
+                        content: `Eres el Asistente de REGO-FIX. Extrae la intención. 
+                        Hoy es ${new Date().toLocaleDateString()}.
+                        JSON: { "intent", "empresa_busqueda", "asunto", "detalles", "fecha", "hora" }`
                     },
                     { role: "user", content: transcription.text }
                 ],
@@ -89,9 +85,8 @@ export default async function handler(req, res) {
             });
 
             const plan = JSON.parse(aiResponse.choices[0].message.content);
-            console.log("Plan de IA:", plan);
 
-            console.log("Buscando en Salesforce...");
+            // 3. Salesforce: Buscar Cuentas
             const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
                 method: 'POST',
                 body: new URLSearchParams({
@@ -106,7 +101,6 @@ export default async function handler(req, res) {
             const searchResults = await conn.query(
                 `SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%${plan.empresa_busqueda}%' LIMIT 5`
             );
-            console.log("Resultados encontrados:", searchResults.totalSize);
 
             res.status(200).json({ 
                 success: true, 
@@ -117,7 +111,6 @@ export default async function handler(req, res) {
             });
 
         } catch (error) {
-            console.error("ERROR EN EL BACKEND:", error.message);
             res.status(500).json({ success: false, error: error.message });
         }
     });
