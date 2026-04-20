@@ -4,7 +4,6 @@ import jsforce from "jsforce";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export default async function handler(req, res) {
-    // CORS Dinámico para evitar el error de "www"
     const origin = req.headers.origin;
     const allowedOrigins = ['https://alexrasa.store', 'https://www.alexrasa.store'];
     if (allowedOrigins.includes(origin)) {
@@ -17,50 +16,54 @@ export default async function handler(req, res) {
 
     try {
         const { image, confirmData } = req.body;
-        let cardData = confirmData;
-        
-        // --- PASO 1: OCR CON IA ---
-        if (!cardData && image) {
+
+        // PASO 1: ANALIZAR CON IA (Si solo llega la imagen)
+        if (!confirmData && image) {
             const response = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content: "Extrae datos de tarjetas. JSON: {firstName, lastName, email, phone, company}. Usa cadenas vacías si no hay datos."
+                        content: "Extrae datos de tarjetas. JSON: {firstName, lastName, email, phone, company}."
                     },
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Extrae la info de esta imagen." },
+                            { type: "text", text: "Extrae la información." },
                             { type: "image_url", image_url: { url: image, detail: "low" } }
                         ],
                     },
                 ],
                 response_format: { type: "json_object" }
             });
-            const result = JSON.parse(response.choices[0].message.content);
-            return res.status(200).json({ success: true, cardData: result });
+            return res.status(200).json({ success: true, cardData: JSON.parse(response.choices[0].message.content) });
         }
 
-        // --- PASO 2: CONEXIÓN OAUTH2 A SALESFORCE ---
+        // PASO 2: GUARDAR EN SALESFORCE (Usando tu método de Client Credentials)
         if (confirmData) {
-            const conn = new jsforce.Connection({
-                oauth2: {
-                    loginUrl: 'https://login.salesforce.com', // Cambia a test.salesforce.com si es Sandbox
-                    clientId: process.env.SF_CLIENT_ID,
-                    clientSecret: process.env.SF_CLIENT_SECRET,
-                    redirectUri: 'https://alexrasa.store' // Debe estar en tu Connected App
-                }
+            // 1. Obtener Token igual que en tu app de Oportunidades
+            const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    grant_type: 'client_credentials',
+                    client_id: process.env.SF_CLIENT_ID.trim(),
+                    client_secret: process.env.SF_CLIENT_SECRET.trim()
+                })
+            });
+            
+            const authData = await authRes.json();
+            
+            if (!authData.access_token) {
+                throw new Error("Error de acceso a Salesforce: " + (authData.error_description || "Token no generado"));
+            }
+
+            const conn = new jsforce.Connection({ 
+                instanceUrl: authData.instance_url, 
+                accessToken: authData.access_token 
             });
 
-            // Login usando Password + Token (Método Web Server flow compatible)
-            await conn.login(
-                process.env.SF_USERNAME, 
-                process.env.SF_PASSWORD + process.env.SF_TOKEN
-            );
-
-            // Búsqueda de Cuenta con escape de caracteres (Evita errores de lectura)
-            const companyName = cardData.company ? cardData.company.trim() : "Empresa Desconocida";
+            // 2. Lógica de Cuenta (Búsqueda o Creación)
+            const companyName = confirmData.company ? confirmData.company.trim() : "Empresa Desconocida";
             const safeCompanyName = companyName.replace(/'/g, "\\'");
             
             const accountResult = await conn.query(
@@ -75,12 +78,12 @@ export default async function handler(req, res) {
                 accountId = newAcc.id;
             }
 
-            // Creación de Contacto
+            // 3. Crear Contacto vinculado
             const contact = await conn.sobject("Contact").create({
-                FirstName: cardData.firstName || '',
-                LastName: cardData.lastName || 'Apellido', // Obligatorio en Salesforce
-                Email: cardData.email || '',
-                Phone: cardData.phone || '',
+                FirstName: confirmData.firstName || '',
+                LastName: confirmData.lastName || 'Apellido', // Requerido por SF
+                Email: confirmData.email || '',
+                Phone: confirmData.phone || '',
                 AccountId: accountId
             });
 
@@ -88,7 +91,7 @@ export default async function handler(req, res) {
         }
 
     } catch (error) {
-        console.error("Error en proceso:", error.message);
+        console.error(error);
         res.status(500).json({ error: error.message });
     }
 }
