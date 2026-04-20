@@ -3,33 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REGO-FIX Scanner | AlexRasa</title>
+    <title>REGO-FIX Scanner | Salesforce</title>
     <style>
         body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; max-width: 400px; margin: auto; border: 1px solid #333; }
-        h2 { color: #ffcc00; text-align: center; }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none; box-sizing: border-box; }
+        h2 { color: #ffcc00; text-align: center; margin-top: 0; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none; box-sizing: border-box; font-size: 16px; }
         input[type="text"], input[type="email"] { background: #2a2a2a; color: white; border: 1px solid #444; }
-        button { background: #ffcc00; color: black; font-weight: bold; cursor: pointer; }
-        #preview { width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; }
-        .loading { text-align: center; color: #ffcc00; display: none; }
+        button { background: #ffcc00; color: black; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        #preview { width: 100%; border-radius: 8px; display: none; margin-bottom: 10px; border: 2px solid #ffcc00; }
+        .loading { text-align: center; color: #ffcc00; display: none; font-weight: bold; }
+        label { font-size: 12px; color: #aaa; margin-left: 5px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Scanner de Tarjetas</h2>
+    <h2>REGO-FIX SCANNER</h2>
     <input type="file" id="camera" accept="image/*" capture="environment">
     <img id="preview">
     
-    <div id="loader" class="loading">Procesando imagen con IA...</div>
+    <div id="loader" class="loading">Analizando con IA...</div>
 
     <div id="resultForm" style="display:none;">
+        <label>Empresa (Busca o crea en Salesforce)</label>
+        <input type="text" id="co" placeholder="Empresa">
+        
+        <label>Nombre</label>
         <input type="text" id="fn" placeholder="Nombre">
+        
+        <label>Apellido</label>
         <input type="text" id="ln" placeholder="Apellido">
+        
+        <label>Correo</label>
         <input type="email" id="em" placeholder="Correo">
+        
+        <label>Teléfono</label>
         <input type="text" id="ph" placeholder="Teléfono">
-        <button id="sendBtn">ENVIAR A SALESFORCE</button>
+        
+        <button id="sendBtn">CONFIRMAR Y SUBIR A SALESFORCE</button>
     </div>
 </div>
 
@@ -38,12 +51,14 @@
     const preview = document.getElementById('preview');
     const loader = document.getElementById('loader');
     const resultForm = document.getElementById('resultForm');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let base64Image = "";
 
     camera.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Mostrar foto
         preview.src = URL.createObjectURL(file);
         preview.style.display = 'block';
         loader.style.display = 'block';
@@ -52,33 +67,66 @@
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onloadend = async () => {
+            base64Image = reader.result;
             try {
-                // USANDO TU APP DE VERCEL
                 const response = await fetch('https://alex-ra-sa.vercel.app/api/reconocimiento', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: reader.result })
+                    body: JSON.stringify({ image: base64Image })
                 });
 
                 const data = await response.json();
+                const info = data.cardData;
 
-                document.getElementById('fn').value = data.firstName || '';
-                document.getElementById('ln').value = data.lastName || '';
-                document.getElementById('em').value = data.email || '';
-                document.getElementById('ph').value = data.phone || '';
+                // Llenar campos con lo que la IA detectó
+                document.getElementById('co').value = info.company || '';
+                document.getElementById('fn').value = info.firstName || '';
+                document.getElementById('ln').value = info.lastName || '';
+                document.getElementById('em').value = info.email || '';
+                document.getElementById('ph').value = info.phone || '';
 
                 loader.style.display = 'none';
                 resultForm.style.display = 'block';
             } catch (err) {
-                alert("Error: " + err.message);
+                alert("Error al analizar: " + err.message);
                 loader.style.display = 'none';
             }
         };
     });
 
-    document.getElementById('sendBtn').onclick = () => {
-        alert("Enviando a Salesforce...");
-        // Próximo paso: crear el endpoint de Salesforce en Vercel
+    sendBtn.onclick = async () => {
+        sendBtn.disabled = true;
+        sendBtn.innerText = "ENVIANDO...";
+
+        const payload = {
+            confirmData: {
+                company: document.getElementById('co').value,
+                firstName: document.getElementById('fn').value,
+                lastName: document.getElementById('ln').value,
+                email: document.getElementById('em').value,
+                phone: document.getElementById('ph').value
+            }
+        };
+
+        try {
+            const response = await fetch('https://alex-ra-sa.vercel.app/api/reconocimiento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                alert("¡Éxito! Contacto creado. Cuenta: " + result.accountStatus);
+                location.reload(); // Limpiar para el siguiente scan
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (err) {
+            alert("Error en Salesforce: " + err.message);
+            sendBtn.disabled = false;
+            sendBtn.innerText = "REINTENTAR ENVIAR";
+        }
     };
 </script>
 
