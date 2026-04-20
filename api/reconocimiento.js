@@ -4,7 +4,7 @@ import jsforce from "jsforce";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export default async function handler(req, res) {
-    // 1. CORRECCIÓN DE CORS (DINÁMICO)
+    // Manejo de CORS dinámico para alexrasa.store con y sin WWW
     const origin = req.headers.origin;
     const allowedOrigins = ['https://alexrasa.store', 'https://www.alexrasa.store'];
     if (allowedOrigins.includes(origin)) {
@@ -19,53 +19,60 @@ export default async function handler(req, res) {
         const { image, confirmData } = req.body;
         let cardData = confirmData;
         
-        // 2. EXTRACCIÓN CON IA
-        if (!cardData) {
+        // --- PASO 1: ANALIZAR IMAGEN (Si es la primera llamada) ---
+        if (!cardData && image) {
             const response = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
-                        content: "Extrae datos de tarjetas. JSON estricto: {firstName, lastName, email, phone, company}. Si no hay datos, usa cadena vacía."
+                        content: "Extrae datos de tarjetas de presentación. Devuelve un JSON con: firstName, lastName, email, phone, company. Si falta un dato, usa cadena vacía."
                     },
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Extrae la info." },
+                            { type: "text", text: "Extrae la información de esta imagen." },
                             { type: "image_url", image_url: { url: image, detail: "low" } }
                         ],
                     },
                 ],
                 response_format: { type: "json_object" }
             });
-
-            const content = response.choices[0].message.content;
-            cardData = JSON.parse(content);
+            return res.status(200).json({ success: true, cardData: JSON.parse(response.choices[0].message.content) });
         }
 
-        // VALIDACIÓN ANTI-ERROR: Si cardData sigue siendo undefined por algún motivo
-        if (!cardData) throw new Error("No se pudieron extraer datos de la imagen.");
-
-        // 3. CONEXIÓN A SALESFORCE
-        // Solo intentamos Salesforce si ya tenemos el confirmData (segundo paso)
+        // --- PASO 2: GUARDAR EN SALESFORCE (Si ya confirmaste los datos) ---
         if (confirmData) {
-            const conn = new jsforce.Connection({ loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com' });
-            await conn.login(process.env.SF_USERNAME, process.env.SF_PASSWORD + process.env.SF_TOKEN);
+            const conn = new jsforce.Connection({
+                oauth2: {
+                    loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com',
+                    clientId: process.env.SF_CLIENT_ID,
+                    clientSecret: process.env.SF_CLIENT_SECRET,
+                    redirectUri: 'https://alex-ra-sa.vercel.app/_callback' // Debe coincidir con tu Connected App
+                }
+            });
 
-            // Buscar cuenta
+            // Login usando Password + Security Token (el que tienes en Vercel)
+            await conn.login(
+                process.env.SF_USERNAME, 
+                process.env.SF_PASSWORD + process.env.SF_TOKEN
+            );
+
+            // Buscar o Crear Cuenta
+            const companyName = cardData.company || "Empresa por Clasificar";
             const accountResult = await conn.query(
-                `SELECT Id FROM Account WHERE Name = '${cardData.company}' LIMIT 1`
+                `SELECT Id FROM Account WHERE Name = '${companyName.replace(/'/g, "\\'")}' LIMIT 1`
             );
 
             let accountId;
             if (accountResult.totalSize > 0) {
                 accountId = accountResult.records[0].Id;
             } else {
-                const newAcc = await conn.sobject("Account").create({ Name: cardData.company || "Empresa por Clasificar" });
+                const newAcc = await conn.sobject("Account").create({ Name: companyName });
                 accountId = newAcc.id;
             }
 
-            // Crear contacto
+            // Crear Contacto
             const contact = await conn.sobject("Contact").create({
                 FirstName: cardData.firstName,
                 LastName: cardData.lastName || 'Apellido',
@@ -77,11 +84,8 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, contactId: contact.id });
         }
 
-        // Si es el primer paso (solo escaneo), devolvemos los datos para revisión
-        res.status(200).json({ success: true, cardData });
-
     } catch (error) {
-        console.error("ERROR DETECTADO:", error.message);
+        console.error(error);
         res.status(500).json({ error: error.message });
     }
 }
