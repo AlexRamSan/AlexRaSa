@@ -42,14 +42,16 @@ export default async function handler(req, res) {
                     {
                         role: "system",
                         content: `Eres un experto en inteligencia comercial. Extrae e investiga los datos de la tarjeta.
-                        MUY IMPORTANTE: Investiga, deduce o busca en tu base de conocimientos el RFC corporativo (Registro Federal de Contribuyentes para México) o CNPJ de la empresa detectada.
-                        Devuelve estrictamente un JSON con las siguientes propiedades. Si no logras conseguir algún dato, usa "":
-                        { "firstName", "lastName", "title", "email", "phone", "mobilePhone", "company", "website", "industry", "type", "rfc", "machines", "productInterest", "companyPhone", "street", "city", "state", "country", "description" }`
+                        REGLAS ESTRICTAS DE INVESTIGACIÓN:
+                        1. Investiga o deduce el RFC (Registro Federal de Contribuyentes) o CNPJ de la empresa.
+                        2. Investiga y clasifica la Industria (ej. Manufactura, Automotriz, Tecnología, etc.).
+                        3. Propón un Tipo de cuenta lógico (ej. Prospecto, Proveedor, Cliente).
+                        Devuelve un JSON con: { "firstName", "lastName", "title", "email", "phone", "mobilePhone", "company", "website", "industry", "type", "rfc", "machines", "productInterest", "companyPhone", "street", "city", "state", "country", "description" }. Usa "" si no encuentras algo.`
                     },
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Analiza e investiga los datos de esta tarjeta. Asegúrate de investigar y proponer el RFC de la empresa." },
+                            { type: "text", text: "Analiza la tarjeta. Haz la investigación automática del RFC, Industria y Tipo de empresa." },
                             { type: "image_url", image_url: { url: image, detail: "high" } }
                         ]
                     }
@@ -64,11 +66,12 @@ export default async function handler(req, res) {
             let accountId = confirmData.accountId;
 
             if (!accountId) {
+                // Se utilizan los nombres de API exactos obtenidos de tu Salesforce
                 const accountPayload = { 
                     Name: confirmData.company || 'Empresa Sin Nombre',
                     Type: confirmData.type || '',
-                    RFC__c: confirmData.rfc || '', 
-                    Numero_de_maquinas__c: confirmData.machines || null,
+                    RFC_CNPJ__c: confirmData.rfc || '', 
+                    NumberOfEmployees: confirmData.machines ? parseInt(confirmData.machines, 10) : null,
                     Producto_de_interes__c: confirmData.productInterest || '',
                     Website: confirmData.website || '',
                     Industry: confirmData.industry || '',
