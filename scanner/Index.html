@@ -7,15 +7,20 @@
     <style>
         :root { --rf-red: #E30613; --rf-black: #000000; --rf-grey: #1A1A1A; --rf-light: #D1D3D4; }
         body { font-family: Arial, sans-serif; background: var(--rf-black); color: white; padding: 20px; display: flex; justify-content: center; margin: 0; }
-        .card { background: var(--rf-grey); padding: 30px; border-radius: 4px; max-width: 420px; width: 100%; border-top: 5px solid var(--rf-red); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .card { background: var(--rf-grey); padding: 30px; border-radius: 4px; max-width: 480px; width: 100%; border-top: 5px solid var(--rf-red); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         h2 { text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
         .sub { text-align: center; font-size: 10px; color: var(--rf-light); margin-bottom: 25px; text-transform: uppercase; }
         
-        label { font-size: 10px; color: var(--rf-red); font-weight: bold; text-transform: uppercase; display: block; margin: 12px 0 4px 2px; }
-        input { width: 100%; padding: 12px; border-radius: 2px; border: 1px solid #333; background: white; color: black; font-size: 15px; box-sizing: border-box; }
-        input:focus { border-color: var(--rf-red); outline: none; }
+        .section-title { color: white; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        label { font-size: 10px; color: var(--rf-red); font-weight: bold; text-transform: uppercase; display: block; margin: 8px 0 2px 2px; }
+        input, textarea { width: 100%; padding: 10px; border-radius: 2px; border: 1px solid #333; background: white; color: black; font-size: 14px; box-sizing: border-box; font-family: Arial, sans-serif; }
+        input:focus, textarea:focus { border-color: var(--rf-red); outline: none; }
+        textarea { resize: vertical; min-height: 60px; }
         
-        button { width: 100%; padding: 15px; background: var(--rf-red); color: white; border: none; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        /* Grid para inputs cortos */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        button { width: 100%; padding: 15px; background: var(--rf-red); color: white; border: none; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 25px; transition: 0.3s; }
         button:disabled { background: #444; color: #888; }
         
         #preview { width: 100%; border-radius: 2px; display: none; margin-bottom: 20px; border: 1px solid #444; }
@@ -31,29 +36,52 @@
     <h2>REGO-FIX</h2>
     <div class="sub">AI Business Card Scanner</div>
     
-    <input type="file" id="camera" accept="image/*" capture="environment">
+    <input type="file" id="camera" accept="image/*" capture="environment" style="margin-bottom:15px; width:100%; color: white;">
     <img id="preview">
-    <div id="loader" class="loading">INVESTIGANDO EMPRESA...</div>
+    <div id="loader" class="loading">ANALIZANDO TARJETA E INVESTIGANDO EMPRESA...</div>
     <div id="statusBox" class="status"></div>
 
     <div id="resultForm" style="display:none;">
-        <label>Empresa / Cuenta</label>
+        
+        <div class="section-title">Datos de la Empresa (Cuenta)</div>
+        <label>Nombre de la Empresa</label>
         <input type="text" id="co">
+        
+        <div class="grid-2">
+            <div><label>Industria</label><input type="text" id="ind"></div>
+            <div><label>Tel. Corporativo</label><input type="text" id="coPhone"></div>
+        </div>
+        
         <label>Sitio Web</label>
         <input type="text" id="web">
-        <label>Industria</label>
-        <input type="text" id="ind">
         
-        <div style="height: 1px; background: #333; margin: 20px 0;"></div>
+        <label>Dirección Completa (IA lo separa en Salesforce)</label>
+        <input type="text" id="street" placeholder="Calle y número">
+        <div class="grid-2">
+            <div><input type="text" id="city" placeholder="Ciudad"></div>
+            <div><input type="text" id="state" placeholder="Estado/Provincia"></div>
+        </div>
+        <input type="text" id="country" placeholder="País" style="margin-top:10px;">
+        
+        <label>Descripción / Notas Automáticas</label>
+        <textarea id="desc"></textarea>
 
-        <label>Nombre</label>
-        <input type="text" id="fn">
-        <label>Apellido</label>
-        <input type="text" id="ln">
-        <label>Email</label>
+        <div class="section-title">Datos de la Persona (Contacto)</div>
+        <div class="grid-2">
+            <div><label>Nombre</label><input type="text" id="fn"></div>
+            <div><label>Apellido</label><input type="text" id="ln"></div>
+        </div>
+        
+        <label>Puesto (Title)</label>
+        <input type="text" id="title">
+        
+        <label>Correo Electrónico</label>
         <input type="email" id="em">
-        <label>Teléfono</label>
-        <input type="text" id="ph">
+        
+        <div class="grid-2">
+            <div><label>Teléfono Directo</label><input type="text" id="ph"></div>
+            <div><label>Teléfono Móvil</label><input type="text" id="mob"></div>
+        </div>
         
         <button id="sendBtn">SINCRONIZAR CON SALESFORCE</button>
     </div>
@@ -92,13 +120,25 @@
                 if (!response.ok) throw new Error(data.error);
 
                 const info = data.cardData;
+                
+                // Mapeo Cuenta
                 document.getElementById('co').value = info.company || '';
-                document.getElementById('web').value = info.website || '';
                 document.getElementById('ind').value = info.industry || '';
+                document.getElementById('coPhone').value = info.companyPhone || '';
+                document.getElementById('web').value = info.website || '';
+                document.getElementById('street').value = info.street || '';
+                document.getElementById('city').value = info.city || '';
+                document.getElementById('state').value = info.state || '';
+                document.getElementById('country').value = info.country || '';
+                document.getElementById('desc').value = info.description || '';
+
+                // Mapeo Contacto
                 document.getElementById('fn').value = info.firstName || '';
                 document.getElementById('ln').value = info.lastName || '';
+                document.getElementById('title').value = info.title || '';
                 document.getElementById('em').value = info.email || '';
                 document.getElementById('ph').value = info.phone || '';
+                document.getElementById('mob').value = info.mobilePhone || '';
 
                 loader.style.display = 'none';
                 resultForm.style.display = 'block';
@@ -113,17 +153,28 @@
 
     sendBtn.onclick = async () => {
         sendBtn.disabled = true;
-        sendBtn.innerText = "ENVIANDO A SALESFORCE...";
+        sendBtn.innerText = "Sincronizando...";
         
         const payload = {
             confirmData: {
+                // Cuenta
                 company: document.getElementById('co').value,
-                website: document.getElementById('web').value,
                 industry: document.getElementById('ind').value,
+                companyPhone: document.getElementById('coPhone').value,
+                website: document.getElementById('web').value,
+                street: document.getElementById('street').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                country: document.getElementById('country').value,
+                description: document.getElementById('desc').value,
+                
+                // Contacto
                 firstName: document.getElementById('fn').value,
                 lastName: document.getElementById('ln').value,
+                title: document.getElementById('title').value,
                 email: document.getElementById('em').value,
-                phone: document.getElementById('ph').value
+                phone: document.getElementById('ph').value,
+                mobilePhone: document.getElementById('mob').value
             }
         };
 
@@ -138,6 +189,7 @@
                 statusBox.innerText = "¡Sincronizado con éxito!";
                 statusBox.className = "status success";
                 statusBox.style.display = "block";
+                window.scrollTo(0, 0);
                 setTimeout(() => location.reload(), 3000);
             } else {
                 throw new Error(result.error);
@@ -147,6 +199,7 @@
             statusBox.className = "status error";
             statusBox.style.display = "block";
             sendBtn.disabled = false;
+            sendBtn.innerText = "SINCRONIZAR CON SALESFORCE";
         }
     };
 </script>
