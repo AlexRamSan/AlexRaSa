@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>REGO-FIX Smart Calculator</title>
+  <title>REGO-FIX powRgrip Calculator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -15,41 +15,39 @@
     }
     body { background-color: var(--bg-color); font-family: 'Inter', sans-serif; color: #1f2937; }
     
-    /* Estilos de inputs amigables */
     .input-friendly { 
         width: 100%; border: 2px solid #e5e7eb; border-radius: 12px; padding: 0.85rem; 
-        font-weight: 600; font-size: 1rem; color: var(--rego-blue); outline: none; transition: all 0.3s ease; 
+        font-weight: 600; font-size: 1rem; color: var(--rego-blue); outline: none; transition: all 0.3s ease; background: white;
     }
-    .input-friendly:focus { border-color: var(--rego-red); background-color: #fffafa; box-shadow: 0 4px 6px -1px rgba(211,27,35,0.1); }
-    .input-friendly::placeholder { color: #9ca3af; font-weight: 400; }
+    .input-friendly:focus { border-color: var(--rego-red); box-shadow: 0 4px 6px -1px rgba(211,27,35,0.1); }
+    .input-friendly:disabled { background-color: #f3f4f6; color: #9ca3af; border-color: #d1d5db; cursor: not-allowed; }
     
-    /* Etiquetas y ayudas */
     .lbl-title { font-size: 0.85rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px; }
     .lbl-help { font-size: 0.7rem; font-weight: 500; color: #6b7280; margin-bottom: 8px; display: block; }
     
-    /* Tarjetas de entrada */
     .step-card { 
         background: white; border-radius: 20px; padding: 2rem; 
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); 
         border-top: 5px solid var(--rego-blue);
-        height: 100%;
+        height: 100%; position: relative;
     }
     .step-card.accent { border-top-color: var(--rego-red); }
 
-    /* Resultados Dark Mode (Estilo de la foto) */
-    .dark-dashboard { background-color: #0B1121; color: #94a3b8; border-radius: 24px; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-    .dark-card { background-color: #121A2F; border: 1px solid #1E293B; border-radius: 16px; padding: 1.5rem; }
-    .dark-title { font-size: 1.1rem; font-weight: 800; color: #f8fafc; margin-bottom: 1rem; }
+    .toggle-checkbox:checked { right: 0; border-color: var(--rego-red); background-color: var(--rego-red); }
+    .toggle-checkbox:checked + .toggle-label { background-color: #fca5a5; }
+
+    /* Resultados Light Dashboard */
+    .res-dashboard { background-color: white; border-radius: 24px; padding: 2.5rem; box-shadow: 0 20px 40px -10px rgba(40, 85, 108, 0.1); border: 1px solid #e5e7eb; }
+    .res-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; }
+    .res-title { font-size: 1.1rem; font-weight: 900; color: var(--rego-blue); margin-bottom: 1rem; text-transform: uppercase; }
     
-    /* Badges de resultados */
-    .badge-val { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.9rem; }
-    .badge-min { background-color: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
-    .badge-max { background-color: rgba(234, 179, 8, 0.1); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.2); }
-    .badge-opt { background-color: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
-    .badge-alert { background-color: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
-    .badge-neutral { background-color: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+    .badge-val { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 800; font-size: 0.9rem; }
+    .badge-min { background-color: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+    .badge-max { background-color: #fef2f2; color: var(--rego-red); border: 1px solid #fecaca; }
+    .badge-opt { background-color: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; box-shadow: 0 4px 6px -1px rgba(183,201,31,0.2); }
     
-    .row-flex { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; }
+    .row-flex { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px dashed #e2e8f0; }
+    .row-flex:last-child { border-bottom: none; }
   </style>
 </head>
 <body class="py-10 px-4 md:px-8">
@@ -57,10 +55,10 @@
   <main class="max-w-7xl mx-auto">
     
     <header class="flex flex-col md:flex-row justify-between items-center mb-10 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-        <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-10 mb-4 md:mb-0" alt="REGO-FIX">
+        <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-10 mb-4 md:mb-0" alt="REGO-FIX" onerror="this.src='https://via.placeholder.com/150x40?text=REGO-FIX'">
         <div class="text-center md:text-right">
-            <h1 class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente de Mecanizado</h1>
-            <p class="text-sm text-gray-500 font-medium">Cálculo de Productividad y Vibración</p>
+            <h1 class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente powRgrip®</h1>
+            <p class="text-sm text-gray-500 font-bold">Diagnóstico de Productividad y Estabilidad</p>
         </div>
     </header>
 
@@ -75,74 +73,104 @@
         </label>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
         <div class="step-card">
-            <div class="flex items-center gap-3 mb-6">
-                <span class="bg-[#28556C] text-white w-8 h-8 flex items-center justify-center rounded-full font-black text-lg">1</span>
-                <h2 class="text-lg font-black text-[#28556C]">Tu Proyecto</h2>
-            </div>
-            <div class="space-y-5">
+            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">1. Proyecto</h2>
+            <div class="space-y-4">
                 <div>
-                    <label class="lbl-title">¿Qué material vas a cortar?</label>
-                    <span class="lbl-help">Ej. Aluminio, Acero al carbono...</span>
-                    <input id="material" type="text" class="input-friendly" value="Acero al carbono" placeholder="Escribe el material aquí">
+                    <label class="lbl-title">Material</label>
+                    <input id="material" type="text" class="input-friendly text-sm" value="Acero al carbono">
                 </div>
                 <div>
-                    <label class="lbl-title">Tipo de Operación</label>
-                    <span class="lbl-help">Ej. Desbaste, Acabado...</span>
-                    <input id="operacion" type="text" class="input-friendly" value="Desbaste" placeholder="¿Qué vas a hacer?">
+                    <label class="lbl-title">Operación</label>
+                    <input id="operacion" type="text" class="input-friendly text-sm" value="Desbaste">
                 </div>
             </div>
         </div>
 
         <div class="step-card">
-            <div class="flex items-center gap-3 mb-6">
-                <span class="bg-[#28556C] text-white w-8 h-8 flex items-center justify-center rounded-full font-black text-lg">2</span>
-                <h2 class="text-lg font-black text-[#28556C]">Herramienta</h2>
-            </div>
-            <div class="space-y-5">
-                <div class="grid grid-cols-2 gap-4">
+            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">2. Geometría</h2>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label id="lbl_diametro" class="lbl-title">Diámetro (Ø)</label>
-                        <input id="diametro" type="number" step="0.001" class="input-friendly text-center" value="10">
+                        <label id="lbl_diametro" class="lbl-title">Ø</label>
+                        <input id="diametro" type="number" step="0.001" class="input-friendly text-sm text-center" value="10">
                     </div>
                     <div>
                         <label class="lbl-title">Filos (Z)</label>
-                        <input id="z" type="number" class="input-friendly text-center" value="4">
+                        <input id="z" type="number" class="input-friendly text-sm text-center" value="4">
                     </div>
                 </div>
                 <div>
-                    <label class="lbl-title">RPM Máximas (Husillo)</label>
-                    <input id="max_rpm" type="number" class="input-friendly font-black text-[#D31B23]" value="12000">
+                    <label id="lbl_proyeccion" class="lbl-title">Proyección</label>
+                    <input id="proyeccion" type="number" step="0.1" class="input-friendly text-sm" value="35">
+                </div>
+                <div>
+                    <label class="lbl-title">RPM Husillo (Max)</label>
+                    <input id="max_rpm" type="number" class="input-friendly text-sm font-black text-[#D31B23]" value="12000">
                 </div>
             </div>
         </div>
 
-        <div class="step-card accent">
-            <div class="flex items-center gap-3 mb-6">
-                <span class="bg-[#D31B23] text-white w-8 h-8 flex items-center justify-center rounded-full font-black text-lg">3</span>
-                <h2 class="text-lg font-black text-[#D31B23]">Corte (Catálogo)</h2>
+        <div class="step-card accent relative">
+            <div class="flex justify-between items-center mb-5 border-b border-red-100 pb-2">
+                <h2 class="text-md font-black text-[#D31B23]">3. Catálogo</h2>
+                <div class="relative inline-block w-10 align-middle select-none">
+                    <input type="checkbox" id="toggle_catalogo" checked onchange="toggleCatalogo()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10"/>
+                    <label for="toggle_catalogo" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-200 cursor-pointer transition-colors"></label>
+                </div>
             </div>
-            <div class="space-y-5">
-                <div class="grid grid-cols-2 gap-4">
+            
+            <div id="panel_catalogo" class="space-y-4 transition-all opacity-100">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label id="lbl_ap" class="lbl-title">Profundidad (Ap)</label>
-                        <input id="ap" type="number" step="0.1" class="input-friendly text-center" value="2">
+                        <label id="lbl_ap" class="lbl-title">Ap</label>
+                        <input id="ap" type="number" step="0.1" class="input-friendly text-sm text-center" value="2">
                     </div>
                     <div>
-                        <label id="lbl_ae" class="lbl-title">Ancho (Ae) % u abs</label>
-                        <input id="ae" type="number" step="0.1" class="input-friendly text-center" value="5">
+                        <label id="lbl_ae" class="lbl-title">Ae</label>
+                        <input id="ae" type="number" step="0.1" class="input-friendly text-sm text-center" value="5">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="lbl-title">Vc (m/min)</label>
-                        <input id="vc_base" type="number" class="input-friendly text-center" value="180">
+                        <label class="lbl-title">Vc base</label>
+                        <input id="vc_base" type="number" class="input-friendly text-sm text-center" value="180">
                     </div>
                     <div>
-                        <label class="lbl-title">Fz (mm/z)</label>
-                        <input id="fz_base" type="number" step="0.001" class="input-friendly text-center" value="0.065">
+                        <label class="lbl-title">Fz base</label>
+                        <input id="fz_base" type="number" step="0.001" class="input-friendly text-sm text-center" value="0.065">
+                    </div>
+                </div>
+            </div>
+            <div id="msg_catalogo_off" class="hidden absolute top-1/2 left-0 right-0 text-center px-4">
+                <span class="text-xs font-bold text-gray-400 uppercase">Catálogo Desactivado. Se usará el proceso actual como base.</span>
+            </div>
+        </div>
+
+        <div class="step-card">
+            <div class="flex justify-between items-center mb-5 border-b border-gray-100 pb-2">
+                <h2 class="text-md font-black text-[#28556C]">4. Proceso Actual</h2>
+                <div class="relative inline-block w-10 align-middle select-none">
+                    <input type="checkbox" id="toggle_actuales" onchange="toggleActuales()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10"/>
+                    <label for="toggle_actuales" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-200 cursor-pointer transition-colors"></label>
+                </div>
+            </div>
+            
+            <div id="panel_actuales" class="space-y-4 hidden opacity-50">
+                <div>
+                    <label class="lbl-title">Tus RPM actuales</label>
+                    <input id="rpm_actual" type="number" class="input-friendly text-sm" placeholder="Ej: 4500" disabled>
+                </div>
+                <div>
+                    <label class="lbl-title">Tu Avance actual</label>
+                    <div class="flex gap-2">
+                        <input id="avance_actual" type="number" class="input-friendly text-sm w-2/3" placeholder="Ej: 1200" disabled>
+                        <select id="unidad_avance" class="input-friendly text-sm w-1/3 p-1 font-bold text-[#28556C]" disabled>
+                            <option value="mm/min">mm</option>
+                            <option value="ipm">pulg</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -150,101 +178,92 @@
 
     </div>
 
-    <div class="mb-10">
-        <button onclick="calcularEscenarios()" id="btnGo" class="w-full bg-[#D31B23] hover:bg-red-800 text-white font-black text-lg py-5 rounded-2xl uppercase tracking-widest transition-all shadow-lg shadow-red-200">
-            Calcular Diagnóstico y Programa
+    <div class="mb-10 flex justify-center">
+        <button onclick="calcularEscenarios()" id="btnGo" class="w-full md:w-1/2 bg-[#D31B23] hover:bg-red-800 text-white font-black text-lg py-5 rounded-2xl uppercase tracking-widest transition-all shadow-xl shadow-red-200">
+            Analizar con powRgrip®
         </button>
     </div>
 
-    <div id="loader" class="hidden text-center py-10 text-[#28556C] font-black uppercase animate-bounce">Procesando Cinemática y Frecuencias...</div>
+    <div id="loader" class="hidden text-center py-10 text-[#28556C] font-black uppercase animate-pulse">Analizando rigidez y frecuencias...</div>
 
-    <div id="resultado" class="hidden dark-dashboard mb-10">
+    <div id="resultado" class="hidden res-dashboard mb-10">
         
-        <div class="mb-8">
-            <h3 class="dark-title">Diagnóstico</h3>
-            <ul id="lista-diagnostico" class="list-disc pl-5 space-y-2 text-sm text-slate-300 leading-relaxed mb-6">
-                </ul>
-
-            <div class="bg-[#0B1121] p-5 rounded-xl border border-slate-700 font-mono text-[13px] shadow-inner">
-                <div class="text-slate-400">; Recomendado</div>
-                <div class="text-slate-200 font-bold mt-1">S<span id="code-s">0</span> &nbsp; F<span id="code-f">0</span></div>
-                <div class="text-slate-400 mt-1">; fz=<span id="code-fz">0</span> <span id="code-fz-unit">mm</span>/diente, ae=<span id="code-ae">0</span> <span id="code-ae-unit">mm</span>, ap=<span id="code-ap">0</span> <span id="code-ap-unit">mm</span>, material=<span id="code-mat"></span></div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="flex flex-col lg:flex-row gap-10">
             
-            <div class="dark-card">
-                <h4 class="dark-title">RPM</h4>
-                <div class="row-flex">
-                    <span>Mínimo</span>
-                    <span class="badge-val badge-min" id="res-rpm-min">0</span>
-                </div>
-                <div class="row-flex">
-                    <span>Máximo</span>
-                    <span class="badge-val badge-max" id="res-rpm-max">0</span>
-                </div>
-                <div class="row-flex">
-                    <span class="text-slate-200 font-medium">Óptimo</span>
-                    <span class="badge-val badge-opt" id="res-rpm-opt">0</span>
+            <div class="w-full lg:w-1/3">
+                <h3 class="res-title border-b-2 border-[#28556C] inline-block pb-1">Diagnóstico de Ingeniería</h3>
+                <ul id="lista-diagnostico" class="list-disc pl-5 space-y-3 text-sm text-gray-700 leading-relaxed mb-8 mt-4 font-medium">
+                    </ul>
+
+                <div class="bg-[#28556C] p-5 rounded-2xl border border-[#1d3d4d] shadow-lg text-white">
+                    <div class="text-blue-200 text-xs font-bold uppercase mb-2">Bloque CNC Sugerido</div>
+                    <div class="font-mono text-sm">
+                        <div class="text-green-400 font-bold mb-1">S<span id="code-s">0</span> &nbsp; F<span id="code-f">0</span></div>
+                        <div class="text-blue-300 text-[11px]">; <span id="code-mat"></span></div>
+                        <div class="text-blue-300 text-[11px]">; fz=<span id="code-fz">0</span> <span id="code-fz-unit">mm</span>/z, ap=<span id="code-ap">0</span> <span id="code-ap-unit">mm</span></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="dark-card">
-                <h4 class="dark-title">Avance (Vf)</h4>
-                <div class="row-flex">
-                    <span>Mínimo</span>
-                    <span class="badge-val badge-min" id="res-vf-min">0</span>
+            <div class="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div class="res-card shadow-sm">
+                    <h4 class="res-title text-[#D31B23]">RPM</h4>
+                    <div class="row-flex text-gray-500">
+                        <span class="text-sm font-bold">Mínimo / Seguro</span>
+                        <span class="badge-val badge-min" id="res-rpm-min">0</span>
+                    </div>
+                    <div class="row-flex">
+                        <span class="text-sm font-black text-[#28556C]">Óptimo powRgrip</span>
+                        <span class="badge-val badge-opt text-lg" id="res-rpm-opt">0</span>
+                    </div>
+                    <div class="row-flex text-gray-500">
+                        <span class="text-sm font-bold">Máximo (Límite)</span>
+                        <span class="badge-val badge-max" id="res-rpm-max">0</span>
+                    </div>
                 </div>
-                <div class="row-flex">
-                    <span>Máximo</span>
-                    <span class="badge-val badge-max" id="res-vf-max">0</span>
-                </div>
-                <div class="row-flex">
-                    <span class="text-slate-200 font-medium">Óptimo</span>
-                    <span class="badge-val badge-opt" id="res-vf-opt">0</span>
-                </div>
-                <div class="row-flex pt-2 border-t border-slate-700/50 mt-2">
-                    <span>Programa actual</span>
-                    <span class="badge-val badge-neutral">—</span>
-                </div>
-            </div>
 
-            <div class="dark-card">
-                <h4 class="dark-title">Vibración</h4>
-                <div class="row-flex">
-                    <span>TPF recomendado</span>
-                    <span class="font-bold text-slate-200" id="res-tpf">0 Hz</span>
+                <div class="res-card shadow-sm">
+                    <h4 class="res-title text-[#D31B23]">Avance (Vf)</h4>
+                    <div class="row-flex text-gray-500">
+                        <span class="text-sm font-bold">Mínimo / Seguro</span>
+                        <span class="badge-val badge-min" id="res-vf-min">0</span>
+                    </div>
+                    <div class="row-flex">
+                        <span class="text-sm font-black text-[#28556C]">Óptimo powRgrip</span>
+                        <span class="badge-val badge-opt text-lg" id="res-vf-opt">0</span>
+                    </div>
+                    <div class="row-flex text-gray-500">
+                        <span class="text-sm font-bold">Máximo (Límite)</span>
+                        <span class="badge-val badge-max" id="res-vf-max">0</span>
+                    </div>
+                    <div class="row-flex mt-2 pt-2 text-gray-400 text-xs font-bold" id="row-vf-actual" style="display:none;">
+                        <span>Tu programa actual:</span>
+                        <span id="res-vf-act">---</span>
+                    </div>
                 </div>
-                <div class="row-flex">
-                    <span>TPF programa actual</span>
-                    <span class="badge-val badge-neutral">—</span>
-                </div>
-                <div class="row-flex">
-                    <span>Banda estable</span>
-                    <span class="badge-val badge-opt" id="res-banda">600–900 Hz</span>
-                </div>
-                <div class="row-flex pt-2 border-t border-slate-700/50 mt-2">
-                    <span>Riesgo recomendado</span>
-                    <span class="badge-val badge-alert" id="res-riesgo">Alto</span>
-                </div>
-                <div class="row-flex">
-                    <span>Riesgo programa</span>
-                    <span class="badge-val badge-neutral">—</span>
-                </div>
-            </div>
 
+                <div class="res-card shadow-sm md:col-span-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="w-full md:w-1/2">
+                        <h4 class="res-title text-[#28556C] mb-2">Frecuencia & Estabilidad</h4>
+                        <div class="row-flex">
+                            <span class="text-sm font-bold text-gray-600">TPF (Paso de Diente)</span>
+                            <span class="font-black text-[#28556C]" id="res-tpf">0 Hz</span>
+                        </div>
+                        <div class="row-flex">
+                            <span class="text-sm font-bold text-gray-600">Estado de Vibración</span>
+                            <span class="badge-val" id="res-riesgo">Analizando...</span>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 bg-white p-4 rounded-xl border border-gray-200 text-center">
+                        <h4 class="text-xs font-black text-gray-400 uppercase mb-1">Volumen Removido (MRR)</h4>
+                        <div class="text-4xl font-black text-[#B7C91F] drop-shadow-sm" id="res-mrr-opt">0.0</div>
+                        <div class="text-xs font-bold text-gray-500 mt-1 uppercase" id="res-mrr-unit">cm³/min</div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-        
-        <div class="mt-6 dark-card flex justify-between items-center">
-            <div>
-                <h4 class="dark-title mb-1">Tasa de Remoción (MRR)</h4>
-                <p class="text-xs text-slate-400">Volumen de viruta evacuada en el escenario Óptimo</p>
-            </div>
-            <span class="text-3xl font-black text-[#B7C91F]" id="res-mrr-opt">0.0</span>
-            <span class="text-sm text-slate-400 ml-2" id="res-mrr-unit">cm³/min</span>
-        </div>
-
     </div>
 
   </main>
@@ -253,146 +272,194 @@
     function updateLabels(unit) {
         const isInch = unit === 'inch';
         
-        document.getElementById('lbl_diametro').innerText = isInch ? 'Diámetro (Ø pulg)' : 'Diámetro (Ø mm)';
-        document.getElementById('lbl_ap').innerText = isInch ? 'Profundidad Ap (pulg)' : 'Profundidad Ap (mm)';
-        document.getElementById('lbl_ae').innerText = isInch ? 'Ancho Ae (pulg)' : 'Ancho Ae (mm)';
+        document.getElementById('lbl_diametro').innerText = isInch ? 'Ø (pulg)' : 'Ø (mm)';
+        document.getElementById('lbl_proyeccion').innerText = isInch ? 'Proyección (pulg)' : 'Proyección (mm)';
+        document.getElementById('lbl_ap').innerText = isInch ? 'Ap (pulg)' : 'Ap (mm)';
+        document.getElementById('lbl_ae').innerText = isInch ? 'Ae (pulg)' : 'Ae (mm)';
         
-        // Unidades en el código G
         document.getElementById('code-fz-unit').innerText = isInch ? 'pulg' : 'mm';
-        document.getElementById('code-ae-unit').innerText = isInch ? 'pulg' : 'mm';
         document.getElementById('code-ap-unit').innerText = isInch ? 'pulg' : 'mm';
         document.getElementById('res-mrr-unit').innerText = isInch ? 'pulg³/min' : 'cm³/min';
 
         const setVal = (id, valInch, valMm) => document.getElementById(id).value = isInch ? valInch : valMm;
 
         if(isInch) {
-            setVal('diametro', '0.5', '10'); setVal('ap', '0.1', '2'); setVal('ae', '0.25', '5'); setVal('vc_base', '500', '180'); setVal('fz_base', '0.002', '0.065');
+            setVal('diametro', '0.5', '10'); setVal('proyeccion', '1.5', '35'); setVal('ap', '0.1', '2'); setVal('ae', '0.25', '5'); setVal('vc_base', '500', '180'); setVal('fz_base', '0.002', '0.065');
         } else {
-            setVal('diametro', '10', '0.5'); setVal('ap', '2', '0.1'); setVal('ae', '5', '0.25'); setVal('vc_base', '180', '500'); setVal('fz_base', '0.065', '0.002');
+            setVal('diametro', '10', '0.5'); setVal('proyeccion', '35', '1.5'); setVal('ap', '2', '0.1'); setVal('ae', '5', '0.25'); setVal('vc_base', '180', '500'); setVal('fz_base', '0.065', '0.002');
+        }
+    }
+
+    function toggleCatalogo() {
+        const checked = document.getElementById('toggle_catalogo').checked;
+        const panel = document.getElementById('panel_catalogo');
+        const msg = document.getElementById('msg_catalogo_off');
+        
+        if(checked) {
+            panel.style.opacity = '1';
+            panel.style.pointerEvents = 'auto';
+            msg.classList.add('hidden');
+        } else {
+            panel.style.opacity = '0.1';
+            panel.style.pointerEvents = 'none';
+            msg.classList.remove('hidden');
+        }
+    }
+
+    function toggleActuales() {
+        const checked = document.getElementById('toggle_actuales').checked;
+        const panel = document.getElementById('panel_actuales');
+        const inputs = panel.querySelectorAll('input, select');
+        
+        if(checked) {
+            panel.style.display = 'block';
+            setTimeout(() => panel.style.opacity = '1', 10);
+            inputs.forEach(i => i.disabled = false);
+        } else {
+            panel.style.opacity = '0.5';
+            setTimeout(() => panel.style.display = 'none', 300);
+            inputs.forEach(i => i.disabled = true);
         }
     }
 
     function calcularEscenarios() {
         const btn = document.getElementById('btnGo');
         const isInch = document.querySelector('input[name="unit_system"]:checked').value === 'inch';
+        const useCatalog = document.getElementById('toggle_catalogo').checked;
+        const hasActuales = document.getElementById('toggle_actuales').checked;
         const strUnidadVf = isInch ? 'pulg/min' : 'mm/min';
 
-        // Obtener valores
+        if(!useCatalog && !hasActuales) {
+            return alert("Si desactivas el Catálogo, debes habilitar el 'Proceso Actual' para tener una base matemática.");
+        }
+
         const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
         const mat = document.getElementById('material').value || 'Desconocido';
-        const op = document.getElementById('operacion').value || '';
         
         let d = getVal('diametro');
         let z = getVal('z');
-        let vc = getVal('vc_base');
-        let fz = getVal('fz_base');
         let ap = getVal('ap');
         let ae = getVal('ae');
         let maxRpm = getVal('max_rpm');
 
-        if(!d || !vc || !fz || !z || !ap) {
-            return alert("Faltan datos clave (Diámetro, Vc, Fz, Filos o Ap).");
+        if(!d || !z) return alert("Diámetro y Filos son obligatorios.");
+        if(ae === 0) ae = d; // Asume ranurado si está vacío
+
+        let baseRpm = 0, baseFeed = 0;
+        let vcInfo = 0, fzInfo = 0;
+
+        if(useCatalog) {
+            let vc = getVal('vc_base');
+            let fz = getVal('fz_base');
+            if(!vc || !fz) return alert("Falta Vc o Fz en catálogo.");
+            vcInfo = vc; fzInfo = fz;
+            
+            baseRpm = isInch ? (vc * 3.82) / d : (vc * 1000) / (Math.PI * d);
+            baseFeed = baseRpm * z * fz;
+        } else {
+            baseRpm = getVal('rpm_actual');
+            let vf_act = getVal('avance_actual');
+            let u_act = document.getElementById('unidad_avance').value;
+            
+            if(!baseRpm || !vf_act) return alert("Ingresa RPM y Avance actuales válidos.");
+            
+            // Normalizar a mm/min o pulg/min según sistema seleccionado
+            baseFeed = vf_act;
+            if(!isInch && u_act === 'ipm') baseFeed = vf_act * 25.4;
+            if(isInch && u_act === 'mm/min') baseFeed = vf_act / 25.4;
+            
+            // Calcular equivalentes para G-Code
+            vcInfo = isInch ? (baseRpm * d) / 3.82 : (baseRpm * Math.PI * d) / 1000;
+            fzInfo = baseFeed / (baseRpm * z);
         }
 
-        // Si Ae es 0, asumimos corte completo (ranurado)
-        if (ae === 0) ae = d;
+        if(baseRpm > maxRpm) baseRpm = maxRpm;
 
         btn.disabled = true;
         document.getElementById('loader').classList.remove('hidden');
         document.getElementById('resultado').classList.add('hidden');
 
         setTimeout(() => {
-            // Escenarios: Min (-22%), Opt (Base), Max (+22%) para igualar la proporción de la foto
-            const factors = { min: { vc: 0.78, fz: 0.78 }, opt: { vc: 1.0, fz: 1.0 }, max: { vc: 1.22, fz: 1.22 } };
-            const results = {};
+            
+            // Factores: Asumimos que powRgrip permite sostener el catálogo óptimo o mejorar el proceso actual.
+            // Si viene de actual (no catálogo), proyectamos un +15% de mejora por rigidez powRgrip.
+            let optRpm = useCatalog ? baseRpm : baseRpm * 1.15;
+            let optFeed = useCatalog ? baseFeed : baseFeed * 1.15;
+            
+            if(optRpm > maxRpm) optRpm = maxRpm;
+
+            const results = {
+                min: { rpm: optRpm * 0.8, feed: optFeed * 0.8 },
+                opt: { rpm: optRpm, feed: optFeed },
+                max: { rpm: optRpm * 1.25, feed: optFeed * 1.25 }
+            };
+
             const convFactMRR = isInch ? 1 : 1/1000; 
+            let mrrOptimo = ap * ae * results.opt.feed * convFactMRR;
 
-            Object.keys(factors).forEach(key => {
-                let currentVc = vc * factors[key].vc;
-                let currentFz = fz * factors[key].fz;
-                
-                let rpm = isInch ? (currentVc * 3.82) / d : (currentVc * 1000) / (Math.PI * d);
-                if(rpm > maxRpm) rpm = maxRpm;
-                
-                let feed = rpm * z * currentFz;
-                let mrr = ap * ae * feed * convFactMRR;
-
-                results[key] = {
-                    rpm: Math.round(rpm),
-                    feed: feed,
-                    mrr: mrr.toFixed(1)
-                };
-            });
-
-            // LLenar Tarjetas
-            document.getElementById('res-rpm-min').innerText = results.min.rpm.toLocaleString('en');
-            document.getElementById('res-rpm-max').innerText = results.max.rpm.toLocaleString('en');
-            document.getElementById('res-rpm-opt').innerText = results.opt.rpm.toLocaleString('en');
+            // UI
+            document.getElementById('res-rpm-min').innerText = Math.round(results.min.rpm).toLocaleString('en');
+            document.getElementById('res-rpm-max').innerText = Math.round(results.max.rpm).toLocaleString('en');
+            document.getElementById('res-rpm-opt').innerText = Math.round(results.opt.rpm).toLocaleString('en');
 
             document.getElementById('res-vf-min').innerText = results.min.feed.toFixed(1) + ' ' + strUnidadVf;
             document.getElementById('res-vf-max').innerText = results.max.feed.toFixed(1) + ' ' + strUnidadVf;
             document.getElementById('res-vf-opt').innerText = results.opt.feed.toFixed(1) + ' ' + strUnidadVf;
             
-            document.getElementById('res-mrr-opt').innerText = results.opt.mrr;
+            if(hasActuales) {
+                document.getElementById('row-vf-actual').style.display = 'flex';
+                document.getElementById('res-vf-act').innerText = getVal('avance_actual') + ' ' + document.getElementById('unidad_avance').value;
+            } else {
+                document.getElementById('row-vf-actual').style.display = 'none';
+            }
+
+            document.getElementById('res-mrr-opt').innerText = mrrOptimo.toFixed(1);
 
             // Código G
-            document.getElementById('code-s').innerText = results.opt.rpm;
+            document.getElementById('code-s').innerText = Math.round(results.opt.rpm);
             document.getElementById('code-f').innerText = Math.round(results.opt.feed);
-            document.getElementById('code-fz').innerText = fz;
-            document.getElementById('code-ae').innerText = ae;
+            document.getElementById('code-fz').innerText = fzInfo.toFixed(3);
             document.getElementById('code-ap').innerText = ap;
-            document.getElementById('code-mat').innerText = mat + (op ? ' (' + op + ')' : '');
+            document.getElementById('code-mat').innerText = mat;
 
-            // Cálculo de Frecuencia TPF (Tooth Pass Frequency) = (RPM * Z) / 60
+            // Diagnóstico y powRgrip
             let tpf = (results.opt.rpm * z) / 60;
             document.getElementById('res-tpf').innerText = tpf.toFixed(1) + ' Hz';
             
-            // Lógica de Riesgo y Diagnóstico
             let listaDiag = document.getElementById('lista-diagnostico');
-            listaDiag.innerHTML = ''; // Limpiar lista
+            listaDiag.innerHTML = ''; 
             let riesgoBadge = document.getElementById('res-riesgo');
-            
-            // Crear bullets de diagnóstico
             let msgs = [];
             
-            // Verificar TPF contra banda estable (ej. 600-900 Hz)
             if(tpf >= 600 && tpf <= 900) {
-                riesgoBadge.innerText = 'Bajo';
-                riesgoBadge.className = 'badge-val badge-min'; // Verde
-                msgs.push(`La frecuencia TPF (${tpf.toFixed(1)} Hz) se encuentra dentro de la banda estable recomendada.`);
+                riesgoBadge.innerText = 'Estable (Bajo Riesgo)';
+                riesgoBadge.className = 'badge-val bg-green-100 text-green-700 border border-green-200';
             } else {
-                riesgoBadge.innerText = 'Alto';
-                riesgoBadge.className = 'badge-val badge-alert'; // Rojo
-                if(tpf < 600) {
-                    msgs.push(`TPF recomendada por debajo de la banda estable: frecuencia de paso de diente baja para la rigidez ideal.`);
-                    msgs.push(`Para llegar al centro de banda (750 Hz) con esta geometría necesitarías elevar las RPM a ${(750*60)/z}.`);
-                    msgs.push(`Opciones recomendadas: usar más dientes (Ej. 6Z o 8Z manteniendo Vc) para aumentar la frecuencia de excitación.`);
-                } else {
-                    msgs.push(`TPF por encima de la banda estable, posible riesgo de resonancia aguda.`);
-                }
+                riesgoBadge.innerText = 'Atención (Requiere Rigidez)';
+                riesgoBadge.className = 'badge-val bg-yellow-100 text-yellow-700 border border-yellow-200';
             }
 
-            // Verificar Ap
-            let umbralAp = isInch ? 0.2 : 5; // 5mm o 0.2" típico desbaste
-            if(ap < umbralAp && op.toLowerCase().includes('desbaste')) {
-                msgs.push(`ap (${ap}) por debajo del rango típico para operaciones de desbaste pesado.`);
-            } else {
-                msgs.push(`El solapamiento entre la Vc ajustada y tu profundidad (Ap) sugiere una buena remoción de viruta.`);
+            // powRgrip Logic Statement
+            msgs.push(`⚡ La tecnología <b>powRgrip® (TIR < 3µm)</b> absorbe micro-vibraciones, garantizando la estabilidad del escenario Óptimo y permitiendo escalar al Máximo de forma segura.`);
+            
+            if(hasActuales && !useCatalog) {
+                msgs.push(`Al utilizar tus parámetros actuales como base, la rigidez del sistema sugiere un margen de mejora del +15% directo en RPM y Avance.`);
             }
 
-            // Llenar HTML del diagnóstico
+            if(getVal('proyeccion') > (d * 3)) {
+                msgs.push(`⚠️ Proyección superior a 3xD detectada. El excelente control de concentricidad (Run-out) del portaherramientas mitigará la deflexión esperada.`);
+            }
+
             msgs.forEach(m => {
                 let li = document.createElement('li');
-                li.innerText = m;
+                li.innerHTML = m;
                 listaDiag.appendChild(li);
             });
 
-            // Mostrar resultados
             document.getElementById('loader').classList.add('hidden');
             document.getElementById('resultado').classList.remove('hidden');
             btn.disabled = false;
 
-            // Scroll suave a resultados
             document.getElementById('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         }, 800);
