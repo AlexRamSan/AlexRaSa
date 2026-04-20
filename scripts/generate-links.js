@@ -1,7 +1,13 @@
 // scripts/generate-links.js
 // Uso: node scripts/generate-links.js --dir=./ --out=./links.json --baseUrl=/
-const fs = require('fs');
-const path = require('path');
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// En ES Modules no existen __dirname ni __filename por defecto, así se definen:
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const argv = process.argv.slice(2);
 const opts = {};
@@ -27,7 +33,7 @@ function walk(dir){
   for(const f of files){
     const full = path.join(dir, f.name);
     if (f.isDirectory()) {
-      // skip .git and node_modules by default
+      // saltar .git y node_modules por defecto
       if (f.name === '.git' || f.name === 'node_modules') continue;
       walk(full);
       continue;
@@ -68,7 +74,7 @@ walk(root);
 
 items.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
 
-// ensure output dir exists
+// asegurar que el directorio de salida exista
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(items, null, 2), 'utf8');
 console.log(`Wrote ${out} (${items.length} items).`);
