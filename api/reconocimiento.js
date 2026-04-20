@@ -15,7 +15,6 @@ export default async function handler(req, res) {
     try {
         const { image, confirmData, action } = req.body;
 
-        // --- FUNCIÓN DE CONEXIÓN A SALESFORCE ---
         const connectSF = async () => {
             const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
                 method: 'POST',
@@ -30,15 +29,12 @@ export default async function handler(req, res) {
             return new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
         };
 
-        // --- ACCIÓN: OBTENER LISTA DE CUENTAS EXISTENTES ---
         if (action === 'getAccounts') {
             const conn = await connectSF();
-            // Traemos las cuentas ordenadas alfabéticamente (límite 1500 para evitar saturar la memoria)
             const accounts = await conn.query(`SELECT Id, Name FROM Account ORDER BY Name ASC LIMIT 1500`);
             return res.status(200).json({ success: true, accounts: accounts.records });
         }
 
-        // --- ACCIÓN: ESCANEO E INVESTIGACIÓN PROFUNDA ---
         if (!confirmData && image) {
             const aiResponse = await openai.chat.completions.create({
                 model: "gpt-4o",
@@ -46,14 +42,13 @@ export default async function handler(req, res) {
                     {
                         role: "system",
                         content: `Eres un experto en inteligencia comercial. Extrae e investiga los datos de la tarjeta.
-                        Devuelve estrictamente un JSON con:
-                        { "firstName", "lastName", "title", "email", "phone", "mobilePhone", "company", "website", "industry", "companyPhone", "street", "city", "state", "country", "description" }
-                        Usa strings vacíos "" si no hay datos.`
+                        Devuelve estrictamente un JSON con las siguientes propiedades. Si no hay datos, usa "":
+                        { "firstName", "lastName", "title", "email", "phone", "mobilePhone", "company", "website", "industry", "type", "rfc", "machines", "productInterest", "companyPhone", "street", "city", "state", "country", "description" }`
                     },
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Analiza e investiga los datos de esta tarjeta." },
+                            { type: "text", text: "Analiza e investiga los datos de esta tarjeta. Si ves un RFC o Tipo de empresa, inclúyelo." },
                             { type: "image_url", image_url: { url: image, detail: "high" } }
                         ]
                     }
@@ -63,15 +58,18 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, cardData: JSON.parse(aiResponse.choices[0].message.content) });
         }
 
-        // --- ACCIÓN: GUARDADO EN SALESFORCE ---
         if (confirmData) {
             const conn = await connectSF();
-            let accountId = confirmData.accountId; // Si viene un ID, es cuenta existente
+            let accountId = confirmData.accountId;
 
-            // Si NO seleccionaste una cuenta existente, creamos una nueva
             if (!accountId) {
-                const newAcc = await conn.sobject("Account").create({ 
+                // ATENCIÓN: Confirma que los nombres con "__c" coincidan en tu Configuración de Salesforce
+                const accountPayload = { 
                     Name: confirmData.company || 'Empresa Sin Nombre',
+                    Type: confirmData.type || '',
+                    RFC__c: confirmData.rfc || '', 
+                    Numero_de_maquinas__c: confirmData.machines || null,
+                    Producto_de_interes__c: confirmData.productInterest || '',
                     Website: confirmData.website || '',
                     Industry: confirmData.industry || '',
                     Phone: confirmData.companyPhone || '',
@@ -80,22 +78,50 @@ export default async function handler(req, res) {
                     BillingState: confirmData.state || '',
                     BillingCountry: confirmData.country || '',
                     Description: confirmData.description || 'Generado automáticamente vía Scanner'
-                });
+                };
+
+                const newAcc = await conn.sobject("Account").create(accountPayload);
                 accountId = newAcc.id;
             }
 
-            // Crear contacto vinculado al AccountID (nuevo o existente)
-            const contact = await conn.sobject("Contact").create({
-                FirstName: confirmData.firstName || '',
-                LastName: confirmData.lastName || 'Desconocido', // Salesforce exige Apellido
-                Title: confirmData.title || '',
-                Email: confirmData.email || '',
-                Phone: confirmData.phone || '',
-                MobilePhone: confirmData.mobilePhone || '',
-                AccountId: accountId
-            });
+            let contactId;
+            let statusMessage = "";
+            const safeEmail = confirmData.email ? confirmData.email.trim() : null;
+            const safeFirstName = confirmData.firstName ? confirmData.firstName.replace(/'/g, "\\'") : '';
+            const safeLastName = confirmData.lastName ? confirmData.lastName.replace(/'/g, "\\'") : 'Desconocido';
 
-            return res.status(200).json({ success: true, contactId: contact.id });
+            let contactResult;
+            if (safeEmail) {
+                contactResult = await conn.query(`SELECT Id FROM Contact WHERE Email = '${safeEmail}' LIMIT 1`);
+            } else {
+                contactResult = await conn.query(`SELECT Id FROM Contact WHERE FirstName = '${safeFirstName}' AND LastName = '${safeLastName}' AND AccountId = '${accountId}' LIMIT 1`);
+            }
+
+            if (contactResult && contactResult.totalSize > 0) {
+                contactId = contactResult.records[0].Id;
+                await conn.sobject("Contact").update({
+                    Id: contactId,
+                    Title: confirmData.title || '',
+                    Phone: confirmData.phone || '',
+                    MobilePhone: confirmData.mobilePhone || '',
+                    AccountId: accountId 
+                });
+                statusMessage = "Contacto actualizado (ya existía).";
+            } else {
+                const contact = await conn.sobject("Contact").create({
+                    FirstName: confirmData.firstName || '',
+                    LastName: confirmData.lastName || 'Desconocido',
+                    Title: confirmData.title || '',
+                    Email: confirmData.email || '',
+                    Phone: confirmData.phone || '',
+                    MobilePhone: confirmData.mobilePhone || '',
+                    AccountId: accountId
+                });
+                contactId = contact.id;
+                statusMessage = "Nuevo contacto creado exitosamente.";
+            }
+
+            return res.status(200).json({ success: true, contactId: contactId, message: statusMessage });
         }
     } catch (error) {
         res.status(500).json({ error: error.message });
