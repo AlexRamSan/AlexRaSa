@@ -1,331 +1,363 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>REGO-FIX Machining Calculator</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    :root { --rego-red: #D31B23; --rego-blue: #28556C; --rego-green: #B7C91F; }
-    body { background: #f1f5f9; font-family: 'Inter', sans-serif; color: #1e293b; }
-    .input-modern { width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.8rem; font-weight: 500; font-size: 0.95rem; outline: none; transition: 0.2s; color: #1e293b; background: white; }
-    .input-modern:focus { border-color: var(--rego-red); box-shadow: 0 0 0 3px rgba(211,27,35,0.08); }
-    .lbl { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; display: block; letter-spacing: 0.7px; }
-    .toggle-checkbox:checked { right: 0; border-color: var(--rego-red); background-color: var(--rego-red); }
-    .toggle-checkbox:checked + .toggle-label { background-color: #fca5a5; }
-    .card-strategy { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2rem; transition: transform 0.2s, box-shadow 0.2s; }
-    .card-strategy:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02); }
-  </style>
+  <meta charset="utf-8" />
+  <title>REGO-FIX Smart Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root { 
+        --rego-red: #D31B23; 
+        --rego-blue: #28556C; 
+        --rego-green: #B7C91F; 
+        --bg-color: #f3f4f6;
+    }
+    body { background-color: var(--bg-color); font-family: 'Inter', sans-serif; color: #1f2937; }
+    
+    /* Estilos de inputs amigables */
+    .input-friendly { 
+        width: 100%; border: 2px solid #e5e7eb; border-radius: 12px; padding: 0.85rem; 
+        font-weight: 600; font-size: 1rem; color: var(--rego-blue); outline: none; transition: all 0.3s ease; 
+    }
+    .input-friendly:focus { border-color: var(--rego-red); background-color: #fffafa; box-shadow: 0 4px 6px -1px rgba(211,27,35,0.1); }
+    .input-friendly::placeholder { color: #9ca3af; font-weight: 400; }
+    
+    /* Etiquetas y ayudas */
+    .lbl-title { font-size: 0.85rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px; }
+    .lbl-help { font-size: 0.7rem; font-weight: 500; color: #6b7280; margin-bottom: 8px; display: block; }
+    
+    /* Tarjetas independientes */
+    .step-card { 
+        background: white; border-radius: 20px; padding: 2rem; 
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); 
+        border-top: 5px solid var(--rego-blue);
+        height: 100%;
+    }
+    .step-card.accent { border-top-color: var(--rego-red); }
+    
+    /* Toggle switch */
+    .toggle-checkbox:checked { right: 0; border-color: var(--rego-red); background-color: var(--rego-red); }
+    .toggle-checkbox:checked + .toggle-label { background-color: #fca5a5; }
+
+    /* Resultados */
+    .res-card { background: white; border-radius: 16px; padding: 1.5rem; text-align: center; border: 1px solid #e5e7eb; }
+    .res-card.optimo { border: 2px solid var(--rego-green); box-shadow: 0 10px 15px -3px rgba(183,201,31,0.2); position: relative; transform: scale(1.02); }
+    .badge-optimo { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--rego-green); color: var(--rego-blue); font-weight: 900; font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; }
+  </style>
 </head>
-<body class="py-12 px-6">
+<body class="py-10 px-4 md:px-8">
 
-  <main class="max-w-7xl mx-auto">
-    
-    <div class="bg-white p-8 flex justify-between items-center rounded-2xl shadow-sm border border-gray-100 mb-8">
-        <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-10">
-        <div class="text-right">
-            <h1 class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente de Ingeniería CNC</h1>
-            <p class="text-xs text-slate-500 font-medium">Calculadora de Parámetros de Alta Productividad</p>
+  <main class="max-w-7xl mx-auto">
+    
+    <header class="flex flex-col md:flex-row justify-between items-center mb-10 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+        <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-10 mb-4 md:mb-0" alt="REGO-FIX">
+        <div class="text-center md:text-right">
+            <h1 class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente de Mecanizado</h1>
+            <p class="text-sm text-gray-500 font-medium">Calculadora amigable paso a paso</p>
         </div>
-    </div>
+    </header>
 
-    <div class="bg-white p-10 rounded-3xl shadow-lg border border-gray-100">
-        
-        <div class="flex justify-end mb-8 gap-4">
-            <label class="flex items-center gap-3 cursor-pointer bg-gray-50 px-5 py-2.5 border border-gray-200 rounded-full shadow-inner">
-                <input type="radio" name="unit_system" value="mm" checked onchange="updateLabels('mm')" class="w-5 h-5 accent-[#D31B23]">
-                <span class="text-sm font-semibold text-[#28556C]">Métrico (mm)</span>
-            </label>
-            <label class="flex items-center gap-3 cursor-pointer bg-gray-50 px-5 py-2.5 border border-gray-200 rounded-full shadow-inner">
-                <input type="radio" name="unit_system" value="inch" onchange="updateLabels('inch')" class="w-5 h-5 accent-[#D31B23]">
-                <span class="text-sm font-semibold text-[#28556C]">Imperial (pulg)</span>
-            </label>
-        </div>
+    <div class="flex justify-center md:justify-end mb-8 gap-4">
+        <label class="flex items-center gap-2 cursor-pointer bg-white px-5 py-3 border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition">
+            <input type="radio" name="unit_system" value="mm" checked onchange="updateLabels('mm')" class="w-5 h-5 accent-[#D31B23]">
+            <span class="text-sm font-bold text-[#28556C]">Métrico (mm)</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer bg-white px-5 py-3 border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition">
+            <input type="radio" name="unit_system" value="inch" onchange="updateLabels('inch')" class="w-5 h-5 accent-[#D31B23]">
+            <span class="text-sm font-bold text-[#28556C]">Imperial (pulg)</span>
+        </label>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            <div class="space-y-6 lg:col-span-1">
-                <div class="bg-gray-50/50 p-6 rounded-2xl border border-dashed border-gray-300">
-                    <h3 class="text-xs font-black mb-5 text-gray-500 uppercase tracking-wide">Datos de la Herramienta</h3>
-                    <div class="grid grid-cols-2 gap-5">
-                        <div class="col-span-2"><label class="lbl">Material y Dureza</label><input id="material" type="text" class="input-modern" placeholder="Ej: Inconel 718"></div>
-                        <div><label id="lbl_diametro" class="lbl">Ø (mm) <span class="text-red-500">*</span></label><input id="diametro" type="number" step="0.001" class="input-modern text-center font-semibold" value="12"></div>
-                        <div><label class="lbl">Filos (Z) <span class="text-red-500">*</span></label><input id="z" type="number" class="input-modern text-center font-semibold" value="4"></div>
-                        <div class="col-span-2"><label id="lbl_largo" class="lbl">Voladizo (mm)</label><input id="largo" type="number" step="0.1" class="input-modern text-center" value="50"></div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+        
+        <div class="step-card">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="bg-[#28556C] text-white w-8 h-8 flex items-center justify-center rounded-full font-black text-lg">1</span>
+                <h2 class="text-lg font-black text-[#28556C]">Tu Proyecto</h2>
+            </div>
+            <div class="space-y-5">
+                <div>
+                    <label class="lbl-title">¿Qué material vas a cortar?</label>
+                    <span class="lbl-help">Ej. Aluminio, Acero D2, Inconel...</span>
+                    <input id="material" type="text" class="input-friendly" placeholder="Escribe el material aquí">
+                </div>
+                <div>
+                    <label class="lbl-title">Tipo de Operación</label>
+                    <span class="lbl-help">Ej. Desbaste, Acabado, Ranurado...</span>
+                    <input id="operacion" type="text" class="input-friendly" placeholder="¿Qué vas a hacer?">
+                </div>
+                <div>
+                    <label class="lbl-title">Tipo de Herramienta</label>
+                    <span class="lbl-help">Ej. Fresa de carburo sólido, Inserto...</span>
+                    <input id="herramienta" type="text" class="input-friendly" placeholder="Material de tu fresa">
+                </div>
+            </div>
+        </div>
+
+        <div class="step-card">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="bg-[#28556C] text-white w-8 h-8 flex items-center justify-center rounded-full font-black text-lg">2</span>
+                <h2 class="text-lg font-black text-[#28556C]">Geometría de la Fresa</h2>
+            </div>
+            <div class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label id="lbl_diametro" class="lbl-title">Diámetro (Ø)</label>
+                        <span class="lbl-help">Grosor de la fresa</span>
+                        <input id="diametro" type="number" step="0.001" class="input-friendly text-center" value="12">
+                    </div>
+                    <div>
+                        <label class="lbl-title">Filos (Z)</label>
+                        <span class="lbl-help">Número de gavilanes</span>
+                        <input id="z" type="number" class="input-friendly text-center" value="4">
+                    </div>
+                </div>
+                <div>
+                    <label id="lbl_proyeccion" class="lbl-title">Proyección</label>
+                    <span class="lbl-help">Cuánto sale la herramienta del chuck/porta</span>
+                    <input id="proyeccion" type="number" step="0.1" class="input-friendly" value="50">
+                </div>
+                <div>
+                    <label class="lbl-title">RPM Máximas de tu máquina</label>
+                    <span class="lbl-help">Límite seguro de giro de tu husillo</span>
+                    <input id="max_rpm" type="number" class="input-friendly font-black text-[#D31B23]" value="10000">
+                </div>
+            </div>
+        </div>
+
+        <div class="step-card accent">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="bg-[#D31B23] text-white w-8 h-8 flex items-center justify-center rounded-full font-black text-lg">3</span>
+                <h2 class="text-lg font-black text-[#D31B23]">Condiciones de Corte</h2>
+            </div>
+            <div class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label id="lbl_ap" class="lbl-title">Profundidad (Ap)</label>
+                        <span class="lbl-help">Corte hacia abajo (Axial)</span>
+                        <input id="ap" type="number" step="0.1" class="input-friendly text-center" placeholder="Obligatorio">
+                    </div>
+                    <div>
+                        <label id="lbl_ae" class="lbl-title">Ancho (Ae)</label>
+                        <span class="lbl-help">Corte lateral (Radial)</span>
+                        <input id="ae" type="number" step="0.1" class="input-friendly text-center" placeholder="Opcional">
+                    </div>
+                </div>
+                <div>
+                    <label class="lbl-title">Velocidad de Corte (Vc)</label>
+                    <span class="lbl-help">Dato del fabricante de la herramienta (m/min)</span>
+                    <input id="vc_base" type="number" class="input-friendly" value="150">
+                </div>
+                <div>
+                    <label class="lbl-title">Avance por Diente (Fz)</label>
+                    <span class="lbl-help">Carga por cada filo de la fresa</span>
+                    <input id="fz_base" type="number" step="0.001" class="input-friendly" value="0.05">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-8 mb-10">
+        <div class="flex flex-col lg:flex-row justify-between items-center gap-8">
+            
+            <div class="w-full lg:w-1/2">
+                <div class="flex items-center mb-4">
+                    <div class="relative inline-block w-12 mr-3 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" id="toggle_actuales" onchange="toggleActuales()" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10"/>
+                        <label for="toggle_actuales" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer"></label>
+                    </div>
+                    <div>
+                        <span class="font-black text-[#28556C] uppercase text-sm block">Quiero comparar un proceso actual</span>
+                        <span class="text-xs text-gray-500">Activa esto para ver gráficas de mejora</span>
+                    </div>
+                </div>
+
+                <div id="panel_actuales" class="hidden flex gap-4 mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <div class="w-1/2">
+                        <label class="lbl-title">Tus RPM actuales</label>
+                        <input id="rpm_actual" type="number" class="input-friendly text-sm" placeholder="Ej: 4500">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="lbl-title">Tu Avance</label>
+                        <div class="flex gap-1">
+                            <input id="avance_actual" type="number" class="input-friendly text-sm w-2/3" placeholder="Ej: 1200">
+                            <select id="unidad_avance" class="input-friendly text-sm w-1/3 p-1 font-bold text-[#28556C]">
+                                <option value="mm/min">mm</option>
+                                <option value="ipm">pulg</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="space-y-6 lg:col-span-1">
-                <div class="bg-gray-50/50 p-6 rounded-2xl border border-dashed border-gray-300">
-                    <h3 class="text-xs font-black mb-5 text-gray-500 uppercase tracking-wide">Corte y Máquina</h3>
-                    <div class="grid grid-cols-2 gap-5">
-                        <div class="col-span-2"><label id="lbl_ap" class="lbl">Ap - Prof. Axial (mm) <span class="text-red-500">*</span></label><input id="ap" type="number" step="0.1" class="input-modern text-center font-semibold" placeholder="Obligatorio"></div>
-                        <div class="col-span-2"><label id="lbl_ae" class="lbl">Ae - Paso Radial (mm)</label><input id="ae" type="number" step="0.1" class="input-modern text-center" placeholder="Opcional"></div>
-                        <div><label class="lbl">Vc Base (m/min) <span class="text-red-500">*</span></label><input id="vc_base" type="number" class="input-modern text-center" value="150"></div>
-                        <div><label class="lbl">Fz Base (mm/z) <span class="text-red-500">*</span></label><input id="fz_base" type="number" step="0.001" class="input-modern text-center" value="0.05"></div>
-                        <div class="col-span-2"><label class="lbl">RPM Max Husillo <span class="text-red-500">*</span></label><input id="max_rpm" type="number" class="input-modern text-center font-bold" value="15000"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-6 lg:col-span-1">
-                <div class="bg-white p-7 rounded-2xl border border-gray-100 shadow-inner flex-1 space-y-5">
-                    <label class="lbl">Operación / Notas</label>
-                    <input id="operacion" type="text" class="input-modern" placeholder="Ej: Desbaste HPC">
-                    
-                    <div class="flex items-center pt-3 border-t border-gray-100">
-                        <div class="relative inline-block w-10 mr-4 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" name="toggle" id="toggle_actuales" onchange="toggleActuales()" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-200 z-10"/>
-                            <label for="toggle_actuales" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer"></label>
-                        </div>
-                        <label class="text-[12px] font-semibold text-slate-700 uppercase tracking-tight cursor-pointer" for="toggle_actuales">Tengo condiciones actuales (para comparar MRR)</label>
-                    </div>
-
-                    <div id="panel_actuales" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-dashed border-gray-200 w-full transition-all">
-                        <div>
-                            <label class="lbl">RPM Actuales</label>
-                            <input id="rpm_actual" type="number" class="input-modern text-sm" placeholder="Ej: 4500">
-                        </div>
-                        <div>
-                            <label class="lbl">Avance Actual</label>
-                            <div class="flex gap-2">
-                                <input id="avance_actual" type="number" class="input-modern text-sm w-1/2" placeholder="Ej: 1200">
-                                <select id="unidad_avance" class="input-modern text-sm w-1/2 font-bold text-[#28556C]">
-                                    <option value="mm/min">mm/min</option>
-                                    <option value="ipm">pulg/min</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button onclick="calcularEscenarios()" id="btnGo" class="w-full bg-[#D31B23] text-white font-extrabold py-4.5 rounded-2xl uppercase tracking-widest hover:bg-red-800 transition-colors shadow-lg shadow-red-100/60 text-sm">
-                    Calcular Combinaciones
+            <div class="w-full lg:w-1/2">
+                <button onclick="calcularEscenarios()" id="btnGo" class="w-full bg-[#D31B23] hover:bg-red-800 text-white font-black text-lg py-5 rounded-xl uppercase tracking-widest transition-all shadow-lg shadow-red-200">
+                    Generar Combinaciones CNC
                 </button>
             </div>
-        </div>
+        </div>
+    </div>
 
-        <div id="loader" class="hidden p-14 text-center text-[#28556C] font-semibold text-sm uppercase animate-pulse">Analizando Cinemática y Tasas de Remoción...</div>
+    <div id="loader" class="hidden text-center py-10 text-[#28556C] font-black uppercase animate-bounce">Calculando estrategias de mecanizado...</div>
 
-        <div id="resultado" class="hidden border-t border-gray-100 bg-white">
-            
-            <div class="p-10 border-b border-gray-50 bg-slate-50/40 rounded-3xl mt-10">
-                <h2 class="text-center text-xl font-extrabold text-[#28556C] uppercase tracking-widest mb-10">Resultados del Análisis de Ingeniería</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-                    <div class="card-strategy bg-white border-slate-200">
-                        <span class="px-4 py-1.5 bg-gray-100 text-gray-700 text-[11px] font-bold rounded-full uppercase tracking-wider">Conservador</span>
-                        <div class="mt-6 flex gap-10 items-end">
-                            <div><span class="lbl">Vc</span><div id="tab-min-vc" class="text-3xl font-extrabold text-slate-800">0</div></div>
-                            <div><span class="lbl">Fz</span><div id="tab-min-fz" class="text-3xl font-extrabold text-slate-800">0</div></div>
-                        </div>
-                        <div class="mt-6"><span class="lbl">RPM</span><div id="tab-min-rpm" class="text-4xl font-black text-slate-900">0</div></div>
-                        <div class="mt-2"><span class="lbl">Avance (mm/min)</span><div id="tab-min-feed" class="text-4xl font-black text-slate-900">0</div></div>
-                        <div class="mt-6 p-4 bg-gray-50 rounded-xl"><span class="lbl">MRR (cm³/min)</span><div id="tab-min-mrr" class="text-3xl font-extrabold text-gray-950">0.0</div></div>
-                    </div>
-                    <div class="card-strategy bg-[#28556C]/5 border-[#28556C]/10 shadow-lg shadow-[#28556C]/5 scale-105">
-                        <span class="px-4 py-1.5 bg-[#B7C91F] text-[#28556C] text-[11px] font-bold rounded-full uppercase tracking-wider">Productivo (Óptimo)</span>
-                        <div class="mt-6 flex gap-10 items-end">
-                            <div><span class="lbl text-[#28556C]">Vc</span><div id="tab-opt-vc" class="text-3xl font-extrabold text-[#28556C]">0</div></div>
-                            <div><span class="lbl text-[#28556C]">Fz</span><div id="tab-opt-fz" class="text-3xl font-extrabold text-[#28556C]">0</div></div>
-                        </div>
-                        <div class="mt-6"><span class="lbl text-[#28556C]">RPM</span><div id="tab-opt-rpm" class="text-5xl font-black text-[#28556C]">0</div></div>
-                        <div class="mt-2"><span class="lbl text-[#28556C]">Avance (mm/min)</span><div id="tab-opt-feed" class="text-5xl font-black text-[#28556C]">0</div></div>
-                        <div class="mt-6 p-4 bg-white rounded-xl border border-gray-100 shadow-sm"><span class="lbl text-[#28556C]">MRR (cm³/min)</span><div id="tab-opt-mrr" class="text-4xl font-extrabold text-green-950">0.0</div></div>
-                    </div>
-                    <div class="card-strategy bg-white border-slate-200">
-                        <span class="px-4 py-1.5 bg-red-100 text-red-700 text-[11px] font-bold rounded-full uppercase tracking-wider">Límite Alta Prod.</span>
-                        <div class="mt-6 flex gap-10 items-end">
-                            <div><span class="lbl text-red-900/60">Vc</span><div id="tab-max-vc" class="text-3xl font-extrabold text-slate-800">0</div></div>
-                            <div><span class="lbl text-red-900/60">Fz</span><div id="tab-max-fz" class="text-3xl font-extrabold text-slate-800">0</div></div>
-                        </div>
-                        <div class="mt-6"><span class="lbl">RPM</span><div id="tab-max-rpm" class="text-4xl font-black text-slate-900">0</div></div>
-                        <div class="mt-2"><span class="lbl">Avance (mm/min)</span><div id="tab-max-feed" class="text-4xl font-black text-slate-900">0</div></div>
-                        <div class="mt-6 p-4 bg-red-50/50 rounded-xl"><span class="lbl text-red-900/60">MRR (cm³/min)</span><div id="tab-max-mrr" class="text-3xl font-extrabold text-gray-950">0.0</div></div>
-                    </div>
+    <div id="resultado" class="hidden space-y-8">
+        
+        <h3 class="text-center text-xl font-black text-[#28556C] uppercase mb-4">Tus Opciones de Mecanizado</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="res-card">
+                <span class="text-xs font-bold text-gray-500 uppercase block mb-4">Mínimo / Seguro</span>
+                <div class="mb-4"><span class="text-xs text-gray-400 block uppercase">Revoluciones</span><span id="res-min-rpm" class="text-3xl font-black text-gray-700">0</span></div>
+                <div class="mb-4"><span class="text-xs text-gray-400 block uppercase">Avance (F)</span><span id="res-min-feed" class="text-3xl font-black text-gray-700">0</span></div>
+                <div class="bg-gray-100 p-2 rounded-lg mt-4">
+                    <span class="text-[10px] text-gray-500 block">Tasa de Remoción (MRR)</span>
+                    <span id="res-min-mrr" class="text-lg font-bold text-gray-800">0</span>
                 </div>
-            </div>
+            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 p-10">
-                <div class="lg:col-span-2 flex flex-col gap-10 border-r border-gray-100 pr-10">
-                   
-                    <div class="bg-black/80 text-gray-200 rounded-2xl p-7 shadow-xl shadow-black/10 border border-black/90">
-                        <div class="flex justify-between items-center mb-5">
-                            <span class="text-xs uppercase font-extrabold text-blue-300 tracking-wider">Definición en G-Code Sugerido (ISO - Escenario Óptimo)</span>
-                            <span class="text-[11px] bg-white/10 text-white font-mono px-3 py-1.5 rounded-lg border border-white/10">Programa CNC Ready</span>
-                        </div>
-                        <div class="bg-black/30 p-6 rounded-xl font-mono text-[13px] text-green-300 border border-gray-700/50 relative shadow-inner overflow-x-auto">
-                            <code id="gcode-block" class="whitespace-pre">
-G90 G54;
-T1 M06 (Herramienta Sugerida);
-<span class="text-white font-bold">S<span id="gcode-s">0</span> M03; (RPM)</span>
-M08 (Refrigerante);
-G00 X0 Y0; (Aproximación)
-G43 H1 Z10.0;
-G01 Z-<span id="gcode-ap">0</span>.0 <span class="text-white font-bold">F<span id="gcode-f">0</span>; (Avance Z y Corte Radial)</span>
-G01 X100.0; (Paso Radial Ae y Movimiento)
-G00 Z100.0 M05;
-M30;
-                            </code>
-                        </div>
-                    </div>
+            <div class="res-card optimo">
+                <div class="badge-optimo">Recomendado</div>
+                <span class="text-sm font-black text-[#28556C] uppercase block mb-4 mt-2">Óptimo REGO-FIX</span>
+                <div class="mb-4"><span class="text-xs text-[#28556C] block uppercase font-bold">Revoluciones</span><span id="res-opt-rpm" class="text-5xl font-black text-[#D31B23]">0</span></div>
+                <div class="mb-4"><span class="text-xs text-[#28556C] block uppercase font-bold">Avance (F)</span><span id="res-opt-feed" class="text-5xl font-black text-[#D31B23]">0</span></div>
+                <div class="bg-[#B7C91F]/20 border border-[#B7C91F] p-3 rounded-lg mt-4">
+                    <span class="text-xs text-[#28556C] font-bold block uppercase">Tasa de Remoción (MRR)</span>
+                    <span id="res-opt-mrr" class="text-2xl font-black text-[#28556C]">0</span>
+                </div>
+            </div>
 
-                    <div class="bg-white p-6 rounded-2xl border-l-4 border-[#D31B23] shadow-sm">
-                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Notas técnicas</span>
-                        <p id="res-nota" class="text-sm font-medium text-gray-700 leading-relaxed italic">Cálculos basados en cinemática teórica pura. Asegure la rigidez de la máquina, herramienta y sujeción antes de aplicar el escenario Máximo.</p>
-                    </div>
-                </div>
+            <div class="res-card">
+                <span class="text-xs font-bold text-red-500 uppercase block mb-4">Límite Agresivo</span>
+                <div class="mb-4"><span class="text-xs text-gray-400 block uppercase">Revoluciones</span><span id="res-max-rpm" class="text-3xl font-black text-gray-700">0</span></div>
+                <div class="mb-4"><span class="text-xs text-gray-400 block uppercase">Avance (F)</span><span id="res-max-feed" class="text-3xl font-black text-gray-700">0</span></div>
+                <div class="bg-red-50 p-2 rounded-lg mt-4">
+                    <span class="text-[10px] text-red-400 block">Tasa de Remoción (MRR)</span>
+                    <span id="res-max-mrr" class="text-lg font-bold text-red-800">0</span>
+                </div>
+            </div>
+        </div>
 
-                                <div id="area_grafica" class="bg-white flex flex-col justify-center items-center relative">
-                    <div class="flex flex-col items-center mb-8 w-full">
-                        <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest text-center">Comparación MRR (cm³/min)</h4>
-                        <span id="lbl_unidad_grafica" class="text-sm text-gray-500 font-bold mb-3">(pulg³/min si Imperial)</span>
-                        <span id="res-mejora" class="bg-green-500 text-white px-5 py-2 rounded-full text-xs font-black uppercase shadow-lg z-10 hidden">+---%</span>
-                    </div>
-                    <div class="w-full h-60">
-                        <canvas id="chartMRR"></canvas>
-                    </div>
-                    <div class="w-full flex justify-between px-10 mt-4 text-[10px] font-black uppercase text-gray-400">
-                        <span id="leg_actual" class="flex items-center gap-2">⚠️ Actual</span>
-                        <span class="text-[#28556C] flex items-center gap-2" id="leg_optimo">🚀 Óptimo REGO-FIX</span>
-                    </div>
-                </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div id="area_grafica" class="bg-white p-8 rounded-2xl shadow-md border border-gray-200 text-center">
+                <h4 class="text-sm font-black text-[#28556C] uppercase mb-1">Volumen de Viruta Removida</h4>
+                <p id="lbl_unidad_grafica" class="text-xs text-gray-500 mb-4">(cm³/min)</p>
+                <div class="w-full h-56 mb-4">
+                    <canvas id="chartMRR"></canvas>
+                </div>
+                <span id="res-mejora" class="bg-[#B7C91F] text-[#28556C] px-6 py-2 rounded-full text-sm font-black uppercase hidden">---</span>
+            </div>
 
-            </div>
-        </div>
-    </div>
-    
-    <div class="mt-8 text-center text-xs text-slate-400">© 2024 REGO-FIX Machining Calculator | V2.0 Redesign</div>
-  </main>
+            <div class="bg-[#28556C] p-8 rounded-2xl shadow-md text-white flex flex-col justify-center">
+                <h4 class="text-sm font-black text-[#B7C91F] uppercase mb-4 text-center">Bloque de Programa (G-Code)</h4>
+                <p class="text-xs text-gray-300 text-center mb-6">Copia este bloque para tu escenario óptimo</p>
+                
+                <div class="bg-[#1b3a4a] p-6 rounded-xl font-mono text-sm border border-[#3d6e87] shadow-inner text-gray-200">
+                    <span class="text-gray-500">(HERRAMIENTA Y GIRO)</span><br>
+                    T1 M06<br>
+                    <span class="text-white font-bold bg-[#D31B23]/20 px-1">S<span id="gcode-s">0000</span></span> M03<br><br>
+                    <span class="text-gray-500">(APROXIMACION Y CORTE)</span><br>
+                    G00 X0. Y0.<br>
+                    G43 Z10. H1 M08<br>
+                    G01 Z-<span id="gcode-ap" class="text-white font-bold">0.0</span> <span class="text-white font-bold bg-[#B7C91F]/20 px-1">F<span id="gcode-f">0000</span></span><br>
+                </div>
+            </div>
+        </div>
 
-  <script>
-    let chartInstance = null;
+    </div>
 
-    function updateLabels(unit) {
+  </main>
+
+  <script>
+    let chartInstance = null;
+
+    function updateLabels(unit) {
         const isInch = unit === 'inch';
-        document.getElementById('lbl_diametro').innerHTML = isInch ? 'Ø (pulg) <span class="text-red-500">*</span>' : 'Ø (mm) <span class="text-red-500">*</span>';
-        document.getElementById('lbl_largo').innerText = isInch ? 'Voladizo (pulg)' : 'Voladizo (mm)';
-        document.getElementById('lbl_ap').innerHTML = isInch ? 'Ap - Prof. Axial (pulg) <span class="text-red-500">*</span>' : 'Ap - Prof. Axial (mm) <span class="text-red-500">*</span>';
-        document.getElementById('lbl_ae').innerText = isInch ? 'Ae - Paso Radial (pulg)' : 'Ae - Paso Radial (mm)';
+        
+        // Actualizar textos amigables
+        document.getElementById('lbl_diametro').innerText = isInch ? 'Diámetro (Ø pulg)' : 'Diámetro (Ø mm)';
+        document.getElementById('lbl_proyeccion').innerText = isInch ? 'Proyección (pulg)' : 'Proyección (mm)';
+        document.getElementById('lbl_ap').innerText = isInch ? 'Profundidad Ap (pulg)' : 'Profundidad Ap (mm)';
+        document.getElementById('lbl_ae').innerText = isInch ? 'Ancho Ae (pulg)' : 'Ancho Ae (mm)';
         
         const setVal = (id, valInch, valMm) => document.getElementById(id).value = isInch ? valInch : valMm;
 
-        // Cambiar valores por defecto si el usuario cambia de sistema
+        // Auto-llenar con ejemplos dependiendo del sistema
         if(isInch) {
-            setVal('diametro', '0.5', '12'); setVal('largo', '2', '50'); setVal('ap', '0.2', '5'); setVal('ae', '0.05', '1.2'); setVal('vc_base', '500', '150'); setVal('fz_base', '0.002', '0.05');
+            setVal('diametro', '0.5', '12'); setVal('proyeccion', '2', '50'); setVal('ap', '0.2', '5'); setVal('ae', '0.05', '1.2'); setVal('vc_base', '500', '150'); setVal('fz_base', '0.002', '0.05');
         } else {
-            setVal('diametro', '12', '0.5'); setVal('largo', '50', '2'); setVal('ap', '5', '0.2'); setVal('ae', '1.2', '0.05'); setVal('vc_base', '150', '500'); setVal('fz_base', '0.05', '0.002');
+            setVal('diametro', '12', '0.5'); setVal('proyeccion', '50', '2'); setVal('ap', '5', '0.2'); setVal('ae', '1.2', '0.05'); setVal('vc_base', '150', '500'); setVal('fz_base', '0.05', '0.002');
         }
-    }
+    }
 
-    function toggleActuales() {
-        const checked = document.getElementById('toggle_actuales').checked;
-        const panel = document.getElementById('panel_actuales');
-        const legActual = document.getElementById('leg_actual');
-        const legOptimo = document.getElementById('leg_optimo');
+    function toggleActuales() {
+        const checked = document.getElementById('toggle_actuales').checked;
+        const panel = document.getElementById('panel_actuales');
+        if(checked) panel.classList.remove('hidden');
+        else panel.classList.add('hidden');
+    }
 
-        if(checked) {
-            panel.classList.remove('hidden');
-            legActual.innerHTML = "⚠️ Actual (Tu Proceso)";
-            legActual.classList.add('text-red-600');
-            legOptimo.innerHTML = "🚀 Óptimo REGO-FIX";
-        } else {
-            panel.classList.add('hidden');
-            legActual.innerHTML = "📉 Mínimo";
-            legActual.classList.remove('text-red-600');
-            legOptimo.innerHTML = "📈 Óptimo";
-        }
-    }
-
-    // Función principal de cálculo
-    function calcularEscenarios() {
+    function calcularEscenarios() {
         const btn = document.getElementById('btnGo');
-        const hasActuales = document.getElementById('toggle_actuales').checked;
-        const unitSystem = document.querySelector('input[name="unit_system"]:checked').value;
-        const isInch = unitSystem === 'inch';
+        const hasActuales = document.getElementById('toggle_actuales').checked;
+        const isInch = document.querySelector('input[name="unit_system"]:checked').value === 'inch';
 
-        // Obtener Inputs
+        // Recolectar datos
         const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
         const inputs = {
             d: getVal('diametro'), z: getVal('z'), vc: getVal('vc_base'), fz: getVal('fz_base'),
             ap: getVal('ap'), ae: getVal('ae'), maxRpm: getVal('max_rpm')
         };
 
-        // Validaciones básicas
-        if(!inputs.d || !inputs.ap || !inputs.vc || !inputs.fz || !inputs.z) {
-            return alert("Por favor rellene los campos obligatorios (*): Ø, Ap, Vc, Fz y Z.");
+        if(!inputs.d || !inputs.ap || !inputs.vc || !inputs.fz || !inputs.z) {
+            return alert("¡Hola! Faltan algunos datos clave. Por favor revisa Diámetro, Profundidad, Vc, Fz y Filos.");
         }
         if(hasActuales && (!document.getElementById('rpm_actual').value || !document.getElementById('avance_actual').value)) {
-            return alert("Ingrese RPM y Avance actuales para comparar.");
+            return alert("Seleccionaste comparar un proceso, por favor llena tus RPM y Avance actuales.");
         }
 
-        // Mostrar Loader
-        btn.disabled = true;
-        document.getElementById('loader').classList.remove('hidden');
-        document.getElementById('resultado').classList.add('hidden');
+        btn.disabled = true;
+        document.getElementById('loader').classList.remove('hidden');
+        document.getElementById('resultado').classList.add('hidden');
 
-        // Simular tiempo de cálculo
         setTimeout(() => {
-            
             const factors = {
-                min: { vc: 0.8, fz: 0.8 },
-                opt: { vc: 1.0, fz: 1.0 },
-                max: { vc: 1.25, fz: 1.2 }
+                min: { vc: 0.8, fz: 0.8 },  // Conservador (-20%)
+                opt: { vc: 1.0, fz: 1.0 },  // Base fabricante
+                max: { vc: 1.25, fz: 1.2 }  // Agresivo
             };
 
             const results = {};
             const convFactMRR = isInch ? 1 : 1/1000; 
 
             Object.keys(factors).forEach(key => {
-                const vc_exp = inputs.vc * factors[key].vc;
-                const fz_exp = inputs.fz * factors[key].fz;
-
-                let rpm = isInch ? (vc_exp * 3.82) / inputs.d : (vc_exp * 1000) / (Math.PI * inputs.d);
+                let rpm = isInch ? (inputs.vc * factors[key].vc * 3.82) / inputs.d : (inputs.vc * factors[key].vc * 1000) / (Math.PI * inputs.d);
+                if(rpm > inputs.maxRpm) rpm = inputs.maxRpm; // Topar RPM
                 
-                let capping = false;
-                if(rpm > inputs.maxRpm) {
-                    rpm = inputs.maxRpm;
-                    capping = true;
-                }
-
-                const feed = rpm * inputs.z * fz_exp;
+                const feed = rpm * inputs.z * (inputs.fz * factors[key].fz);
                 const mrr = inputs.ap * inputs.ae * feed * convFactMRR;
 
                 results[key] = {
-                    vc: vc_exp.toFixed(isInch ? 0 : 1),
-                    fz: fz_exp.toFixed(isInch ? 4 : 3),
                     rpm: Math.round(rpm),
                     feed: Math.round(feed),
-                    mrr: mrr.toFixed(1),
-                    capping: capping
+                    mrr: mrr.toFixed(1)
                 };
             });
 
-            // Actualizar UI - Tabla/Tarjetas
-            const setRes = (esc, field, val) => document.getElementById(`tab-${esc}-${field}`).innerText = val;
-            const resFeedMin = document.getElementById('tab-min-feed');
-            const resFeedMax = document.getElementById('tab-max-feed');
-
+            // Pintar resultados
             ['min', 'opt', 'max'].forEach(key => {
-                setRes(key, 'vc', results[key].vc);
-                setRes(key, 'fz', results[key].fz);
-                setRes(key, 'rpm', results[key].rpm.toLocaleString() + (results[key].capping ? ' ⚠️' : ''));
-                setRes(key, 'mrr', results[key].mrr);
+                document.getElementById(`res-${key}-rpm`).innerText = results[key].rpm.toLocaleString();
+                document.getElementById(`res-${key}-feed`).innerText = results[key].feed.toLocaleString();
+                document.getElementById(`res-${key}-mrr`).innerText = results[key].mrr;
             });
-            document.getElementById('tab-min-feed').innerText = results.min.feed.toLocaleString();
-            document.getElementById('tab-max-feed').innerText = results.max.feed.toLocaleString();
-            document.getElementById('tab-opt-feed').innerText = results.opt.feed.toLocaleString();
 
-
-            // Actualizar G-Code 
-            document.getElementById('gcode-s').innerText = results.opt.rpm.toLocaleString('en').replace(/,/g, '');
-            document.getElementById('gcode-f').innerText = results.opt.feed.toLocaleString('en').replace(/,/g, '');
+            // G-Code
+            document.getElementById('gcode-s').innerText = results.opt.rpm;
+            document.getElementById('gcode-f').innerText = results.opt.feed;
             document.getElementById('gcode-ap').innerText = inputs.ap;
 
-            // Gráfica y Mejora
+            // Gráfica
             let valActualChart = 0;
             let valOptimoChart = parseFloat(results.opt.mrr);
             const mejoraSpan = document.getElementById('res-mejora');
@@ -333,7 +365,6 @@ M30;
             if(hasActuales) {
                 const vfAct = parseFloat(document.getElementById('avance_actual').value);
                 const unidadVf = document.getElementById('unidad_avance').value;
-                
                 let vfAct_norm = vfAct; 
                 if(!isInch && unidadVf === 'ipm') vfAct_norm = vfAct * 25.4; 
                 if(isInch && unidadVf === 'mm/min') vfAct_norm = vfAct / 25.4; 
@@ -342,59 +373,58 @@ M30;
                 
                 if(valActualChart > 0) {
                     const pct = ((valOptimoChart - valActualChart) / valActualChart) * 100;
-                    mejoraSpan.innerText = `+${Math.round(pct)}%`;
+                    mejoraSpan.innerText = `Mejora del +${Math.round(pct)}%`;
                     mejoraSpan.classList.remove('hidden');
-                } else {
-                    mejoraSpan.classList.add('hidden');
                 }
-
             } else {
-                valActualChart = parseFloat(results.min.mrr);
+                valActualChart = parseFloat(results.min.mrr); // Comparar contra mínimo si no hay actual
                 mejoraSpan.classList.add('hidden');
             }
 
-            renderChart(valActualChart, valOptimoChart, isInch);
+            renderChart(valActualChart, valOptimoChart, isInch, hasActuales);
 
-            // Mostrar resultados
-            document.getElementById('loader').classList.add('hidden');
-            document.getElementById('resultado').classList.remove('hidden');
-            btn.disabled = false;
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('resultado').classList.remove('hidden');
+            btn.disabled = false;
 
-        }, 1200);
-    }
+            // Scroll a resultados
+            document.getElementById('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    function renderChart(actual, optimo, isInch) {
-        const ctx = document.getElementById('chartMRR').getContext('2d');
-        document.getElementById('lbl_unidad_grafica').innerText = isInch ? '(pulg³/min)' : '(cm³/min)';
+        }, 800);
+    }
 
-        if (chartInstance) chartInstance.destroy();
-        
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Actual', 'Óptimo'],
-                datasets: [{
-                    data: [actual, optimo],
-                    backgroundColor: [document.getElementById('toggle_actuales').checked ? '#d4d4d8' : '#e2e8f0', '#28556C'],
-                    borderRadius: { topLeft: 12, topRight: 12, bottomLeft: 0, bottomRight: 0 },
-                    barThickness: 80
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false }, tooltip: { enabled: true } },
-                scales: { 
-                    y: { display: true, grid: { display: false }, min: 0 },
-                    x: { display: false, grid: { display: false } }
-                },
-                animation: { duration: 1500, easing: 'easeOutQuart' }
-            }
-        });
-    }
-    
-    // Iniciar con valores por defecto
+    function renderChart(actual, optimo, isInch, hasActual) {
+        const ctx = document.getElementById('chartMRR').getContext('2d');
+        document.getElementById('lbl_unidad_grafica').innerText = isInch ? 'Volumen en Pulgadas Cúbicas (pulg³/min)' : 'Volumen en Centímetros Cúbicos (cm³/min)';
+
+        if (chartInstance) chartInstance.destroy();
+        
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [hasActual ? 'Proceso Actual' : 'Escenario Seguro', 'Óptimo REGO-FIX'],
+                datasets: [{
+                    data: [actual, optimo],
+                    backgroundColor: ['#e5e7eb', '#B7C91F'],
+                    borderColor: ['#d1d5db', '#9ca3af'],
+                    borderWidth: 1,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Init
     updateLabels('mm');
-  </script>
+  </script>
 </body>
 </html>
