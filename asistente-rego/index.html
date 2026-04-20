@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REGO-FIX Voice | Asistente</title>
+    <style>
+        :root { --rf-blue: #0044BB; --rf-green: #76FF03; --rf-bg: #F4F7F6; --rf-white: #FFFFFF; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--rf-bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .app-card { background: var(--rf-white); padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .logo { max-width: 150px; margin-bottom: 20px; }
+        
+        /* Botón de Grabación */
+        .mic-btn { 
+            width: 100px; height: 100px; border-radius: 50%; border: none; 
+            background: var(--rf-blue); color: white; font-size: 40px; cursor: pointer; 
+            transition: 0.3s; box-shadow: 0 5px 15px rgba(0,68,187,0.3);
+            display: flex; align-items: center; justify-content: center; margin: 20px auto;
+        }
+        .mic-btn.recording { background: var(--rf-green); box-shadow: 0 0 20px var(--rf-green); animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        
+        .status-text { font-size: 14px; color: #7F8C8D; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .response-box { margin-top: 30px; padding: 20px; background: var(--rf-bg); border-radius: 8px; font-size: 15px; display: none; text-align: left; border-left: 4px solid var(--rf-blue); }
+        .transcript { font-style: italic; color: #95a5a6; margin-bottom: 10px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <img src="/assets/regofixlogo.png" class="logo" alt="REGO-FIX">
+    <h2>Asistente de Voz</h2>
+    <p class="status-text" id="status">Presiona para hablar</p>
+    
+    <button class="mic-btn" id="micBtn">🎤</button>
+    
+    <div id="responseBox" class="response-box">
+        <div class="transcript" id="transcript"></div>
+        <div id="message"></div>
+    </div>
+</div>
+
+<script>
+    const micBtn = document.getElementById('micBtn');
+    const status = document.getElementById('status');
+    const responseBox = document.getElementById('responseBox');
+    const transcript = document.getElementById('transcript');
+    const message = document.getElementById('message');
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+
+    // Obtener el ID del vendedor desde el localStorage de la otra App
+    const ownerId = localStorage.getItem('rf_sfUserId');
+
+    micBtn.onclick = async () => {
+        if (!ownerId) {
+            alert("Primero inicia sesión en la App de Scanner");
+            return;
+        }
+
+        if (!isRecording) {
+            // Iniciar Grabación
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                sendAudio(audioBlob);
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.classList.add('recording');
+            status.innerText = "Escuchando...";
+        } else {
+            // Detener Grabación
+            mediaRecorder.stop();
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            status.innerText = "Procesando...";
+        }
+    };
+
+    async function sendAudio(blob) {
+        const formData = new FormData();
+        formData.append('audio', blob, 'registro.webm');
+        formData.append('ownerId', ownerId);
+
+        try {
+            const response = await fetch('https://alex-ra-sa.vercel.app/api/asistente', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                responseBox.style.display = 'block';
+                transcript.innerText = `"${data.transcript}"`;
+                message.innerText = data.message;
+                status.innerText = "Listo";
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (err) {
+            alert("Error: " + err.message);
+            status.innerText = "Error";
+        }
+    }
+</script>
+
+</body>
+</html>
