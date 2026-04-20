@@ -1,14 +1,94 @@
-async function processAudio(blob) {
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REGO-FIX | Voice Assistant</title>
+    <style>
+        :root { --rf-blue: #0044BB; --rf-lime: #76FF03; --rf-bg: #F4F7F6; --rf-white: #FFFFFF; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--rf-bg); padding: 20px; display: flex; justify-content: center; margin: 0; }
+        .card { background: var(--rf-white); padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 450px; text-align: center; border-top: 6px solid var(--rf-blue); margin-top: 20px; }
+        .logo { max-width: 150px; margin-bottom: 20px; }
+        h2 { color: var(--rf-blue); margin-bottom: 5px; text-transform: uppercase; font-size: 1.5em; }
+        .sub { font-size: 11px; color: #7F8C8D; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1px; }
+        
+        .mic-btn { width: 100px; height: 100px; border-radius: 50%; border: none; background: var(--rf-blue); color: white; font-size: 40px; cursor: pointer; transition: 0.3s; margin: 20px 0; outline: none; }
+        .mic-btn.recording { background: var(--rf-lime); color: #000; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .status { font-weight: bold; font-size: 13px; color: var(--rf-blue); margin-bottom: 15px; text-transform: uppercase; }
+        
+        .result-box { background: #f0f4f8; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; display: none; border-left: 5px solid var(--rf-blue); }
+        .transcript { font-style: italic; color: #7f8c8d; font-size: 13px; margin-bottom: 10px; border-bottom: 1px solid #d1d8e0; padding-bottom: 10px; }
+        
+        .account-list { text-align: left; margin-top: 20px; display: none; }
+        .account-item { background: #fff; padding: 15px; border: 1px solid #d1d8e0; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .account-item:hover { border-color: var(--rf-blue); background: #f4f8ff; }
+        .account-item strong { color: var(--rf-blue); display: block; }
+        .account-item span { font-size: 11px; color: #95a5a6; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <img src="/assets/regofixlogo.png" class="logo" alt="REGO-FIX">
+    <h2>Asistente de Voz</h2>
+    <div class="sub">Inteligencia de Campo</div>
+    
+    <div id="status" class="status">Pulsa el micro para hablar</div>
+    <button class="mic-btn" id="micBtn">🎤</button>
+
+    <div id="resultBox" class="result-box">
+        <div class="transcript" id="transcript"></div>
+        <div id="aiMessage"></div>
+    </div>
+
+    <div id="accountSection" class="account-list">
+        <p style="font-size: 13px; font-weight: bold; margin-bottom: 10px;">Selecciona la cuenta correcta:</p>
+        <div id="listContainer"></div>
+    </div>
+</div>
+
+<script>
+    const micBtn = document.getElementById('micBtn');
+    const statusText = document.getElementById('status');
+    const resultBox = document.getElementById('resultBox');
+    const aiMessage = document.getElementById('aiMessage');
+    const accountSection = document.getElementById('accountSection');
+    const listContainer = document.getElementById('listContainer');
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let lastPlan = null;
+
+    micBtn.onclick = async () => {
+        if (!isRecording) {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => processAudio(new Blob(audioChunks, { type: 'audio/webm' }));
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.classList.add('recording');
+            statusText.innerText = "Escuchando...";
+            resultBox.style.display = 'none';
+            accountSection.style.display = 'none';
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            statusText.innerText = "Analizando voz...";
+        }
+    };
+
+    async function processAudio(blob) {
         const formData = new FormData();
         formData.append('audio', blob);
 
         try {
-            // USAR URL ABSOLUTA PARA EVITAR PROBLEMAS DE RUTA
-            const res = await fetch('https://alex-ra-sa.vercel.app/api/asistente', { 
-                method: 'POST', 
-                body: formData 
-            });
-            
+            const res = await fetch('https://alex-ra-sa.vercel.app/api/asistente', { method: 'POST', body: formData });
             const data = await res.json();
 
             if (data.success) {
@@ -17,19 +97,57 @@ async function processAudio(blob) {
                 document.getElementById('transcript').innerText = `"${data.transcript}"`;
                 
                 if (data.needSelection) {
-                    aiMessage.innerText = `Encontré ${data.accounts.length} cuentas. Selecciona la correcta:`;
+                    aiMessage.innerText = `Encontré cuentas que coinciden. Por favor selecciona una:`;
                     showAccountList(data.accounts);
                 } else {
-                    aiMessage.innerText = "No encontré ninguna cuenta con ese nombre. Intenta pronunciar el nombre más claro.";
+                    aiMessage.innerText = "No se encontró la empresa. Prueba pronunciando el nombre más lento.";
                 }
                 statusText.innerText = "Listo";
             } else {
-                statusText.innerText = "Error en el servidor";
+                statusText.innerText = "Error";
                 aiMessage.innerText = "Error: " + data.error;
                 resultBox.style.display = 'block';
             }
-        } catch (e) { 
-            statusText.innerText = "Fallo de red";
-            alert("Error de conexión: " + e.message); 
-        }
+        } catch (e) { statusText.innerText = "Fallo de conexión"; }
     }
+
+    function showAccountList(accounts) {
+        listContainer.innerHTML = '';
+        accountSection.style.display = 'block';
+        accounts.forEach(acc => {
+            const div = document.createElement('div');
+            div.className = 'account-item';
+            div.innerHTML = `<strong>${acc.Name}</strong><span>${acc.BillingCity || 'Ubicación no disponible'}</span>`;
+            div.onclick = () => confirmarRegistro(acc.Id, acc.Name);
+            listContainer.appendChild(div);
+        });
+    }
+
+    async function confirmarRegistro(accountId, accountName) {
+        statusText.innerText = "Sincronizando...";
+        const payload = {
+            accountId: accountId,
+            subject: lastPlan.asunto || "Actividad de Voz",
+            description: lastPlan.detalles,
+            taskType: lastPlan.intent === 'AGENDAR_CITA' ? 'EVENTO' : 'TAREA',
+            fecha: lastPlan.fecha,
+            hora: lastPlan.hora
+        };
+
+        const formData = new FormData();
+        formData.append('action', 'confirmar');
+        formData.append('payload', JSON.stringify(payload));
+
+        try {
+            const res = await fetch('https://alex-ra-sa.vercel.app/api/asistente', { method: 'POST', body: formData });
+            const result = await res.json();
+            if (result.success) {
+                aiMessage.innerHTML = `<b style="color:green;">✅ ¡Sincronizado!</b><br>Guardado en: ${accountName}`;
+                accountSection.style.display = 'none';
+                statusText.innerText = "Completado";
+            }
+        } catch (e) { alert("Error al guardar"); }
+    }
+</script>
+</body>
+</html>
