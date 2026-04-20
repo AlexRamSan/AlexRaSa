@@ -13,21 +13,28 @@
         
         .section-title { color: white; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
         label { font-size: 10px; color: var(--rf-red); font-weight: bold; text-transform: uppercase; display: block; margin: 8px 0 2px 2px; }
-        input, textarea { width: 100%; padding: 10px; border-radius: 2px; border: 1px solid #333; background: white; color: black; font-size: 14px; box-sizing: border-box; font-family: Arial, sans-serif; }
-        input:focus, textarea:focus { border-color: var(--rf-red); outline: none; }
+        
+        input[type="text"], input[type="email"], textarea, select { 
+            width: 100%; padding: 10px; border-radius: 2px; border: 1px solid #333; background: white; color: black; font-size: 14px; box-sizing: border-box; font-family: Arial, sans-serif; 
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--rf-red); outline: none; }
         textarea { resize: vertical; min-height: 60px; }
         
-        /* Grid para inputs cortos */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* Estilos para el selector de modo de cuenta */
+        .mode-selector { display: flex; gap: 15px; background: #000; padding: 12px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #333; }
+        .mode-selector label { font-size: 13px; color: white; cursor: pointer; text-transform: none; display: flex; align-items: center; gap: 8px; margin: 0; width: 50%; }
+        .mode-selector input[type="radio"] { width: auto; margin: 0; accent-color: var(--rf-red); cursor: pointer; }
 
         button { width: 100%; padding: 15px; background: var(--rf-red); color: white; border: none; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 25px; transition: 0.3s; }
         button:disabled { background: #444; color: #888; }
         
         #preview { width: 100%; border-radius: 2px; display: none; margin-bottom: 20px; border: 1px solid #444; }
-        .loading { text-align: center; color: var(--rf-red); display: none; font-weight: bold; padding: 20px; }
+        .loading { text-align: center; color: var(--rf-red); display: none; font-weight: bold; padding: 20px; font-size: 12px; }
         .status { padding: 15px; border-radius: 2px; margin-top: 15px; display: none; text-align: center; font-weight: bold; }
-        .success { background: #155724; color: #d4edda; }
-        .error { background: #721c24; color: #f8d7da; }
+        .success { background: #155724; color: #d4edda; border: 1px solid #28a745; }
+        .error { background: #721c24; color: #f8d7da; border: 1px solid #dc3545; }
     </style>
 </head>
 <body>
@@ -38,35 +45,49 @@
     
     <input type="file" id="camera" accept="image/*" capture="environment" style="margin-bottom:15px; width:100%; color: white;">
     <img id="preview">
-    <div id="loader" class="loading">ANALIZANDO TARJETA E INVESTIGANDO EMPRESA...</div>
+    <div id="loader" class="loading"></div>
     <div id="statusBox" class="status"></div>
 
     <div id="resultForm" style="display:none;">
         
-        <div class="section-title">Datos de la Empresa (Cuenta)</div>
-        <label>Nombre de la Empresa</label>
-        <input type="text" id="co">
-        
-        <div class="grid-2">
-            <div><label>Industria</label><input type="text" id="ind"></div>
-            <div><label>Tel. Corporativo</label><input type="text" id="coPhone"></div>
+        <div class="mode-selector">
+            <label><input type="radio" name="accMode" value="new" checked> Crear Nueva Empresa</label>
+            <label><input type="radio" name="accMode" value="existing"> Agregar a Existente</label>
         </div>
-        
-        <label>Sitio Web</label>
-        <input type="text" id="web">
-        
-        <label>Dirección Completa (IA lo separa en Salesforce)</label>
-        <input type="text" id="street" placeholder="Calle y número">
-        <div class="grid-2">
-            <div><input type="text" id="city" placeholder="Ciudad"></div>
-            <div><input type="text" id="state" placeholder="Estado/Provincia"></div>
-        </div>
-        <input type="text" id="country" placeholder="País" style="margin-top:10px;">
-        
-        <label>Descripción / Notas Automáticas</label>
-        <textarea id="desc"></textarea>
 
-        <div class="section-title">Datos de la Persona (Contacto)</div>
+        <div id="existingAccountFields" style="display:none;">
+            <label>Selecciona la Cuenta en Salesforce</label>
+            <select id="accountSelect">
+                <option value="">-- Selecciona una opción --</option>
+            </select>
+        </div>
+
+        <div id="newAccountFields">
+            <div class="section-title">Datos de la Empresa Nueva</div>
+            <label>Nombre de la Empresa</label>
+            <input type="text" id="co">
+            
+            <div class="grid-2">
+                <div><label>Industria</label><input type="text" id="ind"></div>
+                <div><label>Tel. Corporativo</label><input type="text" id="coPhone"></div>
+            </div>
+            
+            <label>Sitio Web</label>
+            <input type="text" id="web">
+            
+            <label>Dirección Completa</label>
+            <input type="text" id="street" placeholder="Calle y número">
+            <div class="grid-2">
+                <div><input type="text" id="city" placeholder="Ciudad"></div>
+                <div><input type="text" id="state" placeholder="Estado"></div>
+            </div>
+            <input type="text" id="country" placeholder="País" style="margin-top:10px;">
+            
+            <label>Descripción / Notas Automáticas</label>
+            <textarea id="desc"></textarea>
+        </div>
+
+        <div class="section-title">Datos de la Persona</div>
         <div class="grid-2">
             <div><label>Nombre</label><input type="text" id="fn"></div>
             <div><label>Apellido</label><input type="text" id="ln"></div>
@@ -88,21 +109,76 @@
 </div>
 
 <script>
+    const API_URL = 'https://alex-ra-sa.vercel.app/api/reconocimiento';
+    
+    // Elementos UI
     const camera = document.getElementById('camera');
     const preview = document.getElementById('preview');
     const loader = document.getElementById('loader');
     const resultForm = document.getElementById('resultForm');
     const sendBtn = document.getElementById('sendBtn');
     const statusBox = document.getElementById('statusBox');
+    const accountSelect = document.getElementById('accountSelect');
+    
+    // Secciones variables
+    const newAccountFields = document.getElementById('newAccountFields');
+    const existingAccountFields = document.getElementById('existingAccountFields');
+    const radioModes = document.querySelectorAll('input[name="accMode"]');
 
-    const API_URL = 'https://alex-ra-sa.vercel.app/api/reconocimiento';
+    let accountsLoaded = false;
 
+    // Lógica para descargar las cuentas de Salesforce
+    async function loadAccounts() {
+        if (accountsLoaded) return; // No descargar 2 veces
+        
+        accountSelect.innerHTML = '<option>Descargando cuentas desde Salesforce...</option>';
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'getAccounts' })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                accountSelect.innerHTML = '<option value="">-- Selecciona la empresa --</option>';
+                data.accounts.forEach(acc => {
+                    const opt = document.createElement('option');
+                    opt.value = acc.Id;
+                    opt.textContent = acc.Name;
+                    accountSelect.appendChild(opt);
+                });
+                accountsLoaded = true;
+            } else {
+                accountSelect.innerHTML = '<option value="">Error al cargar cuentas</option>';
+            }
+        } catch(e) {
+            accountSelect.innerHTML = '<option value="">Error de conexión</option>';
+        }
+    }
+
+    // Lógica del selector (Radio Buttons)
+    radioModes.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'new') {
+                newAccountFields.style.display = 'block';
+                existingAccountFields.style.display = 'none';
+            } else {
+                newAccountFields.style.display = 'none';
+                existingAccountFields.style.display = 'block';
+                loadAccounts(); // Solo descarga si decides usar una existente
+            }
+        });
+    });
+
+    // Lógica de Escaneo de Imagen
     camera.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         preview.src = URL.createObjectURL(file);
         preview.style.display = 'block';
+        loader.innerText = 'ANALIZANDO TARJETA E INVESTIGANDO...';
         loader.style.display = 'block';
         resultForm.style.display = 'none';
         statusBox.style.display = 'none';
@@ -142,6 +218,10 @@
 
                 loader.style.display = 'none';
                 resultForm.style.display = 'block';
+                
+                // Forzar reset visual a "Crear Nueva" en cada escaneo
+                document.querySelector('input[value="new"]').click();
+
             } catch (err) {
                 loader.style.display = 'none';
                 statusBox.innerText = "Error: " + err.message;
@@ -151,24 +231,22 @@
         };
     });
 
+    // Lógica de Sincronización
     sendBtn.onclick = async () => {
+        const accMode = document.querySelector('input[name="accMode"]:checked').value;
+        const selectedAccountId = accountSelect.value;
+
+        if (accMode === 'existing' && !selectedAccountId) {
+            alert("Por favor, selecciona una empresa de la lista.");
+            return;
+        }
+
         sendBtn.disabled = true;
         sendBtn.innerText = "Sincronizando...";
         
+        // Base de datos de Contacto (siempre se envía)
         const payload = {
             confirmData: {
-                // Cuenta
-                company: document.getElementById('co').value,
-                industry: document.getElementById('ind').value,
-                companyPhone: document.getElementById('coPhone').value,
-                website: document.getElementById('web').value,
-                street: document.getElementById('street').value,
-                city: document.getElementById('city').value,
-                state: document.getElementById('state').value,
-                country: document.getElementById('country').value,
-                description: document.getElementById('desc').value,
-                
-                // Contacto
                 firstName: document.getElementById('fn').value,
                 lastName: document.getElementById('ln').value,
                 title: document.getElementById('title').value,
@@ -177,6 +255,21 @@
                 mobilePhone: document.getElementById('mob').value
             }
         };
+
+        // Añadir datos de cuenta dependiendo de la selección
+        if (accMode === 'existing') {
+            payload.confirmData.accountId = selectedAccountId;
+        } else {
+            payload.confirmData.company = document.getElementById('co').value;
+            payload.confirmData.industry = document.getElementById('ind').value;
+            payload.confirmData.companyPhone = document.getElementById('coPhone').value;
+            payload.confirmData.website = document.getElementById('web').value;
+            payload.confirmData.street = document.getElementById('street').value;
+            payload.confirmData.city = document.getElementById('city').value;
+            payload.confirmData.state = document.getElementById('state').value;
+            payload.confirmData.country = document.getElementById('country').value;
+            payload.confirmData.description = document.getElementById('desc').value;
+        }
 
         try {
             const response = await fetch(API_URL, {
