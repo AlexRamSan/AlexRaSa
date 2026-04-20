@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>REGO-FIX powRgrip Calculator</title>
+  <title>REGO-FIX Smart Calculator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -24,6 +24,7 @@
     
     .lbl-title { font-size: 0.85rem; font-weight: 800; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px; }
     .lbl-help { font-size: 0.7rem; font-weight: 500; color: #6b7280; margin-bottom: 8px; display: block; }
+    .lbl-micro { font-size: 0.65rem; color: #9ca3af; font-style: italic; display: block; margin-bottom: 4px; }
     
     .step-card { 
         background: white; border-radius: 20px; padding: 2rem; 
@@ -57,7 +58,7 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-10 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
         <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-10 mb-4 md:mb-0" alt="REGO-FIX" onerror="this.src='https://via.placeholder.com/150x40?text=REGO-FIX'">
         <div class="text-center md:text-right">
-            <h1 class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente powRgrip®</h1>
+            <h1 class="text-2xl font-black text-[#28556C] uppercase tracking-tighter">Asistente de Mecanizado</h1>
             <p class="text-sm text-gray-500 font-bold">Diagnóstico de Productividad y Estabilidad</p>
         </div>
     </header>
@@ -76,25 +77,25 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
         <div class="step-card">
-            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">1. Proyecto</h2>
+            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">1. Tu Proyecto</h2>
             <div class="space-y-4">
                 <div>
-                    <label class="lbl-title">Material</label>
-                    <input id="material" type="text" class="input-friendly text-sm" value="Acero al carbono">
+                    <label class="lbl-title">Material a cortar</label>
+                    <input id="material" type="text" class="input-friendly text-sm" value="Acero al carbono" placeholder="Ej. Aluminio, Inconel...">
                 </div>
                 <div>
                     <label class="lbl-title">Operación</label>
-                    <input id="operacion" type="text" class="input-friendly text-sm" value="Desbaste">
+                    <input id="operacion" type="text" class="input-friendly text-sm" value="Desbaste" placeholder="Ej. Acabado, Desbaste...">
                 </div>
             </div>
         </div>
 
         <div class="step-card">
-            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">2. Geometría</h2>
+            <h2 class="text-md font-black text-[#28556C] mb-5 border-b border-gray-100 pb-2">2. La Fresa</h2>
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label id="lbl_diametro" class="lbl-title">Ø</label>
+                        <label id="lbl_diametro" class="lbl-title">Grosor (Ø)</label>
                         <input id="diametro" type="number" step="0.001" class="input-friendly text-sm text-center" value="10">
                     </div>
                     <div>
@@ -104,48 +105,56 @@
                 </div>
                 <div>
                     <label id="lbl_proyeccion" class="lbl-title">Proyección</label>
+                    <span class="lbl-micro">¿Cuánto sale la fresa del chuck?</span>
                     <input id="proyeccion" type="number" step="0.1" class="input-friendly text-sm" value="35">
                 </div>
                 <div>
-                    <label class="lbl-title">RPM Husillo (Max)</label>
+                    <label class="lbl-title">Límite de la Máquina</label>
+                    <span class="lbl-micro">RPM Máximas de tu husillo</span>
                     <input id="max_rpm" type="number" class="input-friendly text-sm font-black text-[#D31B23]" value="12000">
                 </div>
             </div>
         </div>
 
         <div class="step-card accent relative">
-            <div class="flex justify-between items-center mb-5 border-b border-red-100 pb-2">
-                <h2 class="text-md font-black text-[#D31B23]">3. Catálogo</h2>
-                <div class="relative inline-block w-10 align-middle select-none">
+            <div class="flex justify-between items-center mb-2 border-b border-red-100 pb-2">
+                <h2 class="text-md font-black text-[#D31B23]">3. Datos del Fabricante</h2>
+                <div class="relative inline-block w-10 align-middle select-none" title="Activar/Desactivar datos de cajita">
                     <input type="checkbox" id="toggle_catalogo" checked onchange="toggleCatalogo()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10"/>
                     <label for="toggle_catalogo" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-200 cursor-pointer transition-colors"></label>
                 </div>
             </div>
             
+            <p id="txt_ayuda_catalogo" class="text-[11px] text-gray-500 mb-4 font-medium leading-tight">Copia estos datos de la cajita de tu fresa o del catálogo web. ¡Son clave!</p>
+            
             <div id="panel_catalogo" class="space-y-4 transition-all opacity-100">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label id="lbl_ap" class="lbl-title">Ap</label>
+                        <label id="lbl_ap" class="lbl-title">Corte Abajo</label>
+                        <span class="lbl-micro">Profundidad (Ap)</span>
                         <input id="ap" type="number" step="0.1" class="input-friendly text-sm text-center" value="2">
                     </div>
                     <div>
-                        <label id="lbl_ae" class="lbl-title">Ae</label>
+                        <label id="lbl_ae" class="lbl-title">Corte Lateral</label>
+                        <span class="lbl-micro">Ancho (Ae)</span>
                         <input id="ae" type="number" step="0.1" class="input-friendly text-sm text-center" value="5">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3 mt-2">
                     <div>
-                        <label class="lbl-title">Vc base</label>
+                        <label class="lbl-title">Velocidad (Vc)</label>
+                        <span class="lbl-micro">Suele decir m/min</span>
                         <input id="vc_base" type="number" class="input-friendly text-sm text-center" value="180">
                     </div>
                     <div>
-                        <label class="lbl-title">Fz base</label>
+                        <label class="lbl-title">Carga (Fz)</label>
+                        <span class="lbl-micro">Avance por diente</span>
                         <input id="fz_base" type="number" step="0.001" class="input-friendly text-sm text-center" value="0.065">
                     </div>
                 </div>
             </div>
             <div id="msg_catalogo_off" class="hidden absolute top-1/2 left-0 right-0 text-center px-4">
-                <span class="text-xs font-bold text-gray-400 uppercase">Catálogo Desactivado. Se usará el proceso actual como base.</span>
+                <span class="text-xs font-bold text-gray-400 uppercase">Sin datos de catálogo.<br>Usaremos tu proceso actual.</span>
             </div>
         </div>
 
@@ -180,23 +189,23 @@
 
     <div class="mb-10 flex justify-center">
         <button onclick="calcularEscenarios()" id="btnGo" class="w-full md:w-1/2 bg-[#D31B23] hover:bg-red-800 text-white font-black text-lg py-5 rounded-2xl uppercase tracking-widest transition-all shadow-xl shadow-red-200">
-            Analizar con powRgrip®
+            Analizar Proceso y Estabilidad
         </button>
     </div>
 
-    <div id="loader" class="hidden text-center py-10 text-[#28556C] font-black uppercase animate-pulse">Analizando rigidez y frecuencias...</div>
+    <div id="loader" class="hidden text-center py-10 text-[#28556C] font-black uppercase animate-pulse">Analizando rigidez y frecuencias de corte...</div>
 
     <div id="resultado" class="hidden res-dashboard mb-10">
         
         <div class="flex flex-col lg:flex-row gap-10">
             
             <div class="w-full lg:w-1/3">
-                <h3 class="res-title border-b-2 border-[#28556C] inline-block pb-1">Diagnóstico de Ingeniería</h3>
+                <h3 class="res-title border-b-2 border-[#28556C] inline-block pb-1">Diagnóstico</h3>
                 <ul id="lista-diagnostico" class="list-disc pl-5 space-y-3 text-sm text-gray-700 leading-relaxed mb-8 mt-4 font-medium">
                     </ul>
 
                 <div class="bg-[#28556C] p-5 rounded-2xl border border-[#1d3d4d] shadow-lg text-white">
-                    <div class="text-blue-200 text-xs font-bold uppercase mb-2">Bloque CNC Sugerido</div>
+                    <div class="text-blue-200 text-xs font-bold uppercase mb-2">Código CNC Sugerido</div>
                     <div class="font-mono text-sm">
                         <div class="text-green-400 font-bold mb-1">S<span id="code-s">0</span> &nbsp; F<span id="code-f">0</span></div>
                         <div class="text-blue-300 text-[11px]">; <span id="code-mat"></span></div>
@@ -208,33 +217,33 @@
             <div class="w-full lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-6">
                 
                 <div class="res-card shadow-sm">
-                    <h4 class="res-title text-[#D31B23]">RPM</h4>
+                    <h4 class="res-title text-[#D31B23]">Velocidad (RPM)</h4>
                     <div class="row-flex text-gray-500">
                         <span class="text-sm font-bold">Mínimo / Seguro</span>
                         <span class="badge-val badge-min" id="res-rpm-min">0</span>
                     </div>
                     <div class="row-flex">
-                        <span class="text-sm font-black text-[#28556C]">Óptimo powRgrip</span>
+                        <span class="text-sm font-black text-[#28556C]">Óptimo (Alta Precisión)</span>
                         <span class="badge-val badge-opt text-lg" id="res-rpm-opt">0</span>
                     </div>
                     <div class="row-flex text-gray-500">
-                        <span class="text-sm font-bold">Máximo (Límite)</span>
+                        <span class="text-sm font-bold">Límite Agresivo</span>
                         <span class="badge-val badge-max" id="res-rpm-max">0</span>
                     </div>
                 </div>
 
                 <div class="res-card shadow-sm">
-                    <h4 class="res-title text-[#D31B23]">Avance (Vf)</h4>
+                    <h4 class="res-title text-[#D31B23]">Avance de Corte</h4>
                     <div class="row-flex text-gray-500">
                         <span class="text-sm font-bold">Mínimo / Seguro</span>
                         <span class="badge-val badge-min" id="res-vf-min">0</span>
                     </div>
                     <div class="row-flex">
-                        <span class="text-sm font-black text-[#28556C]">Óptimo powRgrip</span>
+                        <span class="text-sm font-black text-[#28556C]">Óptimo (Alta Precisión)</span>
                         <span class="badge-val badge-opt text-lg" id="res-vf-opt">0</span>
                     </div>
                     <div class="row-flex text-gray-500">
-                        <span class="text-sm font-bold">Máximo (Límite)</span>
+                        <span class="text-sm font-bold">Límite Agresivo</span>
                         <span class="badge-val badge-max" id="res-vf-max">0</span>
                     </div>
                     <div class="row-flex mt-2 pt-2 text-gray-400 text-xs font-bold" id="row-vf-actual" style="display:none;">
@@ -245,13 +254,13 @@
 
                 <div class="res-card shadow-sm md:col-span-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="w-full md:w-1/2">
-                        <h4 class="res-title text-[#28556C] mb-2">Frecuencia & Estabilidad</h4>
+                        <h4 class="res-title text-[#28556C] mb-2">Vibración</h4>
                         <div class="row-flex">
-                            <span class="text-sm font-bold text-gray-600">TPF (Paso de Diente)</span>
+                            <span class="text-sm font-bold text-gray-600">Paso de Diente (TPF)</span>
                             <span class="font-black text-[#28556C]" id="res-tpf">0 Hz</span>
                         </div>
                         <div class="row-flex">
-                            <span class="text-sm font-bold text-gray-600">Estado de Vibración</span>
+                            <span class="text-sm font-bold text-gray-600">Estado Calculado</span>
                             <span class="badge-val" id="res-riesgo">Analizando...</span>
                         </div>
                     </div>
@@ -272,10 +281,10 @@
     function updateLabels(unit) {
         const isInch = unit === 'inch';
         
-        document.getElementById('lbl_diametro').innerText = isInch ? 'Ø (pulg)' : 'Ø (mm)';
+        document.getElementById('lbl_diametro').innerText = isInch ? 'Grosor (Ø pulg)' : 'Grosor (Ø mm)';
         document.getElementById('lbl_proyeccion').innerText = isInch ? 'Proyección (pulg)' : 'Proyección (mm)';
-        document.getElementById('lbl_ap').innerText = isInch ? 'Ap (pulg)' : 'Ap (mm)';
-        document.getElementById('lbl_ae').innerText = isInch ? 'Ae (pulg)' : 'Ae (mm)';
+        document.getElementById('lbl_ap').innerText = isInch ? 'Corte Abajo (pulg)' : 'Corte Abajo (mm)';
+        document.getElementById('lbl_ae').innerText = isInch ? 'Corte Lateral (pulg)' : 'Corte Lateral (mm)';
         
         document.getElementById('code-fz-unit').innerText = isInch ? 'pulg' : 'mm';
         document.getElementById('code-ap-unit').innerText = isInch ? 'pulg' : 'mm';
@@ -294,15 +303,18 @@
         const checked = document.getElementById('toggle_catalogo').checked;
         const panel = document.getElementById('panel_catalogo');
         const msg = document.getElementById('msg_catalogo_off');
+        const ayuda = document.getElementById('txt_ayuda_catalogo');
         
         if(checked) {
             panel.style.opacity = '1';
             panel.style.pointerEvents = 'auto';
             msg.classList.add('hidden');
+            ayuda.style.opacity = '1';
         } else {
-            panel.style.opacity = '0.1';
+            panel.style.opacity = '0.05';
             panel.style.pointerEvents = 'none';
             msg.classList.remove('hidden');
+            ayuda.style.opacity = '0.1';
         }
     }
 
@@ -330,7 +342,7 @@
         const strUnidadVf = isInch ? 'pulg/min' : 'mm/min';
 
         if(!useCatalog && !hasActuales) {
-            return alert("Si desactivas el Catálogo, debes habilitar el 'Proceso Actual' para tener una base matemática.");
+            return alert("¡Hola! Si apagas los 'Datos del Fabricante', necesitas prender el 'Proceso Actual' para que la calculadora tenga números de dónde partir.");
         }
 
         const getVal = (id) => parseFloat(document.getElementById(id).value) || 0;
@@ -342,8 +354,8 @@
         let ae = getVal('ae');
         let maxRpm = getVal('max_rpm');
 
-        if(!d || !z) return alert("Diámetro y Filos son obligatorios.");
-        if(ae === 0) ae = d; // Asume ranurado si está vacío
+        if(!d || !z) return alert("Por favor, asegúrate de llenar el Grosor (Ø) y los Filos de la fresa.");
+        if(ae === 0) ae = d; // Asume ranurado completo si está en cero
 
         let baseRpm = 0, baseFeed = 0;
         let vcInfo = 0, fzInfo = 0;
@@ -351,7 +363,7 @@
         if(useCatalog) {
             let vc = getVal('vc_base');
             let fz = getVal('fz_base');
-            if(!vc || !fz) return alert("Falta Vc o Fz en catálogo.");
+            if(!vc || !fz) return alert("Revisa la sección de 'Datos del Fabricante', faltan números ahí.");
             vcInfo = vc; fzInfo = fz;
             
             baseRpm = isInch ? (vc * 3.82) / d : (vc * 1000) / (Math.PI * d);
@@ -361,14 +373,12 @@
             let vf_act = getVal('avance_actual');
             let u_act = document.getElementById('unidad_avance').value;
             
-            if(!baseRpm || !vf_act) return alert("Ingresa RPM y Avance actuales válidos.");
+            if(!baseRpm || !vf_act) return alert("Por favor, ingresa tus RPM y Avance actuales.");
             
-            // Normalizar a mm/min o pulg/min según sistema seleccionado
             baseFeed = vf_act;
             if(!isInch && u_act === 'ipm') baseFeed = vf_act * 25.4;
             if(isInch && u_act === 'mm/min') baseFeed = vf_act / 25.4;
             
-            // Calcular equivalentes para G-Code
             vcInfo = isInch ? (baseRpm * d) / 3.82 : (baseRpm * Math.PI * d) / 1000;
             fzInfo = baseFeed / (baseRpm * z);
         }
@@ -381,8 +391,7 @@
 
         setTimeout(() => {
             
-            // Factores: Asumimos que powRgrip permite sostener el catálogo óptimo o mejorar el proceso actual.
-            // Si viene de actual (no catálogo), proyectamos un +15% de mejora por rigidez powRgrip.
+            // Si el usuario usa los datos actuales como base, asumimos que con un chuck de alta precisión puede subir un 15% seguro.
             let optRpm = useCatalog ? baseRpm : baseRpm * 1.15;
             let optFeed = useCatalog ? baseFeed : baseFeed * 1.15;
             
@@ -397,7 +406,6 @@
             const convFactMRR = isInch ? 1 : 1/1000; 
             let mrrOptimo = ap * ae * results.opt.feed * convFactMRR;
 
-            // UI
             document.getElementById('res-rpm-min').innerText = Math.round(results.min.rpm).toLocaleString('en');
             document.getElementById('res-rpm-max').innerText = Math.round(results.max.rpm).toLocaleString('en');
             document.getElementById('res-rpm-opt').innerText = Math.round(results.opt.rpm).toLocaleString('en');
@@ -415,14 +423,12 @@
 
             document.getElementById('res-mrr-opt').innerText = mrrOptimo.toFixed(1);
 
-            // Código G
             document.getElementById('code-s').innerText = Math.round(results.opt.rpm);
             document.getElementById('code-f').innerText = Math.round(results.opt.feed);
             document.getElementById('code-fz').innerText = fzInfo.toFixed(3);
             document.getElementById('code-ap').innerText = ap;
             document.getElementById('code-mat').innerText = mat;
 
-            // Diagnóstico y powRgrip
             let tpf = (results.opt.rpm * z) / 60;
             document.getElementById('res-tpf').innerText = tpf.toFixed(1) + ' Hz';
             
@@ -439,15 +445,15 @@
                 riesgoBadge.className = 'badge-val bg-yellow-100 text-yellow-700 border border-yellow-200';
             }
 
-            // powRgrip Logic Statement
-            msgs.push(`⚡ La tecnología <b>powRgrip® (TIR < 3µm)</b> absorbe micro-vibraciones, garantizando la estabilidad del escenario Óptimo y permitiendo escalar al Máximo de forma segura.`);
+            // Diagnóstico amigable y de alta precisión
+            msgs.push(`⚡ El uso de un <b>sistema de sujeción de alta precisión (TIR < 3µm)</b> es fundamental aquí. Al absorber micro-vibraciones, te garantiza que puedas correr en el escenario "Óptimo" sin desgastar tu herramienta prematuramente.`);
             
             if(hasActuales && !useCatalog) {
-                msgs.push(`Al utilizar tus parámetros actuales como base, la rigidez del sistema sugiere un margen de mejora del +15% directo en RPM y Avance.`);
+                msgs.push(`Tomando como base cómo cortas actualmente, la alta rigidez del portaherramientas te permite escalar tus parámetros (RPM y Avance) un 15% de forma segura.`);
             }
 
             if(getVal('proyeccion') > (d * 3)) {
-                msgs.push(`⚠️ Proyección superior a 3xD detectada. El excelente control de concentricidad (Run-out) del portaherramientas mitigará la deflexión esperada.`);
+                msgs.push(`⚠️ Notamos que tu fresa sale bastante del chuck (Proyección larga). Un buen portaherramientas evitará que la herramienta se doble o vibre (deflexión).`);
             }
 
             msgs.forEach(m => {
@@ -465,7 +471,6 @@
         }, 800);
     }
 
-    // Init
     updateLabels('mm');
   </script>
 </body>
