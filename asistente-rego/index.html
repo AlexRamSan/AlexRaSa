@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REGO-FIX | Full Assistant</title>
+    <title>REGO-FIX | Voice Assistant</title>
     <style>
         :root { --rf-blue: #0044BB; --rf-lime: #76FF03; --rf-bg: #F4F7F6; --rf-white: #FFFFFF; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--rf-bg); padding: 20px; display: flex; justify-content: center; margin: 0; }
         .card { background: var(--rf-white); padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 450px; text-align: center; border-top: 6px solid var(--rf-blue); margin-top: 20px; }
-        .logo { max-width: 140px; margin-bottom: 20px; }
-        .mic-btn { width: 90px; height: 90px; border-radius: 50%; border: none; background: var(--rf-blue); color: white; font-size: 35px; cursor: pointer; transition: 0.3s; margin: 20px 0; }
+        .logo { max-width: 150px; margin-bottom: 20px; }
+        .mic-btn { width: 90px; height: 90px; border-radius: 50%; border: none; background: var(--rf-blue); color: white; font-size: 35px; cursor: pointer; transition: 0.3s; margin: 20px 0; outline: none; }
         .mic-btn.recording { background: var(--rf-lime); color: #000; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .status { font-weight: bold; font-size: 13px; color: var(--rf-blue); text-transform: uppercase; margin-bottom: 10px; }
@@ -23,7 +23,7 @@
 
 <div class="card">
     <img src="/assets/regofixlogo.png" class="logo">
-    <h2>Asistente</h2>
+    <h2>Asistente de Voz</h2>
     <div id="status" class="status">Pulsa para hablar</div>
     <button class="mic-btn" id="micBtn">🎤</button>
 
@@ -71,8 +71,8 @@
 
     async function processAudio(blob) {
         const formData = new FormData();
-        // IMPORTANTE: Ponemos nombre al archivo para evitar Error 400
-        formData.append('audio', blob, 'recording.webm'); 
+        // ESTO ARREGLA EL ERROR 400: Le damos nombre al archivo
+        formData.append('audio', blob, 'registro.webm'); 
 
         try {
             const res = await fetch('https://alex-ra-sa.vercel.app/api/asistente', { method: 'POST', body: formData });
@@ -96,14 +96,14 @@
                         listContainer.appendChild(div);
                     });
                 } else {
-                    aiMessage.innerText = "No encontré la empresa.";
+                    aiMessage.innerText = "No encontré la empresa. Intenta decir solo el nombre principal.";
                 }
                 statusText.innerText = "Listo";
             } else {
                 alert("Error: " + data.error);
                 statusText.innerText = "Error";
             }
-        } catch (e) { statusText.innerText = "Error Red"; }
+        } catch (e) { statusText.innerText = "Error de Red"; }
     }
 
     async function confirmar(id, name) {
