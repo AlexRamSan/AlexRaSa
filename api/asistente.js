@@ -18,13 +18,13 @@ export default async function handler(req, res) {
     const form = new multiparty.Form();
     
     form.parse(req, async (err, fields, files) => {
-        if (err) return res.status(500).json({ success: false, error: "Error de formulario" });
+        if (err) return res.status(500).json({ success: false, error: "Error de lectura" });
 
         try {
-            // USAR TU ID DIRECTO PARA EVITAR EL ERROR 'UNDEFINED'
+            // ID DIRECTO DE MIGUEL (Sin errores de variable)
             const myOwnerId = "005WQ00000C6Kl7YAF"; 
 
-            // --- ACCIÓN: CONFIRMAR REGISTRO ---
+            // --- ACCIÓN 2: CONFIRMAR Y GUARDAR ---
             if (fields.action && fields.action[0] === 'confirmar') {
                 const payload = JSON.parse(fields.payload[0]);
                 const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
@@ -59,24 +59,25 @@ export default async function handler(req, res) {
                 return res.status(200).json({ success: true, message: "Sincronizado" });
             }
 
-            // --- ACCIÓN: PROCESAR AUDIO ---
-            if (!files.audio) throw new Error("Audio no recibido");
+            // --- ACCIÓN 1: PROCESAR VOZ ---
+            if (!files.audio) throw new Error("No se recibió audio");
 
-            // 1. Whisper con corrección de nombre de archivo
+            // Whisper: Traducir voz a texto
             const transcription = await openai.audio.transcriptions.create({
                 file: fs.createReadStream(files.audio[0].path),
                 model: "whisper-1",
                 language: "es"
             });
 
-            // 2. GPT-4o: Intenciones avanzadas
+            // GPT-4o: Entender qué quieres hacer
             const aiResponse = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
                     {
                         role: "system",
                         content: `Eres el Asistente Full de REGO-FIX. Hoy es ${new Date().toLocaleDateString()}.
-                        Detecta: CONSULTAR_OPORTUNIDADES, CONSULTAR_RESUMEN, AGENDAR_CITA, REGISTRAR_ACTIVIDAD.
+                        Acciones: CONSULTAR_OPORTUNIDADES, CONSULTAR_RESUMEN, AGENDAR_CITA, REGISTRAR_ACTIVIDAD.
+                        Para 'empresa_busqueda', extrae solo el nombre principal (ej: de "Nurlein México" extrae "Nurlein").
                         JSON: { "intent", "empresa_busqueda", "asunto", "detalles", "fecha", "hora" }`
                     },
                     { role: "user", content: transcription.text }
@@ -86,7 +87,6 @@ export default async function handler(req, res) {
 
             const plan = JSON.parse(aiResponse.choices[0].message.content);
 
-            // 3. Conexión Salesforce para Consultas
             const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
                 method: 'POST',
                 body: new URLSearchParams({
@@ -98,20 +98,20 @@ export default async function handler(req, res) {
             const authData = await authRes.json();
             const conn = new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 
-            // --- LÓGICA DE CONSULTA ---
+            // Consultas directas (Oportunidades y Resumen)
             if (plan.intent === 'CONSULTAR_OPORTUNIDADES') {
-                const opps = await conn.query(`SELECT Name, StageName FROM Opportunity WHERE OwnerId = '${myOwnerId}' AND IsClosed = false LIMIT 3`);
-                const msg = opps.records.length > 0 ? "Tus oportunidades: " + opps.records.map(o => o.Name).join(", ") : "No tienes oportunidades abiertas.";
+                const opps = await conn.query(`SELECT Name, Amount FROM Opportunity WHERE OwnerId = '${myOwnerId}' AND IsClosed = false LIMIT 3`);
+                const msg = opps.records.length > 0 ? "Oportunidades: " + opps.records.map(o => `${o.Name} ($${o.Amount || 0})`).join(", ") : "No tienes oportunidades abiertas.";
                 return res.status(200).json({ success: true, message: msg, transcript: transcription.text });
             }
 
             if (plan.intent === 'CONSULTAR_RESUMEN') {
-                const last = await conn.query(`SELECT Subject FROM Task WHERE OwnerId = '${myOwnerId}' AND Status = 'Completed' ORDER BY CreatedDate DESC LIMIT 1`);
-                const msg = last.records.length > 0 ? `Tu última visita fue: ${last.records[0].Subject}` : "No hay registros recientes.";
+                const lastTask = await conn.query(`SELECT Subject FROM Task WHERE OwnerId = '${myOwnerId}' AND Status = 'Completed' ORDER BY CreatedDate DESC LIMIT 1`);
+                const msg = lastTask.records.length > 0 ? `Tu última actividad fue: ${lastTask.records[0].Subject}` : "Sin registros recientes.";
                 return res.status(200).json({ success: true, message: msg, transcript: transcription.text });
             }
 
-            // --- BÚSQUEDA DE CUENTAS PARA REGISTRO ---
+            // Búsqueda de empresa para registros
             const accounts = await conn.query(`SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%${plan.empresa_busqueda}%' LIMIT 5`);
 
             res.status(200).json({ 
