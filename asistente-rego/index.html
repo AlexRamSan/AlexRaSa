@@ -3,34 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REGO-FIX | Voice Assistant</title>
+    <title>REGO-FIX | Full Assistant</title>
     <style>
         :root { --rf-blue: #0044BB; --rf-lime: #76FF03; --rf-bg: #F4F7F6; --rf-white: #FFFFFF; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--rf-bg); padding: 20px; display: flex; justify-content: center; margin: 0; }
         .card { background: var(--rf-white); padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 450px; text-align: center; border-top: 6px solid var(--rf-blue); margin-top: 20px; }
-        .logo { max-width: 150px; margin-bottom: 20px; }
+        .logo { max-width: 140px; margin-bottom: 20px; }
         .mic-btn { width: 90px; height: 90px; border-radius: 50%; border: none; background: var(--rf-blue); color: white; font-size: 35px; cursor: pointer; transition: 0.3s; margin: 20px 0; outline: none; }
-        .mic-btn.recording { background: var(--rf-lime); color: #000; animation: pulse 1.5s infinite; }
+        .mic-btn.recording { background: var(--rf-lime); color: #000; animation: pulse 1.2s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .status { font-weight: bold; font-size: 13px; color: var(--rf-blue); text-transform: uppercase; margin-bottom: 10px; }
         .result-box { background: #f0f4f8; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; display: none; border-left: 5px solid var(--rf-blue); }
         .transcript { font-style: italic; color: #7f8c8d; font-size: 12px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .account-item { background: #fff; padding: 12px; border: 1px solid #d1d8e0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .account-list { text-align: left; max-height: 250px; overflow-y: auto; margin-top: 15px; }
+        .account-item { background: #fff; padding: 12px; border: 1px solid #d1d8e0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 14px; }
         .account-item:hover { border-color: var(--rf-blue); background: #f4f8ff; }
+        .search-input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <img src="/assets/regofixlogo.png" class="logo">
-    <h2>Asistente de Voz</h2>
+    <h2>Asistente</h2>
     <div id="status" class="status">Pulsa para hablar</div>
     <button class="mic-btn" id="micBtn">🎤</button>
 
     <div id="resultBox" class="result-box">
         <div class="transcript" id="transcript"></div>
         <div id="aiMessage"></div>
-        <div id="listContainer" style="margin-top:15px;"></div>
+        
+        <div id="accountSection" style="display:none; margin-top: 15px;">
+            <input type="text" id="manualSearch" class="search-input" placeholder="Filtrar cuentas manualmente...">
+            <div id="listContainer" class="account-list"></div>
+        </div>
     </div>
 </div>
 
@@ -39,12 +45,15 @@
     const statusText = document.getElementById('status');
     const resultBox = document.getElementById('resultBox');
     const aiMessage = document.getElementById('aiMessage');
+    const accountSection = document.getElementById('accountSection');
     const listContainer = document.getElementById('listContainer');
+    const manualSearch = document.getElementById('manualSearch');
 
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
     let lastPlan = null;
+    let allAccounts = [];
 
     micBtn.onclick = async () => {
         if (!isRecording) {
@@ -52,10 +61,7 @@
             mediaRecorder = new MediaRecorder(stream);
             audioChunks = [];
             mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                processAudio(blob);
-            };
+            mediaRecorder.onstop = () => processAudio(new Blob(audioChunks, { type: 'audio/webm' }));
             mediaRecorder.start();
             isRecording = true;
             micBtn.classList.add('recording');
@@ -71,40 +77,65 @@
 
     async function processAudio(blob) {
         const formData = new FormData();
-        // ESTO ARREGLA EL ERROR 400: Le damos nombre al archivo
+        // CORRECCIÓN ERROR 400: Enviamos como .webm
         formData.append('audio', blob, 'registro.webm'); 
 
         try {
-            const res = await fetch('https://alex-ra-sa.vercel.app/api/asistente', { method: 'POST', body: formData });
+            const res = await fetch('/api/asistente', { method: 'POST', body: formData });
             const data = await res.json();
 
             if (data.success) {
+                lastPlan = data.plan;
                 resultBox.style.display = 'block';
                 document.getElementById('transcript').innerText = `"${data.transcript}"`;
                 
-                if (data.message) {
-                    aiMessage.innerText = data.message;
-                } else if (data.needSelection) {
-                    lastPlan = data.plan;
-                    aiMessage.innerText = "Selecciona la cuenta:";
-                    listContainer.innerHTML = '';
-                    data.accounts.forEach(acc => {
-                        const div = document.createElement('div');
-                        div.className = 'account-item';
-                        div.innerHTML = `<strong>${acc.Name}</strong><br><small>${acc.BillingCity || ''}</small>`;
-                        div.onclick = () => confirmar(acc.Id, acc.Name);
-                        listContainer.appendChild(div);
-                    });
+                if (data.accounts && data.accounts.length > 0) {
+                    aiMessage.innerText = "Selecciona la cuenta correcta:";
+                    renderList(data.accounts);
                 } else {
-                    aiMessage.innerText = "No encontré la empresa. Intenta decir solo el nombre principal.";
+                    aiMessage.innerText = "⚠️ No encontré la cuenta automáticamente. Selecciónala del menú:";
+                    loadAllAccounts();
                 }
                 statusText.innerText = "Listo";
             } else {
                 alert("Error: " + data.error);
-                statusText.innerText = "Error";
+                statusText.innerText = "Reintentar";
             }
         } catch (e) { statusText.innerText = "Error de Red"; }
     }
+
+    async function loadAllAccounts() {
+        accountSection.style.display = 'block';
+        listContainer.innerHTML = 'Cargando tus cuentas de Salesforce...';
+        
+        const formData = new FormData();
+        formData.append('action', 'getAllAccounts');
+        
+        const res = await fetch('/api/asistente', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            allAccounts = data.accounts;
+            renderList(allAccounts);
+        }
+    }
+
+    function renderList(accounts) {
+        accountSection.style.display = 'block';
+        listContainer.innerHTML = '';
+        accounts.forEach(acc => {
+            const div = document.createElement('div');
+            div.className = 'account-item';
+            div.innerHTML = `<strong>${acc.Name}</strong><br><small>${acc.BillingCity || ''}</small>`;
+            div.onclick = () => confirmar(acc.Id, acc.Name);
+            listContainer.appendChild(div);
+        });
+    }
+
+    manualSearch.oninput = (e) => {
+        const val = e.target.value.toLowerCase();
+        const filtered = allAccounts.filter(a => a.Name.toLowerCase().includes(val));
+        renderList(filtered);
+    };
 
     async function confirmar(id, name) {
         statusText.innerText = "Sincronizando...";
@@ -119,11 +150,11 @@
             hora: lastPlan.hora
         }));
 
-        const res = await fetch('https://alex-ra-sa.vercel.app/api/asistente', { method: 'POST', body: formData });
+        const res = await fetch('/api/asistente', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success) {
-            aiMessage.innerHTML = `<b style="color:green">✅ Guardado en ${name}</b>`;
-            listContainer.innerHTML = '';
+            aiMessage.innerHTML = `<b style="color:green">✅ Sincronizado en: ${name}</b>`;
+            accountSection.style.display = 'none';
             statusText.innerText = "Completado";
         }
     }
