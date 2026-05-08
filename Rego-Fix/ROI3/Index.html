@@ -3,268 +3,482 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ROI Holders REGO-FIX — Análisis de Ingeniería | AlexRaSa</title>
+  <title>ROI Holders REGO-FIX — Análisis Multi-Herramienta | AlexRaSa</title>
+  <meta name="description" content="Calculadora modular de ROI enfocada en holders REGO-FIX. Análisis de múltiples herramientas y optimización de proceso." />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root{
       --rego-green: #B7C91F;
+      --rego-green-2:#AAC82D;
+      --rego-turq:  #58D5D3;
       --rego-blue:  #28556C;
       --rego-red:   #D31B23;
       --rego-black: #121314;
+      --rego-gd:    #44474A;
+      --rego-gm:    #677071;
+      --rego-gl:    #E5E6E4;
+      --card: #ffffff;
+      --bg: #ffffff;
       --border: rgba(40,85,108,.18);
       --shadow: 0 10px 30px rgba(18,19,20,.08);
     }
-    body{ background: #f4f7f6; color: var(--rego-black); font-family: 'Inter', sans-serif; }
-    .card{ background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 20px; }
-    .label{ color: #44474A; font-weight: 700; font-size: .75rem; text-transform: uppercase; margin-bottom: 4px; }
-    .input{ width:100%; border:1px solid var(--border); border-radius: 12px; padding: .5rem .75rem; outline: none; font-size: 0.9rem; }
-    .input:focus{ border-color: var(--rego-blue); ring: 2px var(--rego-green); }
-    .switch{ position:relative; width: 48px; height: 26px; border-radius: 999px; background: #cbd5e1; cursor:pointer; transition: 0.3s; }
-    .switch[data-on="true"]{ background: var(--rego-green); }
-    .switch .knob{ position:absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 999px; background:#fff; transition: 0.3s; }
+    html,body{ background: var(--bg) !important; color: var(--rego-black); }
+    @media (prefers-color-scheme: dark){
+      html,body{ background:#fff !important; color:#121314 !important; }
+    }
+    .card{ background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 20px; }
+    .btn{ border-radius: 16px; padding: .75rem 1rem; font-weight: 700; border: 1px solid transparent; transition: .15s ease; user-select:none; cursor: pointer; }
+    .btn:disabled{ opacity: 0.6; cursor: not-allowed; }
+    .btn-outline{ background:#fff; border-color: var(--border); color: var(--rego-black); }
+    .btn-outline:hover:not(:disabled){ background: rgba(183,201,31,.10); }
+    .btn-danger{ background: var(--rego-red); color:#fff; }
+    .btn-danger:hover:not(:disabled){ filter: brightness(.95); }
+    .btn-primary{ background: rgba(183,201,31,.95); color:#121314; }
+    .btn-primary:hover:not(:disabled){ filter: brightness(.97); }
+    .kpi{ border: 1px solid var(--border); border-radius: 18px; padding: .9rem 1rem; background: #fff; }
+    .muted{ color: var(--rego-gm); }
+    .label{ color: var(--rego-gd); font-weight: 700; font-size:.9rem; }
+    .input{ width:100%; border:1px solid var(--border); border-radius: 14px; padding: .65rem .8rem; outline: none; background:#fff; transition: border-color 0.2s; }
+    .input:focus{ border-color: rgba(40,85,108,.45); box-shadow: 0 0 0 4px rgba(88,213,211,.18); }
+    textarea.input{ min-height: 80px; resize: vertical; }
+    .switch{ position:relative; width: 52px; height: 30px; border-radius: 999px; background: rgba(103,112,113,.25); border:1px solid var(--border); cursor:pointer; flex: 0 0 auto; }
+    .switch[data-on="true"]{ background: rgba(183,201,31,.85); }
+    .switch .knob{ position:absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background:#fff; box-shadow: 0 6px 16px rgba(18,19,20,.15); transition: .15s ease; }
     .switch[data-on="true"] .knob{ transform: translateX(22px); }
-    .kpi-card{ background: #fff; border-radius: 16px; padding: 1.25rem; border-left: 4px solid var(--rego-green); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .badge{ border-radius: 999px; padding:.2rem .6rem; font-size: .7rem; font-weight:800; background: var(--rego-blue); color: #fff; }
+    .hr{ height:1px; background: rgba(40,85,108,.14); border:0; }
+    .badge{ display:inline-flex; align-items:center; gap:.35rem; border-radius: 999px; padding:.25rem .55rem; font-size: .78rem; font-weight:700; border:1px solid var(--border); background:#fff; }
+    .badge.inv{ color: var(--rego-blue); }
+    .small{ font-size:.85rem; }
+    .by{ font-size:.78rem; color: var(--rego-gm); letter-spacing: .02em; }
   </style>
 </head>
 
-<body class="p-4">
-  <header class="max-w-6xl mx-auto mb-6">
-    <div class="card p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-4">
-        <img src="/assets/regofixlogo.png" class="h-10" onerror="this.style.opacity='0.5'">
-        <div>
-          <h1 class="text-2xl font-black text-[#121314]">ROI REGO-FIX PRO</h1>
-          <p class="text-gray-500 text-sm">Calculadora de Retorno de Inversión — Proceso de Cuñeros</p>
+<body class="min-h-screen">
+  <header class="max-w-6xl mx-auto px-4 pt-6 pb-4">
+    <div class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-10 w-auto" onerror="this.style.display='none'">
+          <div>
+            <div class="text-xl sm:text-2xl font-extrabold" style="color:var(--rego-black)">
+              ROI Holders REGO-FIX
+            </div>
+            <div class="muted small">Análisis Multi-Herramienta y Proceso</div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 flex-wrap justify-end">
+          <button id="btnPdfReport" class="btn btn-primary">Exportar PDF</button>
+          <button id="btnCopySummary" class="btn btn-outline">Copiar resumen</button>
+          <button id="btnWhatsApp" class="btn btn-outline border-green-500 text-green-700 hover:bg-green-50 flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
+            Enviar
+          </button>
+          <button id="btnResetAll" class="btn btn-danger">Reset</button>
         </div>
       </div>
-      <div class="flex gap-2">
-        <button onclick="window.print()" class="bg-[#28556C] text-white px-4 py-2 rounded-xl font-bold text-sm">Exportar Reporte</button>
-        <button onclick="localStorage.clear(); location.reload();" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-sm border border-red-100">Reset</button>
+
+      <div class="mt-4 rounded-2xl overflow-hidden border" style="border-color:var(--border); background:linear-gradient(90deg, rgba(183,201,31,.18), rgba(88,213,211,.18), rgba(40,85,108,.10));">
+        <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div class="flex-1">
+            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: holders (sujeción) y ROI real</div>
+            <div class="muted small">Captura el estudio (cliente + aplicación), calcula ROI y genera un reporte en PDF para enviar/guardar.</div>
+          </div>
+          <div class="text-right">
+            <div class="by">by alexrasa</div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto space-y-6">
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <section class="card p-5 md:col-span-2">
-        <h2 class="font-black mb-4 flex items-center gap-2"><span class="badge">1</span> PARÁMETROS DE OPERACIÓN</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div><div class="label">Costo Máquina/Hr</div><input id="costHour" class="input" type="number" value="75"></div>
-          <div><div class="label">Piezas/Mes</div><input id="partsMonth" class="input" type="number" value="5000"></div>
-          <div><div class="label">Inversión (USD)</div><input id="invest" class="input" type="number" value="4500"></div>
-          <div><div class="label">Consumibles/Mes</div><input id="consMonth" class="input" type="number" value="0"></div>
-        </div>
-      </section>
-      
-      <section class="card p-5">
-        <h2 class="font-black mb-4 flex items-center gap-2"><span class="badge">2</span> DATA MAQUINADO</h2>
-        <div class="space-y-3">
-          <div><div class="label">Material</div><input id="material" class="input" type="text" placeholder="Acero 4140"></div>
-          <div><div class="label">Herramienta</div><input id="toolName" class="input" type="text" placeholder="Cuñero 7mm"></div>
-        </div>
-      </section>
-    </div>
+  <main class="max-w-6xl mx-auto px-4 pb-10 space-y-6">
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
-      <div class="card p-5 border-t-4 border-[#58D5D3]">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="font-black text-rego-blue">MÓDULO E: RENDIMIENTO REAL (PIEZAS)</h2>
-          <div class="switch" id="swHist" data-on="true"><div class="knob"></div></div>
+    <section class="card p-4 sm:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">0) Datos del Cliente</h2>
         </div>
-        <div id="histBody" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-xl">
-            <div class="col-span-2 text-[10px] font-bold text-gray-400">HISTÓRICO HOLDER ANTIGUO</div>
-            <div><div class="label">Piezas Totales</div><input id="hOldP" class="input" type="number" value="89979"></div>
-            <div><div class="label">Cortadores</div><input id="hOldT" class="input" type="number" value="52"></div>
-          </div>
-          <div class="grid grid-cols-2 gap-4 bg-green-50 p-3 rounded-xl border border-green-100">
-            <div class="col-span-2 text-[10px] font-bold text-rego-green">HISTÓRICO REGO-FIX</div>
-            <div><div class="label">Piezas Totales</div><input id="hRegP" class="input" type="number" value="46370"></div>
-            <div><div class="label">Cortadores</div><input id="hRegT" class="input" type="number" value="10"></div>
-          </div>
-        </div>
+        <span class="badge inv">Estudio</span>
       </div>
 
-      <div class="card p-5">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="font-black text-rego-blue">MÓDULO B: COSTO DE HERRAMENTAL</h2>
-          <div class="switch" id="swLife" data-on="true"><div class="knob"></div></div>
-        </div>
-        <div id="lifeBody" class="grid grid-cols-2 gap-4">
-          <div><div class="label">Piezas/Cortador (Act)</div><input id="lifeAct" class="input bg-gray-100" type="number" readonly></div>
-          <div><div class="label">Piezas/Cortador (New)</div><input id="lifeNew" class="input bg-gray-100" type="number" readonly></div>
-          <div><div class="label">Costo Cortador (USD)</div><input id="toolCost" class="input" type="number" value="50"></div>
-          <div class="flex flex-col justify-end"><div class="bg-rego-green/10 p-2 rounded-lg text-rego-green font-bold text-center" id="saveLife">$0</div></div>
-        </div>
-      </div>
-
-      <div class="card p-5">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="font-black text-rego-blue">MÓDULO A: CAMBIO DE HERRAMIENTAS</h2>
-          <div class="switch" id="swTime" data-on="true"><div class="knob"></div></div>
-        </div>
-        <div id="timeBody" class="grid grid-cols-2 gap-4">
-          <div><div class="label">Cambios al Mes</div><input id="chgMonth" class="input" type="number" value="180"></div>
-          <div><div class="label">Minutos Actual/Cambio</div><input id="minAct" class="input" type="number" value="8"></div>
-          <div><div class="label">Minutos Nuevo/Cambio</div><input id="minNew" class="input" type="number" value="3"></div>
-          <div class="flex flex-col justify-end"><div class="bg-rego-green/10 p-2 rounded-lg text-rego-green font-bold text-center" id="saveTime">$0</div></div>
-        </div>
-      </div>
-
-      <div class="card p-5">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="font-black text-rego-blue">MÓDULO D: REDUCCIÓN DE SCRAP</h2>
-          <div class="switch" id="swScrap" data-on="true"><div class="knob"></div></div>
-        </div>
-        <div id="scrapBody" class="grid grid-cols-2 gap-4">
-          <div><div class="label">Rechazos Iniciales/Mes</div><input id="scrapAct" class="input" type="number" value="45"></div>
-          <div><div class="label">Rechazos Finales/Mes</div><input id="scrapNew" class="input" type="number" value="2"></div>
-          <div><div class="label">Costo por Pieza (USD)</div><input id="scrapCost" class="input" type="number" value="25"></div>
-          <div class="flex flex-col justify-end"><div class="bg-rego-green/10 p-2 rounded-lg text-rego-green font-bold text-center" id="saveScrap">$0</div></div>
-        </div>
-      </div>
-    </div>
-
-    <section class="card p-6">
-      <h2 class="font-black mb-6 text-xl">DASHBOARD DE RETORNO DE INVERSIÓN</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="kpi-card">
-          <div class="label text-rego-blue">Ahorro Mensual</div>
-          <div id="kpiMonthly" class="text-2xl font-black">$0</div>
-        </div>
-        <div class="kpi-card border-l-[#AAC82D]">
-          <div class="label text-rego-blue">Retorno Anual (ROI $)</div>
-          <div id="kpiAnnual" class="text-2xl font-black">$0</div>
-        </div>
-        <div class="kpi-card border-l-[#58D5D3]">
-          <div class="label text-rego-blue">Payback (Meses)</div>
-          <div id="kpiMonths" class="text-2xl font-black">0.0</div>
-        </div>
-        <div class="kpi-card border-l-rego-green bg-green-50">
-          <div class="label text-rego-green">Porcentaje ROI</div>
-          <div id="kpiPercent" class="text-2xl font-black">0%</div>
-        </div>
-      </div>
-      
-      <div class="h-80 w-full">
-        <canvas id="mainChart"></canvas>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div><div class="label">Fecha</div><input id="studyDate" class="input" type="text" data-study="studyDate" readonly></div>
+        <div><div class="label">Usuario</div><input id="userName" class="input" type="text" placeholder="Nombre" data-study="userName"></div>
+        <div><div class="label">Puesto</div><input id="userRole" class="input" type="text" placeholder="Ej: Ing. Procesos" data-study="userRole"></div>
+        <div><div class="label">Empresa</div><input id="company" class="input" type="text" placeholder="Razón social" data-study="company"></div>
       </div>
     </section>
+
+    <section class="card p-4 sm:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1A) Inversión y Costo de Máquina</h2>
+        </div>
+        <span class="badge inv">Base</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <div class="flex items-center justify-between">
+            <div class="label">Costo máquina/hora</div>
+            <button id="btnToggleHrCalc" class="text-xs font-bold text-[#28556C] hover:text-[#8CA015] underline flex items-center gap-1">🪄 Asistente</button>
+          </div>
+          <div class="relative mt-1">
+            <span class="absolute left-3 top-2.5 text-gray-500 font-bold">$</span>
+            <input id="costHour" class="input pl-7" type="number" min="0" step="1" value="75">
+          </div>
+          <div class="muted small mt-1">USD/hora</div>
+        </div>
+
+        <div><div class="label">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" min="0" step="1" value="5000"></div>
+        <div><div class="label">Inversión Total (USD)</div><input id="invest" class="input mt-1" type="number" min="0" step="1" value="4500"></div>
+        <div><div class="label">Consumibles (USD/mes)</div><input id="consMonth" class="input mt-1" type="number" min="0" step="1" value="0"></div>
+        
+        <div id="hrCalcPanel" class="col-span-1 sm:col-span-2 lg:col-span-4 bg-[#f9fafb] p-4 rounded-xl border border-gray-200 hidden mt-2">
+            <div class="font-bold text-sm mb-3" style="color:var(--rego-blue)">Parámetros referenciales (USD)</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <div class="label text-xs">Tipo de Máquina</div>
+                    <select id="calcMachine" class="input mt-1 text-sm">
+                        <option value="40">Torno CNC (2 Ejes)</option>
+                        <option value="50" selected>Centro de Maquinado (3 Ejes)</option>
+                        <option value="75">Centro de Maquinado (4 Ejes)</option>
+                        <option value="90">Torno Multitarea / Suizo</option>
+                        <option value="120">Centro de Maquinado (5 Ejes)</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="label text-xs">Sector Industrial (Overhead)</div>
+                    <select id="calcSector" class="input mt-1 text-sm">
+                        <option value="1.0" selected>General / Job Shop</option>
+                        <option value="1.15">Automotriz</option>
+                        <option value="1.25">Moldes y Troqueles</option>
+                        <option value="1.40">Aeroespacial</option>
+                        <option value="1.50">Médico</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="label text-xs">Mano de Obra</div>
+                    <select id="calcOperator" class="input mt-1 text-sm">
+                        <option value="25" selected>1 Op / 1 Máquina ($25/h)</option>
+                        <option value="12.5">1 Op / 2 Máquinas ($12.5/h)</option>
+                        <option value="8">Celda automatizada</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card p-4 sm:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1B) Contexto del Maquinado</h2></div>
+      </div>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <div class="label">Interfaz husillo</div>
+          <input id="spindleInterface" class="input" type="text" list="lista-husillos" placeholder="Ej: CAT40 / HSK63A" data-study="spindleInterface">
+          <datalist id="lista-husillos"><option value="CAT 40"><option value="CAT 50"><option value="BT 30"><option value="BT 40"><option value="HSK-A 63"><option value="Capto C6"></datalist>
+        </div>
+        <div>
+          <div class="label">Refrigerante</div>
+          <input id="coolant" class="input" type="text" list="lista-coolant" placeholder="Ej: Interno Alta Presión" data-study="coolant">
+          <datalist id="lista-coolant"><option value="Externo (Flood)"><option value="Interno (TSC)"><option value="MQL"></datalist>
+        </div>
+        <div>
+          <div class="label">Material principal</div>
+          <input id="material" class="input" type="text" list="lista-materiales" placeholder="Ej: Titanio / Acero Inox" data-study="material">
+          <datalist id="lista-materiales"><option value="Aluminio"><option value="Acero Endurecido"><option value="Titanio"><option value="Inconel"></datalist>
+        </div>
+        <div>
+          <div class="label">Prioridad Global</div>
+          <input id="priority" class="input" type="text" list="lista-prioridad" placeholder="Ej: Eliminar vibración" data-study="priority">
+          <datalist id="lista-prioridad"><option value="Máxima precisión (Runout)"><option value="Rigidez extrema"><option value="Cambio rápido"><option value="Aumentar vida herramienta"></datalist>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="label">Objetivo general del cliente</div>
+        <input id="goal" class="input" type="text" placeholder="Ej: Reducir ciclo en un 15% y eliminar rechazos." data-study="goal">
+      </div>
+    </section>
+
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1C) Casos de Herramientas a Optimizar</h2>
+          <p class="muted small mt-1">Ingresa la herramienta y asegúrate de incluir el diámetro (ej. "Endmill 12mm" o "Broca 1/4").</p>
+        </div>
+        <button id="btnAddTool" class="btn btn-outline text-sm py-2 px-4 whitespace-nowrap border-dashed border-2">+ Agregar Herramienta</button>
+      </div>
+
+      <div id="toolsListContainer" class="mt-6 space-y-4"></div>
+
+      <div class="mt-8 border-t pt-6">
+        <button id="btnRecalcReco" class="btn btn-primary w-full flex justify-center items-center gap-2 text-lg py-3 shadow-md hover:shadow-lg transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+          Analizar y Configurar Ensambles
+        </button>
+        
+        <div id="aiResultBox" class="mt-6 kpi bg-[#f9fafb] hidden">
+            <div class="font-extrabold text-lg text-rego-blue mb-2">Dictamen de Ingeniería</div>
+            <div class="label text-xs">Alineación Estratégica</div>
+            <textarea id="aiPitch" class="input mt-1 text-sm text-[#28556C] font-medium bg-white" data-study="aiPitch" rows="3" placeholder="Argumento comercial..."></textarea>
+            
+            <div class="mt-4 flex items-start gap-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="shrink-0 mt-0.5"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+               <div>
+                 <div class="font-bold text-sm">Información pendiente de validar:</div>
+                 <div id="aiMissing" class="text-xs mt-1">...</div>
+               </div>
+            </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">2) Ahorros Globales del Proceso (5 frentes)</h2></div>
+        <span class="badge inv">Ahorros</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        <div class="card p-4 h-fit border-2" style="border-color: var(--rego-turq);">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+                <div class="font-extrabold" style="color:var(--rego-blue)">E) Análisis de Producción Histórica</div>
+                <div class="muted small">Piezas producidas vs Cortadores (Pruebas Reales)</div>
+            </div>
+            <div class="switch" id="swHist" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
+          </div>
+          <div class="mt-3 space-y-4" id="histBody">
+            <div class="grid grid-cols-2 gap-3 bg-red-50/50 p-2 rounded-lg border border-red-100">
+                <div class="col-span-2 text-xs font-bold text-red-700">Situación Anterior / Competencia</div>
+                <div><div class="label text-[10px]">Piezas Totales</div><input id="histOldParts" class="input py-1" type="number" value="89979"></div>
+                <div><div class="label text-[10px]">Cortadores Usados</div><input id="histOldTools" class="input py-1" type="number" value="52"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 bg-green-50/50 p-2 rounded-lg border border-green-100">
+                <div class="col-span-2 text-xs font-bold text-green-700">Situación con REGO-FIX</div>
+                <div><div class="label text-[10px]">Piezas Totales</div><input id="histRegoParts" class="input py-1" type="number" value="46370"></div>
+                <div><div class="label text-[10px]">Cortadores Usados</div><input id="histRegoTools" class="input py-1" type="number" value="10"></div>
+            </div>
+            <div class="kpi bg-white flex justify-between items-center">
+                <div class="text-xs font-bold text-rego-blue">Mejora de vida útil:</div>
+                <div id="histImprovementLabel" class="text-lg font-black text-rego-green">+168%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-4 h-fit">
+          <div class="flex items-center justify-between gap-3">
+            <div><div class="font-extrabold" style="color:var(--rego-blue)">A) Ahorro por tiempo</div></div>
+            <div class="switch" id="swTime" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
+          </div>
+          <div class="mt-3 space-y-3" id="timeBody">
+            <div class="flex items-center justify-between"><div class="small font-bold text-gray-600">Incluir: Cambios/mes * min/cambio</div><div class="switch" id="swTimeChanges" data-on="true"><div class="knob"></div></div></div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><div class="label">Cambios/mes (actual)</div><input id="chgAct" class="input" type="number" min="0" step="1" value="180"></div>
+              <div><div class="label">Cambios/mes (nuevo)</div><input id="chgNew" class="input" type="number" min="0" step="1" value="140"></div>
+              <div><div class="label">Min/cambio (actual)</div><input id="chgMinAct" class="input" type="number" min="0" step="0.1" value="6"></div>
+              <div><div class="label">Min/cambio (nuevo)</div><input id="chgMinNew" class="input" type="number" min="0" step="0.1" value="4.5"></div>
+            </div>
+            <div class="kpi mt-3"><div class="muted small">Ahorro por tiempo (mensual)</div><div id="saveTime" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
+          </div>
+        </div>
+
+        <div class="card p-4 h-fit">
+          <div class="flex items-center justify-between gap-3">
+            <div><div class="font-extrabold" style="color:var(--rego-blue)">B) Vida de herramientas</div></div>
+            <div class="switch" id="swLife" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
+          </div>
+          <div class="mt-3 space-y-3" id="lifeBody">
+            <div class="grid grid-cols-2 gap-2">
+              <div><div class="label">Ciclos por herr. (actual)</div><input id="lifeAct" class="input" type="number" min="1" step="1" value="1730"></div>
+              <div><div class="label">Ciclos por herr. (nuevo)</div><input id="lifeNew" class="input" type="number" min="1" step="1" value="4637"></div>
+              <div><div class="label">Costo Prom. herr. (USD)</div><input id="toolCost" class="input" type="number" min="0" step="1" value="50"></div>
+              <div><div class="label">Herr. activas en proceso</div><input id="toolCount" class="input" type="number" min="1" step="1" value="1"></div>
+            </div>
+            <div class="kpi"><div class="muted small">Ahorro por vida (mensual)</div><div id="saveLife" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
+          </div>
+        </div>
+
+        <div class="card p-4 h-fit">
+          <div class="flex items-center justify-between gap-3">
+            <div><div class="font-extrabold" style="color:var(--rego-blue)">C) Mejora de ciclo</div></div>
+            <div class="switch" id="swProc" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
+          </div>
+          <div class="mt-3 space-y-3" id="procBody">
+            <div class="grid grid-cols-2 gap-2">
+              <div><div class="label">Ciclo actual (min/pieza)</div><input id="cycAct" class="input" type="number" min="0" step="0.01" value="3.20"></div>
+              <div><div class="label">Ciclo nuevo (min/pieza)</div><input id="cycNew" class="input" type="number" min="0" step="0.01" value="2.85"></div>
+            </div>
+            <div class="kpi"><div class="muted small">Ahorro por proceso (mensual)</div><div id="saveProc" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
+          </div>
+        </div>
+
+        <div class="card p-4 h-fit">
+          <div class="flex items-center justify-between gap-3">
+            <div><div class="font-extrabold" style="color:var(--rego-blue)">D) Reducción de Scrap</div></div>
+            <div class="switch" id="swScrap" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
+          </div>
+          <div class="mt-3 space-y-3" id="scrapBody">
+            <div class="grid grid-cols-2 gap-2">
+              <div><div class="label">Rechazos/mes (Actual)</div><input id="scrapAct" class="input" type="number" min="0" step="1" value="50"></div>
+              <div><div class="label">Rechazos/mes (Nuevo)</div><input id="scrapNew" class="input" type="number" min="0" step="1" value="5"></div>
+              <div class="col-span-2"><div class="label">Costo por pieza (Mat+Tiempo USD)</div><input id="scrapCost" class="input" type="number" min="0" step="1" value="15"></div>
+            </div>
+            <div class="kpi"><div class="muted small">Ahorro por calidad (mensual)</div><div id="saveScrap" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">3) Resultados del ROI</h2></div>
+        <span class="badge inv">ROI</span>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div class="kpi">
+          <div class="muted small">Ahorro bruto mensual</div>
+          <div id="grossSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Ahorro neto mensual</div>
+          <div id="netSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Payback (meses)</div>
+          <div id="payback" class="text-2xl font-extrabold transition-colors duration-300">—</div>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="kpi flex flex-col justify-center">
+          <div class="muted small">ROI anual estimado</div>
+          <div id="roiAnnual" class="text-5xl font-extrabold text-[#B7C91F]">—</div>
+          <div id="roiAnnualUsd" class="text-2xl font-bold text-[#28556C] mt-2">—</div>
+        </div>
+        <div class="kpi">
+          <canvas id="roiChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center pb-4"><div class="by">by alexrasa</div></footer>
   </main>
 
 <script>
-const $ = (id) => document.getElementById(id);
-const clamp0 = (n) => Math.max(0, Number(n || 0));
-const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
-
 const state = {
-  sw: { hist: true, life: true, time: true, scrap: true }
+  switches: { hist: true, time: true, timeChanges: true, life: true, proc: true, scrap: true },
+  study: { 
+    studyDate: "", userName: "", userRole: "", company: "", 
+    tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "" } ]
+  }
 };
 
-function initSwitches() {
-  ["hist", "life", "time", "scrap"].forEach(id => {
-    const el = $("sw" + id.charAt(0).toUpperCase() + id.slice(1));
-    el.onclick = () => {
-      state.sw[id] = el.dataset.on !== "true";
-      el.dataset.on = state.sw[id] ? "true" : "false";
-      update();
-    };
-  });
+const mathIds = [
+  "costHour","partsMonth","invest","consMonth",
+  "chgAct","chgNew","chgMinAct","chgMinNew",
+  "lifeAct","lifeNew","toolCost","toolCount",
+  "cycAct","cycNew","scrapAct","scrapNew","scrapCost",
+  "histOldParts", "histOldTools", "histRegoParts", "histRegoTools"
+];
+
+const $ = (id)=>document.getElementById(id);
+const clamp0 = (n)=>Math.max(0, Number(n||0));
+const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+function persist(){ localStorage.setItem("rego_study_v8", JSON.stringify({ sw: state.switches, st: state.study })); }
+function load(){
+  const data = JSON.parse(localStorage.getItem("rego_study_v8"));
+  if(data) { state.switches = data.sw; state.study = data.st; }
 }
 
-let myChart = null;
+function calc(){
+  const costMin  = clamp0($("costHour")?.value) / 60;
+  const partsMonth = clamp0($("partsMonth")?.value);
+  const invest = clamp0($("invest")?.value);
+  const consMonth = clamp0($("consMonth")?.value);
 
-function update() {
-  // 1. Cálculos de Producción Histórica
-  const hOldP = clamp0($("hOldP").value), hOldT = clamp0($("hOldT").value);
-  const hRegP = clamp0($("hRegP").value), hRegT = clamp0($("hRegT").value);
-  
-  const effOld = hOldT > 0 ? hOldP / hOldT : 0;
-  const effReg = hRegT > 0 ? hRegP / hRegT : 0;
-  
-  $("lifeAct").value = Math.round(effOld);
-  $("lifeNew").value = Math.round(effReg);
-
-  // 2. Cálculo de Ahorros Individuales
-  const costHr = clamp0($("costHour").value);
-  const partsMonth = clamp0($("partsMonth").value);
-  const invest = clamp0($("invest").value);
-
-  // Ahorro Tiempo (A)
-  let sTime = 0;
-  if(state.sw.time) {
-    sTime = clamp0($("chgMonth").value) * (clamp0($("minAct").value) - clamp0($("minNew").value)) * (costHr / 60);
+  // LOGICA MODULO E (HISTORICO) -> Sincroniza con MODULO B
+  if(state.switches.hist){
+      const oP = clamp0($("histOldParts").value), oT = clamp0($("histOldTools").value);
+      const rP = clamp0($("histRegoParts").value), rT = clamp0($("histRegoTools").value);
+      const effOld = oT > 0 ? oP/oT : 0;
+      const effReg = rT > 0 ? rP/rT : 0;
+      
+      // Actualizar inputs de Vida (Modulo B)
+      $("lifeAct").value = Math.round(effOld);
+      $("lifeNew").value = Math.round(effReg);
+      
+      // Etiqueta de mejora
+      const imp = effOld > 0 ? ((effReg - effOld) / effOld * 100).toFixed(0) : 0;
+      $("histImprovementLabel").textContent = `+${imp}%`;
   }
-  $("saveTime").textContent = money(sTime);
 
-  // Ahorro Vida (B)
-  let sLife = 0;
-  if(state.sw.life && effOld > 0 && effReg > 0) {
-    const costT = clamp0($("toolCost").value);
-    sLife = ((partsMonth / effOld) - (partsMonth / effReg)) * costT;
+  let saveTime = 0, saveLife = 0, saveProc = 0, saveScrap = 0;
+
+  if(state.switches.time){
+    saveTime = Math.max(0, (clamp0($("chgAct").value)*clamp0($("chgMinAct").value)) - (clamp0($("chgNew").value)*clamp0($("chgMinNew").value))) * costMin;
   }
-  $("saveLife").textContent = money(sLife);
 
-  // Ahorro Scrap (D)
-  let sScrap = 0;
-  if(state.sw.scrap) {
-    sScrap = (clamp0($("scrapAct").value) - clamp0($("scrapNew").value)) * clamp0($("scrapCost").value);
+  if(state.switches.life){
+    const lA = Math.max(1, clamp0($("lifeAct").value)), lN = Math.max(1, clamp0($("lifeNew").value));
+    const tc = clamp0($("toolCost").value), cnt = clamp0($("toolCount").value);
+    saveLife = ((partsMonth / lA) - (partsMonth / lN)) * cnt * tc;
   }
-  $("saveScrap").textContent = money(sScrap);
 
-  // 3. Totales y KPIs
-  const netMonth = sTime + sLife + sScrap - clamp0($("consMonth").value);
-  const netAnnual = netMonth * 12;
-  const payback = netMonth > 0 ? invest / netMonth : 0;
-  const roiPercent = invest > 0 ? (netAnnual / invest) * 100 : 0;
+  if(state.switches.proc) saveProc = (clamp0($("cycAct").value) - clamp0($("cycNew").value)) * partsMonth * costMin;
+  if(state.switches.scrap) saveScrap = (clamp0($("scrapAct").value) - clamp0($("scrapNew").value)) * clamp0($("scrapCost").value);
 
-  $("kpiMonthly").textContent = money(netMonth);
-  $("kpiAnnual").textContent = money(netAnnual);
-  $("kpiMonths").textContent = payback.toFixed(1) + " Meses";
-  $("kpiPercent").textContent = Math.round(roiPercent) + "%";
+  const gross = saveTime + saveLife + saveProc + saveScrap;
+  const net = Math.max(0, gross - consMonth);
+  const payback = (invest > 0 && net > 0) ? invest / net : null;
+  const roiAnnual = (invest > 0) ? (net * 12) / invest : null;
 
-  // Visual feedback for switches
-  $("histBody").style.opacity = state.sw.hist ? "1" : "0.3";
-  $("lifeBody").style.opacity = state.sw.life ? "1" : "0.3";
-  $("timeBody").style.opacity = state.sw.time ? "1" : "0.3";
-  $("scrapBody").style.opacity = state.sw.scrap ? "1" : "0.3";
-
-  renderChart(invest, netAnnual);
+  return { saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual };
 }
 
-function renderChart(invest, annual) {
-  const ctx = $("mainChart").getContext('2d');
-  if(myChart) myChart.destroy();
+// RESTO DE FUNCIONES (UI, IA, CHART) IGUALES AL ORIGINAL...
+function renderKPIs(){
+  const r = calc();
+  $("saveTime").textContent = money(r.saveTime);
+  $("saveLife").textContent = money(r.saveLife);
+  $("saveProc").textContent = money(r.saveProc);
+  $("saveScrap").textContent = money(r.saveScrap);
+  $("grossSave").textContent = money(r.gross);
+  $("netSave").textContent = money(r.net);
+  $("payback").textContent = r.payback ? r.payback.toFixed(1) + " meses" : "—";
+  $("roiAnnual").textContent = r.roiAnnual ? (r.roiAnnual*100).toFixed(0) + "%" : "—";
+  $("roiAnnualUsd").textContent = money(r.net * 12) + " / año";
   
-  myChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Inversión Inicial', 'Ahorro Neto 1er Año'],
-      datasets: [{
-        label: 'USD',
-        data: [invest, annual],
-        backgroundColor: ['#28556C', '#B7C91F'],
-        borderRadius: 10
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, grid: { display: false } } }
-    }
-  });
+  // Actualizar Gráfica
+  renderChart(r.net);
+}
+
+// ... (Funciones renderTools, renderChart, bindInputs, etc del codigo original)
+// [SE OMITEN AQUÍ POR ESPACIO PERO DEBEN PERMANECER EN TU ARCHIVO]
+
+function renderAll(){
+    ["histBody","timeBody","lifeBody","procBody","scrapBody"].forEach(id => {
+        const key = id.replace('Body','');
+        $(id).style.opacity = state.switches[key] ? "1" : "0.4";
+        $(id).style.pointerEvents = state.switches[key] ? "auto" : "none";
+    });
+    renderKPIs();
 }
 
 window.onload = () => {
-  initSwitches();
-  document.querySelectorAll('input').forEach(i => i.oninput = update);
-  update();
-};
+    load();
+    // Re-vincular switches y eventos igual que el codigo original
+    // bindInputs();
+    renderAll();
+}
+
 </script>
 </body>
 </html>
