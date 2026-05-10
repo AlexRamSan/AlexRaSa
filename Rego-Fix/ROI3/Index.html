@@ -46,7 +46,6 @@
     .switch[data-on="true"]{ background: rgba(183,201,31,.85); }
     .switch .knob{ position:absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background:#fff; box-shadow: 0 6px 16px rgba(18,19,20,.15); transition: .15s ease; }
     .switch[data-on="true"] .knob{ transform: translateX(22px); }
-    .hr{ height:1px; background: rgba(40,85,108,.14); border:0; }
     .badge{ display:inline-flex; align-items:center; gap:.35rem; border-radius: 999px; padding:.25rem .55rem; font-size: .78rem; font-weight:700; border:1px solid var(--border); background:#fff; }
     .badge.inv{ color: var(--rego-blue); }
     .small{ font-size:.85rem; }
@@ -82,8 +81,8 @@
       <div class="mt-4 rounded-2xl overflow-hidden border" style="border-color:var(--border); background:linear-gradient(90deg, rgba(183,201,31,.18), rgba(88,213,211,.18), rgba(40,85,108,.10));">
         <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div class="flex-1">
-            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: holders (sujeción) y ROI real</div>
-            <div class="muted small">Captura el estudio (cliente + aplicación), calcula ROI y genera un reporte en PDF para enviar/guardar.</div>
+            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: Comparativa de Producción Histórica</div>
+            <div class="muted small">Análisis de dos años de producción paralela: REGO-FIX vs. Otros Sistemas.</div>
           </div>
           <div class="text-right">
             <div class="by">by alexrasa</div>
@@ -97,12 +96,9 @@
 
     <section class="card p-4 sm:p-6">
       <div class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">0) Datos del Cliente</h2>
-        </div>
+        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">0) Datos del Cliente</h2></div>
         <span class="badge inv">Estudio</span>
       </div>
-
       <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div><div class="label">Fecha</div><input id="studyDate" class="input" type="text" data-study="studyDate" readonly></div>
         <div><div class="label">Usuario</div><input id="userName" class="input" type="text" placeholder="Nombre" data-study="userName"></div>
@@ -113,166 +109,80 @@
 
     <section class="card p-4 sm:p-6">
       <div class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1A) Inversión y Costo de Máquina</h2>
-        </div>
-        <span class="badge inv">Base</span>
+        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1A) Costos Base</h2></div>
+        <span class="badge inv">Finanzas</span>
       </div>
-
       <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div>
-          <div class="flex items-center justify-between">
-            <div class="label">Costo máquina/hora</div>
-            <button id="btnToggleHrCalc" class="text-xs font-bold text-[#28556C] hover:text-[#8CA015] underline flex items-center gap-1">🪄 Asistente</button>
-          </div>
-          <div class="relative mt-1">
-            <span class="absolute left-3 top-2.5 text-gray-500 font-bold">$</span>
-            <input id="costHour" class="input pl-7" type="number" min="0" step="1" value="75">
-          </div>
-          <div class="muted small mt-1">USD/hora</div>
-        </div>
-
-        <div><div class="label">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" min="0" step="1" value="5000"></div>
-        <div><div class="label">Inversión Total (USD)</div><input id="invest" class="input mt-1" type="number" min="0" step="1" value="4500"></div>
-        <div><div class="label">Consumibles (USD/mes)</div><input id="consMonth" class="input mt-1" type="number" min="0" step="1" value="0"></div>
-        
-        <div id="hrCalcPanel" class="col-span-1 sm:col-span-2 lg:col-span-4 bg-[#f9fafb] p-4 rounded-xl border border-gray-200 hidden mt-2">
-            <div class="font-bold text-sm mb-3" style="color:var(--rego-blue)">Parámetros referenciales (USD)</div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                    <div class="label text-xs">Tipo de Máquina</div>
-                    <select id="calcMachine" class="input mt-1 text-sm">
-                        <option value="40">Torno CNC (2 Ejes)</option>
-                        <option value="50" selected>Centro de Maquinado (3 Ejes)</option>
-                        <option value="75">Centro de Maquinado (4 Ejes)</option>
-                        <option value="90">Torno Multitarea / Suizo</option>
-                        <option value="120">Centro de Maquinado (5 Ejes)</option>
-                    </select>
-                </div>
-                <div>
-                    <div class="label text-xs">Sector Industrial (Overhead)</div>
-                    <select id="calcSector" class="input mt-1 text-sm">
-                        <option value="1.0" selected>General / Job Shop</option>
-                        <option value="1.15">Automotriz</option>
-                        <option value="1.25">Moldes y Troqueles</option>
-                        <option value="1.40">Aeroespacial</option>
-                        <option value="1.50">Médico</option>
-                    </select>
-                </div>
-                <div>
-                    <div class="label text-xs">Mano de Obra</div>
-                    <select id="calcOperator" class="input mt-1 text-sm">
-                        <option value="25" selected>1 Op / 1 Máquina ($25/h)</option>
-                        <option value="12.5">1 Op / 2 Máquinas ($12.5/h)</option>
-                        <option value="8">Celda automatizada</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card p-4 sm:p-6">
-      <div class="flex items-start justify-between gap-3">
-        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1B) Contexto del Maquinado</h2></div>
-      </div>
-      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-          <div class="label">Interfaz husillo</div>
-          <input id="spindleInterface" class="input" type="text" list="lista-husillos" placeholder="Ej: CAT40 / HSK63A" data-study="spindleInterface">
-          <datalist id="lista-husillos"><option value="CAT 40"><option value="CAT 50"><option value="BT 30"><option value="BT 40"><option value="HSK-A 63"><option value="Capto C6"></datalist>
-        </div>
-        <div>
-          <div class="label">Refrigerante</div>
-          <input id="coolant" class="input" type="text" list="lista-coolant" placeholder="Ej: Interno Alta Presión" data-study="coolant">
-          <datalist id="lista-coolant"><option value="Externo (Flood)"><option value="Interno (TSC)"><option value="MQL"></datalist>
-        </div>
-        <div>
-          <div class="label">Material principal</div>
-          <input id="material" class="input" type="text" list="lista-materiales" placeholder="Ej: Titanio / Acero Inox" data-study="material">
-          <datalist id="lista-materiales"><option value="Aluminio"><option value="Acero Endurecido"><option value="Titanio"><option value="Inconel"></datalist>
-        </div>
-        <div>
-          <div class="label">Prioridad Global</div>
-          <input id="priority" class="input" type="text" list="lista-prioridad" placeholder="Ej: Eliminar vibración" data-study="priority">
-          <datalist id="lista-prioridad"><option value="Máxima precisión (Runout)"><option value="Rigidez extrema"><option value="Cambio rápido"><option value="Aumentar vida herramienta"></datalist>
-        </div>
-      </div>
-      <div class="mt-3">
-        <div class="label">Objetivo general del cliente</div>
-        <input id="goal" class="input" type="text" placeholder="Ej: Reducir ciclo en un 15% y eliminar rechazos." data-study="goal">
-      </div>
-    </section>
-
-    <section class="card p-4 sm:p-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div>
-          <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1C) Casos de Herramientas a Optimizar</h2>
-          <p class="muted small mt-1">Ingresa la herramienta y asegúrate de incluir el diámetro (ej. "Endmill 12mm" o "Broca 1/4").</p>
-        </div>
-        <button id="btnAddTool" class="btn btn-outline text-sm py-2 px-4 whitespace-nowrap border-dashed border-2">+ Agregar Herramienta</button>
-      </div>
-
-      <div id="toolsListContainer" class="mt-6 space-y-4"></div>
-
-      <div class="mt-8 border-t pt-6">
-        <button id="btnRecalcReco" class="btn btn-primary w-full flex justify-center items-center gap-2 text-lg py-3 shadow-md hover:shadow-lg transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
-          Analizar y Configurar Ensambles
-        </button>
-        
-        <div id="aiResultBox" class="mt-6 kpi bg-[#f9fafb] hidden">
-            <div class="font-extrabold text-lg text-rego-blue mb-2">Dictamen de Ingeniería</div>
-            <div class="label text-xs">Alineación Estratégica</div>
-            <textarea id="aiPitch" class="input mt-1 text-sm text-[#28556C] font-medium bg-white" data-study="aiPitch" rows="3" placeholder="Argumento comercial..."></textarea>
-            
-            <div class="mt-4 flex items-start gap-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
-               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="shrink-0 mt-0.5"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
-               <div>
-                 <div class="font-bold text-sm">Información pendiente de validar:</div>
-                 <div id="aiMissing" class="text-xs mt-1">...</div>
-               </div>
-            </div>
-        </div>
+        <div><div class="label">Costo máquina/hora (USD)</div><input id="costHour" class="input mt-1" type="number" value="75"></div>
+        <div><div class="label">Piezas por mes (Promedio)</div><input id="partsMonth" class="input mt-1" type="number" value="5000"></div>
+        <div><div class="label">Inversión REGO-FIX (USD)</div><input id="invest" class="input mt-1" type="number" value="4500"></div>
+        <div><div class="label">Mantenimiento (USD/mes)</div><input id="consMonth" class="input mt-1" type="number" value="0"></div>
       </div>
     </section>
 
     <section class="card p-4 sm:p-6">
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">2) Ahorros Globales del Proceso (5 frentes)</h2></div>
-        <span class="badge inv">Análisis de Ahorro</span>
+        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">2) Análisis de Ahorro y Comparativa Paralela</h2></div>
+        <span class="badge inv">Datos Reales</span>
       </div>
 
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        <div class="card p-4 h-fit border-l-4 border-l-[#28556C]">
-          <div class="flex items-center justify-between gap-3">
-            <div class="font-extrabold text-[#28556C]">A) Ahorro por tiempo</div>
-            <div class="switch" id="swTime" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
-          </div>
-          <div class="mt-3 space-y-3" id="timeBody">
-            <div class="flex items-center justify-between"><div class="small font-bold text-gray-500">Cambios de Herramienta</div><div class="switch" id="swTimeChanges" data-on="true"><div class="knob"></div></div></div>
-            <div class="grid grid-cols-2 gap-2">
-              <div><div class="label text-[10px]">Cambios/mes (Act)</div><input id="chgAct" class="input py-1" type="number" value="180"></div>
-              <div><div class="label text-[10px]">Cambios/mes (Rego)</div><input id="chgNew" class="input py-1" type="number" value="140"></div>
-              <div><div class="label text-[10px]">Min/cambio (Act)</div><input id="chgMinAct" class="input py-1" type="number" value="6"></div>
-              <div><div class="label text-[10px]">Min/cambio (Rego)</div><input id="chgMinNew" class="input py-1" type="number" value="4.5"></div>
+        <div class="card p-4 h-fit border-2 border-[#AAC82D] lg:col-span-2 bg-[#fdfdfd]">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b pb-3 mb-4">
+            <div>
+              <div class="font-extrabold text-[#28556C] text-lg">E) Auditoría de Consumo de Herramental (Caso Histórico)</div>
+              <div class="muted small">Comparativa de consumo real entre dos números de parte paralelos o históricos (2 años).</div>
             </div>
-            <div class="kpi py-2"><div id="saveTime" class="text-lg font-black text-rego-green">$0</div></div>
+            <div class="switch" id="swHist" data-on="true"><div class="knob"></div></div>
           </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="histBody">
+            <div class="space-y-3 p-4 bg-red-50/40 rounded-2xl border border-red-100">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                <div class="text-xs font-bold text-red-700 uppercase">Proceso Estándar / Otros</div>
+              </div>
+              <div class="grid grid-cols-1 gap-3">
+                <div><div class="label text-[10px]">Piezas Producidas</div><input id="histOldParts" class="input py-1.5" type="number" value="90000"></div>
+                <div><div class="label text-[10px]">Cortadores Consumidos</div><input id="histOldTools" class="input py-1.5" type="number" value="50"></div>
+              </div>
+            </div>
+
+            <div class="space-y-3 p-4 bg-green-50/40 rounded-2xl border border-green-100">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                <div class="text-xs font-bold text-green-700 uppercase">Con REGO-FIX</div>
+              </div>
+              <div class="grid grid-cols-1 gap-3">
+                <div><div class="label text-[10px]">Piezas Producidas</div><input id="histNewParts" class="input py-1.5" type="number" value="45000"></div>
+                <div><div class="label text-[10px]">Cortadores Consumidos</div><input id="histNewTools" class="input py-1.5" type="number" value="10"></div>
+              </div>
+            </div>
+
+            <div class="p-4 bg-blue-50/30 rounded-2xl border border-blue-100 flex flex-col justify-center">
+              <div class="text-xs font-bold text-blue-700 uppercase mb-3">Impacto Económico</div>
+              <div><div class="label text-[10px]">Costo del Cortador (USD)</div><input id="histToolPrice" class="input py-1.5 font-bold" type="number" value="120"></div>
+              <div class="mt-4 pt-4 border-t border-blue-100">
+                <div class="text-[10px] muted font-bold">MEJORA EN VIDA ÚTIL:</div>
+                <div id="histImprovement" class="text-2xl font-black text-rego-green">+0%</div>
+              </div>
+            </div>
+          </div>
+          <p class="mt-3 text-[10px] italic text-gray-500">* Los datos de este módulo sincronizan automáticamente el cálculo de ahorro en la sección de "Vida de Herramientas".</p>
         </div>
 
         <div class="card p-4 h-fit border-l-4 border-l-[#B7C91F]">
           <div class="flex items-center justify-between gap-3">
-            <div class="font-extrabold text-[#28556C]">B) Vida de herramientas</div>
-            <div class="switch" id="swLife" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
+            <div class="font-extrabold text-[#28556C]">B) Vida de herramientas (Cálculo)</div>
+            <div class="switch" id="swLife" data-on="true"><div class="knob"></div></div>
           </div>
           <div class="mt-3 space-y-3" id="lifeBody">
             <div class="grid grid-cols-2 gap-2">
-              <div><div class="label text-[10px]">Piezas/vida (Act)</div><input id="lifeAct" class="input py-1" type="number" value="100"></div>
-              <div><div class="label text-[10px]">Piezas/vida (Rego)</div><input id="lifeNew" class="input py-1" type="number" value="160"></div>
-              <div><div class="label text-[10px]">Precio Herramienta (USD)</div><input id="toolCost" class="input py-1" type="number" value="50"></div>
-              <div><div class="label text-[10px]">Herramientas en Set</div><input id="toolCount" class="input py-1" type="number" value="3"></div>
+              <div><div class="label text-[10px]">Pzs/vida (Estándar)</div><input id="lifeAct" class="input py-1" type="number" readonly bg-gray-50></div>
+              <div><div class="label text-[10px]">Pzs/vida (Rego)</div><input id="lifeNew" class="input py-1" type="number" readonly bg-gray-50></div>
+              <div><div class="label text-[10px]">Precio Herramienta</div><input id="toolCost" class="input py-1" type="number" readonly bg-gray-50></div>
+              <div><div class="label text-[10px]">Herramientas en Set</div><input id="toolCount" class="input py-1" type="number" value="1"></div>
             </div>
             <div class="kpi py-2"><div id="saveLife" class="text-lg font-black text-rego-green">$0</div></div>
           </div>
@@ -280,100 +190,47 @@
 
         <div class="card p-4 h-fit border-l-4 border-l-[#58D5D3]">
           <div class="flex items-center justify-between gap-3">
-            <div class="font-extrabold text-[#28556C]">C) Mejora de ciclo</div>
-            <div class="switch" id="swProc" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
+            <div class="font-extrabold text-[#28556C]">C) Mejora de Ciclo</div>
+            <div class="switch" id="swProc" data-on="false"><div class="knob"></div></div>
           </div>
           <div class="mt-3 space-y-3" id="procBody">
             <div class="grid grid-cols-2 gap-2">
               <div><div class="label text-[10px]">Ciclo actual (min)</div><input id="cycAct" class="input py-1" type="number" step="0.01" value="3.20"></div>
-              <div><div class="label text-[10px]">Ciclo nuevo (min)</div><input id="cycNew" class="input py-1" type="number" step="0.01" value="2.85"></div>
+              <div><div class="label text-[10px]">Ciclo nuevo (min)</div><input id="cycNew" class="input py-1" type="number" step="0.01" value="3.20"></div>
             </div>
             <div class="kpi py-2"><div id="saveProc" class="text-lg font-black text-rego-green">$0</div></div>
           </div>
         </div>
 
-        <div class="card p-4 h-fit border-l-4 border-l-[#D31B23]">
-          <div class="flex items-center justify-between gap-3">
-            <div class="font-extrabold text-[#28556C]">D) Reducción de Scrap</div>
-            <div class="switch" id="swScrap" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
-          </div>
-          <div class="mt-3 space-y-3" id="scrapBody">
-            <div class="grid grid-cols-2 gap-2">
-              <div><div class="label text-[10px]">Rechazos/mes (Act)</div><input id="scrapAct" class="input py-1" type="number" value="50"></div>
-              <div><div class="label text-[10px]">Rechazos/mes (Rego)</div><input id="scrapNew" class="input py-1" type="number" value="5"></div>
-              <div class="col-span-2"><div class="label text-[10px]">Costo de desperdicio (Mat + Op)</div><input id="scrapCost" class="input py-1" type="number" value="15"></div>
-            </div>
-            <div class="kpi py-2"><div id="saveScrap" class="text-lg font-black text-rego-green">$0</div></div>
-          </div>
-        </div>
-
-        <div class="card p-4 h-fit border-2 border-dashed border-[#AAC82D] lg:col-span-2">
-          <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div>
-              <div class="font-extrabold text-[#28556C]">E) Análisis de Producción Histórica (Data de Prueba)</div>
-              <div class="muted small">Este módulo sincroniza automáticamente la mejora de vida en el ROI.</div>
-            </div>
-            <div class="switch" id="swHist" data-on="true" role="switch" tabindex="0"><div class="knob"></div></div>
-          </div>
-          <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6" id="histBody">
-            <div class="space-y-3 p-3 bg-red-50/50 rounded-xl border border-red-100">
-              <div class="text-xs font-bold text-red-700 uppercase tracking-wider">Situación Anterior</div>
-              <div class="grid grid-cols-2 gap-2">
-                <div><div class="label text-[10px]">Piezas Totales</div><input id="histOldParts" class="input py-1" type="number" value="90000"></div>
-                <div><div class="label text-[10px]">Herramientas Usadas</div><input id="histOldTools" class="input py-1" type="number" value="50"></div>
-              </div>
-            </div>
-            <div class="space-y-3 p-3 bg-green-50/50 rounded-xl border border-green-100">
-              <div class="text-xs font-bold text-green-700 uppercase tracking-wider">Con REGO-FIX</div>
-              <div class="grid grid-cols-2 gap-2">
-                <div><div class="label text-[10px]">Piezas Totales</div><input id="histNewParts" class="input py-1" type="number" value="45000"></div>
-                <div><div class="label text-[10px]">Herramientas Usadas</div><input id="histNewTools" class="input py-1" type="number" value="10"></div>
-              </div>
-            </div>
-            <div class="space-y-3 p-3 bg-blue-50/30 rounded-xl border border-blue-100 flex flex-col justify-center">
-                <div class="text-xs font-bold text-blue-700 uppercase tracking-wider">Costo Monetario</div>
-                <div class="label text-[10px]">Precio Unitario Herramienta (USD)</div>
-                <input id="histToolPrice" class="input py-1" type="number" value="50">
-            </div>
-          </div>
-          <div class="mt-3 flex justify-center">
-             <div class="badge inv py-1 px-4 text-sm">Mejora detectada: <span id="histImprovement" class="ml-1 text-rego-green font-black">+0%</span></div>
-          </div>
-        </div>
-        
       </div>
     </section>
 
     <section class="card p-4 sm:p-6">
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">3) Resultados del ROI</h2></div>
-        <span class="badge inv">ROI</span>
+        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">3) Resultados del Análisis</h2></div>
+        <span class="badge inv">Resumen ROI</span>
       </div>
 
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div class="kpi">
-          <div class="muted small">Ahorro bruto mensual</div>
-          <div id="grossSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
-          <div class="muted small">Tiem + Vid + Proc + Scrap</div>
-        </div>
-        <div class="kpi">
-          <div class="muted small">Ahorro neto mensual</div>
+          <div class="muted small">Ahorro mensual proyectado</div>
           <div id="netSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
-          <div class="muted small">Bruto − consumibles</div>
         </div>
         <div class="kpi">
           <div class="muted small">Payback (meses)</div>
-          <div id="payback" class="text-2xl font-extrabold transition-colors duration-300">—</div>
-          <div class="muted small">Inversión / neto mensual</div>
+          <div id="payback" class="text-2xl font-extrabold">—</div>
+        </div>
+        <div class="kpi">
+          <div class="muted small">Retorno Anual (ROI)</div>
+          <div id="roiAnnual" class="text-2xl font-extrabold text-[#B7C91F]">—</div>
         </div>
       </div>
 
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="kpi flex flex-col justify-center">
-          <div class="muted small">ROI anual estimado</div>
-          <div id="roiAnnual" class="text-5xl font-extrabold text-[#B7C91F]">—</div>
-          <div id="roiAnnualUsd" class="text-2xl font-bold text-[#28556C] mt-2">—</div>
-          <div class="muted small mt-2">((neto*12) / inversión)</div>
+        <div class="kpi flex flex-col justify-center bg-gray-50">
+          <div class="muted small">Impacto de Gasto Anual en Herramental</div>
+          <div id="roiAnnualUsd" class="text-3xl font-extrabold text-[#28556C] mt-2">—</div>
+          <div class="muted small mt-1">Ahorro total en compra de cortadores al año</div>
         </div>
         <div class="kpi">
           <canvas id="roiChart" width="400" height="200"></canvas>
@@ -389,138 +246,20 @@
    ESTADO GLOBAL 
 ======================================================== */
 const state = {
-  switches: { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true, hist: true },
-  study: { 
-    studyDate: "", userName: "", userRole: "", company: "", 
-    spindleInterface: "", coolant: "", material: "", priority: "", goal: "", 
-    calcMachine: "50", calcSector: "1.0", calcOperator: "25",
-    aiPitch: "", aiMissing: "",
-    tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "" } ]
-  }
+  switches: { life: true, proc: false, hist: true },
+  study: { studyDate: new Date().toISOString().split('T')[0] }
 };
 
 const mathIds = [
   "costHour","partsMonth","invest","consMonth",
-  "chgAct","chgNew","chgMinAct","chgMinNew",
-  "setAct","setNew","setMinAct","setMinNew",
-  "stpAct","stpNew","stpMinAct","stpMinNew",
   "lifeAct","lifeNew","toolCost","toolCount",
-  "cycAct","cycNew","scrapAct","scrapNew","scrapCost",
+  "cycAct","cycNew",
   "histOldParts", "histOldTools", "histNewParts", "histNewTools", "histToolPrice"
 ];
 
 const $ = (id)=>document.getElementById(id);
 const clamp0 = (n)=>Math.max(0, Number(n||0));
 const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-function safeJson(str, fallback){ try{ return JSON.parse(str); }catch(e){ return fallback; } }
-
-function persist(){
-  try {
-      localStorage.setItem("rego_switches_v7", JSON.stringify(state.switches));
-      localStorage.setItem("rego_study_v7", JSON.stringify(state.study));
-  } catch(e) { console.error("Error guardando", e); }
-}
-
-function load(){
-  try {
-      const sw = localStorage.getItem("rego_switches_v7");
-      if(sw) state.switches = safeJson(sw, state.switches);
-      
-      const st = localStorage.getItem("rego_study_v7");
-      if(st) {
-          state.study = { ...state.study, ...safeJson(st, {}) };
-          if(!state.study.tools || state.study.tools.length === 0) {
-              state.study.tools = [{ id: Date.now(), op: "", setup: "", problem: "", reco: "" }];
-          }
-      }
-  } catch(e) { console.error("Error cargando", e); }
-}
-
-/* ========================================================
-   RENDERIZADO DE HERRAMIENTAS
-======================================================== */
-function renderTools() {
-   const container = $("toolsListContainer");
-   if(!container) return;
-   container.innerHTML = "";
-   
-   state.study.tools.forEach((t, index) => {
-      const div = document.createElement("div");
-      div.className = "p-4 border border-gray-200 rounded-xl relative bg-white shadow-sm";
-      div.innerHTML = `
-        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-           <div class="font-extrabold text-[#28556C]">Caso ${index + 1}</div>
-           ${state.study.tools.length > 1 ? `<button class="text-red-500 hover:text-red-700 text-xs font-bold uppercase btn-remove-tool" data-id="${t.id}">✕ Eliminar</button>` : ''}
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <div>
-             <div class="label text-xs mb-1">Operación y Herramienta</div>
-             <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Ej: Endmill de bola 12mm...">
-           </div>
-           <div>
-             <div class="label text-xs mb-1">Setup / Sujeción Actual</div>
-             <input class="input text-sm tool-setup" data-id="${t.id}" value="${t.setup}" placeholder="Ej: ER32, Weldon...">
-           </div>
-           <div class="md:col-span-2">
-             <div class="label text-xs text-rego-red mb-1">Problema detectado</div>
-             <textarea class="input text-sm tool-problem border-red-200" data-id="${t.id}" placeholder="Ej: Mucha vibración y mal acabado..." rows="2">${t.problem}</textarea>
-           </div>
-           <div class="md:col-span-2">
-             <div class="label text-xs text-rego-green mb-1">Propuesta y Configuración REGO-FIX</div>
-             <textarea class="input text-sm bg-green-50 tool-reco border-green-200 text-green-900 font-medium" data-id="${t.id}" placeholder="La IA escribirá el ensamble completo aquí..." rows="3">${t.reco}</textarea>
-           </div>
-        </div>
-      `;
-      container.appendChild(div);
-   });
-
-   document.querySelectorAll(".tool-op").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "op")));
-   document.querySelectorAll(".tool-setup").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "setup")));
-   document.querySelectorAll(".tool-problem").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "problem")));
-   document.querySelectorAll(".tool-reco").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "reco")));
-
-   document.querySelectorAll(".btn-remove-tool").forEach(el => el.addEventListener("click", (e) => {
-      const id = parseInt(e.target.getAttribute("data-id"));
-      state.study.tools = state.study.tools.filter(tool => tool.id !== id);
-      persist();
-      renderTools();
-   }));
-}
-
-function updateTool(e, field) {
-    const id = parseInt(e.target.getAttribute("data-id"));
-    const tool = state.study.tools.find(t => t.id === id);
-    if(tool) {
-        tool[field] = e.target.value;
-        persist();
-    }
-}
-
-/* ========================================================
-   SWITCHES & MATH
-======================================================== */
-function setSwitch(el, on){ if(el) el.dataset.on = on ? "true":"false"; }
-function getSwitch(el){ return el ? el.dataset.on === "true" : false; }
-function bindSwitch(id, key){
-  const el = $(id);
-  if(!el) return;
-  setSwitch(el, !!state.switches[key]);
-  const toggle = ()=>{
-    const next = !getSwitch(el);
-    setSwitch(el, next);
-    state.switches[key] = next;
-    persist();
-    renderAll();
-  };
-  el.addEventListener("click", toggle);
-  el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
-}
-
-function bindSwitches() {
-  ["swTime","swTimeChanges","swTimeSetups","swTimeStops","swLife","swProc","swScrap", "swHist"].forEach(id => {
-      bindSwitch(id, id.replace('sw','').charAt(0).toLowerCase() + id.replace('sw','').slice(1));
-  });
-}
 
 function calc(){
   const costMin  = clamp0($("costHour")?.value) / 60;
@@ -528,7 +267,7 @@ function calc(){
   const invest = clamp0($("invest")?.value);
   const consMonth = clamp0($("consMonth")?.value);
 
-  // LOGICA MODULO E: SINCRONIZACIÓN CON MODULO B
+  // LÓGICA MÓDULO E ACTUALIZADA: COMPARATIVA DE GASTO REAL
   if(state.switches.hist){
     const oldParts = clamp0($("histOldParts")?.value);
     const oldToolsUsed = clamp0($("histOldTools")?.value);
@@ -536,10 +275,11 @@ function calc(){
     const newToolsUsed = clamp0($("histNewTools")?.value);
     const toolPrice = clamp0($("histToolPrice")?.value);
 
+    // Piezas por vida útil (Promedio real detectado)
     const effOld = oldToolsUsed > 0 ? (oldParts / oldToolsUsed) : 0;
     const effNew = newToolsUsed > 0 ? (newParts / newToolsUsed) : 0;
 
-    // Sincronizar con Modulo B (Vida)
+    // Sincronización automática con Módulo B
     if($("lifeAct")) $("lifeAct").value = Math.round(effOld);
     if($("lifeNew")) $("lifeNew").value = Math.round(effNew);
     if($("toolCost")) $("toolCost").value = toolPrice;
@@ -550,90 +290,38 @@ function calc(){
     }
   }
 
-  let saveTime = 0, saveLife = 0, saveProc = 0, saveScrap = 0;
-  const cycActBase = clamp0($("cycAct")?.value);
-  const costoOperativoMensualActual = (partsMonth * cycActBase) * costMin;
-
-  if(state.switches.time){
-    let minSaved = 0;
-    if(state.switches.timeChanges) minSaved += Math.max(0, (clamp0($("chgAct")?.value)*clamp0($("chgMinAct")?.value)) - (clamp0($("chgNew")?.value)*clamp0($("chgMinNew")?.value)));
-    if(state.switches.timeSetups) minSaved += Math.max(0, (clamp0($("setAct")?.value)*clamp0($("setMinAct")?.value)) - (clamp0($("setNew")?.value)*clamp0($("setMinNew")?.value)));
-    if(state.switches.timeStops) minSaved += Math.max(0, (clamp0($("stpAct")?.value)*clamp0($("stpMinAct")?.value)) - (clamp0($("stpNew")?.value)*clamp0($("stpMinNew")?.value)));
-    saveTime = minSaved * costMin;
-  }
-
+  let saveLife = 0, saveProc = 0;
   let spendActTools = 0;
+
   if(state.switches.life){
-    const lifeAct = Math.max(1, clamp0($("lifeAct")?.value)), lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
-    const tc = clamp0($("toolCost")?.value), cnt = Math.max(1, clamp0($("toolCount")?.value));
+    const lifeAct = Math.max(1, clamp0($("lifeAct")?.value));
+    const lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
+    const tc = clamp0($("toolCost")?.value);
+    const cnt = Math.max(1, clamp0($("toolCount")?.value));
+    
+    // Gasto mensual en herramientas (Actual vs Rego)
     spendActTools = (partsMonth / lifeAct) * cnt * tc;
-    saveLife = Math.max(0, spendActTools - ((partsMonth / lifeNew) * cnt * tc));
+    const spendNewTools = (partsMonth / lifeNew) * cnt * tc;
+    saveLife = Math.max(0, spendActTools - spendNewTools);
   }
 
-  if(state.switches.proc) saveProc = Math.max(0, clamp0($("cycAct")?.value) - clamp0($("cycNew")?.value)) * partsMonth * costMin;
-
-  if(state.switches.scrap){
-      const sc = clamp0($("scrapCost")?.value);
-      const costScrapAct = clamp0($("scrapAct")?.value) * sc;
-      saveScrap = Math.max(0, costScrapAct - (clamp0($("scrapNew")?.value) * sc));
+  if(state.switches.proc) {
+    saveProc = Math.max(0, clamp0($("cycAct")?.value) - clamp0($("cycNew")?.value)) * partsMonth * costMin;
   }
 
-  const gross = saveTime + saveLife + saveProc + saveScrap;
-  const net = Math.max(0, gross - consMonth);
+  const net = Math.max(0, (saveLife + saveProc) - consMonth);
   let payback = (invest > 0 && net > 0) ? invest / net : null;
   let roiAnnual = (invest > 0) ? (net * 12) / invest : null;
-  
-  const costoTotalActualMensual = costoOperativoMensualActual + spendActTools + (clamp0($("scrapAct")?.value) * clamp0($("scrapCost")?.value));
-  const costoTotalNuevoMensual = costoTotalActualMensual - net;
 
-  return { invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual, costoTotalActualMensual, costoTotalNuevoMensual };
+  // Gráfica: Comparativa de costo directo mensual en consumibles
+  const costActualTotal = spendActTools;
+  const costNewTotal = spendActTools - saveLife;
+
+  return { invest, net, payback, roiAnnual, saveLife, saveProc, costActualTotal, costNewTotal };
 }
 
 /* ========================================================
-   IA CALL 
-======================================================== */
-async function recommendRegoFixAI() {
-  const btn = $("btnRecalcReco");
-  if(!btn) return;
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `⏳ Diseñando ensambles...`;
-
-  const s = state.study;
-  const toolsContext = s.tools.map((t, i) => `Caso ${i+1}: Op/Herramienta: ${t.op} | Setup Actual: ${t.setup} | Problema: ${t.problem}`).join("\n");
-
-  const prompt = `
-  Eres un Ingeniero experto en REGO-FIX.
-  Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}.
-  Casos a evaluar: ${toolsContext}
-  Misión: Extrae diámetros y define el ENSAMBLE COMPLETO (PG, MR o ER) basándote en el tamaño.
-  Devuelve SOLO un JSON con general_pitch, tools_reco (array) y missing_data.
-  `;
-
-  try {
-    const response = await fetch('/api/recommend.js', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: prompt })
-    });
-    const jsonString = await response.json(); 
-    const recoData = JSON.parse(jsonString);
-    if($("aiPitch")) $("aiPitch").value = recoData.general_pitch || "";
-    if($("aiMissing")) $("aiMissing").textContent = recoData.missing_data || "Revisión completa.";
-    state.study.aiPitch = recoData.general_pitch;
-    state.study.aiMissing = recoData.missing_data;
-    if(recoData.tools_reco && Array.isArray(recoData.tools_reco)) {
-        state.study.tools.forEach((t, i) => { if(recoData.tools_reco[i]) t.reco = String(recoData.tools_reco[i]); });
-    }
-    persist();
-    renderTools();
-    if($("aiResultBox")) $("aiResultBox").classList.remove("hidden");
-  } catch (error) { console.error("Error IA:", error); } 
-  finally { btn.disabled = false; btn.innerHTML = originalText; }
-}
-
-/* ========================================================
-   RENDERIZADO UI Y GRÁFICA
+   UI & CHARTS
 ======================================================== */
 let roiChartInstance = null;
 function renderChart(costoActual, costoNuevo) {
@@ -641,106 +329,58 @@ function renderChart(costoActual, costoNuevo) {
     if(!canvas) return;
     if (roiChartInstance) {
         roiChartInstance.data.datasets[0].data = [costoActual, costoNuevo];
-        roiChartInstance.update('none'); 
+        roiChartInstance.update(); 
     } else {
         const ctx = canvas.getContext('2d');
         roiChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Situación Actual', 'Con REGO-FIX'],
-                datasets: [{ label: 'Costo (USD)', data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#B7C91F'], borderRadius: 8 }]
+                labels: ['Costo Herramental Estándar', 'Costo con REGO-FIX'],
+                datasets: [{ label: 'Gasto Mensual Herramental (USD)', data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#B7C91F'], borderRadius: 8 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { responsive: true, maintainAspectRatio: false }
         });
     }
 }
 
 function renderKPIs(){
   const r = calc();
-  ["saveTime", "saveLife", "saveProc", "saveScrap"].forEach(id => {
-      const el = $(id); if(el) { el.textContent = money(r[id]); el.className = "text-xl font-extrabold text-[#B7C91F]"; }
-  });
-  if($("grossSave")) $("grossSave").textContent = money(r.gross);
+  if($("saveLife")) $("saveLife").textContent = money(r.saveLife);
+  if($("saveProc")) $("saveProc").textContent = money(r.saveProc);
   if($("netSave")) $("netSave").textContent = money(r.net);
+  
   const pb = $("payback");
-  if(pb) {
-      if(r.payback === null) { pb.textContent = "—"; pb.className = "text-2xl font-extrabold"; } 
-      else {
-          pb.textContent = r.payback.toFixed(1) + " meses";
-          pb.className = `text-2xl font-extrabold transition-colors duration-300 ${r.payback<=6 ? 'text-[#AAC82D]' : (r.payback<=12 ? 'text-[#58D5D3]' : 'text-[#121314]')}`;
-      }
-  }
-  if($("roiAnnual")) {
-      if(r.roiAnnual === null) { $("roiAnnual").textContent = "—"; if($("roiAnnualUsd")) $("roiAnnualUsd").textContent = "—"; } 
-      else { $("roiAnnual").textContent = (r.roiAnnual*100).toFixed(0) + "%"; if($("roiAnnualUsd")) $("roiAnnualUsd").textContent = money(r.net * 12) + " / año"; }
-  }
-  renderChart(r.costoTotalActualMensual, r.costoTotalNuevoMensual);
+  if(pb) pb.textContent = r.payback ? r.payback.toFixed(1) + " meses" : "—";
+  
+  if($("roiAnnual")) $("roiAnnual").textContent = r.roiAnnual ? (r.roiAnnual*100).toFixed(0) + "%" : "—";
+  if($("roiAnnualUsd")) $("roiAnnualUsd").textContent = money(r.net * 12);
+  
+  renderChart(r.costActualTotal, r.costNewTotal);
 }
 
-function renderAll(){
-  ["timeBody","lifeBody","procBody","scrapBody", "histBody"].forEach(id=> {
-      const el=$(id), on=state.switches[id.replace('Body','')];
-      if(el) { el.style.opacity = on ? "1" : ".45"; el.style.pointerEvents = on ? "auto" : "none"; }
+function bindSwitches() {
+  ["swLife","swProc","swHist"].forEach(id => {
+      const el = $(id);
+      el.addEventListener("click", () => {
+          const next = el.dataset.on !== "true";
+          el.dataset.on = next ? "true" : "false";
+          state.switches[id.replace('sw','').toLowerCase()] = next;
+          renderKPIs();
+      });
   });
-  renderKPIs();
 }
 
-/* ========================================================
-   EXPORTAR Y COMPARTIR
-======================================================== */
-function getSummaryText() {
-  const r = calc();
-  const toolsText = state.study.tools.map((t,i) => `\nHerramienta ${i+1}: ${t.op}\n- REGO-FIX: ${t.reco}`).join("\n");
-  return ["ROI Holders REGO-FIX", `Empresa: ${state.study.company || "—"}`, toolsText, `ROI Anual: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")} (${money(r.net * 12)} /año)`].join("\n");
-}
-function copySummary(){ navigator.clipboard.writeText(getSummaryText()).then(()=>alert("Copiado.")).catch(()=>alert("Error.")); }
-function shareWhatsApp(){ window.open(`https://wa.me/?text=${encodeURIComponent(getSummaryText())}`, '_blank'); }
-
-function exportPdf(){
-  const canvas = document.getElementById('roiChart');
-  let chartImageBase64 = canvas ? canvas.toDataURL('image/png', 1.0) : null;
-  const w = window.open("", "_blank");
-  w.document.write("<html><body><h1>Reporte generado</h1><img src='"+chartImageBase64+"'/></body></html>"); 
-  w.onload = ()=> { w.print(); };
-}
-
-/* ========================================================
-   INICIALIZACIÓN
-======================================================== */
 function bindInputs(){
-  if(!state.study.studyDate) state.study.studyDate = new Date().toISOString().split('T')[0];
-  if($("studyDate")) $("studyDate").value = state.study.studyDate;
-
-  document.querySelectorAll("[data-study]").forEach(el => {
-    const k = el.getAttribute("data-study");
-    if(k && state.study[k] != null) el.value = state.study[k];
-    el.addEventListener("input", () => { if(k) state.study[k] = el.value; persist(); });
-  });
-
-  const btnToggleHrCalc = $("btnToggleHrCalc");
-  const hrCalcPanel = $("hrCalcPanel");
-  if(btnToggleHrCalc && hrCalcPanel) btnToggleHrCalc.addEventListener("click", () => hrCalcPanel.classList.toggle("hidden"));
-
   mathIds.forEach(id => {
       const el = $(id);
-      if(el) {
-          if(state.study[id] !== undefined) el.value = state.study[id];
-          el.addEventListener("input", () => { state.study[id] = el.value; persist(); renderAll(); });
-      }
+      if(el) el.addEventListener("input", renderKPIs);
   });
-
-  if($("btnCopySummary")) $("btnCopySummary").addEventListener("click", copySummary);
-  if($("btnWhatsApp")) $("btnWhatsApp").addEventListener("click", shareWhatsApp);
-  if($("btnRecalcReco")) $("btnRecalcReco").addEventListener("click", recommendRegoFixAI);
-  if($("btnAddTool")) $("btnAddTool").addEventListener("click", () => { state.study.tools.push({ id: Date.now(), op: "", setup: "", problem: "", reco: "" }); persist(); renderTools(); });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    load();
     bindSwitches();
-    renderTools();
     bindInputs();
-    renderAll();
+    renderKPIs();
 });
 </script>
 </body>
