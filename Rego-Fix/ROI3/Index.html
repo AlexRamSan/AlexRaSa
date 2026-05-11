@@ -60,13 +60,10 @@
         <div class="flex items-center gap-3">
           <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-10 w-auto" onerror="this.style.display='none'">
           <div>
-            <div class="text-xl sm:text-2xl font-extrabold" style="color:var(--rego-black)">
-              ROI Holders REGO-FIX
-            </div>
+            <div class="text-xl sm:text-2xl font-extrabold" style="color:var(--rego-black)">ROI Holders REGO-FIX</div>
             <div class="muted small">Análisis Multi-Herramienta y Proceso</div>
           </div>
         </div>
-
         <div class="flex gap-2 flex-wrap justify-end">
           <button id="btnPdfReport" class="btn btn-primary">Exportar PDF</button>
           <button id="btnCopySummary" class="btn btn-outline">Copiar resumen</button>
@@ -77,26 +74,22 @@
           <button id="btnResetAll" class="btn btn-danger">Reset</button>
         </div>
       </div>
-
       <div class="mt-4 rounded-2xl overflow-hidden border" style="border-color:var(--border); background:linear-gradient(90deg, rgba(183,201,31,.18), rgba(88,213,211,.18), rgba(40,85,108,.10));">
         <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div class="flex-1">
-            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: Comparativa de Producción Histórica</div>
-            <div class="muted small">Análisis de dos años de producción paralela: REGO-FIX vs. Otros Sistemas.</div>
+            <div class="font-extrabold" style="color:var(--rego-blue)">Enfoque: holders (sujeción) y ROI real</div>
+            <div class="muted small">Captura el estudio, calcula ROI y genera un reporte comparativo.</div>
           </div>
-          <div class="text-right">
-            <div class="by">by alexrasa</div>
-          </div>
+          <div class="text-right"><div class="by">by alexrasa</div></div>
         </div>
       </div>
     </div>
   </header>
 
   <main class="max-w-6xl mx-auto px-4 pb-10 space-y-6">
-
     <section class="card p-4 sm:p-6">
       <div class="flex items-start justify-between gap-3">
-        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">0) Datos del Cliente</h2></div>
+        <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">0) Datos del Cliente</h2>
         <span class="badge inv">Estudio</span>
       </div>
       <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -109,278 +102,199 @@
 
     <section class="card p-4 sm:p-6">
       <div class="flex items-start justify-between gap-3">
-        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1A) Costos Base</h2></div>
-        <span class="badge inv">Finanzas</span>
+        <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1A) Inversión y Costo de Máquina</h2>
+        <span class="badge inv">Base</span>
       </div>
       <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div><div class="label">Costo máquina/hora (USD)</div><input id="costHour" class="input mt-1" type="number" value="75"></div>
-        <div><div class="label">Piezas por mes (Promedio)</div><input id="partsMonth" class="input mt-1" type="number" value="5000"></div>
-        <div><div class="label">Inversión REGO-FIX (USD)</div><input id="invest" class="input mt-1" type="number" value="4500"></div>
-        <div><div class="label">Mantenimiento (USD/mes)</div><input id="consMonth" class="input mt-1" type="number" value="0"></div>
+        <div>
+          <div class="flex items-center justify-between"><div class="label">Costo máquina/hora</div><button id="btnToggleHrCalc" class="text-xs font-bold text-[#28556C] underline">🪄 Asistente</button></div>
+          <div class="relative mt-1"><span class="absolute left-3 top-2.5 text-gray-500 font-bold">$</span><input id="costHour" class="input pl-7" type="number" value="75"></div>
+        </div>
+        <div><div class="label">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" value="5000"></div>
+        <div><div class="label">Inversión Total (USD)</div><input id="invest" class="input mt-1" type="number" value="4500"></div>
+        <div><div class="label">Consumibles (USD/mes)</div><input id="consMonth" class="input mt-1" type="number" value="0"></div>
+        <div id="hrCalcPanel" class="col-span-full bg-[#f9fafb] p-4 rounded-xl border border-gray-200 hidden mt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div><div class="label text-xs">Máquina</div><select id="calcMachine" class="input mt-1 text-sm"><option value="50">3 Ejes</option><option value="75">4 Ejes</option><option value="120">5 Ejes</option></select></div>
+                <div><div class="label text-xs">Sector</div><select id="calcSector" class="input mt-1 text-sm"><option value="1.0">General</option><option value="1.25">Automotriz</option></select></div>
+                <div><div class="label text-xs">Operador</div><select id="calcOperator" class="input mt-1 text-sm"><option value="25">1 Op/1 Maq</option><option value="12.5">1 Op/2 Maq</option></select></div>
+            </div>
+        </div>
       </div>
     </section>
 
     <section class="card p-4 sm:p-6">
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">2) Análisis de Ahorro y Comparativa Paralela</h2></div>
-        <span class="badge inv">Datos Reales</span>
+      <div class="flex items-start justify-between gap-3"><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1B) Contexto del Maquinado</h2></div>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div><div class="label">Interfaz</div><input id="spindleInterface" class="input" type="text" data-study="spindleInterface"></div>
+        <div><div class="label">Refrigerante</div><input id="coolant" class="input" type="text" data-study="coolant"></div>
+        <div><div class="label">Material</div><input id="material" class="input" type="text" data-study="material"></div>
+        <div><div class="label">Prioridad</div><input id="priority" class="input" type="text" data-study="priority"></div>
       </div>
+    </section>
 
+    <section class="card p-4 sm:p-6">
+      <div class="flex justify-between items-center gap-3">
+        <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">1C) Casos de Herramientas</h2>
+        <button id="btnAddTool" class="btn btn-outline text-sm">+ Agregar</button>
+      </div>
+      <div id="toolsListContainer" class="mt-6 space-y-4"></div>
+      <div class="mt-8 border-t pt-6">
+        <button id="btnRecalcReco" class="btn btn-primary w-full text-lg py-3 shadow-md">Analizar y Configurar Ensambles</button>
+        <div id="aiResultBox" class="mt-6 kpi bg-[#f9fafb] hidden">
+            <textarea id="aiPitch" class="input mt-1 text-sm" data-study="aiPitch" rows="3"></textarea>
+            <div id="aiMissing" class="text-xs mt-1 text-red-600"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card p-4 sm:p-6">
+      <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">2) Ahorros Globales</h2>
       <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card p-4 border-l-4 border-l-[#28556C]">
+          <div class="flex justify-between items-center"><b>A) Tiempo</b><div class="switch" id="swTime" data-on="true"><div class="knob"></div></div></div>
+          <div id="timeBody" class="mt-3 grid grid-cols-2 gap-2">
+            <div><div class="label text-[10px]">Cambios/mes (Act)</div><input id="chgAct" class="input py-1" type="number" value="180"></div>
+            <div><div class="label text-[10px]">Cambios/mes (Rego)</div><input id="chgNew" class="input py-1" type="number" value="140"></div>
+            <div class="col-span-2 kpi py-2 text-center" id="saveTime">$0</div>
+          </div>
+        </div>
 
-        <div class="card p-4 h-fit border-2 border-[#AAC82D] lg:col-span-2 bg-[#fdfdfd]">
-          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b pb-3 mb-4">
-            <div>
-              <div class="font-extrabold text-[#28556C] text-lg">E) Auditoría de Consumo de Herramental (Caso Histórico)</div>
-              <div class="muted small">Comparativa de consumo real entre dos números de parte paralelos o históricos (2 años).</div>
-            </div>
+        <div class="card p-4 border-l-4 border-l-[#B7C91F]">
+          <div class="flex justify-between items-center"><b>B) Vida Herramienta</b><div class="switch" id="swLife" data-on="true"><div class="knob"></div></div></div>
+          <div id="lifeBody" class="mt-3 grid grid-cols-2 gap-2">
+            <div><div class="label text-[10px]">Pzs/vida (Act)</div><input id="lifeAct" class="input py-1" type="number" readonly></div>
+            <div><div class="label text-[10px]">Pzs/vida (Rego)</div><input id="lifeNew" class="input py-1" type="number" readonly></div>
+            <div class="col-span-2 kpi py-2 text-center" id="saveLife">$0</div>
+          </div>
+        </div>
+
+        <div class="card p-4 border-2 border-dashed border-[#AAC82D] lg:col-span-2">
+          <div class="flex justify-between items-center">
+            <b>E) Comparativa de Producción Paralela (Consumo Real)</b>
             <div class="switch" id="swHist" data-on="true"><div class="knob"></div></div>
           </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="histBody">
-            <div class="space-y-3 p-4 bg-red-50/40 rounded-2xl border border-red-100">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="w-3 h-3 rounded-full bg-red-500"></span>
-                <div class="text-xs font-bold text-red-700 uppercase">Proceso Estándar / Otros</div>
-              </div>
-              <div class="grid grid-cols-1 gap-3">
-                <div><div class="label text-[10px]">Piezas Producidas</div><input id="histOldParts" class="input py-1.5" type="number" value="90000"></div>
-                <div><div class="label text-[10px]">Cortadores Consumidos</div><input id="histOldTools" class="input py-1.5" type="number" value="50"></div>
+          <div id="histBody" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-3 bg-red-50 rounded-xl border border-red-100">
+              <div class="text-[10px] font-bold text-red-700">ESCENARIO A (OTROS/ESTÁNDAR)</div>
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                <div><div class="label text-[10px]">Pzs Totales</div><input id="histOldParts" class="input py-1" type="number" value="90000"></div>
+                <div><div class="label text-[10px]">Cortadores</div><input id="histOldTools" class="input py-1" type="number" value="50"></div>
               </div>
             </div>
-
-            <div class="space-y-3 p-4 bg-green-50/40 rounded-2xl border border-green-100">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="w-3 h-3 rounded-full bg-green-500"></span>
-                <div class="text-xs font-bold text-green-700 uppercase">Con REGO-FIX</div>
-              </div>
-              <div class="grid grid-cols-1 gap-3">
-                <div><div class="label text-[10px]">Piezas Producidas</div><input id="histNewParts" class="input py-1.5" type="number" value="45000"></div>
-                <div><div class="label text-[10px]">Cortadores Consumidos</div><input id="histNewTools" class="input py-1.5" type="number" value="10"></div>
+            <div class="p-3 bg-green-50 rounded-xl border border-green-100">
+              <div class="text-[10px] font-bold text-green-700">ESCENARIO B (REGO-FIX)</div>
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                <div><div class="label text-[10px]">Pzs Totales</div><input id="histNewParts" class="input py-1" type="number" value="45000"></div>
+                <div><div class="label text-[10px]">Cortadores</div><input id="histNewTools" class="input py-1" type="number" value="10"></div>
               </div>
             </div>
-
-            <div class="p-4 bg-blue-50/30 rounded-2xl border border-blue-100 flex flex-col justify-center">
-              <div class="text-xs font-bold text-blue-700 uppercase mb-3">Impacto Económico</div>
-              <div><div class="label text-[10px]">Costo del Cortador (USD)</div><input id="histToolPrice" class="input py-1.5 font-bold" type="number" value="120"></div>
-              <div class="mt-4 pt-4 border-t border-blue-100">
-                <div class="text-[10px] muted font-bold">MEJORA EN VIDA ÚTIL:</div>
-                <div id="histImprovement" class="text-2xl font-black text-rego-green">+0%</div>
-              </div>
+            <div class="p-3 bg-blue-50 rounded-xl border border-blue-100 flex flex-col justify-center">
+              <div class="label text-[10px]">Precio Cortador (USD)</div>
+              <input id="histToolPrice" class="input py-1" type="number" value="50">
+              <div class="mt-2 text-center"><div class="badge inv">Mejora: <span id="histImprovement" class="text-rego-green">+0%</span></div></div>
             </div>
-          </div>
-          <p class="mt-3 text-[10px] italic text-gray-500">* Los datos de este módulo sincronizan automáticamente el cálculo de ahorro en la sección de "Vida de Herramientas".</p>
-        </div>
-
-        <div class="card p-4 h-fit border-l-4 border-l-[#B7C91F]">
-          <div class="flex items-center justify-between gap-3">
-            <div class="font-extrabold text-[#28556C]">B) Vida de herramientas (Cálculo)</div>
-            <div class="switch" id="swLife" data-on="true"><div class="knob"></div></div>
-          </div>
-          <div class="mt-3 space-y-3" id="lifeBody">
-            <div class="grid grid-cols-2 gap-2">
-              <div><div class="label text-[10px]">Pzs/vida (Estándar)</div><input id="lifeAct" class="input py-1" type="number" readonly bg-gray-50></div>
-              <div><div class="label text-[10px]">Pzs/vida (Rego)</div><input id="lifeNew" class="input py-1" type="number" readonly bg-gray-50></div>
-              <div><div class="label text-[10px]">Precio Herramienta</div><input id="toolCost" class="input py-1" type="number" readonly bg-gray-50></div>
-              <div><div class="label text-[10px]">Herramientas en Set</div><input id="toolCount" class="input py-1" type="number" value="1"></div>
-            </div>
-            <div class="kpi py-2"><div id="saveLife" class="text-lg font-black text-rego-green">$0</div></div>
           </div>
         </div>
-
-        <div class="card p-4 h-fit border-l-4 border-l-[#58D5D3]">
-          <div class="flex items-center justify-between gap-3">
-            <div class="font-extrabold text-[#28556C]">C) Mejora de Ciclo</div>
-            <div class="switch" id="swProc" data-on="false"><div class="knob"></div></div>
-          </div>
-          <div class="mt-3 space-y-3" id="procBody">
-            <div class="grid grid-cols-2 gap-2">
-              <div><div class="label text-[10px]">Ciclo actual (min)</div><input id="cycAct" class="input py-1" type="number" step="0.01" value="3.20"></div>
-              <div><div class="label text-[10px]">Ciclo nuevo (min)</div><input id="cycNew" class="input py-1" type="number" step="0.01" value="3.20"></div>
-            </div>
-            <div class="kpi py-2"><div id="saveProc" class="text-lg font-black text-rego-green">$0</div></div>
-          </div>
-        </div>
-
       </div>
     </section>
 
     <section class="card p-4 sm:p-6">
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div><h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">3) Resultados del Análisis</h2></div>
-        <span class="badge inv">Resumen ROI</span>
+      <h2 class="text-lg sm:text-xl font-extrabold" style="color:var(--rego-black)">3) Resultados del ROI</h2>
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3 text-center">
+        <div class="kpi"><div>Neto mensual</div><div id="netSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div></div>
+        <div class="kpi"><div>Payback (meses)</div><div id="payback" class="text-2xl font-extrabold">—</div></div>
+        <div class="kpi"><div>ROI Anual</div><div id="roiAnnual" class="text-2xl font-extrabold text-[#B7C91F]">—</div></div>
       </div>
-
-      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div class="kpi">
-          <div class="muted small">Ahorro mensual proyectado</div>
-          <div id="netSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
-        </div>
-        <div class="kpi">
-          <div class="muted small">Payback (meses)</div>
-          <div id="payback" class="text-2xl font-extrabold">—</div>
-        </div>
-        <div class="kpi">
-          <div class="muted small">Retorno Anual (ROI)</div>
-          <div id="roiAnnual" class="text-2xl font-extrabold text-[#B7C91F]">—</div>
-        </div>
-      </div>
-
-      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="kpi flex flex-col justify-center bg-gray-50">
-          <div class="muted small">Impacto de Gasto Anual en Herramental</div>
-          <div id="roiAnnualUsd" class="text-3xl font-extrabold text-[#28556C] mt-2">—</div>
-          <div class="muted small mt-1">Ahorro total en compra de cortadores al año</div>
-        </div>
-        <div class="kpi">
-          <canvas id="roiChart" width="400" height="200"></canvas>
-        </div>
-      </div>
+      <div class="mt-4 kpi"><canvas id="roiChart" height="150"></canvas></div>
     </section>
-
-    <footer class="text-center pb-4"><div class="by">by alexrasa</div></footer>
   </main>
 
 <script>
-/* ========================================================
-   ESTADO GLOBAL 
-======================================================== */
-const state = {
-  switches: { life: true, proc: false, hist: true },
-  study: { studyDate: new Date().toISOString().split('T')[0] }
+const state = { 
+    switches: { time: true, life: true, hist: true }, 
+    study: { tools: [{ id: Date.now(), op: "", setup: "", problem: "", reco: "" }] } 
 };
-
-const mathIds = [
-  "costHour","partsMonth","invest","consMonth",
-  "lifeAct","lifeNew","toolCost","toolCount",
-  "cycAct","cycNew",
-  "histOldParts", "histOldTools", "histNewParts", "histNewTools", "histToolPrice"
-];
-
 const $ = (id)=>document.getElementById(id);
 const clamp0 = (n)=>Math.max(0, Number(n||0));
 const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+function renderTools() {
+   const container = $("toolsListContainer");
+   container.innerHTML = "";
+   state.study.tools.forEach((t, i) => {
+      const div = document.createElement("div");
+      div.className = "p-4 border rounded-xl bg-white";
+      div.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input class="input text-sm tool-op" data-id="${t.id}" value="${t.op}" placeholder="Operación">
+        <input class="input text-sm tool-setup" data-id="${t.id}" value="${t.setup}" placeholder="Setup actual">
+        <textarea class="input text-sm md:col-span-2" data-id="${t.id}" placeholder="Problema">${t.problem}</textarea>
+      </div>`;
+      container.appendChild(div);
+   });
+}
+
 function calc(){
-  const costMin  = clamp0($("costHour")?.value) / 60;
-  const partsMonth = clamp0($("partsMonth")?.value);
-  const invest = clamp0($("invest")?.value);
-  const consMonth = clamp0($("consMonth")?.value);
+  const costMin  = clamp0($("costHour").value) / 60;
+  const partsMonth = clamp0($("partsMonth").value);
+  const invest = clamp0($("invest").value);
 
-  // LÓGICA MÓDULO E ACTUALIZADA: COMPARATIVA DE GASTO REAL
   if(state.switches.hist){
-    const oldParts = clamp0($("histOldParts")?.value);
-    const oldToolsUsed = clamp0($("histOldTools")?.value);
-    const newParts = clamp0($("histNewParts")?.value);
-    const newToolsUsed = clamp0($("histNewTools")?.value);
-    const toolPrice = clamp0($("histToolPrice")?.value);
-
-    // Piezas por vida útil (Promedio real detectado)
-    const effOld = oldToolsUsed > 0 ? (oldParts / oldToolsUsed) : 0;
-    const effNew = newToolsUsed > 0 ? (newParts / newToolsUsed) : 0;
-
-    // Sincronización automática con Módulo B
-    if($("lifeAct")) $("lifeAct").value = Math.round(effOld);
-    if($("lifeNew")) $("lifeNew").value = Math.round(effNew);
-    if($("toolCost")) $("toolCost").value = toolPrice;
-
-    if($("histImprovement") && effOld > 0){
-      const imp = ((effNew - effOld) / effOld * 100).toFixed(0);
-      $("histImprovement").textContent = `+${imp}%`;
-    }
+    const op = clamp0($("histOldParts").value), ot = clamp0($("histOldTools").value);
+    const np = clamp0($("histNewParts").value), nt = clamp0($("histNewTools").value);
+    const effOld = ot > 0 ? (op/ot) : 0, effNew = nt > 0 ? (np/nt) : 0;
+    $("lifeAct").value = Math.round(effOld);
+    $("lifeNew").value = Math.round(effNew);
+    if(effOld > 0) $("histImprovement").textContent = "+" + ((effNew-effOld)/effOld*100).toFixed(0) + "%";
   }
 
-  let saveLife = 0, saveProc = 0;
-  let spendActTools = 0;
-
-  if(state.switches.life){
-    const lifeAct = Math.max(1, clamp0($("lifeAct")?.value));
-    const lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
-    const tc = clamp0($("toolCost")?.value);
-    const cnt = Math.max(1, clamp0($("toolCount")?.value));
-    
-    // Gasto mensual en herramientas (Actual vs Rego)
-    spendActTools = (partsMonth / lifeAct) * cnt * tc;
-    const spendNewTools = (partsMonth / lifeNew) * cnt * tc;
-    saveLife = Math.max(0, spendActTools - spendNewTools);
+  let sTime = 0, sLife = 0;
+  if(state.switches.time) sTime = (clamp0($("chgAct").value) - clamp0($("chgNew").value)) * 5 * costMin;
+  if(state.switches.life) {
+      const la = Math.max(1, $("lifeAct").value), ln = Math.max(1, $("lifeNew").value), tp = clamp0($("histToolPrice").value);
+      sLife = (partsMonth/la * tp) - (partsMonth/ln * tp);
   }
 
-  if(state.switches.proc) {
-    saveProc = Math.max(0, clamp0($("cycAct")?.value) - clamp0($("cycNew")?.value)) * partsMonth * costMin;
-  }
+  const net = Math.max(0, sTime + sLife);
+  const pb = (invest > 0 && net > 0) ? invest / net : null;
+  const ra = (invest > 0) ? (net * 12) / invest : null;
 
-  const net = Math.max(0, (saveLife + saveProc) - consMonth);
-  let payback = (invest > 0 && net > 0) ? invest / net : null;
-  let roiAnnual = (invest > 0) ? (net * 12) / invest : null;
-
-  // Gráfica: Comparativa de costo directo mensual en consumibles
-  const costActualTotal = spendActTools;
-  const costNewTotal = spendActTools - saveLife;
-
-  return { invest, net, payback, roiAnnual, saveLife, saveProc, costActualTotal, costNewTotal };
+  $("saveTime").textContent = money(sTime);
+  $("saveLife").textContent = money(sLife);
+  $("netSave").textContent = money(net);
+  $("payback").textContent = pb ? pb.toFixed(1) + " meses" : "—";
+  $("roiAnnual").textContent = ra ? (ra*100).toFixed(0) + "%" : "—";
+  renderChart(sLife * 12);
 }
 
-/* ========================================================
-   UI & CHARTS
-======================================================== */
 let roiChartInstance = null;
-function renderChart(costoActual, costoNuevo) {
-    const canvas = document.getElementById('roiChart');
-    if(!canvas) return;
-    if (roiChartInstance) {
-        roiChartInstance.data.datasets[0].data = [costoActual, costoNuevo];
-        roiChartInstance.update(); 
-    } else {
-        const ctx = canvas.getContext('2d');
-        roiChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Costo Herramental Estándar', 'Costo con REGO-FIX'],
-                datasets: [{ label: 'Gasto Mensual Herramental (USD)', data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#B7C91F'], borderRadius: 8 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-}
-
-function renderKPIs(){
-  const r = calc();
-  if($("saveLife")) $("saveLife").textContent = money(r.saveLife);
-  if($("saveProc")) $("saveProc").textContent = money(r.saveProc);
-  if($("netSave")) $("netSave").textContent = money(r.net);
-  
-  const pb = $("payback");
-  if(pb) pb.textContent = r.payback ? r.payback.toFixed(1) + " meses" : "—";
-  
-  if($("roiAnnual")) $("roiAnnual").textContent = r.roiAnnual ? (r.roiAnnual*100).toFixed(0) + "%" : "—";
-  if($("roiAnnualUsd")) $("roiAnnualUsd").textContent = money(r.net * 12);
-  
-  renderChart(r.costActualTotal, r.costNewTotal);
+function renderChart(ahorroAnual) {
+    const ctx = $("roiChart").getContext('2d');
+    if (roiChartInstance) roiChartInstance.destroy();
+    roiChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: ['Ahorro Anual en Cortadores'], datasets: [{ data: [ahorroAnual], backgroundColor: '#B7C91F' }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
 }
 
 function bindSwitches() {
-  ["swLife","swProc","swHist"].forEach(id => {
-      const el = $(id);
-      el.addEventListener("click", () => {
-          const next = el.dataset.on !== "true";
-          el.dataset.on = next ? "true" : "false";
-          state.switches[id.replace('sw','').toLowerCase()] = next;
-          renderKPIs();
-      });
-  });
-}
-
-function bindInputs(){
-  mathIds.forEach(id => {
-      const el = $(id);
-      if(el) el.addEventListener("input", renderKPIs);
-  });
+    document.querySelectorAll(".switch").forEach(el => {
+        el.addEventListener("click", () => {
+            const next = el.dataset.on !== "true";
+            el.dataset.on = next ? "true" : "false";
+            state.switches[el.id.replace('sw','').toLowerCase()] = next;
+            calc();
+        });
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     bindSwitches();
-    bindInputs();
-    renderKPIs();
+    renderTools();
+    document.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
+    $("btnToggleHrCalc").addEventListener("click", () => $("hrCalcPanel").classList.toggle("hidden"));
+    calc();
 });
 </script>
 </body>
