@@ -8,218 +8,233 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root{
-      --rego-green: #B7C91F; --rego-blue: #28556C; --rego-red: #D31B23; --rego-black: #121314;
-      --rego-gd: #44474A; --rego-gm: #677071; --border: rgba(40,85,108,.18); --shadow: 0 10px 30px rgba(18,19,20,.08);
+      --rego-green: #B7C91F; --rego-green-2:#AAC82D; --rego-turq:  #58D5D3;
+      --rego-blue:  #28556C; --rego-red:   #D31B23; --rego-black: #121314;
+      --rego-gd:    #44474A; --rego-gm:    #677071; --rego-gl:    #E5E6E4;
+      --card: #ffffff; --bg: #ffffff; --border: rgba(40,85,108,.18); --shadow: 0 10px 30px rgba(18,19,20,.08);
     }
-    body{ background: #ffffff; color: var(--rego-black); font-family: sans-serif; }
-    .card{ background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 20px; }
-    .btn{ border-radius: 16px; padding: .75rem 1rem; font-weight: 700; cursor: pointer; transition: .15s; border: 1px solid transparent; }
-    .btn-outline{ background:#fff; border-color: var(--border); }
-    .btn-primary{ background: var(--rego-green); color:#121314; }
+    html,body{ background: var(--bg) !important; color: var(--rego-black); }
+    .card{ background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 20px; }
+    .btn{ border-radius: 16px; padding: .75rem 1rem; font-weight: 700; border: 1px solid transparent; transition: .15s ease; cursor: pointer; }
+    .btn-outline{ background:#fff; border-color: var(--border); color: var(--rego-black); }
+    .btn-primary{ background: rgba(183,201,31,.95); color:#121314; }
     .btn-danger{ background: var(--rego-red); color:#fff; }
-    .input{ width:100%; border:1px solid var(--border); border-radius: 14px; padding: .65rem .8rem; outline: none; }
-    .label{ color: var(--rego-gd); font-weight: 700; font-size:.9rem; }
     .kpi{ border: 1px solid var(--border); border-radius: 18px; padding: .9rem 1rem; background: #fff; }
+    .muted{ color: var(--rego-gm); }
+    .label{ color: var(--rego-gd); font-weight: 700; font-size:.9rem; }
+    .input{ width:100%; border:1px solid var(--border); border-radius: 14px; padding: .65rem .8rem; outline: none; background:#fff; }
     .switch{ position:relative; width: 52px; height: 30px; border-radius: 999px; background: rgba(103,112,113,.25); cursor:pointer; }
-    .switch[data-on="true"]{ background: var(--rego-green); }
-    .switch .knob{ position:absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background:#fff; transition: .15s; }
+    .switch[data-on="true"]{ background: rgba(183,201,31,.85); }
+    .switch .knob{ position:absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background:#fff; transition: .15s ease; }
     .switch[data-on="true"] .knob{ transform: translateX(22px); }
-    .badge{ border-radius: 999px; padding:.25rem .55rem; font-size: .78rem; font-weight:700; border:1px solid var(--border); background:#fff; color: var(--rego-blue); }
+    .badge{ border-radius: 999px; padding:.25rem .55rem; font-size: .78rem; font-weight:700; border:1px solid var(--border); background:#fff; }
+    .by{ font-size:.78rem; color: var(--rego-gm); }
   </style>
 </head>
 
-<body class="min-h-screen pb-10">
+<body class="min-h-screen">
   <header class="max-w-6xl mx-auto px-4 pt-6 pb-4">
-    <div class="card p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="text-2xl font-extrabold">ROI Holders REGO-FIX</div>
-      </div>
-      <div class="flex gap-2">
-        <button id="btnPdfReport" class="btn btn-primary text-sm">Exportar PDF</button>
-        <button id="btnResetAll" class="btn btn-danger text-sm">Reset</button>
+    <div class="card p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-10 w-auto" onerror="this.style.display='none'">
+          <div>
+            <div class="text-2xl font-extrabold" style="color:var(--rego-black)">ROI Holders REGO-FIX</div>
+            <div class="muted small">Análisis Multi-Herramienta y Proceso</div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnPdfReport" class="btn btn-primary">Exportar PDF</button>
+          <button id="btnResetAll" class="btn btn-danger">Reset</button>
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 space-y-6">
+  <main class="max-w-6xl mx-auto px-4 pb-10 space-y-6">
     <!-- SECCIÓN 0 -->
     <section class="card p-6">
-      <div class="flex justify-between mb-4">
-        <h2 class="text-xl font-extrabold">0) Datos del Cliente</h2>
-        <span class="badge">Estudio</span>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <h2 class="text-xl font-extrabold" style="color:var(--rego-black)">0) Datos del Cliente</h2>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div><div class="label">Empresa</div><input id="company" class="input" type="text" data-study="company"></div>
         <div><div class="label">Usuario</div><input id="userName" class="input" type="text" data-study="userName"></div>
+        <div><div class="label">Puesto</div><input id="userRole" class="input" type="text" data-study="userRole"></div>
         <div><div class="label">Fecha</div><input id="studyDate" class="input" type="text" readonly></div>
       </div>
     </section>
 
-    <!-- SECCIÓN 1A -->
+    <!-- SECCIÓN 1A/B -->
     <section class="card p-6">
-      <h2 class="text-xl font-extrabold mb-4">1) Parámetros Base</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div><div class="label">Costo máq/hr (USD)</div><input id="costHour" class="input" type="number" value="75"></div>
-        <div><div class="label">Pzs por mes</div><input id="partsMonth" class="input" type="number" value="5000"></div>
-        <div><div class="label">Inversión REGO-FIX</div><input id="invest" class="input" type="number" value="4500"></div>
+      <h2 class="text-xl font-extrabold" style="color:var(--rego-black)">1) Parámetros de Operación</h2>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div><div class="label">Costo máq/hr</div><input id="costHour" class="input" type="number" value="75"></div>
+        <div><div class="label">Piezas por mes</div><input id="partsMonth" class="input" type="number" value="5000"></div>
+        <div><div class="label">Inversión (USD)</div><input id="invest" class="input" type="number" value="4500"></div>
         <div><div class="label">Consumibles mes</div><input id="consMonth" class="input" type="number" value="0"></div>
       </div>
     </section>
 
-    <!-- SECCIÓN 2: AHORROS -->
+    <!-- SECCIÓN 2: AHORROS (MODIFICADA SOLO MÓDULO E) -->
     <section class="card p-6">
-      <h2 class="text-xl font-extrabold mb-4">2) Análisis de Ahorros</h2>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <h2 class="text-xl font-extrabold" style="color:var(--rego-black)">2) Ahorros Globales del Proceso</h2>
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
         
-        <!-- VIDA HERRAMIENTA (Sincronizada con E) -->
-        <div class="card p-4 border-l-4 border-l-[#B7C91F]">
+        <!-- B) VIDA HERRAMIENTAS -->
+        <div class="card p-4">
           <div class="flex justify-between items-center mb-3">
-            <div class="font-bold">B) Vida de Herramienta</div>
+            <div class="font-extrabold" style="color:var(--rego-blue)">B) Vida de herramientas</div>
             <div class="switch" id="swLife" data-on="true"><div class="knob"></div></div>
           </div>
-          <div id="lifeBody" class="grid grid-cols-2 gap-2">
-            <div><div class="label text-[10px]">Vida Act. (Pzs)</div><input id="lifeAct" class="input py-1" type="number" readonly bg-gray-50></div>
-            <div><div class="label text-[10px]">Vida Rego (Pzs)</div><input id="lifeNew" class="input py-1" type="number" readonly bg-gray-50></div>
-            <div class="col-span-2 kpi text-center font-bold text-green-600" id="saveLife">$0</div>
+          <div id="lifeBody" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div><div class="label">Pzs/vida (Anterior)</div><input id="lifeAct" class="input" type="number" readonly bg-gray-50></div>
+              <div><div class="label">Pzs/vida (Rego-Fix)</div><input id="lifeNew" class="input" type="number" readonly bg-gray-50></div>
+              <div class="col-span-2"><div class="label">Herramientas en Set</div><input id="toolCount" class="input" type="number" value="1"></div>
+            </div>
+            <div class="kpi"><div class="muted small">Ahorro mensual vida</div><div id="saveLife" class="text-xl font-extrabold text-[#B7C91F]">$0</div></div>
           </div>
         </div>
 
-        <!-- MODULO E: COMPARATIVA PARALELA -->
-        <div class="card p-4 border-2 border-dashed border-[#AAC82D] lg:col-span-2">
-          <div class="flex justify-between items-center mb-4">
-            <div class="font-bold">E) Comparativa Paralela (Consumo Real de 2 Años)</div>
+        <!-- E) COMPARATIVA PARALELA (SOLICITADO) -->
+        <div class="card p-4 lg:col-span-1">
+          <div class="flex justify-between items-center mb-3">
+            <div class="font-extrabold" style="color:var(--rego-blue)">E) Comparativa Paralela (Prueba Real)</div>
             <div class="switch" id="swHist" data-on="true"><div class="knob"></div></div>
           </div>
-          <div id="histBody" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="p-3 bg-red-50 rounded-xl border border-red-100">
-              <div class="text-[10px] font-bold text-red-700">ESCENARIO A (ESTÁNDAR)</div>
-              <div class="grid grid-cols-2 gap-2 mt-2">
-                <div><div class="label text-[10px]">Piezas Totales</div><input id="histOldParts" class="input py-1" type="number" value="90000"></div>
+          <div id="histBody" class="space-y-4">
+            <div class="p-2 bg-red-50 rounded-lg border border-red-100">
+              <div class="text-[10px] font-bold text-red-700">PRODUCCIÓN PARALELA (OTRO HOLDER)</div>
+              <div class="grid grid-cols-2 gap-2 mt-1">
+                <div><div class="label text-[10px]">Pzs Totales</div><input id="histOldParts" class="input py-1" type="number" value="90000"></div>
                 <div><div class="label text-[10px]">Cortadores</div><input id="histOldTools" class="input py-1" type="number" value="50"></div>
               </div>
             </div>
-            <div class="p-3 bg-green-50 rounded-xl border border-green-100">
-              <div class="text-[10px] font-bold text-green-700">ESCENARIO B (REGO-FIX)</div>
-              <div class="grid grid-cols-2 gap-2 mt-2">
-                <div><div class="label text-[10px]">Piezas Totales</div><input id="histNewParts" class="input py-1" type="number" value="45000"></div>
+            <div class="p-2 bg-green-50 rounded-lg border border-green-100">
+              <div class="text-[10px] font-bold text-green-700">PRODUCCIÓN PARALELA (REGO-FIX)</div>
+              <div class="grid grid-cols-2 gap-2 mt-1">
+                <div><div class="label text-[10px]">Pzs Totales</div><input id="histNewParts" class="input py-1" type="number" value="45000"></div>
                 <div><div class="label text-[10px]">Cortadores</div><input id="histNewTools" class="input py-1" type="number" value="10"></div>
               </div>
             </div>
-            <div class="p-3 bg-blue-50 rounded-xl border border-blue-100 flex flex-col justify-center">
-              <div class="label text-[10px]">Precio Cortador (USD)</div>
-              <input id="histToolPrice" class="input py-1" type="number" value="120">
-              <div class="mt-2 text-center text-xs font-bold text-green-600">Mejora: <span id="histImprovement">+0%</span></div>
+            <div class="grid grid-cols-1 gap-2">
+              <div><div class="label">Precio Unitario Cortador (USD)</div><input id="histToolPrice" class="input" type="number" value="120"></div>
             </div>
+            <div class="text-center"><div class="badge inv">Mejora de vida: <span id="histImprovement" class="text-rego-green font-black">+0%</span></div></div>
           </div>
         </div>
 
       </div>
     </section>
 
-    <!-- SECCIÓN 3: RESULTADOS -->
+    <!-- SECCIÓN 3: ROI -->
     <section class="card p-6">
-      <h2 class="text-xl font-extrabold mb-4">3) Resultado del ROI</h2>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-center">
-        <div class="kpi"><div>Ahorro Neto Mes</div><div id="netSave" class="text-2xl font-black text-green-600">$0</div></div>
-        <div class="kpi"><div>Payback (Meses)</div><div id="payback" class="text-2xl font-black">—</div></div>
-        <div class="kpi"><div>ROI Anual</div><div id="roiAnnual" class="text-2xl font-black text-green-600">—</div></div>
+      <h2 class="text-xl font-extrabold" style="color:var(--rego-black)">3) Resultados del ROI</h2>
+      <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div class="kpi text-center">
+          <div class="muted small">Ahorro neto mensual</div>
+          <div id="netSave" class="text-2xl font-extrabold text-[#B7C91F]">$0</div>
+        </div>
+        <div class="kpi text-center">
+          <div class="muted small">Payback (meses)</div>
+          <div id="payback" class="text-2xl font-extrabold transition-colors">—</div>
+        </div>
+        <div class="kpi text-center">
+          <div class="muted small">ROI Anual</div>
+          <div id="roiAnnual" class="text-2xl font-extrabold text-[#B7C91F]">—</div>
+        </div>
       </div>
-      <div class="mt-6 h-64">
-        <canvas id="roiChart"></canvas>
-      </div>
+      <div class="mt-4 kpi h-64"><canvas id="roiChart"></canvas></div>
     </section>
   </main>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
-    const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+<script>
+const state = {
+  switches: { life: true, hist: true },
+  study: {}
+};
 
-    const state = {
-      switches: { life: true, hist: true }
-    };
+const $ = (id)=>document.getElementById(id);
+const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-    function calculate() {
-      const partsMonth = parseFloat($("partsMonth").value) || 0;
-      const invest = parseFloat($("invest").value) || 0;
-      const toolPrice = parseFloat($("histToolPrice").value) || 0;
+function calc(){
+  const costMin  = parseFloat($("costHour").value || 0) / 60;
+  const partsMonth = parseFloat($("partsMonth").value || 0);
+  const invest = parseFloat($("invest").value || 0);
+  const consMonth = parseFloat($("consMonth").value || 0);
 
-      // Lógica Módulo E
-      let lifeAct = 0, lifeNew = 0;
-      if (state.switches.hist) {
-        const op = parseFloat($("histOldParts").value) || 0;
-        const ot = parseFloat($("histOldTools").value) || 0;
-        const np = parseFloat($("histNewParts").value) || 0;
-        const nt = parseFloat($("histNewTools").value) || 0;
+  // LÓGICA MÓDULO E -> B
+  if(state.switches.hist){
+    const op = parseFloat($("histOldParts").value || 0);
+    const ot = parseFloat($("histOldTools").value || 0);
+    const np = parseFloat($("histNewParts").value || 0);
+    const nt = parseFloat($("histNewTools").value || 0);
+    const toolPrice = parseFloat($("histToolPrice").value || 0);
 
-        lifeAct = ot > 0 ? (op / ot) : 0;
-        lifeNew = nt > 0 ? (np / nt) : 0;
+    const effOld = ot > 0 ? (op/ot) : 0;
+    const effNew = nt > 0 ? (np/nt) : 0;
 
-        $("lifeAct").value = Math.round(lifeAct);
-        $("lifeNew").value = Math.round(lifeNew);
+    $("lifeAct").value = Math.round(effOld);
+    $("lifeNew").value = Math.round(effNew);
 
-        if (lifeAct > 0) {
-          const imp = ((lifeNew - lifeAct) / lifeAct * 100).toFixed(0);
-          $("histImprovement").textContent = "+" + imp + "%";
-        }
-      }
-
-      // Ahorro Vida
-      let sLife = 0;
-      if (state.switches.life && lifeAct > 0 && lifeNew > 0) {
-        const costOld = (partsMonth / lifeAct) * toolPrice;
-        const costNew = (partsMonth / lifeNew) * toolPrice;
-        sLife = costOld - costNew;
-      }
-
-      const net = Math.max(0, sLife);
-      const pb = (invest > 0 && net > 0) ? invest / net : null;
-      const ra = (invest > 0) ? (net * 12) / invest : null;
-
-      $("saveLife").textContent = money(sLife);
-      $("netSave").textContent = money(net);
-      $("payback").textContent = pb ? pb.toFixed(1) + " meses" : "—";
-      $("roiAnnual").textContent = ra ? (ra * 100).toFixed(0) + "%" : "—";
-
-      updateChart(sLife);
+    if(effOld > 0){
+      const imp = ((effNew - effOld) / effOld * 100).toFixed(0);
+      $("histImprovement").textContent = `+${imp}%`;
     }
+  }
 
-    let chart = null;
-    function updateChart(ahorro) {
-      const ctx = $("roiChart").getContext('2d');
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
+  let saveLife = 0;
+  if(state.switches.life){
+    const la = parseFloat($("lifeAct").value || 1);
+    const ln = parseFloat($("lifeNew").value || 1);
+    const tc = parseFloat($("histToolPrice").value || 0);
+    const cnt = parseFloat($("toolCount").value || 1);
+    
+    const costOld = (partsMonth / la) * cnt * tc;
+    const costNew = (partsMonth / ln) * cnt * tc;
+    saveLife = Math.max(0, costOld - costNew);
+  }
+
+  const net = Math.max(0, saveLife - consMonth);
+  const pb = (invest > 0 && net > 0) ? invest / net : null;
+  const ra = (invest > 0) ? (net * 12) / invest : null;
+
+  $("saveLife").textContent = money(saveLife);
+  $("netSave").textContent = money(net);
+  $("payback").textContent = pb ? pb.toFixed(1) + " meses" : "—";
+  $("roiAnnual").textContent = ra ? (ra*100).toFixed(0) + "%" : "—";
+
+  renderChart(saveLife);
+}
+
+let roiChartInstance = null;
+function renderChart(ahorro) {
+    const ctx = $("roiChart").getContext('2d');
+    if (roiChartInstance) roiChartInstance.destroy();
+    roiChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Ahorro Mensual'],
-          datasets: [{ label: 'USD', data: [ahorro], backgroundColor: '#B7C91F' }]
+            labels: ['Ahorro Mensual en Cortadores'],
+            datasets: [{ label: 'USD', data: [ahorro], backgroundColor: '#B7C91F', borderRadius: 8 }]
         },
-        options: { maintainAspectRatio: false }
-      });
-    }
-
-    // Inicialización de eventos
-    document.addEventListener("DOMContentLoaded", () => {
-      $("studyDate").value = new Date().toLocaleDateString();
-
-      // Inputs
-      const inputs = ["partsMonth", "invest", "histOldParts", "histOldTools", "histNewParts", "histNewTools", "histToolPrice"];
-      inputs.forEach(id => $(id).addEventListener("input", calculate));
-
-      // Switches
-      document.querySelectorAll(".switch").forEach(sw => {
-        sw.addEventListener("click", () => {
-          const isOff = sw.dataset.on === "true";
-          sw.dataset.on = isOff ? "false" : "true";
-          state.switches[sw.id.replace("sw", "").toLowerCase()] = !isOff;
-          calculate();
-        });
-      });
-
-      $("btnResetAll").onclick = () => location.reload();
-      $("btnPdfReport").onclick = () => window.print();
-
-      calculate();
+        options: { responsive: true, maintainAspectRatio: false }
     });
-  </script>
+}
+
+function bind() {
+    $("studyDate").value = new Date().toLocaleDateString();
+    document.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
+    document.querySelectorAll(".switch").forEach(sw => {
+        sw.addEventListener("click", () => {
+            const on = sw.dataset.on !== "true";
+            sw.dataset.on = on ? "true" : "false";
+            state.switches[sw.id.replace('sw','').toLowerCase()] = on;
+            calc();
+        });
+    });
+    $("btnResetAll").onclick = () => location.reload();
+}
+
+document.addEventListener("DOMContentLoaded", () => { bind(); calc(); });
+</script>
 </body>
 </html>
