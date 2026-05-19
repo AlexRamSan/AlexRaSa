@@ -3,16 +3,11 @@ import jsforce from "jsforce";
 import multiparty from "multiparty";
 import fs from "fs";
 
-// Inicializar OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-// Configuración para permitir archivos (Audios) en Vercel
 export const config = { api: { bodyParser: false } };
 
-// Tu ID fijo para asignar las tareas directamente a tu usuario
 const myOwnerId = "005WQ00000C6Kl7YAF"; 
 
-// --- FUNCIÓN DE AUTENTICACIÓN (EL MÉTODO QUE SÍ FUNCIONA) ---
 async function connectSF() {
   const authRes = await fetch('https://rego-fix.my.salesforce.com/services/oauth2/token', {
     method: 'POST',
@@ -24,20 +19,12 @@ async function connectSF() {
     })
   });
 
-  if (!authRes.ok) {
-    const errText = await authRes.text();
-    throw new Error(`Fallo de autenticación Client Credentials: ${errText}`);
-  }
-
+  if (!authRes.ok) throw new Error(`Fallo de autenticación: ${await authRes.text()}`);
   const authData = await authRes.json();
-  return new jsforce.Connection({ 
-    instanceUrl: authData.instance_url, 
-    accessToken: authData.access_token 
-  });
+  return new jsforce.Connection({ instanceUrl: authData.instance_url, accessToken: authData.access_token });
 }
 
 export default async function handler(req, res) {
-  // Configuración de CORS
   const origin = req.headers.origin;
   res.setHeader('Access-Control-Allow-Origin', origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -48,122 +35,126 @@ export default async function handler(req, res) {
   const form = new multiparty.Form();
 
   form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ success: false, error: "Error de lectura de formulario" });
+    if (err) return res.status(500).json({ success: false, error: "Error de lectura" });
 
     try {
       const action = fields.action ? fields.action[0] : null;
 
-      // ================================================================
-      // ACCIÓN A: OBTENER TODAS LAS CUENTAS 
-      // ================================================================
-      if (action === 'getAllAccounts') {
-        const conn = await connectSF();
-        const allAccs = await conn.query(`SELECT Id, Name, BillingCity FROM Account WHERE OwnerId = '${myOwnerId}' ORDER BY Name ASC LIMIT 200`);
-        return res.status(200).json({ success: true, accounts: allAccs.records || [] });
-      }
-
-      // ================================================================
-      // ACCIÓN B: CONFIRMAR Y GUARDAR ACTIVIDAD EN SALESFORCE
-      // ================================================================
+      // ==========================================
+      // CONFIRMACIÓN Y ESCRITURA EN SALESFORCE
+      // ==========================================
       if (action === 'confirmar') {
         const payload = JSON.parse(fields.payload[0]);
         const conn = await connectSF();
 
-        if (payload.taskType === 'EVENTO') {
-          await conn.sobject("Event").create({
-            Subject: payload.subject,
-            Description: payload.description,
-            StartDateTime: `${payload.fecha}T${payload.hora || '09:00'}:00`,
-            DurationInMinutes: 60,
-            WhatId: payload.accountId,
-            OwnerId: myOwnerId
-          });
-        } else {
-          await conn.sobject("Task").create({
-            Subject: payload.subject,
-            Description: payload.description,
-            Status: 'Completed',
-            WhatId: payload.accountId,
-            OwnerId: myOwnerId
-          });
+        // CERRAR OPORTUNIDAD + ORDEN DE COMPRA
+        if (payload.taskType === 'CERRAR_COTIZACION') {
+          await conn.sobject("Opportunity").update({ Id: payload.opportunityId, StageName: 'Closed Won' });
+          const ordenDeCompra = files.documento ? files.documento[0] : null;
+          
+          if (ordenDeCompra && ordenDeCompra.path) {
+            const base64Data = fs.readFileSync(ordenDeCompra.path, { encoding: 'base64' });
+            await conn.sobject("ContentVersion").create({
+              Title: ordenDeCompra.originalFilename || 'Orden_de_Compra',
+              PathOnClient: ordenDeCompra.originalFilename || 'Orden_de_Compra.pdf',
+              VersionData: base64Data,
+              FirstPublishLocationId: payload.opportunityId
+            });
+            return res.status(200).json({ success: true, message: "Cotización ganada y Orden de Compra adjuntada 🎯📁" });
+          }
+          return res.status(200).json({ success: true, message: "Cotización ganada en Salesforce 🎯 (Sin archivo)" });
         }
-        return res.status(200).json({ success: true, message: "Inyectado correctamente en Salesforce." });
+
+        // AGENDAR EVENTO A FUTURO
+        if (payload.taskType === 'EVENTO' || payload.taskType === 'AGENDAR_VISITA') {
+          await conn.sobject("Event").create({
+            Subject: payload.subject, Description: payload.description,
+            StartDateTime: `${payload.fecha}T${payload.hora || '09:00'}:00`,
+            DurationInMinutes: 60, WhatId: payload.accountId, OwnerId: myOwnerId
+          });
+          return res.status(200).json({ success: true, message: "Visita agendada correctamente." });
+        }
+
+        // MINUTA ESTÁNDAR (VISITA/DEMO/COBRANZA)
+        await conn.sobject("Task").create({
+          Subject: payload.subject, Description: payload.description,
+          Status: 'Completed', WhatId: payload.accountId, OwnerId: myOwnerId
+        });
+        return res.status(200).json({ success: true, message: "Minuta inyectada correctamente." });
       }
 
-      // ================================================================
-      // ACCIÓN C: PROCESAR VOZ O TEXTO MANUAL CON IA
-      // ================================================================
+      // ==========================================
+      // PROCESAMIENTO DE VOZ Y DECISIÓN IA
+      // ==========================================
       let transcripcionText = "";
-      const audioFile = files.audio ? files.audio[0] : null;
-      const textoManual = fields.texto ? fields.texto[0] : null;
-
-      if (audioFile && audioFile.path) {
+      if (files.audio && files.audio[0].path) {
         const transcription = await openai.audio.transcriptions.create({
-          file: fs.createReadStream(audioFile.path),
-          model: "whisper-1",
-          language: "es"
+          file: fs.createReadStream(files.audio[0].path), model: "whisper-1", language: "es"
         });
         transcripcionText = transcription.text;
-      } else if (textoManual) {
-        transcripcionText = textoManual;
+      } else if (fields.texto) {
+        transcripcionText = fields.texto[0];
       } else {
-        return res.status(400).json({ success: false, error: "No se recibió audio ni texto válido." });
+        return res.status(400).json({ success: false, error: "Sin audio o texto." });
       }
 
-      // Prompt estructurado para auditoría comercial
       const promptAuditoria = `
-        Eres el Asistente Full de REGO-FIX. Hoy es ${new Date().toLocaleDateString()}.
-        Tu meta es tomar las minutas de Miguel y estructurarlas.
-        
-        Puntos clave: Resultados, Profit, Actividad, Cobranza.
-        Dictado actual: "${transcripcionText}"
+        Eres el Asistente Comercial Inteligente de REGO-FIX.
+        Analiza el texto y clasifica el 'intent':
+        1. REGISTRAR_ACTIVIDAD (Demo, Visita, Cobranza que ya pasó)
+        2. AGENDAR_VISITA (Planes a futuro)
+        3. CONSULTAR_OPORTUNIDADES (Si pide "reales", pon filtro_real: true)
+        4. CERRAR_COTIZACION (Ganar negocio)
+        5. CONSULTAR_PENDIENTES (Tareas propias no completadas)
+        6. CONSULTAR_TAREAS_JEFE (Tareas creadas por gerencia para ti)
 
-        Extrae la intención y la empresa. Para 'empresa_busqueda', usa solo la palabra clave principal (ej: de "Bocar Lerma" extrae "Bocar").
+        Reglas: 'empresa_busqueda' solo palabra clave. 'asunto' usa "[CATEGORÍA] - Título".
+        Dictado: "${transcripcionText}"
 
-        Responde exclusivamente con este formato JSON:
-        {
-          "success": true,
-          "plan": {
-            "intent": "REGISTRO_ACTIVIDAD",
-            "empresa_busqueda": "Palabra Clave",
-            "asunto": "Reporte de Campo",
-            "detalles": "Resumen limpio de la minuta...",
-            "fecha": "2026-05-19",
-            "hora": "12:00"
-          }
-        }
+        JSON Requerido: { "intent", "empresa_busqueda", "asunto", "detalles", "fecha", "hora", "filtro_real": boolean }
       `;
 
       const aiResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o", response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: "Analista comercial de precisión industrial." },
+          { role: "system", content: "Analista de ventas industriales." },
           { role: "user", content: promptAuditoria }
-        ],
-        response_format: { type: "json_object" }
+        ]
       });
 
-      const aiResult = JSON.parse(aiResponse.choices[0].message.content);
-      const plan = aiResult.plan || aiResult;
-
-      // Autenticamos para buscar la empresa que la IA detectó
+      const plan = JSON.parse(aiResponse.choices[0].message.content);
       const conn = await connectSF();
-      let searchResults = { records: [] };
 
-      if (plan.empresa_busqueda && plan.empresa_busqueda !== "") {
-        searchResults = await conn.query(`SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%${plan.empresa_busqueda}%' LIMIT 5`);
+      if (plan.intent === 'CONSULTAR_OPORTUNIDADES') {
+        let queryStr = `SELECT Id, Name, Amount, StageName FROM Opportunity WHERE OwnerId = '${myOwnerId}' AND IsClosed = false`;
+        if (plan.filtro_real) queryStr += ` AND StageName IN ('Value Proposition', 'Proposal/Price Quote', 'Negotiation/Review')`;
+        const opps = await conn.query(`${queryStr} ORDER BY Amount DESC LIMIT 5`);
+        return res.status(200).json({ success: true, intent: plan.intent, data: opps.records, message: plan.filtro_real ? "Tus oportunidades reales:" : "Tus oportunidades abiertas:" });
       }
 
-      return res.status(200).json({ 
-        success: true, 
-        transcript: transcripcionText,
-        plan: plan,
-        accounts: searchResults.records,
-        needSelection: searchResults.records.length > 0
-      });
+      if (plan.intent === 'CONSULTAR_PENDIENTES') {
+        const tasks = await conn.query(`SELECT Id, Subject, ActivityDate FROM Task WHERE OwnerId = '${myOwnerId}' AND Status != 'Completed' ORDER BY ActivityDate ASC LIMIT 5`);
+        return res.status(200).json({ success: true, intent: plan.intent, data: tasks.records, message: "Tus pendientes:" });
+      }
+
+      if (plan.intent === 'CONSULTAR_TAREAS_JEFE') {
+        const bossTasks = await conn.query(`SELECT Id, Subject, CreatedBy.Name, ActivityDate FROM Task WHERE OwnerId = '${myOwnerId}' AND Status != 'Completed' AND CreatedById != '${myOwnerId}' LIMIT 5`);
+        return res.status(200).json({ success: true, intent: plan.intent, data: bossTasks.records, message: "Actividades de gerencia:" });
+      }
+
+      if (plan.intent === 'CERRAR_COTIZACION') {
+        const targetOpps = await conn.query(`SELECT Id, Name, Amount FROM Opportunity WHERE OwnerId = '${myOwnerId}' AND IsClosed = false AND Name LIKE '%${plan.empresa_busqueda}%' LIMIT 3`);
+        return res.status(200).json({ success: true, intent: plan.intent, plan: plan, records: targetOpps.records, needConfirmation: targetOpps.records.length > 0 });
+      }
+
+      // Flujo de Escritura PREDETERMINADO (Actividad / Evento)
+      let searchResults = { records: [] };
+      if (plan.empresa_busqueda) {
+        searchResults = await conn.query(`SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%${plan.empresa_busqueda}%' LIMIT 5`);
+      }
+      return res.status(200).json({ success: true, intent: plan.intent, plan: plan, records: searchResults.records, needConfirmation: searchResults.records.length > 0 });
 
     } catch (error) {
-      console.error("Error en ejecución del backend:", error);
       res.status(500).json({ success: false, error: error.message });
     }
   });
