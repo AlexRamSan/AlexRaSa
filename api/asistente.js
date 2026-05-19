@@ -60,22 +60,27 @@ export default async function handler(req, res) {
         const payload = JSON.parse(fields.payload[0]);
         const conn = await connectSF();
 
-        // CERRAR OPORTUNIDAD + ORDEN DE COMPRA
+        // CERRAR OPORTUNIDAD (GANADA O PERDIDA)
         if (payload.taskType === 'CERRAR_COTIZACION') {
-          await conn.sobject("Opportunity").update({ Id: payload.opportunityId, StageName: 'Closed Won' });
-          const ordenDeCompra = files.documento ? files.documento[0] : null;
+          const stage = payload.estadoCierre === 'Perdida' ? 'Closed Lost' : 'Closed Won';
+          await conn.sobject("Opportunity").update({ Id: payload.opportunityId, StageName: stage });
           
-          if (ordenDeCompra && ordenDeCompra.path) {
-            const base64Data = fs.readFileSync(ordenDeCompra.path, { encoding: 'base64' });
-            await conn.sobject("ContentVersion").create({
-              Title: ordenDeCompra.originalFilename || 'Orden_de_Compra',
-              PathOnClient: ordenDeCompra.originalFilename || 'Orden_de_Compra.pdf',
-              VersionData: base64Data,
-              FirstPublishLocationId: payload.opportunityId
-            });
-            return res.status(200).json({ success: true, message: "Cotización ganada y Orden de Compra adjuntada 🎯📁" });
+          if (stage === 'Closed Won') {
+            const ordenDeCompra = files.documento ? files.documento[0] : null;
+            if (ordenDeCompra && ordenDeCompra.path) {
+              const base64Data = fs.readFileSync(ordenDeCompra.path, { encoding: 'base64' });
+              await conn.sobject("ContentVersion").create({
+                Title: ordenDeCompra.originalFilename || 'Orden_de_Compra',
+                PathOnClient: ordenDeCompra.originalFilename || 'Orden_de_Compra.pdf',
+                VersionData: base64Data,
+                FirstPublishLocationId: payload.opportunityId
+              });
+              return res.status(200).json({ success: true, message: "Cotización ganada y Orden de Compra adjuntada 🎯📁" });
+            }
+            return res.status(200).json({ success: true, message: "Cotización ganada en Salesforce 🎯 (Sin archivo)" });
+          } else {
+            return res.status(200).json({ success: true, message: "Cotización marcada como Perdida en Salesforce ❌" });
           }
-          return res.status(200).json({ success: true, message: "Cotización ganada en Salesforce 🎯 (Sin archivo)" });
         }
 
         // AGENDAR EVENTO A FUTURO
@@ -117,14 +122,14 @@ export default async function handler(req, res) {
         1. REGISTRAR_ACTIVIDAD (Demo, Visita, Cobranza que ya pasó)
         2. AGENDAR_VISITA (Planes a futuro)
         3. CONSULTAR_OPORTUNIDADES (Si pide "reales", pon filtro_real: true)
-        4. CERRAR_COTIZACION (Ganar negocio)
+        4. CERRAR_COTIZACION (Si se gana indica "Ganada", si se pierde indica "Perdida" en 'estado_cierre')
         5. CONSULTAR_PENDIENTES (Tareas propias no completadas)
         6. CONSULTAR_TAREAS_JEFE (Tareas creadas por gerencia para ti)
 
         Reglas: 'empresa_busqueda' solo palabra clave. 'asunto' usa "[CATEGORÍA] - Título".
         Dictado: "${transcripcionText}"
 
-        JSON Requerido: { "intent", "empresa_busqueda", "asunto", "detalles", "fecha", "hora", "filtro_real": boolean }
+        JSON Requerido: { "intent", "empresa_busqueda", "asunto", "detalles", "fecha", "hora", "filtro_real": boolean, "estado_cierre": "Ganada" o "Perdida" }
       `;
 
       const aiResponse = await openai.chat.completions.create({
