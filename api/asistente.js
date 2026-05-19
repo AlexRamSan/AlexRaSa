@@ -79,7 +79,7 @@ export default async function handler(req, res) {
             }
             return res.status(200).json({ success: true, message: "Cotización ganada en Salesforce 🎯 (Sin archivo)" });
           } else {
-            return res.status(200).json({ success: true, message: "Cotización marcada como Perdida en Salesforce ❌" });
+            return res.status(200).json({ success: true, message: "Cotización marcada como Perdida en Salesforce 📉" });
           }
         }
 
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
         1. REGISTRAR_ACTIVIDAD (Demo, Visita, Cobranza que ya pasó)
         2. AGENDAR_VISITA (Planes a futuro)
         3. CONSULTAR_OPORTUNIDADES (Si pide "reales", pon filtro_real: true)
-        4. CERRAR_COTIZACION (Si se gana indica "Ganada", si se pierde indica "Perdida" en 'estado_cierre')
+        4. CERRAR_COTIZACION (Determina si es ganada o perdida en el campo "estado_cierre")
         5. CONSULTAR_PENDIENTES (Tareas propias no completadas)
         6. CONSULTAR_TAREAS_JEFE (Tareas creadas por gerencia para ti)
 
