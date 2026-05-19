@@ -1,27 +1,44 @@
-import OpenAI from "openai";
-import { IncomingForm } from "formidable";
-import fs from "fs";
+const OpenAI = require("openai");
+const formidable = require("formidable");
+const fs = require("fs");
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Inicialización de OpenAI con la llave de tus variables de entorno
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
+// Configuración crítica de Vercel para permitir la recepción de archivos binarios (audios)
 export const config = {
-  api: { bodyParser: false }, 
+  api: {
+    bodyParser: false,
+  },
 };
 
 export default async function handler(req, res) {
+  // Configurar cabeceras para permitir respuestas correctas en formato JSON
+  res.setHeader('Content-Type', 'application/json');
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Método no permitido' });
+    return res.status(405).json({ success: false, error: 'Método no permitido. Usa POST.' });
   }
 
-  const form = new IncomingForm();
+  // Configuración del procesador de formularios
+  const form = formidable({ multiples: false });
+
   form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ success: false, error: "Error procesando formulario" });
+    if (err) {
+      console.error("Error parseando el formulario con formidable:", err);
+      return res.status(500).json({ success: false, error: "Error al procesar el archivo de audio o texto." });
+    }
 
     try {
       let transcripcionText = "";
 
-      // ACCIÓN: OBTENER TODAS LAS CUENTAS COMERCIALES
-      if (fields.action && fields.action[0] === 'getAllAccounts') {
+      // 1. GESTIÓN DE ACCIONES SECUNDARIAS (OBTENER CUENTAS)
+      // Normalizamos la lectura de campos ya que formidable a veces los regresa como arreglos
+      const action = fields.action ? (Array.isArray(fields.action) ? fields.action[0] : fields.action) : null;
+
+      if (action === 'getAllAccounts') {
         const mockAccounts = [
           { Id: "0018W00002NlXz1QAF", Name: "Bocar Group Lerma", BillingCity: "Estado de México" },
           { Id: "0018W00002NlXz2QAF", Name: "Nemak", BillingCity: "Saltillo" },
@@ -31,30 +48,31 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, accounts: mockAccounts });
       }
 
-      // ACCIÓN: CONFIRMAR E INYECTAR EN SALESFORCE
-      if (fields.action && fields.action[0] === 'confirmar') {
-        return res.status(200).json({ success: true, message: "Inyectado correctamente." });
+      if (action === 'confirmar') {
+        return res.status(200).json({ success: true, message: "Inyectado correctamente en Salesforce." });
       }
 
-      // PROCESAMIENTO DE VOZ (WHISPER) O TEXTO DIRECTO
-      if (files.audio) {
-        const audioFile = files.audio[0];
+      // 2. PROCESAMIENTO DE ENTRADA: AUDIO (WHISPER) O TEXTO DIRECTO
+      const audioFile = files.audio ? (Array.isArray(files.audio) ? files.audio[0] : files.audio) : null;
+      const textoManual = fields.texto ? (Array.isArray(fields.texto) ? fields.texto[0] : fields.texto) : null;
+
+      if (audioFile && audioFile.filepath) {
         const transcription = await openai.audio.transcriptions.create({
           file: fs.createReadStream(audioFile.filepath),
           model: "whisper-1",
           language: "es"
         });
         transcripcionText = transcription.text;
-      } else if (fields.texto) {
-        transcripcionText = fields.texto[0];
+      } else if (textoManual) {
+        transcripcionText = textoManual;
       } else {
-        return res.status(400).json({ success: false, error: "Datos insuficientes." });
+        return res.status(400).json({ success: false, error: "No se detectó audio ni texto válido." });
       }
 
-      // AUDITORÍA INTELIGENTE DE REQUERIMIENTOS SEMANALES
+      // 3. AUDITORÍA INTELIGENTE CON GPT-4o
       const promptAuditoria = `
         Eres el asistente inteligente de Miguel para REGO-FIX México (RFMX).
-        Tu meta es tomar sus minutas, pero actuar como auditor estricto de los requerimientos de la gerencia.
+        Tu meta es tomar sus minutas, pero actuar como auditor de los requerimientos de la gerencia.
         
         Puntos clave del reporte semanal:
         - Resultados del mes / Forecast.
@@ -93,7 +111,7 @@ export default async function handler(req, res) {
 
       const respuestaFinal = JSON.parse(completion.choices[0].message.content);
       
-      // Auto-asociación inteligente de cuentas por nombre
+      // Auto-asociación lógica por coincidencia de texto
       const lowTxt = transcripcionText.toLowerCase();
       if (lowTxt.includes("bocar")) respuestaFinal.accounts = [{ Id: "0018W00002NlXz1QAF", Name: "Bocar Group Lerma", BillingCity: "Estado de México" }];
       if (lowTxt.includes("bosch")) respuestaFinal.accounts = [{ Id: "0018W00002NlXz3QAF", Name: "Bosch Toluca", BillingCity: "Toluca" }];
@@ -101,8 +119,9 @@ export default async function handler(req, res) {
 
       return res.status(200).json(respuestaFinal);
 
-    } catch (e) {
-      return res.status(500).json({ success: false, error: e.message });
+    } catch (innerError) {
+      console.error("Error procesando llamadas internas de IA:", innerError);
+      return res.status(500).json({ success: false, error: innerError.message });
     }
   });
 }
