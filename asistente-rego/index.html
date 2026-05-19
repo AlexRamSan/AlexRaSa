@@ -16,6 +16,7 @@
         .log-area { background: var(--card); border-radius: 12px; padding: 20px; min-height: 200px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
         .btn-action { background: var(--primary); color: white; border: none; padding: 12px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 15px; }
+        .btn-lost { background: #e53935; }
         .btn-manual { background: #546e7a; margin-top: 15px; }
         .btn-action:disabled { background: #ccc; }
         .file-input-wrapper { margin-top: 10px; padding: 10px; background: #eef4fb; border-radius: 6px; font-size: 14px; }
@@ -70,7 +71,6 @@
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
             
             mediaRecorder.onstop = async () => {
-                // Se removió el type específico para mayor compatibilidad
                 const audioBlob = new Blob(audioChunks); 
                 await sendToBackend(audioBlob);
             };
@@ -132,18 +132,27 @@
 
         if (data.intent === 'CERRAR_COTIZACION') {
             globalPlan = data.plan || data;
+            const estado = globalPlan.estado_cierre || 'Ganada'; // Por defecto asume ganada si no se escucha bien
             
             if (data.records && data.records.length > 0) {
-                html += `<p>Selecciona la oportunidad para cerrarla y subir la OC:</p>`;
+                html += `<p>Selecciona la oportunidad para cerrarla como <b>${estado.toUpperCase()}</b>:</p>`;
                 data.records.forEach(opp => {
                     html += `<div class="card">
-                                <strong>${opp.Name}</strong> ($${opp.Amount || 0})
+                                <strong>${opp.Name}</strong> ($${opp.Amount || 0})`;
+                    
+                    if (estado === 'Ganada') {
+                        html += `
                                 <div class="file-input-wrapper">
                                     <label>Adjuntar Orden de Compra (PDF/Img):</label>
                                     <input type="file" id="file_${opp.Id}" accept=".pdf,image/*">
                                 </div>
-                                <button class="btn-action" onclick="confirmarCierre('${opp.Id}')">Cerrar Ganada y Subir</button>
-                             </div>`;
+                                <button class="btn-action" onclick="confirmarCierre('${opp.Id}', 'Ganada')">Cerrar Ganada y Subir OC</button>`;
+                    } else {
+                        html += `
+                                <button class="btn-action btn-lost" onclick="confirmarCierre('${opp.Id}', 'Perdida')">Cerrar como Perdida</button>`;
+                    }
+                    
+                    html += `</div>`;
                 });
             } else {
                 html += `<p style="color: #e53935;">No encontré ninguna cotización abierta para la empresa "${globalPlan.empresa_busqueda}". Intenta mencionar el nombre más preciso.</p>`;
@@ -236,17 +245,23 @@
         await ejecutarConfirmacion(formData);
     }
 
-    async function confirmarCierre(opportunityId) {
+    async function confirmarCierre(opportunityId, estado) {
         setLoading(true);
-        const fileInput = document.getElementById(`file_${opportunityId}`);
-        const payload = { taskType: 'CERRAR_COTIZACION', opportunityId: opportunityId };
+        const payload = { 
+            taskType: 'CERRAR_COTIZACION', 
+            opportunityId: opportunityId, 
+            estadoCierre: estado 
+        };
 
         const formData = new FormData();
         formData.append('action', 'confirmar');
         formData.append('payload', JSON.stringify(payload));
         
-        if (fileInput.files.length > 0) {
-            formData.append('documento', fileInput.files[0]);
+        if (estado === 'Ganada') {
+            const fileInput = document.getElementById(`file_${opportunityId}`);
+            if (fileInput && fileInput.files.length > 0) {
+                formData.append('documento', fileInput.files[0]);
+            }
         }
 
         await ejecutarConfirmacion(formData);
