@@ -13,12 +13,13 @@ export const config = {
   },
 };
 
+// Conexión simplificada y directa a Salesforce mediante Refresh Token
 async function getSalesforceConnection() {
   const conn = new jsforce.Connection({
     loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com',
     clientId: process.env.SF_CLIENT_ID,
-    clientSecret: process.env.SF_CLIENT_SECRET,
-    redirectUri: process.env.SF_REDIRECT_URI
+    clientSecret: process.env.SF_CLIENT_SECRET
+    // Eliminamos redirectUri para evitar el conflicto de mismatch
   });
 
   await conn.authorize({
@@ -32,25 +33,23 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Método no permitido.' });
+    return res.status(405).json({ success: false, error: 'Método no permitido. Usa POST.' });
   }
 
   const form = new multiparty.Form();
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Error con multiparty:", err);
+      console.error("Error parseando con multiparty:", err);
       return res.status(500).json({ success: false, error: "Error al procesar el formulario." });
     }
 
     try {
-      // CORRECCIÓN DEL CRASHEO: Declaramos la variable de forma segura al inicio
       let transcripcionText = "";
-
       const action = fields.action ? fields.action[0] : null;
 
       // ================================================================
-      // 1. ACCIÓN: EXTRAER CUENTAS REALES DESDE TU CRM DE SALESFORCE
+      // ACCIÓN A: OBTENER TODAS LAS CUENTAS REALES DESDE SALESFORCE
       // ================================================================
       if (action === 'getAllAccounts') {
         try {
@@ -58,7 +57,7 @@ export default async function handler(req, res) {
           const result = await conn.query("SELECT Id, Name, BillingCity FROM Account ORDER BY Name ASC LIMIT 200");
           return res.status(200).json({ success: true, accounts: result.records });
         } catch (sfQueryError) {
-          console.error("Error consultando Salesforce:", sfQueryError);
+          console.error("Error de consulta en Salesforce:", sfQueryError);
           return res.status(200).json({ 
             success: true, 
             accounts: [{ Id: "error", Name: `⚠️ Error de CRM: ${sfQueryError.message}`, BillingCity: "Revisar Vercel" }] 
@@ -67,7 +66,7 @@ export default async function handler(req, res) {
       }
 
       // ================================================================
-      // 2. ACCIÓN: CONFIRMAR E INYECTAR LA TAREA EN SALESFORCE
+      // ACCIÓN B: CONFIRMAR E INYECTAR LA TAREA EN EL CLIENTE SELECCIONADO
       // ================================================================
       if (action === 'confirmar') {
         try {
@@ -85,13 +84,13 @@ export default async function handler(req, res) {
 
           return res.status(200).json({ success: true, message: "Inyectado correctamente en Salesforce." });
         } catch (sfInsertError) {
-          console.error("Error insertando tarea:", sfInsertError);
+          console.error("Error al insertar actividad:", sfInsertError);
           return res.status(500).json({ success: false, error: `Error al guardar en Salesforce: ${sfInsertError.message}` });
         }
       }
 
       // ================================================================
-      // 3. PROCESAMIENTO DE AUDIO O TEXTO DIRECTO
+      // ACCIÓN C: PROCESAR ENTRADA COMERCIAL (VOZ O BOTÓN MANUAL)
       // ================================================================
       const audioFile = files.audio ? files.audio[0] : null;
       const textoManual = fields.texto ? fields.texto[0] : null;
@@ -109,9 +108,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: "No se detectó audio ni texto válido." });
       }
 
-      // ================================================================
-      // 4. AUDITORÍA INTELIGENTE CON GPT-4o
-      // ================================================================
+      // AUDITORÍA DE GERENCIA CON GPT-4o
       const promptAuditoria = `
         Eres el asistente inteligente de Miguel para REGO-FIX México (RFMX).
         Tu meta es tomar sus minutas, pero actuar como auditor de los requerimientos de la gerencia.
@@ -153,7 +150,7 @@ export default async function handler(req, res) {
 
       let respuestaFinal = JSON.parse(completion.choices[0].message.content);
       
-      // Auto-asociación inteligente local basada en coincidencias
+      // Auto-asociación inteligente basada en consultas en caliente
       try {
         const conn = await getSalesforceConnection();
         const lowTxt = transcripcionText.toLowerCase();
@@ -174,7 +171,7 @@ export default async function handler(req, res) {
       return res.status(200).json(respuestaFinal);
 
     } catch (innerError) {
-      console.error("Error en IA:", innerError);
+      console.error("Error general en el backend:", innerError);
       return res.status(500).json({ success: false, error: innerError.message });
     }
   });
