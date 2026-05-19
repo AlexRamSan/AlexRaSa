@@ -13,8 +13,6 @@
         .btn:hover { background-color: #005cb3; }
         .btn-secondary { background-color: #28a745; margin-left: 10px; }
         .btn-secondary:hover { background-color: #218838; }
-        .btn-warning { background-color: #ffc107; color: #212529; margin-left: 10px; }
-        .btn-warning:hover { background-color: #e0a800; }
         
         .slides-wrapper { max-width: 1120px; margin: 0 auto; }
         
@@ -44,10 +42,10 @@
         .slide-cover h3 { font-size: 24px; font-weight: 400; opacity: 0.9; margin-top: 0; }
         .slide-cover .meta-info { margin-top: 50px; font-size: 18px; opacity: 0.8; line-height: 1.8; }
 
-        /* Consola de inspección JSON */
-        .json-inspector { max-width: 1120px; margin: 40px auto; background: #222; color: #00ff00; padding: 20px; border-radius: 6px; font-family: monospace; display: none; }
+        /* Consola de inspección JSON Permanente */
+        .json-inspector { max-width: 1120px; margin: 40px auto; background: #222; color: #00ff00; padding: 20px; border-radius: 6px; font-family: monospace; }
         .json-inspector h3 { color: white; margin-top: 0; font-family: sans-serif; }
-        .json-inspector textarea { width: 100%; height: 300px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 14px; box-sizing: border-box; }
+        .json-inspector textarea { width: 100%; height: 220px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 14px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -57,7 +55,6 @@
     <div>
         <button class="btn" onclick="fetchAndGenerate()">⚡ Sincronizar Salesforce y IA</button>
         <button class="btn btn-secondary" onclick="exportarImagenes()">📸 Descargar PNGs</button>
-        <button class="btn btn-warning" onclick="toggleInspector()">🔍 Ver Datos JSON</button>
     </div>
 </div>
 
@@ -65,31 +62,33 @@
     <p style="text-align: center; color: #777; font-size: 18px; margin-top: 50px;">Presiona "Sincronizar" para iniciar el reporte.</p>
 </div>
 
-<div class="json-inspector" id="inspector-panel">
+<div class="json-inspector">
     <h3>🔍 Consola de Diagnóstico de Datos (JSON)</h3>
-    <p style="color: #aaa; font-size: 14px;">Aquí abajo verás exactamente la información que el backend le envía a ChatGPT y lo que este responde:</p>
-    <label><strong>1. Datos enviados hacia la API (Lo que calculó el cliente):</strong></label>
+    <p style="color: #aaa; font-size: 14px;">Esta sección monitorea lo que tu código calcula y lo que el backend de OpenAI responde en tiempo real:</p>
+    
+    <label><strong>1. Datos enviados hacia tu API (Filtro de Fechas Dinámicas):</strong></label>
     <textarea id="json-enviado" readonly placeholder="Esperando sincronización..."></textarea>
     <br><br>
-    <label><strong>2. Respuesta final de OpenAI (Lo que ChatGPT interpretó):</strong></label>
+    <label><strong>2. Respuesta devuelta por el Servidor (JSON Procesado):</strong></label>
     <textarea id="json-recibido" readonly placeholder="Esperando respuesta del servidor..."></textarea>
 </div>
 
 <script>
-    let ultimoJsonRecibido = null;
-
     async function fetchAndGenerate() {
-        document.getElementById('slides-container').innerHTML = '<p style="text-align:center; font-size:18px;">Calculando rango de fechas de revisión y procesando con GPT-4o...</p>';
+        document.getElementById('slides-container').innerHTML = '<p style="text-align:center; font-size:18px;">Calculando rango de fechas y consultando API externa...</p>';
         
+        // CÁLCULO AUTOMÁTICO DE FECHAS
         const hoy = new Date();
         const diaSemana = hoy.getDay(); 
         let fechaInicio = new Date();
         let fechaFin = new Date();
 
         if (diaSemana === 1) { 
+            // Si hoy es lunes, revisa de lunes a viernes de la semana pasada
             fechaInicio.setDate(hoy.getDate() - 7);
             fechaFin.setDate(hoy.getDate() - 3);
         } else {
+            // Si es otro día, va desde el lunes de esta semana hasta hoy
             const diasDesdeLunes = diaSemana === 0 ? 6 : diaSemana - 1;
             fechaInicio.setDate(hoy.getDate() - diasDesdeLunes);
             fechaFin = hoy;
@@ -98,23 +97,18 @@
         const isoInicio = fechaInicio.toISOString().split('T')[0];
         const isoFin = fechaFin.toISOString().split('T')[0];
 
-        // Este es el objeto que viaja al backend. 
-        // ALERTA: Si notas campos vacíos en el reporte, es porque aquí 'salesforceRawData' aún no tiene las consultas reales conectadas.
+        // Construcción limpia del payload de control
         const payloadData = {
             metadataReporte: {
                 fechaInicioFiltro: isoInicio,
                 fechaFinFiltro: isoFin,
                 solicitadoEl: hoy.toISOString().split('T')[0]
-            },
-            salesforceRawData: {
-                mensaje: "Filtro temporal activo.",
-                periodo: `Del ${isoInicio} al ${isoFin}`,
-                nota_de_desarrollo: "Para ver datos comerciales reales aquí, se deben mapear las consultas SQL/SOQL de la cuenta de Salesforce."
             }
         };
 
-        // Pintamos en el inspector lo que le mandamos al servidor
+        // Pintar de inmediato en el cuadro 1 el rango calculado
         document.getElementById('json-enviado').value = JSON.stringify(payloadData, null, 2);
+        document.getElementById('json-recibido').value = "Procesando petición en el servidor remoto...";
 
         try {
             const response = await fetch('/api/generate-report', {
@@ -124,21 +118,16 @@
             });
             
             const data = await response.json();
-            ultimoJsonRecibido = data;
             
-            // Pintamos en el inspector la respuesta real de OpenAI
+            // Imprimir la respuesta exacta de OpenAI en el cuadro 2
             document.getElementById('json-recibido').value = JSON.stringify(data, null, 2);
             
+            // Renderizar las diapositivas con la información segura devuelta
             renderAllSlides(data);
         } catch (error) {
-            document.getElementById('slides-container').innerHTML = '<p style="text-align:center; color:red; font-size:18px;">Error al conectar con la API.</p>';
-            document.getElementById('json-recibido').value = "Error en la conexión:\n" + error.message;
+            document.getElementById('slides-container').innerHTML = '<p style="text-align:center; color:red; font-size:18px;">Error al conectar con el backend o procesar la solicitud.</p>';
+            document.getElementById('json-recibido').value = "Error crítico de comunicación:\n" + error.message;
         }
-    }
-
-    function toggleInspector() {
-        const panel = document.getElementById('inspector-panel');
-        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
     function renderAllSlides(data) {
