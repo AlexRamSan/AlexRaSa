@@ -1,64 +1,109 @@
 import OpenAI from "openai";
-import formidable from "formidable";
+import multiparty from "multiparty";
 import fs from "fs";
+import jsforce from "jsforce"; // Inyectamos la librería real que lee tu Salesforce
 
-// Inicialización de OpenAI con la llave de tus variables de entorno
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Configuración crítica de Vercel para permitir la recepción de archivos binarios (audios)
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, 
   },
 };
 
+// Función auxiliar para conectarse a Salesforce usando tus variables de entorno de Vercel
+async function getSalesforceConnection() {
+  const conn = new jsforce.Connection({
+    loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com',
+    clientId: process.env.SF_CLIENT_ID,
+    clientSecret: process.env.SF_CLIENT_SECRET,
+    redirectUri: process.env.SF_REDIRECT_URI
+  });
+
+  // Autenticación mediante el Refresh Token seguro
+  await conn.authorize({
+    refresh_token: process.env.SF_REFRESH_TOKEN
+  });
+
+  return conn;
+}
+
 export default async function handler(req, res) {
-  // Asegurar cabeceras en formato JSON
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Método no permitido. Usa POST.' });
+    return res.status(405).json({ success: false, error: 'Método no permitido.' });
   }
 
-  // Instanciación nativa para ES Modules
-  const form = formidable({ multiples: false });
+  const form = new multiparty.Form();
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Error parseando el formulario con formidable:", err);
-      return res.status(500).json({ success: false, error: "Error al procesar el archivo de audio o texto." });
+      console.error("Error parseando el formulario:", err);
+      return res.status(500).json({ success: false, error: "Error al procesar el formulario." });
     }
 
     try {
-      let transcripcionText = "";
+      const action = fields.action ? fields.action[0] : null;
 
-      // Normalizamos la lectura de campos (en ES Modules formidable los regresa como arreglos)
-      const action = fields.action ? (Array.isArray(fields.action) ? fields.action[0] : fields.action) : null;
-
-      // 1. GESTIÓN DE ACCIONES SECUNDARIAS
+      // ================================================================
+      // 1. ACCIÓN: EXTRAER CUENTAS REALES DESDE TU CRM DE SALESFORCE
+      // ================================================================
       if (action === 'getAllAccounts') {
-        const mockAccounts = [
-          { Id: "0018W00002NlXz1QAF", Name: "Bocar Group Lerma", BillingCity: "Estado de México" },
-          { Id: "0018W00002NlXz2QAF", Name: "Nemak", BillingCity: "Saltillo" },
-          { Id: "0018W00002NlXz3QAF", Name: "Bosch Toluca", BillingCity: "Toluca" },
-          { Id: "0018W00002NlXz4QAF", Name: "Knurling Distribuciones", BillingCity: "Querétaro" }
-        ];
-        return res.status(200).json({ success: true, accounts: mockAccounts });
+        try {
+          const conn = await getSalesforceConnection();
+          
+          // Ejecutamos una consulta SOQL real trayendo ID, Nombre y Ciudad de tus clientes
+          // Limitado a 200 cuentas para que el iPhone las cargue de golpe al instante
+          const result = await conn.query("SELECT Id, Name, BillingCity FROM Account ORDER BY Name ASC LIMIT 200");
+          
+          return res.status(200).json({ success: true, accounts: result.records });
+        } catch (sfQueryError) {
+          console.error("Error consultando Salesforce:", sfQueryError);
+          // Alerta de emergencia si las credenciales fallan, para no dejar la pantalla vacía
+          return res.status(200).json({ 
+            success: true, 
+            accounts: [{ Id: "error", Name: `⚠️ Error de CRM: ${sfQueryError.message}`, BillingCity: "Revisar Vercel" }] 
+          });
+        }
       }
 
+      // ================================================================
+      // 2. ACCIÓN: CONFIRMAR E INYECTAR LA TAREA EN SALESFORCE
+      // ================================================================
       if (action === 'confirmar') {
-        return res.status(200).json({ success: true, message: "Inyectado correctamente en Salesforce." });
+        try {
+          const payload = JSON.parse(fields.payload[0]);
+          const conn = await getSalesforceConnection();
+
+          // Creamos la actividad real en el módulo del cliente seleccionado
+          await conn.sobject("Task").create({
+            WhatId: payload.accountId,
+            Subject: payload.subject,
+            Description: payload.description,
+            Status: "Completed",
+            Priority: "Normal",
+            ActivityDate: payload.fecha
+          });
+
+          return res.status(200).json({ success: true, message: "Inyectado correctamente en Salesforce." });
+        } catch (sfInsertError) {
+          console.error("Error insertando tarea:", sfInsertError);
+          return res.status(500).json({ success: false, error: `Error al guardar en Salesforce: ${sfInsertError.message}` });
+        }
       }
 
-      // 2. PROCESAMIENTO DE ENTRADA: AUDIO (WHISPER) O TEXTO DIRECTO
-      const audioFile = files.audio ? (Array.isArray(files.audio) ? files.audio[0] : files.audio) : null;
-      const textoManual = fields.texto ? (Array.isArray(fields.texto) ? fields.texto[0] : fields.texto) : null;
+      // ================================================================
+      // 3. PROCESAMIENTO DE AUDIO (WHISPER) O TEXTO DIRECTO
+      // ================================================================
+      const audioFile = files.audio ? files.audio[0] : null;
+      const textoManual = fields.texto ? fields.texto[0] : null;
 
-      if (audioFile && audioFile.filepath) {
+      if (audioFile && audioFile.path) {
         const transcription = await openai.audio.transcriptions.create({
-          file: fs.createReadStream(audioFile.filepath),
+          file: fs.createReadStream(audioFile.path),
           model: "whisper-1",
           language: "es"
         });
@@ -69,7 +114,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: "No se detectó audio ni texto válido." });
       }
 
-      // 3. AUDITORÍA INTELIGENTE CON GPT-4o
+      // 4. AUDITORÍA INTELIGENTE CON GPT-4o
       const promptAuditoria = `
         Eres el asistente inteligente de Miguel para REGO-FIX México (RFMX).
         Tu meta es tomar sus minutas, pero actuar como auditor de los requerimientos de la gerencia.
@@ -109,18 +154,30 @@ export default async function handler(req, res) {
         temperature: 0.2
       });
 
-      const respuestaFinal = JSON.parse(completion.choices[0].message.content);
+      let respuestaFinal = JSON.parse(completion.choices[0].message.content);
       
-      // Auto-asociación lógica por coincidencia de texto
-      const lowTxt = transcripcionText.toLowerCase();
-      if (lowTxt.includes("bocar")) respuestaFinal.accounts = [{ Id: "0018W00002NlXz1QAF", Name: "Bocar Group Lerma", BillingCity: "Estado de México" }];
-      if (lowTxt.includes("bosch")) respuestaFinal.accounts = [{ Id: "0018W00002NlXz3QAF", Name: "Bosch Toluca", BillingCity: "Toluca" }];
-      if (lowTxt.includes("knurling")) respuestaFinal.accounts = [{ Id: "0018W00002NlXz4QAF", Name: "Knurling Distribuciones", BillingCity: "Querétaro" }];
+      // Auto-asociación inteligente local basada en lo que hable Miguel
+      try {
+        const conn = await getSalesforceConnection();
+        const lowTxt = transcripcionText.toLowerCase();
+        let queryBusqueda = "";
+
+        if (lowTxt.includes("bocar")) queryBusqueda = "SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%Bocar%' LIMIT 3";
+        if (lowTxt.includes("bosch")) queryBusqueda = "SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%Bosch%' LIMIT 3";
+        if (lowTxt.includes("nemak")) queryBusqueda = "SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%Nemak%' LIMIT 3";
+
+        if (queryBusqueda) {
+          const searchResult = await conn.query(queryBusqueda);
+          respuestaFinal.accounts = searchResult.records;
+        }
+      } catch (e) {
+        console.error("Error en auto-asociación", e);
+      }
 
       return res.status(200).json(respuestaFinal);
 
     } catch (innerError) {
-      console.error("Error procesando llamadas internas de IA:", innerError);
+      console.error("Error en IA:", innerError);
       return res.status(500).json({ success: false, error: innerError.message });
     }
   });
