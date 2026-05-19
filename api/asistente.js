@@ -13,14 +13,20 @@ export const config = {
   },
 };
 
-// Conexión simplificada y directa a Salesforce mediante Refresh Token
+// Conexión súper forzada eliminando cualquier rastro de redirectUri
 async function getSalesforceConnection() {
   const conn = new jsforce.Connection({
     loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com',
     clientId: process.env.SF_CLIENT_ID,
-    clientSecret: process.env.SF_CLIENT_SECRET
-    // Eliminamos redirectUri para evitar el conflicto de mismatch
+    clientSecret: process.env.SF_CLIENT_SECRET,
+    redirectUri: null // Forzamos explícitamente a null para anular variables de Vercel
   });
+
+  // Limpieza manual de propiedades del objeto OAuth2 interno de JSForce
+  if (conn.oauth2) {
+    conn.oauth2.redirectUri = null;
+    delete conn.oauth2.redirectUri;
+  }
 
   await conn.authorize({
     refresh_token: process.env.SF_REFRESH_TOKEN
