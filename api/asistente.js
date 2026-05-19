@@ -12,14 +12,20 @@ export const config = {
   },
 };
 
-// FUNCIÓN NATIVA: Consigue el Access Token directo de Salesforce sin usar JSForce
+// FUNCIÓN DE AUTENTICACIÓN: Usa exactamente tus llaves actuales de Vercel (Usuario + Contraseña + Token)
 async function getSalesforceAccessToken() {
   const loginUrl = process.env.SF_LOGIN_URL || 'https://login.salesforce.com';
+  
+  // Salesforce exige que si te conectas desde un servidor externo (como Vercel),
+  // pegues el Token de seguridad inmediatamente después de tu contraseña.
+  const passwordConToken = `${process.env.SF_PASSWORD || ''}${process.env.SF_TOKEN || ''}`;
+
   const params = new URLSearchParams({
-    grant_type: 'refresh_token',
+    grant_type: 'password',
     client_id: process.env.SF_CLIENT_ID,
     client_secret: process.env.SF_CLIENT_SECRET,
-    refresh_token: process.env.SF_REFRESH_TOKEN
+    username: process.env.SF_USERNAME,
+    password: passwordConToken
   });
 
   const response = await fetch(`${loginUrl}/services/oauth2/token`, {
@@ -30,7 +36,7 @@ async function getSalesforceAccessToken() {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Error de autenticación nativa: ${errorText}`);
+    throw new Error(`Error de autenticación con tus llaves de Vercel: ${errorText}`);
   }
 
   const data = await response.json();
@@ -60,13 +66,12 @@ export default async function handler(req, res) {
       const action = fields.action ? fields.action[0] : null;
 
       // ================================================================
-      // ACCIÓN A: EXTRAER TU CATÁLOGO DE CUENTAS REALES (SOQL VÍA REST)
+      // ACCIÓN A: EXTRAER TU CATÁLOGO DE CUENTAS REALES DE REGO-FIX
       // ================================================================
       if (action === 'getAllAccounts') {
         try {
           const { accessToken, instanceUrl } = await getSalesforceAccessToken();
           
-          // Consulta limpia mediante la API REST nativa de Salesforce
           const query = encodeURIComponent("SELECT Id, Name, BillingCity FROM Account ORDER BY Name ASC LIMIT 200");
           const queryResponse = await fetch(`${instanceUrl}/services/data/v57.0/query?q=${query}`, {
             method: 'GET',
@@ -79,16 +84,16 @@ export default async function handler(req, res) {
           const queryData = await queryResponse.json();
           return res.status(200).json({ success: true, accounts: queryData.records || [] });
         } catch (sfError) {
-          console.error("Fallo en API REST de Salesforce:", sfError);
+          console.error("Fallo en API de Salesforce:", sfError);
           return res.status(200).json({ 
             success: true, 
-            accounts: [{ Id: "error", Name: `⚠️ Conexión Bypass: ${sfError.message}`, BillingCity: "Revisar variables" }] 
+            accounts: [{ Id: "error", Name: `⚠️ Error de Credenciales: ${sfError.message}`, BillingCity: "Validar contraseñas" }] 
           });
         }
       }
 
       // ================================================================
-      // ACCIÓN B: REGISTRAR LA ACTIVIDAD DIRECTAMENTE EN EL CRM
+      // ACCIÓN B: REGISTRAR LA VISITA / ACTIVIDAD EN SALESFORCE
       // ================================================================
       if (action === 'confirmar') {
         try {
@@ -123,7 +128,7 @@ export default async function handler(req, res) {
       }
 
       // ================================================================
-      // ACCIÓN C: PROCESAR ENTRADA COMERCIAL (VOZ O BOTÓN MANUAL)
+      // ACCIÓN C: PROCESAR AUDIO DE DICTADO O BOTÓN MANUAL
       // ================================================================
       const audioFile = files.audio ? files.audio[0] : null;
       const textoManual = fields.texto ? fields.texto[0] : null;
@@ -141,7 +146,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: "No se detectó audio ni texto válido." });
       }
 
-      // AUDITORÍA DE GERENCIA CON GPT-4o
+      // AUDITORÍA DE REPORTES PARA GERENCIA CON GPT-4o
       const promptAuditoria = `
         Eres el asistente inteligente de Miguel para REGO-FIX México (RFMX).
         Tu meta es tomar sus minutas, pero actuar como auditor de los requerimientos de la gerencia.
@@ -183,7 +188,7 @@ export default async function handler(req, res) {
 
       let respuestaFinal = JSON.parse(completion.choices[0].message.content);
       
-      // AUTO-ASOCIACIÓN INTELIGENTE DIRECTA EN LA API REST
+      // AUTO-ASOCIACIÓN INTELIGENTE EN CALIENTE
       try {
         const lowTxt = transcripcionText.toLowerCase();
         let queryBusqueda = "";
