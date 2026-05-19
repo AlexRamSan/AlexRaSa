@@ -50,12 +50,10 @@
     let audioChunks = [];
     let isRecording = false;
     let globalPlan = null;
-    let wakeLock = null; // Variable para mantener la pantalla encendida
+    let wakeLock = null; 
 
-    // ====== RUTA A TU VERCEL ======
     const API_URL = 'https://www.alexrasa.store/api/asistente'; 
 
-    // Funciones para bloquear el apagado de pantalla
     async function requestWakeLock() {
         try {
             if ('wakeLock' in navigator) {
@@ -97,7 +95,6 @@
             isRecording = true;
             micBtn.classList.add('recording');
             
-            // Mantenemos la pantalla prendida
             await requestWakeLock();
         } catch (err) {
             alert('Error al acceder al micrófono: ' + err);
@@ -110,7 +107,6 @@
         micBtn.classList.remove('recording');
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
         
-        // Soltamos el bloqueo de pantalla
         releaseWakeLock();
     }
 
@@ -139,7 +135,6 @@
         let html = `<h3>✅ IA Procesada</h3>`;
         if (data.message) html += `<p>${data.message}</p>`;
 
-        // LISTADO DE CONSULTAS DIRECTAS (Oportunidades, Pendientes)
         if (['CONSULTAR_OPORTUNIDADES', 'CONSULTAR_PENDIENTES', 'CONSULTAR_TAREAS_JEFE'].includes(data.intent)) {
             if (data.data && data.data.length === 0) {
                 html += `<p>No hay registros que mostrar.</p>`;
@@ -155,7 +150,6 @@
             return;
         }
 
-        // FLUJO: CERRAR COTIZACIÓN
         if (data.intent === 'CERRAR_COTIZACION') {
             globalPlan = data.plan || data;
             
@@ -178,7 +172,6 @@
             return;
         }
 
-        // FLUJO: REGISTRAR ACTIVIDAD O AGENDAR
         if (['REGISTRAR_ACTIVIDAD', 'AGENDAR_VISITA'].includes(data.intent)) {
             globalPlan = data.plan || data;
             html += `<p><b>Asunto detectado:</b> ${globalPlan.asunto}</p>`;
@@ -195,7 +188,6 @@
                 html += `<p style="color: #e53935;">No encontré automáticamente la cuenta "${globalPlan.empresa_busqueda}".</p>`;
             }
             
-            // BOTÓN SALVAVIDAS (Búsqueda Manual)
             html += `<button class="btn-action btn-manual" onclick="cargarTodasLasCuentas()">🔍 Elegir cuenta manualmente</button>`;
             logArea.innerHTML = html;
             return;
@@ -204,9 +196,6 @@
         logArea.innerHTML = html + `<p>Acción finalizada.</p>`;
     }
 
-    // ==========================================
-    // SECCIÓN MANUAL (CUANDO LA IA FALLA)
-    // ==========================================
     async function cargarTodasLasCuentas() {
         setLoading(true);
         const formData = new FormData();
@@ -229,9 +218,12 @@
                 html += `</select>`;
                 html += `<button class="btn-action" onclick="confirmarAccionManual()">Vincular y Guardar</button>`;
                 logArea.innerHTML = html;
+            } else {
+                logArea.innerHTML = `<span style="color:red">Error: ${result.error || 'No se pudieron cargar las cuentas.'}</span>
+                                     <button class="btn-action btn-manual" onclick="limpiarPantalla()">Volver a intentar</button>`;
             }
         } catch (error) {
-            logArea.innerHTML = `<span style="color:red">Error cargando cuentas: ${error.message}</span>`;
+            logArea.innerHTML = `<span style="color:red">Error de conexión: ${error.message}</span>`;
         } finally {
             setLoading(false);
         }
@@ -246,9 +238,6 @@
         confirmarAccion(select.value);
     }
 
-    // ==========================================
-    // CONFIRMACIONES FINALES HACIA SALESFORCE
-    // ==========================================
     async function confirmarAccion(accountId) {
         setLoading(true);
         const payload = {
