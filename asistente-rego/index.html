@@ -150,20 +150,29 @@
             return;
         }
 
+        // FLUJO: CERRAR COTIZACIÓN (Dinámico para Ganada o Perdida)
         if (data.intent === 'CERRAR_COTIZACION') {
             globalPlan = data.plan || data;
+            const esGanada = globalPlan.estado_cierre !== 'Perdida';
             
             if (data.records && data.records.length > 0) {
-                html += `<p>Selecciona la oportunidad para cerrarla y subir la OC:</p>`;
+                html += `<p>Selecciona la oportunidad para cerrarla ${esGanada ? 'y subir la OC' : 'como Perdida'}:</p>`;
                 data.records.forEach(opp => {
                     html += `<div class="card">
-                                <strong>${opp.Name}</strong> ($${opp.Amount || 0})
+                                <strong>${opp.Name}</strong> ($${opp.Amount || 0})`;
+                    
+                    if (esGanada) {
+                        html += `
                                 <div class="file-input-wrapper">
                                     <label>Adjuntar Orden de Compra (PDF/Img):</label>
                                     <input type="file" id="file_${opp.Id}" accept=".pdf,image/*">
                                 </div>
-                                <button class="btn-action" onclick="confirmarCierre('${opp.Id}')">Cerrar Ganada y Subir</button>
-                             </div>`;
+                                <button class="btn-action" onclick="confirmarCierre('${opp.Id}', 'Ganada')">Cerrar Ganada y Subir</button>`;
+                    } else {
+                        html += `
+                                <button class="btn-action" style="background-color: #e53935;" onclick="confirmarCierre('${opp.Id}', 'Perdida')">Cerrar como Perdida</button>`;
+                    }
+                    html += `</div>`;
                 });
             } else {
                 html += `<p style="color: #e53935;">No encontré ninguna cotización abierta para la empresa "${globalPlan.empresa_busqueda}". Intenta mencionar el nombre más preciso.</p>`;
@@ -256,17 +265,18 @@
         await ejecutarConfirmacion(formData);
     }
 
-    async function confirmarCierre(opportunityId) {
+    async function confirmarCierre(opportunityId, estadoCierre) {
         setLoading(true);
-        const fileInput = document.getElementById(`file_${opportunityId}`);
-        const payload = { taskType: 'CERRAR_COTIZACION', opportunityId: opportunityId };
-
+        const payload = { taskType: 'CERRAR_COTIZACION', opportunityId: opportunityId, estadoCierre: estadoCierre };
         const formData = new FormData();
         formData.append('action', 'confirmar');
         formData.append('payload', JSON.stringify(payload));
         
-        if (fileInput.files.length > 0) {
-            formData.append('documento', fileInput.files[0]);
+        if (estadoCierre === 'Ganada') {
+            const fileInput = document.getElementById(`file_${opportunityId}`);
+            if (fileInput && fileInput.files.length > 0) {
+                formData.append('documento', fileInput.files[0]);
+            }
         }
 
         await ejecutarConfirmacion(formData);
@@ -280,21 +290,4 @@
                                  <button class="btn-action btn-manual" onclick="limpiarPantalla()">Hacer otra operación</button>`;
         } catch (error) {
             logArea.innerHTML = `<span style="color:red">Error: ${error.message}</span>`;
-        } finally {
-            setLoading(false);
         }
-    }
-
-    function limpiarPantalla() {
-        logArea.innerHTML = `<i>Esperando instrucciones...</i>`;
-    }
-
-    function setLoading(isLoading) {
-        loading.style.display = isLoading ? 'block' : 'none';
-        logArea.style.opacity = isLoading ? '0.5' : '1';
-        micBtn.disabled = isLoading;
-    }
-</script>
-
-</body>
-</html>
