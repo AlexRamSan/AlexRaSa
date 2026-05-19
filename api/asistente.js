@@ -1,6 +1,6 @@
-const OpenAI = require("openai");
-const formidable = require("formidable");
-const fs = require("fs");
+import OpenAI from "openai";
+import formidable from "formidable";
+import fs from "fs";
 
 // Inicialización de OpenAI con la llave de tus variables de entorno
 const openai = new OpenAI({
@@ -15,14 +15,14 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  // Configurar cabeceras para permitir respuestas correctas en formato JSON
+  // Asegurar cabeceras en formato JSON
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Método no permitido. Usa POST.' });
   }
 
-  // Configuración del procesador de formularios
+  // Instanciación nativa para ES Modules
   const form = formidable({ multiples: false });
 
   form.parse(req, async (err, fields, files) => {
@@ -34,10 +34,10 @@ export default async function handler(req, res) {
     try {
       let transcripcionText = "";
 
-      // 1. GESTIÓN DE ACCIONES SECUNDARIAS (OBTENER CUENTAS)
-      // Normalizamos la lectura de campos ya que formidable a veces los regresa como arreglos
+      // Normalizamos la lectura de campos (en ES Modules formidable los regresa como arreglos)
       const action = fields.action ? (Array.isArray(fields.action) ? fields.action[0] : fields.action) : null;
 
+      // 1. GESTIÓN DE ACCIONES SECUNDARIAS
       if (action === 'getAllAccounts') {
         const mockAccounts = [
           { Id: "0018W00002NlXz1QAF", Name: "Bocar Group Lerma", BillingCity: "Estado de México" },
