@@ -40,20 +40,21 @@
         /* Caja de Resultados y Listas */
         .result-box { background: #f0f4f8; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; display: none; border-left: 5px solid var(--rf-blue); }
         .transcript { font-style: italic; color: #7f8c8d; font-size: 12px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .account-list { text-align: left; max-height: 200px; overflow-y: auto; margin-top: 15px; }
-        .account-item { background: #fff; padding: 12px; border: 1px solid #d1d8e0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 14px; }
-        .account-item:hover { border-color: var(--rf-blue); background: #f4f8ff; color: var(--rf-blue); }
-        .search-input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; }
-        .btn-submit { background: var(--rf-blue); color: white; padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; }
+        .account-list { text-align: left; max-height: 220px; overflow-y: auto; margin-top: 10px; border: 1px solid var(--rf-gray); border-radius: 6px; background: #fff; padding: 5px; }
+        .account-item { background: #fff; padding: 12px; border-bottom: 1px solid #edf2f7; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+        .account-item:last-child { border-bottom: none; }
+        .account-item:hover { background: #f4f8ff; color: var(--rf-blue); }
+        .search-input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e0; margin-bottom: 5px; box-sizing: border-box; font-size: 15px; -webkit-appearance: none; }
+        .search-input:focus { outline: none; border-color: var(--rf-blue); box-shadow: 0 0 0 3px rgba(0,68,187,0.1); }
+        .btn-submit { background: var(--rf-blue); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; margin-top: 5px; }
     </style>
 
     <script>
-        // Registrar el Service Worker automáticamente al abrir la página
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker de Asistente registrado'))
-                    .catch(err => console.log('Error al registrar SW', err));
+                    .then(reg => console.log('Service Worker Activo'))
+                    .catch(err => console.log('Error SW', err));
             });
         }
     </script>
@@ -69,7 +70,7 @@
 
     <div class="quick-actions-title">📝 Reportar Directo a Salesforce</div>
     <div class="quick-grid">
-        <button class="btn-quick" onclick="openQuickForm('visita', '📊 Reportar Visita / Minuta', 'Describre brevemente los acuerdos de la visita técnica...')"><span>🏢</span>Minuta Visita</button>
+        <button class="btn-quick" onclick="openQuickForm('visita', '📊 Reportar Visita / Minuta', 'Describe brevemente los acuerdos de la visita técnica...')"><span>🏢</span>Minuta Visita</button>
         <button class="btn-quick" onclick="openQuickForm('demo', '🔧 Estatus de Demo / Pruebas', 'Detalla la herramienta en prueba y parámetros de rendimiento...')"><span>⚙️</span>Prueba / Demo</button>
         <button class="btn-quick" onclick="openQuickForm('oportunidad', '💡 Nueva Oportunidad', '¿Qué requerimiento o cotización de herramental se detectó?')"><span>💰</span>Oportunidad</button>
         <button class="btn-quick" onclick="openQuickForm('cobranza', '💵 Compromiso de Pago', 'Saldos pendientes o acuerdos de fecha de cobro...')"><span>💳</span>Cobranza</button>
@@ -84,10 +85,10 @@
 
     <div id="resultBox" class="result-box">
         <div class="transcript" id="transcript"></div>
-        <div id="aiMessage"></div>
+        <div id="aiMessage" style="font-weight: 600; font-size: 14px; margin-bottom: 10px;"></div>
         
-        <div id="accountSection" style="display:none; margin-top: 15px;">
-            <input type="text" id="manualSearch" class="search-input" placeholder="Filtrar cuentas manualmente...">
+        <div id="accountSection" style="display:none; margin-top: 10px;">
+            <input type="text" id="manualSearch" class="search-input" placeholder="🔍 Escribe para buscar cuenta...">
             <div id="listContainer" class="account-list"></div>
         </div>
     </div>
@@ -110,7 +111,10 @@
     let audioChunks = [];
     let isRecording = false;
     let lastPlan = null;
-    let allAccounts = [];
+    
+    // Arrays globales para control del filtro
+    let allAccounts = []; 
+    let currentFilteredAccounts = [];
     let currentCategory = '';
 
     micBtn.onclick = async () => {
@@ -142,6 +146,7 @@
 
     function openQuickForm(category, title, placeholder) {
         resultBox.style.display = 'none';
+        accountSection.style.display = 'none';
         currentCategory = category;
         formTitle.innerText = title;
         formContent.value = '';
@@ -165,6 +170,9 @@
 
     async function sendToBackend(formData) {
         try {
+            // Limpieza previa de la caja de texto de búsqueda
+            manualSearch.value = "";
+            
             const res = await fetch('/api/asistente', { method: 'POST', body: formData });
             const data = await res.json();
 
@@ -173,52 +181,77 @@
                 resultBox.style.display = 'block';
                 document.getElementById('transcript').innerText = data.transcript ? `"${data.transcript}"` : "Registro Manual Estructurado";
                 
+                // Forzar la descarga del catálogo completo en segundo plano para que el filtro manual siempre responda
+                await silentLoadAllAccounts();
+
                 if (data.accounts && data.accounts.length > 0) {
-                    aiMessage.innerText = "Selecciona la planta o cliente de Salesforce:";
-                    renderList(data.accounts);
+                    aiMessage.innerText = "🎯 Cuenta detectada automáticamente:";
+                    currentFilteredAccounts = data.accounts;
+                    renderList(currentFilteredAccounts);
                 } else {
-                    aiMessage.innerText = "⚠️ No asocié una cuenta automáticamente. Elige la cuenta destino:";
-                    loadAllAccounts();
+                    aiMessage.innerText = "⚠️ Selecciona o busca la cuenta destino en Salesforce:";
+                    currentFilteredAccounts = allAccounts;
+                    renderList(currentFilteredAccounts);
                 }
+                
+                accountSection.style.display = 'block';
                 statusText.innerText = "Listo";
             } else {
-                alert("Error: " + data.error);
+                alert("Error de procesamiento: " + data.error);
                 statusText.innerText = "Reintentar";
             }
-        } catch (e) { statusText.innerText = "Error de Red"; }
+        } catch (e) { 
+            statusText.innerText = "Error de Red"; 
+            console.error(e);
+        }
     }
 
-    async function loadAllAccounts() {
-        accountSection.style.display = 'block';
-        listContainer.innerHTML = 'Cargando cuentas de Salesforce...';
-        
-        const formData = new FormData();
-        formData.append('action', 'getAllAccounts');
-        
-        const res = await fetch('/api/asistente', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) {
-            allAccounts = data.accounts;
-            renderList(allAccounts);
+    // Descarga preventiva del catálogo completo de Salesforce
+    async function silentLoadAllAccounts() {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'getAllAccounts');
+            const res = await fetch('/api/asistente', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                allAccounts = data.accounts;
+            }
+        } catch (err) {
+            console.error("Error cargando catálogo de cuentas", err);
         }
     }
 
     function renderList(accounts) {
-        accountSection.style.display = 'block';
         listContainer.innerHTML = '';
+        if(accounts.length === 0) {
+            listContainer.innerHTML = '<div style="padding:12px; color:#777; font-size:13px; text-align:center;">❌ No se encontraron cuentas que coincidan.</div>';
+            return;
+        }
+        
         accounts.forEach(acc => {
             const div = document.createElement('div');
             div.className = 'account-item';
-            div.innerHTML = `<strong>${acc.Name}</strong><br><small>${acc.BillingCity || ''}</small>`;
+            div.innerHTML = `<strong>${acc.Name}</strong><br><small style="color:#666;">📍 ${acc.BillingCity || 'Ciudad no especificada'}</small>`;
             div.onclick = () => confirmar(acc.Id, acc.Name);
             listContainer.appendChild(div);
         });
     }
 
+    // MOTOR DE BÚSQUEDA INTERACTIVO MEJORADO (FILTRADO EN TIEMPO REAL)
     manualSearch.oninput = (e) => {
-        const val = e.target.value.toLowerCase();
-        const filtered = allAccounts.filter(a => a.Name.toLowerCase().includes(val));
-        renderList(filtered);
+        const val = e.target.value.trim().toLowerCase();
+        
+        if (!val) {
+            // Si el buscador está vacío, mostramos el catálogo completo
+            currentFilteredAccounts = allAccounts;
+        } else {
+            // Filtramos tanto por Nombre de Cuenta como por Ciudad de manera inteligente
+            currentFilteredAccounts = allAccounts.filter(a => 
+                (a.Name && a.Name.toLowerCase().includes(val)) || 
+                (a.BillingCity && a.BillingCity.toLowerCase().includes(val))
+            );
+        }
+        renderList(currentFilteredAccounts);
     };
 
     async function confirmar(id, name) {
@@ -237,7 +270,7 @@
         const res = await fetch('/api/asistente', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success) {
-            aiMessage.innerHTML = `<b style="color:green">✅ Sincronizado e inyectado en: ${name}</b>`;
+            aiMessage.innerHTML = `<b style="color:green; font-size:15px;">✅ Sincronizado con éxito en:<br>🚀 ${name}</b>`;
             accountSection.style.display = 'none';
             statusText.innerText = "Completado";
         }
