@@ -13,6 +13,8 @@
         .btn:hover { background-color: #005cb3; }
         .btn-secondary { background-color: #28a745; margin-left: 10px; }
         .btn-secondary:hover { background-color: #218838; }
+        .btn-warning { background-color: #ffc107; color: #212529; margin-left: 10px; }
+        .btn-warning:hover { background-color: #e0a800; }
         
         .slides-wrapper { max-width: 1120px; margin: 0 auto; }
         
@@ -41,38 +43,53 @@
         .slide-cover h2 { font-size: 46px; margin-bottom: 10px; text-transform: uppercase; font-weight: 800; color: white; }
         .slide-cover h3 { font-size: 24px; font-weight: 400; opacity: 0.9; margin-top: 0; }
         .slide-cover .meta-info { margin-top: 50px; font-size: 18px; opacity: 0.8; line-height: 1.8; }
+
+        /* Consola de inspección JSON */
+        .json-inspector { max-width: 1120px; margin: 40px auto; background: #222; color: #00ff00; padding: 20px; border-radius: 6px; font-family: monospace; display: none; }
+        .json-inspector h3 { color: white; margin-top: 0; font-family: sans-serif; }
+        .json-inspector textarea { width: 100%; height: 300px; background: #333; color: #fff; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 14px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <div class="control-panel">
-    <h1>REGO-FIX México — Generador de Reporte Semanal</h1>
+    <h1>REGO-FIX México — Generador Semanal</h1>
     <div>
         <button class="btn" onclick="fetchAndGenerate()">⚡ Sincronizar Salesforce y IA</button>
-        <button class="btn btn-secondary" onclick="exportarImagenes()">📸 Descargar Diapositivas (PNG)</button>
+        <button class="btn btn-secondary" onclick="exportarImagenes()">📸 Descargar PNGs</button>
+        <button class="btn btn-warning" onclick="toggleInspector()">🔍 Ver Datos JSON</button>
     </div>
 </div>
 
 <div class="slides-wrapper" id="slides-container">
-    <p id="initial-msg" style="text-align: center; color: #777; font-size: 18px; margin-top: 50px;">Presiona "Sincronizar" para calcular el periodo actual e iniciar el reporte.</p>
+    <p style="text-align: center; color: #777; font-size: 18px; margin-top: 50px;">Presiona "Sincronizar" para iniciar el reporte.</p>
+</div>
+
+<div class="json-inspector" id="inspector-panel">
+    <h3>🔍 Consola de Diagnóstico de Datos (JSON)</h3>
+    <p style="color: #aaa; font-size: 14px;">Aquí abajo verás exactamente la información que el backend le envía a ChatGPT y lo que este responde:</p>
+    <label><strong>1. Datos enviados hacia la API (Lo que calculó el cliente):</strong></label>
+    <textarea id="json-enviado" readonly placeholder="Esperando sincronización..."></textarea>
+    <br><br>
+    <label><strong>2. Respuesta final de OpenAI (Lo que ChatGPT interpretó):</strong></label>
+    <textarea id="json-recibido" readonly placeholder="Esperando respuesta del servidor..."></textarea>
 </div>
 
 <script>
+    let ultimoJsonRecibido = null;
+
     async function fetchAndGenerate() {
         document.getElementById('slides-container').innerHTML = '<p style="text-align:center; font-size:18px;">Calculando rango de fechas de revisión y procesando con GPT-4o...</p>';
         
-        // --- LÓGICA DE CONTROL DE FECHAS SOLICITADA ---
         const hoy = new Date();
-        const diaSemana = hoy.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab
+        const diaSemana = hoy.getDay(); 
         let fechaInicio = new Date();
         let fechaFin = new Date();
 
         if (diaSemana === 1) { 
-            // Si hoy es LUNES: Reportar de Lunes a Viernes de la SEMANA ANTERIOR
             fechaInicio.setDate(hoy.getDate() - 7);
             fechaFin.setDate(hoy.getDate() - 3);
         } else {
-            // Si hoy es de MARTES a DOMINGO: Reportar desde el Lunes de ESTA semana hasta HOY
             const diasDesdeLunes = diaSemana === 0 ? 6 : diaSemana - 1;
             fechaInicio.setDate(hoy.getDate() - diasDesdeLunes);
             fechaFin = hoy;
@@ -81,8 +98,8 @@
         const isoInicio = fechaInicio.toISOString().split('T')[0];
         const isoFin = fechaFin.toISOString().split('T')[0];
 
-        // NOTA: Reemplazar el contenido de 'salesforceRawData' con tu llamada de extracción real cuando esté lista.
-        // Por ahora, le pasamos las variables de control de tiempo reales a la API.
+        // Este es el objeto que viaja al backend. 
+        // ALERTA: Si notas campos vacíos en el reporte, es porque aquí 'salesforceRawData' aún no tiene las consultas reales conectadas.
         const payloadData = {
             metadataReporte: {
                 fechaInicioFiltro: isoInicio,
@@ -90,10 +107,14 @@
                 solicitadoEl: hoy.toISOString().split('T')[0]
             },
             salesforceRawData: {
-                mensaje: "Extracción automática filtrada temporalmente.",
-                periodo: `Del ${isoInicio} al ${isoFin}`
+                mensaje: "Filtro temporal activo.",
+                periodo: `Del ${isoInicio} al ${isoFin}`,
+                nota_de_desarrollo: "Para ver datos comerciales reales aquí, se deben mapear las consultas SQL/SOQL de la cuenta de Salesforce."
             }
         };
+
+        // Pintamos en el inspector lo que le mandamos al servidor
+        document.getElementById('json-enviado').value = JSON.stringify(payloadData, null, 2);
 
         try {
             const response = await fetch('/api/generate-report', {
@@ -103,10 +124,21 @@
             });
             
             const data = await response.json();
+            ultimoJsonRecibido = data;
+            
+            // Pintamos en el inspector la respuesta real de OpenAI
+            document.getElementById('json-recibido').value = JSON.stringify(data, null, 2);
+            
             renderAllSlides(data);
         } catch (error) {
-            document.getElementById('slides-container').innerHTML = '<p style="text-align:center; color:red; font-size:18px;">Error al conectar con la API en /api/generate-report o credenciales inválidas.</p>';
+            document.getElementById('slides-container').innerHTML = '<p style="text-align:center; color:red; font-size:18px;">Error al conectar con la API.</p>';
+            document.getElementById('json-recibido').value = "Error en la conexión:\n" + error.message;
         }
+    }
+
+    function toggleInspector() {
+        const panel = document.getElementById('inspector-panel');
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
     function renderAllSlides(data) {
