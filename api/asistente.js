@@ -41,6 +41,19 @@ export default async function handler(req, res) {
       const action = fields.action ? fields.action[0] : null;
 
       // ==========================================
+      // ACCIÓN: OBTENER TODAS LAS CUENTAS (Manual)
+      // ==========================================
+      if (action === 'getAllAccounts') {
+        try {
+          const conn = await connectSF();
+          const allAccs = await conn.query(`SELECT Id, Name, BillingCity FROM Account ORDER BY Name ASC LIMIT 200`);
+          return res.status(200).json({ success: true, accounts: allAccs.records || [] });
+        } catch (error) {
+          return res.status(500).json({ success: false, error: error.message });
+        }
+      }
+
+      // ==========================================
       // CONFIRMACIÓN Y ESCRITURA EN SALESFORCE
       // ==========================================
       if (action === 'confirmar') {
