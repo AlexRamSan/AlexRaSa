@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import multiparty from "multiparty";
 import fs from "fs";
-import jsforce from "jsforce";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -13,40 +12,46 @@ export const config = {
   },
 };
 
-// Conexión súper forzada eliminando cualquier rastro de redirectUri
-async function getSalesforceConnection() {
-  const conn = new jsforce.Connection({
-    loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com',
-    clientId: process.env.SF_CLIENT_ID,
-    clientSecret: process.env.SF_CLIENT_SECRET,
-    redirectUri: null // Forzamos explícitamente a null para anular variables de Vercel
-  });
-
-  // Limpieza manual de propiedades del objeto OAuth2 interno de JSForce
-  if (conn.oauth2) {
-    conn.oauth2.redirectUri = null;
-    delete conn.oauth2.redirectUri;
-  }
-
-  await conn.authorize({
+// FUNCIÓN NATIVA: Consigue el Access Token directo de Salesforce sin usar JSForce
+async function getSalesforceAccessToken() {
+  const loginUrl = process.env.SF_LOGIN_URL || 'https://login.salesforce.com';
+  const params = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: process.env.SF_CLIENT_ID,
+    client_secret: process.env.SF_CLIENT_SECRET,
     refresh_token: process.env.SF_REFRESH_TOKEN
   });
 
-  return conn;
+  const response = await fetch(`${loginUrl}/services/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Error de autenticación nativa: ${errorText}`);
+  }
+
+  const data = await response.json();
+  return {
+    accessToken: data.access_token,
+    instanceUrl: data.instance_url
+  };
 }
 
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Método no permitido. Usa POST.' });
+    return res.status(405).json({ success: false, error: 'Método no permitido.' });
   }
 
   const form = new multiparty.Form();
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Error parseando con multiparty:", err);
+      console.error("Error parseando formulario:", err);
       return res.status(500).json({ success: false, error: "Error al procesar el formulario." });
     }
 
@@ -55,43 +60,65 @@ export default async function handler(req, res) {
       const action = fields.action ? fields.action[0] : null;
 
       // ================================================================
-      // ACCIÓN A: OBTENER TODAS LAS CUENTAS REALES DESDE SALESFORCE
+      // ACCIÓN A: EXTRAER TU CATÁLOGO DE CUENTAS REALES (SOQL VÍA REST)
       // ================================================================
       if (action === 'getAllAccounts') {
         try {
-          const conn = await getSalesforceConnection();
-          const result = await conn.query("SELECT Id, Name, BillingCity FROM Account ORDER BY Name ASC LIMIT 200");
-          return res.status(200).json({ success: true, accounts: result.records });
-        } catch (sfQueryError) {
-          console.error("Error de consulta en Salesforce:", sfQueryError);
+          const { accessToken, instanceUrl } = await getSalesforceAccessToken();
+          
+          // Consulta limpia mediante la API REST nativa de Salesforce
+          const query = encodeURIComponent("SELECT Id, Name, BillingCity FROM Account ORDER BY Name ASC LIMIT 200");
+          const queryResponse = await fetch(`${instanceUrl}/services/data/v57.0/query?q=${query}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const queryData = await queryResponse.json();
+          return res.status(200).json({ success: true, accounts: queryData.records || [] });
+        } catch (sfError) {
+          console.error("Fallo en API REST de Salesforce:", sfError);
           return res.status(200).json({ 
             success: true, 
-            accounts: [{ Id: "error", Name: `⚠️ Error de CRM: ${sfQueryError.message}`, BillingCity: "Revisar Vercel" }] 
+            accounts: [{ Id: "error", Name: `⚠️ Conexión Bypass: ${sfError.message}`, BillingCity: "Revisar variables" }] 
           });
         }
       }
 
       // ================================================================
-      // ACCIÓN B: CONFIRMAR E INYECTAR LA TAREA EN EL CLIENTE SELECCIONADO
+      // ACCIÓN B: REGISTRAR LA ACTIVIDAD DIRECTAMENTE EN EL CRM
       // ================================================================
       if (action === 'confirmar') {
         try {
           const payload = JSON.parse(fields.payload[0]);
-          const conn = await getSalesforceConnection();
+          const { accessToken, instanceUrl } = await getSalesforceAccessToken();
 
-          await conn.sobject("Task").create({
+          const taskBody = {
             WhatId: payload.accountId,
             Subject: payload.subject,
             Description: payload.description,
             Status: "Completed",
             Priority: "Normal",
             ActivityDate: payload.fecha
+          };
+
+          const insertResponse = await fetch(`${instanceUrl}/services/data/v57.0/sobjects/Task`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(taskBody)
           });
+
+          if (!insertResponse.ok) throw new Error("No se pudo insertar la tarea en el CRM.");
 
           return res.status(200).json({ success: true, message: "Inyectado correctamente en Salesforce." });
         } catch (sfInsertError) {
           console.error("Error al insertar actividad:", sfInsertError);
-          return res.status(500).json({ success: false, error: `Error al guardar en Salesforce: ${sfInsertError.message}` });
+          return res.status(500).json({ success: false, error: sfInsertError.message });
         }
       }
 
@@ -156,9 +183,8 @@ export default async function handler(req, res) {
 
       let respuestaFinal = JSON.parse(completion.choices[0].message.content);
       
-      // Auto-asociación inteligente basada en consultas en caliente
+      // AUTO-ASOCIACIÓN INTELIGENTE DIRECTA EN LA API REST
       try {
-        const conn = await getSalesforceConnection();
         const lowTxt = transcripcionText.toLowerCase();
         let queryBusqueda = "";
 
@@ -167,11 +193,16 @@ export default async function handler(req, res) {
         if (lowTxt.includes("nemak")) queryBusqueda = "SELECT Id, Name, BillingCity FROM Account WHERE Name LIKE '%Nemak%' LIMIT 3";
 
         if (queryBusqueda) {
-          const searchResult = await conn.query(queryBusqueda);
-          respuestaFinal.accounts = searchResult.records;
+          const { accessToken, instanceUrl } = await getSalesforceAccessToken();
+          const searchResult = await fetch(`${instanceUrl}/services/data/v57.0/query?q=${encodeURIComponent(queryBusqueda)}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          const searchData = await searchResult.json();
+          respuestaFinal.accounts = searchData.records || [];
         }
       } catch (e) {
-        console.error("Error en auto-asociación", e);
+        console.error("Error en auto-asociación nativa:", e);
       }
 
       return res.status(200).json(respuestaFinal);
