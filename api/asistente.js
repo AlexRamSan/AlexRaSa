@@ -2,22 +2,23 @@ import OpenAI from "openai";
 import multiparty from "multiparty";
 import fs from "fs";
 
+// Inicialización de OpenAI usando tu variable de entorno de Vercel
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Configuración crítica de Vercel para permitir que multiparty procese archivos binarios (Audios)
 export const config = {
   api: {
     bodyParser: false, 
   },
 };
 
-// FUNCIÓN DE AUTENTICACIÓN: Usa exactamente tus llaves actuales de Vercel (Usuario + Contraseña + Token)
+// FUNCIÓN NATIVA DE AUTENTICACIÓN: Conecta usando Usuario + Contraseña + Token de seguridad
 async function getSalesforceAccessToken() {
   const loginUrl = process.env.SF_LOGIN_URL || 'https://login.salesforce.com';
   
-  // Salesforce exige que si te conectas desde un servidor externo (como Vercel),
-  // pegues el Token de seguridad inmediatamente después de tu contraseña.
+  // Salesforce exige concatenar Contraseña + Token de seguridad al autenticar de forma externa
   const passwordConToken = `${process.env.SF_PASSWORD || ''}${process.env.SF_TOKEN || ''}`;
 
   const params = new URLSearchParams({
@@ -36,7 +37,7 @@ async function getSalesforceAccessToken() {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Error de autenticación con tus llaves de Vercel: ${errorText}`);
+    throw new Error(`Fallo de autenticación en Salesforce: ${errorText}`);
   }
 
   const data = await response.json();
@@ -47,26 +48,28 @@ async function getSalesforceAccessToken() {
 }
 
 export default async function handler(req, res) {
+  // Aseguramos que la respuesta siempre sea interpretada como JSON por el iPhone
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Método no permitido.' });
+    return res.status(405).json({ success: false, error: 'Método no permitido. Usa POST.' });
   }
 
   const form = new multiparty.Form();
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Error parseando formulario:", err);
-      return res.status(500).json({ success: false, error: "Error al procesar el formulario." });
+      console.error("Error parseando formulario con multiparty:", err);
+      return res.status(500).json({ success: false, error: "Error al procesar el formulario de datos." });
     }
 
     try {
+      // Declaración segura de la variable de transcripción al inicio del bloque
       let transcripcionText = "";
       const action = fields.action ? fields.action[0] : null;
 
       // ================================================================
-      // ACCIÓN A: EXTRAER TU CATÁLOGO DE CUENTAS REALES DE REGO-FIX
+      // ACCIÓN A: EXTRAER TU CATÁLOGO DE CUENTAS REALES DE SALESFORCE
       // ================================================================
       if (action === 'getAllAccounts') {
         try {
@@ -84,16 +87,16 @@ export default async function handler(req, res) {
           const queryData = await queryResponse.json();
           return res.status(200).json({ success: true, accounts: queryData.records || [] });
         } catch (sfError) {
-          console.error("Fallo en API de Salesforce:", sfError);
+          console.error("Error consultando catálogo de Salesforce:", sfError);
           return res.status(200).json({ 
             success: true, 
-            accounts: [{ Id: "error", Name: `⚠️ Error de Credenciales: ${sfError.message}`, BillingCity: "Validar contraseñas" }] 
+            accounts: [{ Id: "error", Name: `⚠️ Error de Comunicación: ${sfError.message}`, BillingCity: "Validar Vercel" }] 
           });
         }
       }
 
       // ================================================================
-      // ACCIÓN B: REGISTRAR LA VISITA / ACTIVIDAD EN SALESFORCE
+      // ACCIÓN B: INYECTAR LA ACTIVIDAD/MINUTA COMPLETADA EN EL CRM
       // ================================================================
       if (action === 'confirmar') {
         try {
@@ -118,22 +121,23 @@ export default async function handler(req, res) {
             body: JSON.stringify(taskBody)
           });
 
-          if (!insertResponse.ok) throw new Error("No se pudo insertar la tarea en el CRM.");
+          if (!insertResponse.ok) throw new Error("La API de Salesforce rechazó la inserción de la tarea.");
 
           return res.status(200).json({ success: true, message: "Inyectado correctamente en Salesforce." });
         } catch (sfInsertError) {
-          console.error("Error al insertar actividad:", sfInsertError);
+          console.error("Error al insertar tarea en el CRM:", sfInsertError);
           return res.status(500).json({ success: false, error: sfInsertError.message });
         }
       }
 
       // ================================================================
-      // ACCIÓN C: PROCESAR AUDIO DE DICTADO O BOTÓN MANUAL
+      // ACCIÓN C: PROCESAMIENTO COMERCIAL (VOZ WHISPER O TEXTO MANUAL)
       // ================================================================
       const audioFile = files.audio ? files.audio[0] : null;
       const textoManual = fields.texto ? fields.texto[0] : null;
 
       if (audioFile && audioFile.path) {
+        // Enviar el archivo de audio grabado desde el iPhone a OpenAI Whisper
         const transcription = await openai.audio.transcriptions.create({
           file: fs.createReadStream(audioFile.path),
           model: "whisper-1",
@@ -143,10 +147,10 @@ export default async function handler(req, res) {
       } else if (textoManual) {
         transcripcionText = textoManual;
       } else {
-        return res.status(400).json({ success: false, error: "No se detectó audio ni texto válido." });
+        return res.status(400).json({ success: false, error: "No se recibió un audio o texto válido para procesar." });
       }
 
-      // AUDITORÍA DE REPORTES PARA GERENCIA CON GPT-4o
+      // AUDITORÍA COMERCIAL INTELIGENTE CON GPT-4o
       const promptAuditoria = `
         Eres el asistente inteligente de Miguel para REGO-FIX México (RFMX).
         Tu meta es tomar sus minutas, pero actuar como auditor de los requerimientos de la gerencia.
@@ -188,7 +192,7 @@ export default async function handler(req, res) {
 
       let respuestaFinal = JSON.parse(completion.choices[0].message.content);
       
-      // AUTO-ASOCIACIÓN INTELIGENTE EN CALIENTE
+      // AUTO-ASOCIACIÓN INTELIGENTE (Búsqueda predictiva basada en lo dictado)
       try {
         const lowTxt = transcripcionText.toLowerCase();
         let queryBusqueda = "";
@@ -207,13 +211,14 @@ export default async function handler(req, res) {
           respuestaFinal.accounts = searchData.records || [];
         }
       } catch (e) {
-        console.error("Error en auto-asociación nativa:", e);
+        console.error("Error silencioso en auto-asociación predictiva:", e);
       }
 
+      // Regresamos la estructura limpia lista para pintar en pantalla
       return res.status(200).json(respuestaFinal);
 
     } catch (innerError) {
-      console.error("Error general en el backend:", innerError);
+      console.error("Error general en ejecución del backend:", innerError);
       return res.status(500).json({ success: false, error: innerError.message });
     }
   });
