@@ -15,10 +15,12 @@
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(229, 57, 53, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0); } }
         .log-area { background: var(--card); border-radius: 12px; padding: 20px; min-height: 200px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
-        .btn-action { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-action { background: var(--primary); color: white; border: none; padding: 12px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 15px; }
+        .btn-manual { background: #546e7a; margin-top: 15px; }
         .btn-action:disabled { background: #ccc; }
         .file-input-wrapper { margin-top: 10px; padding: 10px; background: #eef4fb; border-radius: 6px; font-size: 14px; }
         input[type="file"] { width: 100%; }
+        select { width: 100%; padding: 12px; margin-bottom: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; }
         .spinner { display: none; margin: 20px auto; width: 40px; height: 40px; border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -47,10 +49,28 @@
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
-    let globalPlan = null; // Guarda el plan de la IA para confirmaciones
+    let globalPlan = null;
+    let wakeLock = null; // Variable para mantener la pantalla encendida
 
-    // RUTA A TU VERCEL
+    // ====== RUTA A TU VERCEL ======
     const API_URL = 'https://www.alexrasa.store/api/asistente'; 
+
+    // Funciones para bloquear el apagado de pantalla
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) {
+            console.log('No se pudo bloquear la pantalla:', err);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => wakeLock = null);
+        }
+    }
 
     micBtn.addEventListener('click', async () => {
         if (!isRecording) {
@@ -76,6 +96,9 @@
             mediaRecorder.start();
             isRecording = true;
             micBtn.classList.add('recording');
+            
+            // Mantenemos la pantalla prendida
+            await requestWakeLock();
         } catch (err) {
             alert('Error al acceder al micrófono: ' + err);
         }
@@ -86,6 +109,9 @@
         isRecording = false;
         micBtn.classList.remove('recording');
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        
+        // Soltamos el bloqueo de pantalla
+        releaseWakeLock();
     }
 
     async function sendToBackend(audioBlob) {
@@ -110,14 +136,14 @@
             return;
         }
 
-        let html = `<h3>✅ Acción procesada</h3>`;
+        let html = `<h3>✅ IA Procesada</h3>`;
         if (data.message) html += `<p>${data.message}</p>`;
 
-        // LISTADO DE CONSULTAS (Oportunidades, Pendientes)
+        // LISTADO DE CONSULTAS DIRECTAS (Oportunidades, Pendientes)
         if (['CONSULTAR_OPORTUNIDADES', 'CONSULTAR_PENDIENTES', 'CONSULTAR_TAREAS_JEFE'].includes(data.intent)) {
-            if (data.data.length === 0) {
+            if (data.data && data.data.length === 0) {
                 html += `<p>No hay registros que mostrar.</p>`;
-            } else {
+            } else if (data.data) {
                 data.data.forEach(item => {
                     html += `<div class="card">
                                 <strong>${item.name || item.Name || item.Subject}</strong><br>
@@ -130,41 +156,99 @@
         }
 
         // FLUJO: CERRAR COTIZACIÓN
-        if (data.intent === 'CERRAR_COTIZACION' && data.needConfirmation) {
-            globalPlan = data.plan;
-            html += `<p>Selecciona la oportunidad para cerrarla y subir la Orden de Compra:</p>`;
-            data.records.forEach(opp => {
-                html += `<div class="card">
-                            <strong>${opp.Name}</strong> ($${opp.Amount || 0})
-                            <div class="file-input-wrapper">
-                                <label>Adjuntar Orden de Compra (PDF/Img):</label>
-                                <input type="file" id="file_${opp.Id}" accept=".pdf,image/*">
-                            </div>
-                            <button class="btn-action" onclick="confirmarCierre('${opp.Id}')">Cerrar Ganada y Subir</button>
-                         </div>`;
-            });
+        if (data.intent === 'CERRAR_COTIZACION') {
+            globalPlan = data.plan || data;
+            
+            if (data.records && data.records.length > 0) {
+                html += `<p>Selecciona la oportunidad para cerrarla y subir la OC:</p>`;
+                data.records.forEach(opp => {
+                    html += `<div class="card">
+                                <strong>${opp.Name}</strong> ($${opp.Amount || 0})
+                                <div class="file-input-wrapper">
+                                    <label>Adjuntar Orden de Compra (PDF/Img):</label>
+                                    <input type="file" id="file_${opp.Id}" accept=".pdf,image/*">
+                                </div>
+                                <button class="btn-action" onclick="confirmarCierre('${opp.Id}')">Cerrar Ganada y Subir</button>
+                             </div>`;
+                });
+            } else {
+                html += `<p style="color: #e53935;">No encontré ninguna cotización abierta para la empresa "${globalPlan.empresa_busqueda}". Intenta mencionar el nombre más preciso.</p>`;
+            }
             logArea.innerHTML = html;
             return;
         }
 
         // FLUJO: REGISTRAR ACTIVIDAD O AGENDAR
-        if (['REGISTRAR_ACTIVIDAD', 'AGENDAR_VISITA'].includes(data.intent) && data.needConfirmation) {
-            globalPlan = data.plan;
-            html += `<p>Selecciona la cuenta para guardar: <b>${globalPlan.asunto}</b></p>`;
-            data.records.forEach(acc => {
-                html += `<div class="card">
-                            <strong>${acc.Name}</strong> (${acc.BillingCity || 'Sin ciudad'})
-                            <button class="btn-action" onclick="confirmarAccion('${acc.Id}')">Vincular y Guardar</button>
-                         </div>`;
-            });
+        if (['REGISTRAR_ACTIVIDAD', 'AGENDAR_VISITA'].includes(data.intent)) {
+            globalPlan = data.plan || data;
+            html += `<p><b>Asunto detectado:</b> ${globalPlan.asunto}</p>`;
+
+            if (data.records && data.records.length > 0) {
+                html += `<p>Cuentas sugeridas:</p>`;
+                data.records.forEach(acc => {
+                    html += `<div class="card">
+                                <strong>${acc.Name}</strong> (${acc.BillingCity || 'Sin ciudad'})
+                                <button class="btn-action" onclick="confirmarAccion('${acc.Id}')">Vincular y Guardar</button>
+                             </div>`;
+                });
+            } else {
+                html += `<p style="color: #e53935;">No encontré automáticamente la cuenta "${globalPlan.empresa_busqueda}".</p>`;
+            }
+            
+            // BOTÓN SALVAVIDAS (Búsqueda Manual)
+            html += `<button class="btn-action btn-manual" onclick="cargarTodasLasCuentas()">🔍 Elegir cuenta manualmente</button>`;
             logArea.innerHTML = html;
             return;
         }
 
-        logArea.innerHTML = html + `<p>Procesado, pero no se encontraron registros coincidentes.</p>`;
+        logArea.innerHTML = html + `<p>Acción finalizada.</p>`;
     }
 
-    // ENVIAR CONFIRMACIÓN A SALESFORCE (Minutas y Eventos)
+    // ==========================================
+    // SECCIÓN MANUAL (CUANDO LA IA FALLA)
+    // ==========================================
+    async function cargarTodasLasCuentas() {
+        setLoading(true);
+        const formData = new FormData();
+        formData.append('action', 'getAllAccounts');
+
+        try {
+            const response = await fetch(API_URL, { method: 'POST', body: formData });
+            const result = await response.json();
+            
+            if (result.success && result.accounts) {
+                let html = `<h3>Selecciona tu cliente</h3>`;
+                html += `<p><b>Asunto:</b> ${globalPlan.asunto}</p>`;
+                html += `<select id="manualAccountSelect">
+                            <option value="">-- Toca para ver lista de clientes --</option>`;
+                
+                result.accounts.forEach(acc => {
+                    html += `<option value="${acc.Id}">${acc.Name} - ${acc.BillingCity || ''}</option>`;
+                });
+                
+                html += `</select>`;
+                html += `<button class="btn-action" onclick="confirmarAccionManual()">Vincular y Guardar</button>`;
+                logArea.innerHTML = html;
+            }
+        } catch (error) {
+            logArea.innerHTML = `<span style="color:red">Error cargando cuentas: ${error.message}</span>`;
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function confirmarAccionManual() {
+        const select = document.getElementById('manualAccountSelect');
+        if (!select.value) {
+            alert('Por favor, selecciona una cuenta de la lista.');
+            return;
+        }
+        confirmarAccion(select.value);
+    }
+
+    // ==========================================
+    // CONFIRMACIONES FINALES HACIA SALESFORCE
+    // ==========================================
     async function confirmarAccion(accountId) {
         setLoading(true);
         const payload = {
@@ -183,15 +267,10 @@
         await ejecutarConfirmacion(formData);
     }
 
-    // ENVIAR CIERRE CON ARCHIVO (Orden de Compra)
     async function confirmarCierre(opportunityId) {
         setLoading(true);
         const fileInput = document.getElementById(`file_${opportunityId}`);
-        
-        const payload = {
-            taskType: 'CERRAR_COTIZACION',
-            opportunityId: opportunityId
-        };
+        const payload = { taskType: 'CERRAR_COTIZACION', opportunityId: opportunityId };
 
         const formData = new FormData();
         formData.append('action', 'confirmar');
@@ -208,12 +287,17 @@
         try {
             const response = await fetch(API_URL, { method: 'POST', body: formData });
             const result = await response.json();
-            logArea.innerHTML = `<h3 style="color:green">${result.message || 'Operación exitosa'}</h3>`;
+            logArea.innerHTML = `<h3 style="color:green">${result.message || 'Operación exitosa'}</h3>
+                                 <button class="btn-action btn-manual" onclick="limpiarPantalla()">Hacer otra operación</button>`;
         } catch (error) {
             logArea.innerHTML = `<span style="color:red">Error: ${error.message}</span>`;
         } finally {
             setLoading(false);
         }
+    }
+
+    function limpiarPantalla() {
+        logArea.innerHTML = `<i>Esperando instrucciones...</i>`;
     }
 
     function setLoading(isLoading) {
