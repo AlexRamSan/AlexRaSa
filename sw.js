@@ -1,4 +1,12 @@
-// Service Worker mínimo requerido para que iOS reconozca la PWA
+// Service Worker requerido para la correcta instalación en Safari (iOS)
+self.addEventListener('install', function(event) {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('fetch', function(event) {
-    // Aquí se podría configurar el caché offline en el futuro
+    // Listo para manejar peticiones de red
 });
