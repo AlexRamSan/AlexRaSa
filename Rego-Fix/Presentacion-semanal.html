@@ -16,7 +16,6 @@
         
         .slides-wrapper { max-width: 1120px; margin: 0 auto; }
         
-        /* Formato estándar de Diapositiva Ejecutiva de 16:9 (Proporción exacta) */
         .slide { 
             width: 1120px; height: 630px; background: white; margin-bottom: 40px; 
             box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-radius: 6px; overflow: hidden;
@@ -27,7 +26,6 @@
         .slide-header h2 { margin: 0; color: #0076d3; font-size: 32px; text-transform: uppercase; font-weight: 700; }
         .slide-content { font-size: 20px; line-height: 1.6; flex-grow: 1; color: #444; }
         
-        /* Clases de Maquetación */
         .grid-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 10px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .kpi-card { background: #f8f9fa; border-left: 6px solid #0076d3; padding: 20px; border-radius: 4px; }
@@ -39,7 +37,6 @@
         
         .footer-slide { position: absolute; bottom: 25px; left: 60px; right: 60px; display: flex; justify-content: space-between; font-size: 13px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
         
-        /* Portada especial */
         .slide-cover { background: linear-gradient(135deg, #004b87 0%, #0076d3 100%); color: white; justify-content: center; align-items: center; text-align: center; }
         .slide-cover h2 { font-size: 46px; margin-bottom: 10px; text-transform: uppercase; font-weight: 800; color: white; }
         .slide-cover h3 { font-size: 24px; font-weight: 400; opacity: 0.9; margin-top: 0; }
@@ -57,27 +54,58 @@
 </div>
 
 <div class="slides-wrapper" id="slides-container">
-    <p style="text-align: center; color: #777; font-size: 18px; margin-top: 50px;">Presiona "Sincronizar" para estructurar los datos comerciales de la semana.</p>
+    <p id="initial-msg" style="text-align: center; color: #777; font-size: 18px; margin-top: 50px;">Presiona "Sincronizar" para calcular el periodo actual e iniciar el reporte.</p>
 </div>
 
 <script>
     async function fetchAndGenerate() {
-        document.getElementById('slides-container').innerHTML = '<p style="text-align:center; font-size:18px;">Consultando Salesforce y procesando con GPT-4o...</p>';
+        document.getElementById('slides-container').innerHTML = '<p style="text-align:center; font-size:18px;">Calculando rango de fechas de revisión y procesando con GPT-4o...</p>';
         
-        // Aquí conectas tu data real extraída de Salesforce
-        const salesforcePayload = { data: "Data cruda recolectada de la cuenta de ventas..." };
+        // --- LÓGICA DE CONTROL DE FECHAS SOLICITADA ---
+        const hoy = new Date();
+        const diaSemana = hoy.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab
+        let fechaInicio = new Date();
+        let fechaFin = new Date();
+
+        if (diaSemana === 1) { 
+            // Si hoy es LUNES: Reportar de Lunes a Viernes de la SEMANA ANTERIOR
+            fechaInicio.setDate(hoy.getDate() - 7);
+            fechaFin.setDate(hoy.getDate() - 3);
+        } else {
+            // Si hoy es de MARTES a DOMINGO: Reportar desde el Lunes de ESTA semana hasta HOY
+            const diasDesdeLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+            fechaInicio.setDate(hoy.getDate() - diasDesdeLunes);
+            fechaFin = hoy;
+        }
+
+        const isoInicio = fechaInicio.toISOString().split('T')[0];
+        const isoFin = fechaFin.toISOString().split('T')[0];
+
+        // NOTA: Reemplazar el contenido de 'salesforceRawData' con tu llamada de extracción real cuando esté lista.
+        // Por ahora, le pasamos las variables de control de tiempo reales a la API.
+        const payloadData = {
+            metadataReporte: {
+                fechaInicioFiltro: isoInicio,
+                fechaFinFiltro: isoFin,
+                solicitadoEl: hoy.toISOString().split('T')[0]
+            },
+            salesforceRawData: {
+                mensaje: "Extracción automática filtrada temporalmente.",
+                periodo: `Del ${isoInicio} al ${isoFin}`
+            }
+        };
 
         try {
-            const response = await fetch('/api/generate-report.js', {
+            const response = await fetch('/api/generate-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ salesforceRawData: salesforcePayload })
+                body: JSON.stringify(payloadData)
             });
             
             const data = await response.json();
             renderAllSlides(data);
         } catch (error) {
-            document.getElementById('slides-container').innerHTML = '<p style="text-align:center; color:red; font-size:18px;">Error al conectar con la API o procesar la información.</p>';
+            document.getElementById('slides-container').innerHTML = '<p style="text-align:center; color:red; font-size:18px;">Error al conectar con la API en /api/generate-report o credenciales inválidas.</p>';
         }
     }
 
@@ -89,7 +117,7 @@
                 <h3>REGO-FIX México</h3>
                 <div class="meta-info">
                     <strong>Región:</strong> ${data.slide1_portada.region}<br>
-                    <strong>Fecha:</strong> ${data.slide1_portada.fecha}
+                    <strong>Periodo Evaluado:</strong> ${data.slide1_portada.fecha}
                 </div>
             </div>
 
