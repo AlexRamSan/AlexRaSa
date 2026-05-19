@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import multiparty from "multiparty";
 import fs from "fs";
-import jsforce from "jsforce"; // Inyectamos la librería real que lee tu Salesforce
+import jsforce from "jsforce";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -13,7 +13,6 @@ export const config = {
   },
 };
 
-// Función auxiliar para conectarse a Salesforce usando tus variables de entorno de Vercel
 async function getSalesforceConnection() {
   const conn = new jsforce.Connection({
     loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com',
@@ -22,7 +21,6 @@ async function getSalesforceConnection() {
     redirectUri: process.env.SF_REDIRECT_URI
   });
 
-  // Autenticación mediante el Refresh Token seguro
   await conn.authorize({
     refresh_token: process.env.SF_REFRESH_TOKEN
   });
@@ -41,11 +39,14 @@ export default async function handler(req, res) {
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Error parseando el formulario:", err);
+      console.error("Error con multiparty:", err);
       return res.status(500).json({ success: false, error: "Error al procesar el formulario." });
     }
 
     try {
+      // CORRECCIÓN DEL CRASHEO: Declaramos la variable de forma segura al inicio
+      let transcripcionText = "";
+
       const action = fields.action ? fields.action[0] : null;
 
       // ================================================================
@@ -54,15 +55,10 @@ export default async function handler(req, res) {
       if (action === 'getAllAccounts') {
         try {
           const conn = await getSalesforceConnection();
-          
-          // Ejecutamos una consulta SOQL real trayendo ID, Nombre y Ciudad de tus clientes
-          // Limitado a 200 cuentas para que el iPhone las cargue de golpe al instante
           const result = await conn.query("SELECT Id, Name, BillingCity FROM Account ORDER BY Name ASC LIMIT 200");
-          
           return res.status(200).json({ success: true, accounts: result.records });
         } catch (sfQueryError) {
           console.error("Error consultando Salesforce:", sfQueryError);
-          // Alerta de emergencia si las credenciales fallan, para no dejar la pantalla vacía
           return res.status(200).json({ 
             success: true, 
             accounts: [{ Id: "error", Name: `⚠️ Error de CRM: ${sfQueryError.message}`, BillingCity: "Revisar Vercel" }] 
@@ -78,7 +74,6 @@ export default async function handler(req, res) {
           const payload = JSON.parse(fields.payload[0]);
           const conn = await getSalesforceConnection();
 
-          // Creamos la actividad real en el módulo del cliente seleccionado
           await conn.sobject("Task").create({
             WhatId: payload.accountId,
             Subject: payload.subject,
@@ -96,7 +91,7 @@ export default async function handler(req, res) {
       }
 
       // ================================================================
-      // 3. PROCESAMIENTO DE AUDIO (WHISPER) O TEXTO DIRECTO
+      // 3. PROCESAMIENTO DE AUDIO O TEXTO DIRECTO
       // ================================================================
       const audioFile = files.audio ? files.audio[0] : null;
       const textoManual = fields.texto ? fields.texto[0] : null;
@@ -114,7 +109,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: "No se detectó audio ni texto válido." });
       }
 
+      // ================================================================
       // 4. AUDITORÍA INTELIGENTE CON GPT-4o
+      // ================================================================
       const promptAuditoria = `
         Eres el asistente inteligente de Miguel para REGO-FIX México (RFMX).
         Tu meta es tomar sus minutas, pero actuar como auditor de los requerimientos de la gerencia.
@@ -156,7 +153,7 @@ export default async function handler(req, res) {
 
       let respuestaFinal = JSON.parse(completion.choices[0].message.content);
       
-      // Auto-asociación inteligente local basada en lo que hable Miguel
+      // Auto-asociación inteligente local basada en coincidencias
       try {
         const conn = await getSalesforceConnection();
         const lowTxt = transcripcionText.toLowerCase();
