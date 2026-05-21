@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Presentación - REGO-FIX</title>
+    <!-- Tailwind CSS para diseño rápido y profesional -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf para exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .slide { page-break-after: always; height: 297mm; width: 210mm; background: white; padding: 40px; margin: 0 auto 20px auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .slide-header { border-bottom: 3px solid #1d4ed8; padding-bottom: 10px; margin-bottom: 20px; }
+        @media print {
+            body { background: white; }
+            #input-section, #export-btn { display: none !important; }
+            .slide { box-shadow: none; margin: 0; width: 100%; height: 100vh; page-break-after: always; }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- SECCIÓN DE FORMULARIO -->
+    <div id="input-section" class="max-w-4xl mx-auto my-10 bg-white p-8 rounded-lg shadow-lg">
+        <div class="flex items-center justify-between border-b pb-4 mb-6">
+            <h1 class="text-3xl font-bold text-blue-800">Panel de Datos: Junta Semanal RFMX</h1>
+        </div>
+
+        <form id="presentation-form" class="space-y-8">
+            
+            <!-- 1. Portada -->
+            <div class="bg-gray-50 p-4 rounded border">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">1. Datos de Portada</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700">Nombre</label><input type="text" id="f_nombre" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" value="Miguel Alejandro Ramírez Sánchez"></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Cargo</label><input type="text" id="f_cargo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" value="Sales Technician"></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Región</label><input type="text" id="f_region" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" value="Estado de México, Toluca y Puebla"></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Fecha</label><input type="date" id="f_fecha" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"></div>
+                </div>
+            </div>
+
+            <!-- 2. Resultados del mes -->
+            <div class="bg-gray-50 p-4 rounded border">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">2. Resultados del Mes</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label class="block text-sm">Budget Mensual ($)</label><input type="number" id="f_budget" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm">Venta Facturada ($)</label><input type="number" id="f_facturada" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm">% Cumplimiento</label><input type="number" id="f_cumplimiento" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm">Back Order ($)</label><input type="number" id="f_backorder" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm">Forecast Cierre ($)</label><input type="number" id="f_forecast" class="w-full p-2 border rounded"></div>
+                </div>
+            </div>
+
+            <!-- 3. Profit y Rentabilidad -->
+            <div class="bg-gray-50 p-4 rounded border">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">3. Profit y Rentabilidad</h2>
+                <div class="space-y-4">
+                    <div><label class="block text-sm">Margen de Proyectos (%)</label><input type="text" id="f_margen" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm">Descuentos Activos (Justificación)</label><textarea id="f_descuentos" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                    <div><label class="block text-sm">Venta Directa vs Distribución</label><input type="text" id="f_mix" placeholder="Ej. 60% Directa / 40% Distribución" class="w-full p-2 border rounded"></div>
+                </div>
+            </div>
+
+            <!-- 4. Actividad Comercial -->
+            <div class="bg-gray-50 p-4 rounded border">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">4. Actividad Comercial</h2>
+                <div class="space-y-4">
+                    <div><label class="block text-sm">Visitas Realizadas (Cantidad y Clientes Clave)</label><textarea id="f_visitas" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                    <div><label class="block text-sm">Nuevas Oportunidades / Proyectos Activos</label><textarea id="f_oportunidades" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                    <div><label class="block text-sm">Actividades en Salesforce / Demos Activas</label><textarea id="f_crm" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                </div>
+            </div>
+
+            <!-- 5. Recuperación y Demos -->
+            <div class="bg-gray-50 p-4 rounded border">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">5. Recuperación y Demos</h2>
+                <div class="space-y-4">
+                    <div><label class="block text-sm">Material en Campo y Estatus de Demos</label><textarea id="f_material" class="w-full p-2 border rounded" rows="3"></textarea></div>
+                    <div><label class="block text-sm">Recuperación Pendiente</label><textarea id="f_recuperacion" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                </div>
+            </div>
+
+            <!-- 6. Cobranza -->
+            <div class="bg-gray-50 p-4 rounded border">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">6. Cobranza</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm">Cartera Vencida ($)</label><input type="text" id="f_vencida" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm">Compromisos de Pago</label><textarea id="f_compromisos" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                    <div class="md:col-span-2"><label class="block text-sm">Clientes Críticos</label><textarea id="f_criticos" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                </div>
+            </div>
+
+            <!-- 7. Plan de Acción -->
+            <div class="bg-gray-50 p-4 rounded border">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">7. Plan de Acción</h2>
+                <div class="space-y-4">
+                    <div><label class="block text-sm">Estrategia para cumplir meta y Acciones sig. semana</label><textarea id="f_estrategia" class="w-full p-2 border rounded" rows="3"></textarea></div>
+                    <div><label class="block text-sm">Cuentas Prioritarias</label><input type="text" id="f_cuentas" class="w-full p-2 border rounded"></div>
+                    <div><label class="block text-sm">Apoyo requerido de Gerencia</label><textarea id="f_apoyo" class="w-full p-2 border rounded" rows="2"></textarea></div>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-4">
+                <button type="button" onclick="generarPresentacion()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded shadow-lg text-lg transition-colors">Generar Presentación</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- BOTÓN EXPORTAR Y VOLVER (Oculto inicialmente) -->
+    <div id="action-buttons" class="hidden text-center my-6 space-x-4">
+        <button onclick="volverFormulario()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Volver a Editar</button>
+        <button onclick="exportarPDF()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Descargar PDF para Enviar</button>
+    </div>
+
+    <!-- SECCIÓN DE PRESENTACIÓN (Oculta inicialmente) -->
+    <div id="presentation-output" class="hidden">
+        <div id="pdf-content" class="bg-gray-200 py-8 flex flex-col items-center">
+            
+            <!-- Slide 1 -->
+            <div class="slide flex flex-col justify-center items-center text-center">
+                <h1 class="text-5xl font-extrabold text-blue-900 mb-6">REGO-FIX</h1>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Junta Semanal de Ventas</h2>
+                <div class="h-1 w-24 bg-blue-600 my-6"></div>
+                <h3 class="text-2xl text-gray-700" id="out_nombre"></h3>
+                <p class="text-xl text-gray-500 mt-2" id="out_cargo"></p>
+                <p class="text-lg text-gray-500 mt-1" id="out_region"></p>
+                <p class="text-md text-gray-400 mt-8" id="out_fecha"></p>
+            </div>
+
+            <!-- Slide 2 -->
+            <div class="slide">
+                <div class="slide-header flex justify-between items-end">
+                    <h2 class="text-3xl font-bold text-blue-800">Resultados del Mes</h2>
+                    <span class="text-gray-400 font-bold">02</span>
+                </div>
+                <div class="grid grid-cols-2 gap-8 mt-10">
+                    <div class="bg-blue-50 p-6 rounded-lg text-center shadow-sm">
+                        <p class="text-gray-500 text-lg uppercase tracking-wide">Budget Mensual</p>
+                        <p class="text-4xl font-bold text-blue-900 mt-2">$<span id="out_budget"></span></p>
+                    </div>
+                    <div class="bg-blue-50 p-6 rounded-lg text-center shadow-sm">
+                        <p class="text-gray-500 text-lg uppercase tracking-wide">Venta Facturada</p>
+                        <p class="text-4xl font-bold text-blue-900 mt-2">$<span id="out_facturada"></span></p>
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <div class="flex justify-between mb-2"><span class="text-xl font-semibold">Cumplimiento</span><span class="text-xl font-bold text-blue-600" id="out_cumplimiento"></span></div>
+                    <div class="w-full bg-gray-200 rounded-full h-4"><div class="bg-blue-600 h-4 rounded-full" style="width: 50%"></div></div> <!-- Barra visual representativa -->
+                </div>
+                <div class="grid grid-cols-2 gap-8 mt-10">
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-700 border-b pb-2">Back Order</h4>
+                        <p class="text-2xl mt-4">$<span id="out_backorder"></span></p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-gray-700 border-b pb-2">Forecast de Cierre</h4>
+                        <p class="text-2xl mt-4 text-green-700 font-bold">$<span id="out_forecast"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3 -->
+            <div class="slide">
+                <div class="slide-header flex justify-between items-end">
+                    <h2 class="text-3xl font-bold text-blue-800">Profit y Rentabilidad</h2>
+                    <span class="text-gray-400 font-bold">03</span>
+                </div>
+                <div class="mt-8 space-y-10">
+                    <div>
+                        <h3 class="text-2xl font-semibold text-gray-800">Margen de Proyectos</h3>
+                        <p class="text-3xl font-bold text-blue-700 mt-2" id="out_margen"></p>
+                    </div>
+                    <div class="bg-gray-50 p-6 border-l-4 border-yellow-500 rounded">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Descuentos Activos</h3>
+                        <p class="text-lg text-gray-600 whitespace-pre-line" id="out_descuentos"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-2">Venta Directa vs Distribución</h3>
+                        <p class="text-xl text-gray-700 p-4 bg-blue-50 rounded" id="out_mix"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4 -->
+            <div class="slide">
+                <div class="slide-header flex justify-between items-end">
+                    <h2 class="text-3xl font-bold text-blue-800">Actividad Comercial</h2>
+                    <span class="text-gray-400 font-bold">04</span>
+                </div>
+                <div class="grid grid-cols-1 gap-8 mt-8">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3 bg-gray-100 p-2 rounded">Visitas Realizadas</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line px-2" id="out_visitas"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3 bg-gray-100 p-2 rounded">Nuevas Oportunidades y Proyectos</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line px-2" id="out_oportunidades"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-3 bg-gray-100 p-2 rounded">Salesforce y Demos Activas</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line px-2" id="out_crm"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 5 -->
+            <div class="slide">
+                <div class="slide-header flex justify-between items-end">
+                    <h2 class="text-3xl font-bold text-blue-800">Recuperación y Demos</h2>
+                    <span class="text-gray-400 font-bold">05</span>
+                </div>
+                <div class="mt-8 space-y-10">
+                    <div class="border-l-4 border-blue-600 pl-6 py-2">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Material en Campo y Estatus</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line" id="out_material"></p>
+                    </div>
+                    <div class="border-l-4 border-red-500 pl-6 py-2">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Recuperación Pendiente</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line" id="out_recuperacion"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 6 -->
+            <div class="slide">
+                <div class="slide-header flex justify-between items-end">
+                    <h2 class="text-3xl font-bold text-blue-800">Cobranza</h2>
+                    <span class="text-gray-400 font-bold">06</span>
+                </div>
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-red-50 p-6 rounded-lg border border-red-200">
+                        <h3 class="text-xl font-bold text-red-800 mb-2">Cartera Vencida</h3>
+                        <p class="text-3xl font-bold text-red-600">$<span id="out_vencida"></span></p>
+                    </div>
+                    <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+                        <h3 class="text-xl font-bold text-green-800 mb-2">Compromisos de Pago</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line" id="out_compromisos"></p>
+                    </div>
+                    <div class="md:col-span-2 mt-4">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Clientes Críticos</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line" id="out_criticos"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 7 -->
+            <div class="slide">
+                <div class="slide-header flex justify-between items-end">
+                    <h2 class="text-3xl font-bold text-blue-800">Plan de Acción</h2>
+                    <span class="text-gray-400 font-bold">07</span>
+                </div>
+                <div class="mt-8 space-y-8">
+                    <div class="bg-blue-900 text-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-3">Cuentas Prioritarias</h3>
+                        <p class="text-lg" id="out_cuentas"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">Estrategia y Acciones</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line p-4 bg-gray-50 rounded border" id="out_estrategia"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3 text-red-700">Apoyo Requerido de Gerencia</h3>
+                        <p class="text-lg text-gray-700 whitespace-pre-line p-4 bg-red-50 rounded border border-red-100" id="out_apoyo"></p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Función para pasar datos del formulario a las diapositivas
+        function generarPresentacion() {
+            const campos = [
+                'nombre', 'cargo', 'region', 'fecha', 'budget', 'facturada', 
+                'cumplimiento', 'backorder', 'forecast', 'margen', 'descuentos', 
+                'mix', 'visitas', 'oportunidades', 'crm', 'material', 
+                'recuperacion', 'vencida', 'compromisos', 'criticos', 
+                'estrategia', 'cuentas', 'apoyo'
+            ];
+
+            campos.forEach(campo => {
+                let valor = document.getElementById('f_' + campo).value;
+                if(campo === 'cumplimiento' && valor) valor += '%';
+                document.getElementById('out_' + campo).innerText = valor || '-';
+            });
+
+            document.getElementById('input-section').classList.add('hidden');
+            document.getElementById('action-buttons').classList.remove('hidden');
+            document.getElementById('presentation-output').classList.remove('hidden');
+        }
+
+        // Función para volver a editar
+        function volverFormulario() {
+            document.getElementById('presentation-output').classList.add('hidden');
+            document.getElementById('action-buttons').classList.add('hidden');
+            document.getElementById('input-section').classList.remove('hidden');
+        }
+
+        // Función para exportar a PDF usando html2pdf
+        function exportarPDF() {
+            const elemento = document.getElementById('pdf-content');
+            const opt = {
+                margin:       0,
+                filename:     'Junta_Ventas_RFMX.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            // Generar PDF
+            html2pdf().set(opt).from(elemento).save();
+        }
+        
+        // Poner fecha de hoy por defecto
+        document.getElementById('f_fecha').valueAsDate = new Date();
+    </script>
+</body>
+</html>
