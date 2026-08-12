@@ -1,6 +1,6 @@
-const CACHE_NAME = 'regofix-roi-v10';
+const CACHE_NAME = 'regofix-roi-v12';
 
-// Todos los recursos locales que deben guardarse en el teléfono
+// Lista de activos indispensables almacenados localmente
 const LOCAL_ASSETS = [
   '/rego-fix/roi3/',
   '/rego-fix/roi3/index.html',
@@ -10,7 +10,7 @@ const LOCAL_ASSETS = [
   '/assets/regofixlogo.png'
 ];
 
-// Instalación: guardar todos los archivos locales
+// Instalación: Precarga tolerante a fallos
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
@@ -21,14 +21,14 @@ self.addEventListener('install', (e) => {
             .then((res) => {
               if (res.ok) return cache.put(url, res);
             })
-            .catch((err) => console.warn('No se pudo precargar:', url, err))
+            .catch((err) => console.warn('Error precargando recurso:', url, err))
         )
       );
     })
   );
 });
 
-// Activación: tomar el control inmediato de la app y borrar cachés viejas
+// Activación: Control inmediato y limpieza de caché
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
@@ -44,9 +44,8 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch: Responder SIEMPRE desde la caché si existe (Cache First)
+// Fetch: Responder primero desde la caché (Cache First)
 self.addEventListener('fetch', (e) => {
-  // Ignorar las peticiones a la API de IA (requieren internet)
   if (e.request.url.includes('/api/')) return;
 
   e.respondWith(
@@ -63,7 +62,7 @@ self.addEventListener('fetch', (e) => {
           return networkResponse;
         })
         .catch(() => {
-          // Si no hay red y navega, sirve la página principal desde caché
+          // Si falla la red al navegar, sirve el HTML guardado en caché
           return caches.match('/rego-fix/roi3/index.html') || caches.match('/rego-fix/roi3/');
         });
     })
