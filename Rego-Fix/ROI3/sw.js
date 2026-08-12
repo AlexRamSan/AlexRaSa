@@ -1,32 +1,21 @@
-const CACHE_NAME = 'regofix-roi-offline-v1';
+const CACHE_NAME = 'regofix-roi-v4';
 
-// Recursos de la app y CDNs que se guardarán en la memoria del iPhone
-const ASSETS_TO_CACHE = [
+const LOCAL_ASSETS = [
   '/rego-fix/roi3/',
   '/rego-fix/roi3/index.html',
   '/rego-fix/roi3/manifest.json',
-  '/assets/regofixlogo.png',
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/chart.js'
+  '/rego-fix/roi3/lib/tailwindcss.js',
+  '/rego-fix/roi3/lib/chart.js',
+  '/assets/regofixlogo.png'
 ];
 
-// Instalar y precargar todo
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return Promise.all(
-        ASSETS_TO_CACHE.map((url) => {
-          return fetch(url, { mode: 'cors' })
-            .then((response) => cache.put(url, response))
-            .catch((err) => console.warn('Error precargando:', url, err));
-        })
-      );
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(LOCAL_ASSETS))
   );
 });
 
-// Activar y limpiar cachés viejas
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
@@ -42,9 +31,7 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Interceptar llamadas (Estrategia Cache First)
 self.addEventListener('fetch', (e) => {
-  // Las llamadas a la IA NO se guardan en caché (necesitan red)
   if (e.request.url.includes('/api/')) return;
 
   e.respondWith(
