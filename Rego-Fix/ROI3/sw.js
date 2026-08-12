@@ -1,45 +1,45 @@
-const CACHE_NAME = 'regofix-roi-v2';
+const CACHE_NAME = 'regofix-roi-v3';
 
-// Archivos locales indispensables
+// Recursos locales de tu subcarpeta que se guardarán para uso 100% offline
 const LOCAL_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './assets/regofixlogo.png'
+  '/rego-fix/roi3/',
+  '/rego-fix/roi3/index.html',
+  '/rego-fix/roi3/manifest.json',
+  '/rego-fix/roi3/assets/regofixlogo.png'
 ];
 
-// Scripts/CDNs externos
+// Librerías externas en CDN
 const EXTERNAL_ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
-// Instalación tolerante a fallos
+// 1. Instalación: Guarda los archivos en la caché del dispositivo
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); // Forzar activación inmediata
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // 1. Guardar recursos locales primero
+      // Guardar assets locales
       await cache.addAll(LOCAL_ASSETS);
       
-      // 2. Intentar guardar CDNs individualmente (sin tumbar la instalación si falla una)
+      // Guardar CDNs de forma tolerante a fallos de red
       EXTERNAL_ASSETS.forEach(async (url) => {
         try {
           const response = await fetch(url, { mode: 'no-cors' });
           await cache.put(url, response);
         } catch (err) {
-          console.warn('No se pudo guardar en caché recurso externo:', url);
+          console.warn('No se pudo precargar el recurso externo:', url);
         }
       });
     })
   );
 });
 
-// Activación y limpieza de cachés antiguas
+// 2. Activación: Toma control inmediato de la app y limpia versiones antiguas de caché
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
-      self.clients.claim(), // Tomar control de las pestañas abiertas
+      self.clients.claim(),
       caches.keys().then((keys) => {
         return Promise.all(
           keys.map((key) => {
@@ -51,12 +51,10 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Estrategia Stale-While-Revalidate (Servir desde caché primero, luego actualizar en background)
+// 3. Estrategia de Red / Caché (Stale-While-Revalidate)
 self.addEventListener('fetch', (e) => {
-  // Ignorar peticiones a las APIs del servidor (ej. /api/recommend.js)
-  if (e.request.url.includes('/api/')) {
-    return;
-  }
+  // Ignorar llamadas dinámicas a la API de Inteligencia Artificial
+  if (e.request.url.includes('/api/')) return;
 
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
@@ -71,8 +69,9 @@ self.addEventListener('fetch', (e) => {
           return networkResponse;
         })
         .catch(() => {
+          // Si falla la red (modo avión), sirve el HTML desde la caché
           if (e.request.mode === 'navigate') {
-            return caches.match('./index.html');
+            return caches.match('/rego-fix/roi3/index.html');
           }
         });
 
