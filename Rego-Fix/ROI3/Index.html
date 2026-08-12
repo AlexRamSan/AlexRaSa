@@ -6,8 +6,9 @@
 <title>ROI Holders REGO-FIX — Análisis Multi-Herramienta | AlexRaSa</title>
 <meta name="description" content="Calculadora modular de ROI enfocada en holders REGO-FIX. Análisis de múltiples herramientas y optimización de proceso." />
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Recursos locales para soporte 100% offline -->
+<script src="/rego-fix/roi3/lib/tailwindcss.js"></script>
+<script src="/rego-fix/roi3/lib/chart.js"></script>
 
 <style>
 :root{
@@ -485,19 +486,27 @@ SWITCHES & MATH
 ======================================================== */
 function setSwitch(el, on){ if(el) el.dataset.on = on ? "true":"false"; }
 function getSwitch(el){ return el ? el.dataset.on === "true" : false; }
-function bindSwitch(id, key){
-const el = $(id);
-if(!el) return;
-setSwitch(el, !!state.switches[key]);
-const toggle = ()=>{
-const next = !getSwitch(el);
-setSwitch(el, next);
-state.switches[key] = next;
-persist();
-renderAll();
-};
-el.addEventListener("click", toggle);
-el.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
+
+function bindSwitch(id, key) {
+  const el = $(id);
+  if (!el) return;
+  setSwitch(el, !!state.switches[key]);
+  
+  const toggle = (e) => {
+    if (e) e.preventDefault();
+    const next = !getSwitch(el);
+    setSwitch(el, next);
+    state.switches[key] = next;
+    persist();
+    renderAll();
+  };
+
+  el.onclick = toggle;
+  el.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      toggle(e);
+    }
+  };
 }
 
 function bindSwitches() {
@@ -773,15 +782,38 @@ Caso ${i+1}: ${esc(t.op || "Herramienta sin nombre")}
 return `<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Estudio de Ingeniería ROI — REGO-FIX</title><style>:root { --rego-blue: #28556C; --rego-green: #8CA015; --rego-red: #D31B23; --gray-dark: #44474A; --gray-light: #f9fafb; } * { box-sizing: border-box; } body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; padding: 0; margin: 0; background: #fff; } .wrap { padding: 30px 40px; max-width: 800px; margin: 0 auto; } .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--rego-blue); padding-bottom: 15px; margin-bottom: 25px; } .h-left h1 { font-size: 22px; margin: 0 0 5px 0; color: var(--rego-blue); letter-spacing: -0.5px; } .logo { height: 40px; width: auto; object-fit: contain; } h2 { font-size: 14px; margin: 28px 0 12px; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 4px; page-break-after: avoid; } .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin-bottom: 15px; background: var(--gray-light); page-break-inside: avoid; } .box-highlight { background: rgba(40,85,108,.05); border-color: rgba(40,85,108,.2); } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; } .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; } .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; } .k { font-size: 11px; color: #6b7280; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.2px; } .v { font-size: 13px; font-weight: 700; color: #111; } pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; margin: 0; color: #374151; } .text-green { color: var(--rego-green); } .text-blue { color: var(--rego-blue); } .text-red { color: var(--rego-red); } .kpi-large { font-size: 18px; font-weight: 900; } .chart-container { text-align: center; margin-top: 20px; border: 1px solid #eee; padding: 15px; page-break-inside: avoid;} .chart-img { max-width: 100%; height: auto; max-height: 220px; } @media print { .wrap { padding: 0; max-width: 100%; } @page { margin: 1.5cm; } }</style></head><body><div class="wrap"><div class="header"><div class="h-left"><h1>Estudio de Ingeniería de Sujeción</h1><div style="color: var(--gray-dark); font-size: 13px; font-weight: 600; text-transform: uppercase;">Análisis de ROI y Casos de Optimización</div><div style="margin-top: 8px; font-size: 12px; color: #666;"><strong>Cliente:</strong> ${esc(s.company||"—")} <br><strong>Atención:</strong> ${esc(s.userName||"—")} (${esc(s.userRole||"—")}) <br><strong>Fecha:</strong> ${esc(s.studyDate || "—")}</div></div><div><img class="logo" src="${LOGO_URL}" onerror="this.style.display='none'" /><div style="text-align: right; font-size: 10px; color: #888; margin-top: 5px;">Powered by<br><strong>Consultoría AlexRaSa</strong></div></div></div><h2>1. Contexto Global del Maquinado</h2><div class="box"><div class="grid"><div><div class="k">Interfaz de Husillo</div><div class="v">${esc(s.spindleInterface||"—")}</div></div><div><div class="k">Refrigerante</div><div class="v">${esc(s.coolant||"—")}</div></div><div><div class="k">Material Principal</div><div class="v">${esc(s.material||"—")}</div></div><div><div class="k">Prioridad / Objetivo</div><div class="v">${esc(s.goal||"—")}</div></div></div></div>${s.aiPitch ? `<div class="box box-highlight"><div class="k text-blue mb-2">Dictamen de Ingeniería</div><pre style="color: var(--rego-blue); font-weight: 600;">${esc(s.aiPitch)}</pre></div>` : ''}<h2>2. Análisis de Herramientas y Propuestas</h2>${toolsRender}<h2>3. Análisis Financiero y Retorno de Inversión</h2><div class="box"><div style="margin-bottom: 12px; font-weight:bold; font-size:12px; text-align:center;">DESGLOSE DE AHORROS ESTIMADOS (MENSUAL)</div><div class="grid-4" style="text-align: center;"><div><div class="k">Tiempo/Setup</div><div class="v text-green">${esc(money(r.saveTime))}</div></div><div><div class="k">Vida Herramienta</div><div class="v text-green">${esc(money(r.saveLife))}</div></div><div><div class="k">Mejora Proceso</div><div class="v text-green">${esc(money(r.saveProc))}</div></div><div><div class="k">Reducción Scrap</div><div class="v text-green">${esc(money(r.saveScrap))}</div></div></div></div><div class="box" style="border: 2px solid var(--rego-blue);"><div class="grid-3" style="text-align: center;"><div><div class="k">Inversión Propuesta</div><div class="v text-blue" style="font-size: 18px; font-weight: 900;">${esc(money(r.invest))}</div></div><div><div class="k">Ahorro Neto Mensual</div><div class="v text-green" style="font-size: 18px; font-weight: 900;">${esc(money(r.net))}</div></div><div><div class="k">Tiempo de Retorno</div><div class="v" style="font-size: 18px; font-weight: 900; color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+" meses"))}</div></div></div><div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;"><div class="k">ROI Anual Estimado</div><div class="v text-green" style="font-size: 18px;">${esc(r.roiAnnual===null?"—":((r.roiAnnual*100).toFixed(0)+"%"))} <span style="color: var(--rego-blue); font-size: 14px;">(${esc(money(r.net * 12))} USD)</span></div></div></div>${chartImageBase64 ? `<div class="box chart-container"><div class="k" style="margin-bottom: 8px;">Comparativa de Costo Operativo Mensual (USD)</div><img src="${chartImageBase64}" class="chart-img" /></div>` : ''}</div></body></html>`;
 }
 
-function exportPdf(){
-const canvas = document.getElementById('roiChart');
-let chartImageBase64 = null;
-if(canvas) chartImageBase64 = canvas.toDataURL('image/png', 1.0);
+/* ========================================================
+EXPORTAR Y COMPARTIR (VERSIÓN OPTIMIZADA PARA PWA/iOS)
+======================================================== */
+function exportPdf() {
+  const canvas = document.getElementById('roiChart');
+  let chartImageBase64 = null;
+  if (canvas) chartImageBase64 = canvas.toDataURL('image/png', 1.0);
 
-const w = window.open("", "_blank");
-if(!w) return alert("Permite los popups para exportar el PDF.");
-w.document.open(); w.document.write(buildReportHTML(chartImageBase64)); w.document.close();
-w.onload = ()=> { setTimeout(()=> { w.focus(); w.print(); }, 500); };
+  let printFrame = document.getElementById('printFrame');
+  if (!printFrame) {
+    printFrame = document.createElement('iframe');
+    printFrame.id = 'printFrame';
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+  }
+
+  const frameDoc = printFrame.contentWindow || printFrame.contentDocument;
+  const doc = frameDoc.document || frameDoc;
+
+  doc.open();
+  doc.write(buildReportHTML(chartImageBase64));
+  doc.close();
+
+  setTimeout(() => {
+    printFrame.contentWindow.focus();
+    printFrame.contentWindow.print();
+  }, 300);
 }
 
 /* ========================================================
@@ -853,11 +885,9 @@ if($("btnResetAll")) {
   $("btnResetAll").addEventListener("click", () => {
     if(!confirm("¿Borrar todo y empezar un estudio nuevo?")) return;
     
-    // 1. Borrar la memoria guardada
     localStorage.removeItem("rego_switches_v7");
     localStorage.removeItem("rego_study_v7");
     
-    // 2. Reiniciar el estado global en memoria
     state.switches = { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true };
     state.study = {
       studyDate: new Date().toISOString().split('T')[0],
@@ -868,10 +898,8 @@ if($("btnResetAll")) {
       tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "" } ]
     };
 
-    // 3. Ocultar la caja de dictamen de IA
     if($("aiResultBox")) $("aiResultBox").classList.add("hidden");
 
-    // 4. Re-renderizar la interfaz limpia en pantalla (sin recargar la página)
     bindSwitches();
     renderTools();
     renderAll();
