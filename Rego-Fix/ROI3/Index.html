@@ -6,9 +6,9 @@
 <title>ROI Holders REGO-FIX — Análisis Multi-Herramienta | AlexRaSa</title>
 <meta name="description" content="Calculadora modular de ROI enfocada en holders REGO-FIX. Análisis de múltiples herramientas y optimización de proceso." />
 
-<!-- Carga local indispensable para soporte 100% offline en iOS -->
-<script src="/rego-fix/roi3/lib/tailwindcss.js"></script>
-<script src="/rego-fix/roi3/lib/chart.js"></script>
+<!-- Carga local mediante rutas relativas para compatibilidad 100% offline -->
+<script src="./lib/tailwindcss.js"></script>
+<script src="./lib/chart.js"></script>
 
 <style>
 :root{
@@ -56,21 +56,31 @@ textarea.input{ min-height: 80px; resize: vertical; }
 .by{ font-size:.78rem; color: var(--rego-gm); letter-spacing: .02em; }
 </style>
 
-<!-- PWA Manifest & Meta para iOS -->
-<link rel="manifest" href="/rego-fix/roi3/manifest.json">
+<!-- PWA Manifest & Meta para iOS (Rutas relativas) -->
+<link rel="manifest" href="./manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="REGO-FIX ROI">
 
-<link rel="apple-touch-icon" href="/assets/regofixlogo.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/regofixlogo.png">
+<link rel="apple-touch-icon" href="../../assets/regofixlogo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/regofixlogo.png">
 <meta name="theme-color" content="#28556C">
 
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/rego-fix/roi3/sw.js', { scope: '/rego-fix/roi3/' })
-        .then(reg => console.log('Service Worker registrado con éxito'))
+      navigator.serviceWorker.register('./sw.js', { scope: './' })
+        .then(reg => {
+          console.log('Service Worker registrado');
+          reg.onupdatefound = () => {
+            const worker = reg.installing;
+            worker.onstatechange = () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                window.location.reload();
+              }
+            };
+          };
+        })
         .catch(err => console.error('Error registrando Service Worker:', err));
     });
   }
@@ -82,7 +92,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <div class="card p-4 sm:p-6">
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 <div class="flex items-center gap-3">
-<img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-10 w-auto" onerror="this.style.display='none'">
+<img src="../../assets/regofixlogo.png" alt="REGO-FIX" class="h-10 w-auto" onerror="this.style.display='none'">
 <div>
 <div class="text-xl sm:text-2xl font-extrabold" style="color:var(--rego-black)">ROI Holders REGO-FIX</div>
 <div class="muted small">Análisis Multi-Herramienta y Proceso</div>
@@ -758,7 +768,7 @@ function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":
 
 function buildReportHTML(chartImageBase64){
 const r = calc(), s = state.study;
-const LOGO_URL = "/assets/regofixlogo.png";
+const LOGO_URL = "../../assets/regofixlogo.png";
 
 const toolsRender = s.tools.map((t, i) => `
 <div class="box">
@@ -783,7 +793,7 @@ return `<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Estud
 }
 
 /* ========================================================
-EXPORTAR Y COMPARTIR (VERSIÓN OPTIMIZADA PARA PWA/iOS)
+EXPORTAR Y COMPARTIR (OPTIMIZADO PARA PWA/iOS)
 ======================================================== */
 function exportPdf() {
   const canvas = document.getElementById('roiChart');
