@@ -788,24 +788,26 @@ EXPORTAR Y COMPARTIR (VERSIÓN OPTIMIZADA PARA PWA/iOS)
 function exportPdf() {
   const canvas = document.getElementById('roiChart');
   let chartImageBase64 = null;
-  if (canvas) chartImageBase64 = canvas.toDataURL('image/png', 1.0);
-
-  let printFrame = document.getElementById('printFrame');
-  if (!printFrame) {
-    printFrame = document.createElement('iframe');
-    printFrame.id = 'printFrame';
-    printFrame.style.position = 'fixed';
-    printFrame.style.right = '0';
-    printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
-    printFrame.style.height = '0';
-    printFrame.style.border = '0';
-    document.body.appendChild(printFrame);
+  if (canvas) {
+    try {
+      chartImageBase64 = canvas.toDataURL('image/png', 1.0);
+    } catch(e) { console.error(e); }
   }
 
-  const frameDoc = printFrame.contentWindow || printFrame.contentDocument;
-  const doc = frameDoc.document || frameDoc;
+  let printFrame = document.getElementById('printFrame');
+  if (printFrame) printFrame.remove();
 
+  printFrame = document.createElement('iframe');
+  printFrame.id = 'printFrame';
+  printFrame.style.position = 'fixed';
+  printFrame.style.right = '0';
+  printFrame.style.bottom = '0';
+  printFrame.style.width = '1px';
+  printFrame.style.height = '1px';
+  printFrame.style.opacity = '0.01';
+  document.body.appendChild(printFrame);
+
+  const doc = printFrame.contentWindow.document;
   doc.open();
   doc.write(buildReportHTML(chartImageBase64));
   doc.close();
@@ -813,7 +815,7 @@ function exportPdf() {
   setTimeout(() => {
     printFrame.contentWindow.focus();
     printFrame.contentWindow.print();
-  }, 300);
+  }, 500);
 }
 
 /* ========================================================
