@@ -4,7 +4,7 @@ const LOCAL_ASSETS = [
   '/rego-fix/roi3/',
   '/rego-fix/roi3/index.html',
   '/rego-fix/roi3/manifest.json',
-  '/rego-fix/roi3/lib/tailwindcss.js',
+  '/rego-fix/roi3/lib/tailwindcss.css',
   '/rego-fix/roi3/lib/chart.js',
   '/assets/regofixlogo.png'
 ];
