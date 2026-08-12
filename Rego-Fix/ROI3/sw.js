@@ -5,7 +5,7 @@ const LOCAL_ASSETS = [
   '/rego-fix/roi3/',
   '/rego-fix/roi3/index.html',
   '/rego-fix/roi3/manifest.json',
-  '/rego-fix/roi3/assets/regofixlogo.png'
+  '/assets/regofixlogo.png'
 ];
 
 // Librerías externas en CDN
