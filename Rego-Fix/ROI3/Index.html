@@ -850,11 +850,32 @@ if($("btnWhatsApp")) $("btnWhatsApp").addEventListener("click", shareWhatsApp);
 if($("btnRecalcReco")) $("btnRecalcReco").addEventListener("click", recommendRegoFixAI);
 
 if($("btnResetAll")) {
-$("btnResetAll").addEventListener("click", ()=> {
-if(!confirm("¿Borrar todo y empezar un estudio nuevo?")) return;
-localStorage.clear();
-location.reload();
-});
+  $("btnResetAll").addEventListener("click", () => {
+    if(!confirm("¿Borrar todo y empezar un estudio nuevo?")) return;
+    
+    // 1. Borrar la memoria guardada
+    localStorage.removeItem("rego_switches_v7");
+    localStorage.removeItem("rego_study_v7");
+    
+    // 2. Reiniciar el estado global en memoria
+    state.switches = { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true };
+    state.study = {
+      studyDate: new Date().toISOString().split('T')[0],
+      userName: "", userRole: "", company: "",
+      spindleInterface: "", coolant: "", material: "", priority: "", goal: "",
+      calcMachine: "50", calcSector: "1.0", calcOperator: "25",
+      aiPitch: "", aiMissing: "",
+      tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "" } ]
+    };
+
+    // 3. Ocultar la caja de dictamen de IA
+    if($("aiResultBox")) $("aiResultBox").classList.add("hidden");
+
+    // 4. Re-renderizar la interfaz limpia en pantalla (sin recargar la página)
+    bindSwitches();
+    renderTools();
+    renderAll();
+  });
 }
 
 if($("btnAddTool")) {
