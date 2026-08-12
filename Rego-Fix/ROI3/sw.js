@@ -1,41 +1,32 @@
-const CACHE_NAME = 'regofix-roi-v3';
+const CACHE_NAME = 'regofix-roi-offline-v1';
 
-// Recursos locales de tu subcarpeta que se guardarán para uso 100% offline
-const LOCAL_ASSETS = [
+// Recursos de la app y CDNs que se guardarán en la memoria del iPhone
+const ASSETS_TO_CACHE = [
   '/rego-fix/roi3/',
   '/rego-fix/roi3/index.html',
   '/rego-fix/roi3/manifest.json',
-  '/assets/regofixlogo.png'
-];
-
-// Librerías externas en CDN
-const EXTERNAL_ASSETS = [
+  '/assets/regofixlogo.png',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
-// 1. Instalación: Guarda los archivos en la caché del dispositivo
+// Instalar y precargar todo
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      // Guardar assets locales
-      await cache.addAll(LOCAL_ASSETS);
-      
-      // Guardar CDNs de forma tolerante a fallos de red
-      EXTERNAL_ASSETS.forEach(async (url) => {
-        try {
-          const response = await fetch(url, { mode: 'no-cors' });
-          await cache.put(url, response);
-        } catch (err) {
-          console.warn('No se pudo precargar el recurso externo:', url);
-        }
-      });
+    caches.open(CACHE_NAME).then((cache) => {
+      return Promise.all(
+        ASSETS_TO_CACHE.map((url) => {
+          return fetch(url, { mode: 'cors' })
+            .then((response) => cache.put(url, response))
+            .catch((err) => console.warn('Error precargando:', url, err));
+        })
+      );
     })
   );
 });
 
-// 2. Activación: Toma control inmediato de la app y limpia versiones antiguas de caché
+// Activar y limpiar cachés viejas
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
@@ -51,31 +42,21 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// 3. Estrategia de Red / Caché (Stale-While-Revalidate)
+// Interceptar llamadas (Estrategia Cache First)
 self.addEventListener('fetch', (e) => {
-  // Ignorar llamadas dinámicas a la API de Inteligencia Artificial
+  // Las llamadas a la IA NO se guardan en caché (necesitan red)
   if (e.request.url.includes('/api/')) return;
 
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
-      const fetchPromise = fetch(e.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(e.request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // Si falla la red (modo avión), sirve el HTML desde la caché
-          if (e.request.mode === 'navigate') {
-            return caches.match('/rego-fix/roi3/index.html');
-          }
-        });
-
-      return cachedResponse || fetchPromise;
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(e.request).catch(() => {
+        if (e.request.mode === 'navigate') {
+          return caches.match('/rego-fix/roi3/index.html');
+        }
+      });
     })
   );
 });
