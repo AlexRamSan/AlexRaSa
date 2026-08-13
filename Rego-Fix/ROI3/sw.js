@@ -1,18 +1,17 @@
-const CACHE_NAME = 'regofix-roi-v16';
+const CACHE_NAME = 'regofix-roi-v18';
 
-// Assets requeridos para que funcione offline
+// Rutas ajustadas exactamente con las mayúsculas de tu servidor
 const LOCAL_ASSETS = [
-  '/rego-fix/roi3/',
-  '/rego-fix/roi3/index.html',
-  '/rego-fix/roi3/manifest.json',
-  '/rego-fix/roi3/lib/tailwindcss.js',
-  '/rego-fix/roi3/lib/chart.js',
+  '/Rego-Fix/ROI3/',
+  '/Rego-Fix/ROI3/index.html',
+  '/Rego-Fix/ROI3/manifest.json',
+  '/Rego-Fix/ROI3/lib/tailwindcss.js',
+  '/Rego-Fix/ROI3/lib/chart.js',
   '/assets/regofixlogo.png'
 ];
 
-// Instalación: Precarga agresiva
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); // Obliga al Service Worker a tomar el control de inmediato
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(
@@ -28,11 +27,10 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Activación: Reclama clientes activos y borra cachés viejas
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
-      self.clients.claim(), // Asegura que la PWA esté controlada en el primer arranque
+      self.clients.claim(),
       caches.keys().then((keys) => {
         return Promise.all(
           keys.map((key) => {
@@ -44,28 +42,32 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Intercepción de Peticiones (El truco para el arranque en frío)
 self.addEventListener('fetch', (e) => {
-  // Ignora llamadas a la API de IA
   if (e.request.url.includes('/api/')) return;
 
-  // 1. SI ES UN ARRANQUE DE APLICACIÓN O NAVEGACIÓN (Pantalla de inicio / Recarga)
+  // Intercepción de navegación para el arranque en frío/multitarea desde la pantalla de inicio
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      caches.match('/rego-fix/roi3/index.html').then((cachedIndex) => {
-        if (cachedIndex) return cachedIndex; // Si está offline, sirve el HTML guardado de inmediato
-        return fetch(e.request).catch(() => caches.match('/rego-fix/roi3/'));
-      })
+      caches.match('/Rego-Fix/ROI3/index.html')
+        .then((cachedIndex) => {
+          if (cachedIndex) return cachedIndex;
+          return caches.match('/Rego-Fix/ROI3/');
+        })
+        .then((fallback) => {
+          if (fallback) return fallback;
+          return fetch(e.request);
+        })
+        .catch(() => {
+          return caches.match('/Rego-Fix/ROI3/index.html') || caches.match('/Rego-Fix/ROI3/');
+        })
     );
     return;
   }
 
-  // 2. PARA OTROS RECURSOS (Imágenes, scripts JS, CSS) -> Cache First
+  // Recursos estáticos
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+      if (cachedResponse) return cachedResponse;
       return fetch(e.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
           const clone = networkResponse.clone();
