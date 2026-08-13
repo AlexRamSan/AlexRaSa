@@ -1,6 +1,6 @@
-const CACHE_NAME = 'regofix-roi-v15';
+const CACHE_NAME = 'regofix-roi-v16';
 
-// Rutas exactas a precargar en la memoria del dispositivo
+// Assets requeridos para que funcione offline
 const LOCAL_ASSETS = [
   '/rego-fix/roi3/',
   '/rego-fix/roi3/index.html',
@@ -10,9 +10,9 @@ const LOCAL_ASSETS = [
   '/assets/regofixlogo.png'
 ];
 
-// Instalación: Carga tolerante a fallos
+// Instalación: Precarga agresiva
 self.addEventListener('install', (e) => {
-  self.skipWaiting();
+  self.skipWaiting(); // Obliga al Service Worker a tomar el control de inmediato
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(
@@ -21,18 +21,18 @@ self.addEventListener('install', (e) => {
             .then((res) => {
               if (res.ok) return cache.put(url, res);
             })
-            .catch((err) => console.warn('Error precargando recurso:', url, err))
+            .catch((err) => console.warn('Error precargando:', url, err))
         )
       );
     })
   );
 });
 
-// Activación: Limpieza de cachés antiguas
+// Activación: Reclama clientes activos y borra cachés viejas
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     Promise.all([
-      self.clients.claim(),
+      self.clients.claim(), // Asegura que la PWA esté controlada en el primer arranque
       caches.keys().then((keys) => {
         return Promise.all(
           keys.map((key) => {
@@ -44,28 +44,35 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch: Responder siempre desde la caché si está disponible
+// Intercepción de Peticiones (El truco para el arranque en frío)
 self.addEventListener('fetch', (e) => {
-  // Ignora las llamadas a la API de la IA (requieren internet)
+  // Ignora llamadas a la API de IA
   if (e.request.url.includes('/api/')) return;
 
+  // 1. SI ES UN ARRANQUE DE APLICACIÓN O NAVEGACIÓN (Pantalla de inicio / Recarga)
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      caches.match('/rego-fix/roi3/index.html').then((cachedIndex) => {
+        if (cachedIndex) return cachedIndex; // Si está offline, sirve el HTML guardado de inmediato
+        return fetch(e.request).catch(() => caches.match('/rego-fix/roi3/'));
+      })
+    );
+    return;
+  }
+
+  // 2. PARA OTROS RECURSOS (Imágenes, scripts JS, CSS) -> Cache First
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(e.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // Si falla la red al iniciar, sirve el index.html
-          return caches.match('/rego-fix/roi3/index.html') || caches.match('/rego-fix/roi3/');
-        });
+      return fetch(e.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return networkResponse;
+      });
     })
   );
 });
