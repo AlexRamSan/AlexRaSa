@@ -1,11 +1,11 @@
-const CACHE_NAME = 'regofix-roi-v18';
+const CACHE_NAME = 'regofix-roi-v21';
 
-// Rutas ajustadas exactamente con las mayúsculas de tu servidor
+// Precarga con rutas absolutas exactas y el archivo CSS correcto
 const LOCAL_ASSETS = [
   '/Rego-Fix/ROI3/',
   '/Rego-Fix/ROI3/index.html',
   '/Rego-Fix/ROI3/manifest.json',
-  '/Rego-Fix/ROI3/lib/tailwindcss.js',
+  '/Rego-Fix/ROI3/lib/tailwindcss.css',
   '/Rego-Fix/ROI3/lib/chart.js',
   '/assets/regofixlogo.png'
 ];
@@ -45,7 +45,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.url.includes('/api/')) return;
 
-  // Intercepción de navegación para el arranque en frío/multitarea desde la pantalla de inicio
+  // Intercepción de navegación para el arranque desde la pantalla de inicio
   if (e.request.mode === 'navigate') {
     e.respondWith(
       caches.match('/Rego-Fix/ROI3/index.html')
@@ -64,7 +64,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Recursos estáticos
+  // Intercepción de recursos estáticos
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
