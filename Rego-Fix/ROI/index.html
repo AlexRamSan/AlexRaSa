@@ -227,7 +227,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-  <div><div class="label" data-i18n="lblDate">Fecha</div><input id="studyDate" class="input bg-slate-50" type="text" data-study="studyDate" readonly></div>
+  <div><div class="label" data-i18n="lblDate">Fecha</div><input id="studyDate" class="input bg-white cursor-pointer" type="date" data-study="studyDate"></div>
   <div><div class="label" data-i18n="lblUser">Usuario / Asesor</div><input id="userName" class="input" type="text" placeholder="Nombre" data-study="userName" data-i18n-ph="phName"></div>
   <div><div class="label" data-i18n="lblRole">Puesto</div><input id="userRole" class="input" type="text" placeholder="Ej: Ing. Procesos" data-study="userRole" data-i18n-ph="phRole"></div>
   <div><div class="label" data-i18n="lblCompany">Empresa</div><input id="company" class="input" type="text" placeholder="Razón social" data-study="company" data-i18n-ph="phCompany"></div>
@@ -460,7 +460,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <footer class="text-center pb-4"><div class="by">by alexrasa (Lab ROI)</div></footer>
 </main>
 
-<!-- MODAL DEL HISTORIAL MASTER (Oculto de forma predeterminada mediante display: none) -->
+<!-- MODAL DEL HISTORIAL MASTER -->
 <div id="historyModal" class="modal-overlay modal-hidden" style="display: none;">
   <div class="card bg-white w-full max-w-2xl max-h-[85vh] flex flex-col p-4 sm:p-6 shadow-2xl">
     <div class="flex justify-between items-center pb-3 border-b border-slate-200">
@@ -744,6 +744,13 @@ tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" }
 }
 };
 
+const defaultMathValues = {
+  costHour: "75", partsMonth: "5000", invest: "4500", consMonth: "0",
+  chgAct: "180", chgNew: "140", chgMinAct: "6", chgMinNew: "4.5",
+  lifeAct: "100", lifeNew: "160", toolCost: "50", toolCount: "3",
+  cycAct: "3.20", cycNew: "2.85", scrapAct: "50", scrapNew: "5", scrapCost: "15"
+};
+
 const mathIds = [
 "costHour","partsMonth","invest","consMonth",
 "chgAct","chgNew","chgMinAct","chgMinNew",
@@ -919,12 +926,14 @@ function renderTools() {
     });
   });
 
-  document.querySelectorAll(".btn-remove-tool").forEach(el => el.addEventListener("click", (e) => {
-    const id = parseInt(e.target.getAttribute("data-id"));
-    state.study.tools = state.study.tools.filter(tool => tool.id !== id);
-    persist();
-    renderTools();
-  }));
+  document.querySelectorAll(".btn-remove-tool").forEach(el => {
+    el.addEventListener("click", (e) => {
+      const id = parseInt(e.target.getAttribute("data-id"));
+      state.study.tools = state.study.tools.filter(tool => tool.id !== id);
+      persist();
+      renderTools();
+    });
+  });
 }
 
 function updateTool(e, field) {
@@ -998,6 +1007,104 @@ function calc(){
   const costoTotalNuevoMensual = costoTotalActualMensual - net;
 
   return { invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual, costoTotalActualMensual, costoTotalNuevoMensual };
+}
+
+/* ========================================================
+IA CALL - RECOMENDACIÓN DE ENSAMBLES REGO-FIX
+======================================================== */
+async function recommendRegoFixAI() {
+  if (!navigator.onLine) {
+    alert(t("aiOffline"));
+    return;
+  }
+
+  const btn = $("btnRecalcReco");
+  if (!btn) return;
+  const originalText = btn.innerHTML;
+
+  btn.disabled = true;
+  btn.innerHTML = t("aiLoading");
+
+  const s = state.study;
+  const toolsContext = s.tools.map((tData, i) => `Caso ${i+1}: Op/Herramienta: ${tData.op} | Setup Actual: ${tData.setup} | Problema: ${tData.problem}`).join("\n");
+
+  const prompt = `
+    Eres un Ingeniero experto en REGO-FIX.
+    Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}. Idioma preferido: ${currentLang}. Moneda: ${I18N[currentLang].currencyCode}.
+
+    Casos a evaluar:
+    ${toolsContext}
+
+    TU MISIÓN:
+    Lee el texto "Op/Herramienta" de cada caso y extrae lógicamente su diámetro.
+    IMPORTANTE SOBRE UNIDADES: Expresa los diámetros usando el sistema correspondiente (Métrico o Imperial). Si el diámetro equivale a una fracción de pulgada estándar (ej. 6.35mm = 1/4", 12.7mm = 1/2", 3.175mm = 1/8"), escribe SIEMPRE la fracción en pulgadas (ej. 1/4") en lugar del decimal en milímetros. Mantén milímetros (ej. 6mm, 12mm) solo si el caso es claramente métrico.
+
+    Con ese diámetro y el "Problema", define el ENSAMBLE COMPLETO usando estas reglas de tamaño:
+    - poweRgrip (PG): PG10 (hasta 6mm o 1/4"), PG15 (hasta 10mm o 3/8"), PG25 (hasta 20mm o 3/4"), PG32 (hasta 25.4mm o 1"). (Para vibración, desbaste pesado, aceros duros).
+    - micRun (MR): MR11, MR16. (Para microherramientas < 3mm o 1/8").
+    - ER: ER16, ER32. (Maquinado general).
+
+    FORMATO DE RESPUESTA OBLIGATORIO PARA CADA CASO:
+    Tu respuesta en el array 'tools_reco' debe ser exactamente así (en el idioma ${currentLang}):
+    "Recomendación: [Interfaz del Husillo] [Tecnología] [Tamaño] + Boquilla [Tecnología] de [Diámetro de la herramienta en mm o pulgadas fraccionales]. Por qué: [1 línea justificando]."
+
+    INSTRUCCIÓN CRÍTICA PARA EL JSON:
+    Devuelve SOLO un JSON válido. 'tools_reco' debe ser un array de STRINGS, nunca objetos.
+    {
+      "general_pitch": "Argumento comercial de 2 líneas de REGO-FIX.",
+      "tools_reco": [
+        "Respuesta del caso 1 en el formato exacto"
+      ],
+      "missing_data": "Opcional. Datos técnicos extras a verificar en planta."
+    }
+  `;
+
+  try {
+    const response = await fetch('/api/recommend.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
+    });
+
+    if (!response.ok) throw new Error("Error en servidor");
+
+    const jsonString = await response.json();
+    const recoData = typeof jsonString === "string" ? JSON.parse(jsonString) : jsonString;
+
+    if ($("aiPitch")) $("aiPitch").value = recoData.general_pitch || "";
+    if ($("aiMissing")) $("aiMissing").textContent = recoData.missing_data || t("aiComplete");
+
+    state.study.aiPitch = recoData.general_pitch;
+    state.study.aiMissing = recoData.missing_data;
+
+    if (recoData.tools_reco && Array.isArray(recoData.tools_reco)) {
+      state.study.tools.forEach((tData, i) => {
+        if (recoData.tools_reco[i] !== undefined) {
+          let rec = recoData.tools_reco[i];
+          if (typeof rec === 'object' && rec !== null) {
+            try {
+              tData.reco = JSON.stringify(rec, null, 2).replace(/[{}"]/g, '').trim();
+            } catch(e) {
+              tData.reco = "Error formateando respuesta.";
+            }
+          } else {
+            tData.reco = String(rec);
+          }
+        }
+      });
+    }
+
+    persist();
+    renderTools();
+    if ($("aiResultBox")) $("aiResultBox").classList.remove("hidden");
+
+  } catch (error) {
+    console.error("Error:", error);
+    alert(t("aiError"));
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
 }
 
 /* ========================================================
@@ -1198,6 +1305,12 @@ function renderAll(){
       }
     });
     renderKPIs();
+
+    if(state.study.aiPitch && $("aiPitch") && $("aiMissing") && $("aiResultBox")) {
+      $("aiPitch").value = state.study.aiPitch;
+      $("aiMissing").textContent = state.study.aiMissing;
+      $("aiResultBox").classList.remove("hidden");
+    }
   } catch(e) { console.error("Error renderAll:", e); }
 }
 
@@ -1270,6 +1383,24 @@ function exportPdf() {
   }, 300);
 }
 
+function getSummaryText() {
+  const r = calc();
+  const toolsText = state.study.tools.map((tData,i) => `\n${t("lblToolOp")} ${i+1}: ${tData.op}\n- ${t("lblToolProblem")}: ${tData.problem}\n- ${t("lblToolReco")}: ${tData.reco}`).join("\n");
+
+  return [
+    `${t("headerTitle")} — ${t("badgeStudy")}`,
+    `${t("lblCompany")}: ${state.study.company || "—"} | ${t("lblUser")}: ${state.study.userName || "—"}`,
+    "", `--- ${t("sec1cTitle").toUpperCase()} ---`, toolsText,
+    "", `--- ${t("sec2Title").toUpperCase()} ---`,
+    `${t("pdfTimeSetup")}: ${money(r.saveTime)} | ${t("pdfToolLife")}: ${money(r.saveLife)} | ${t("pdfProcImprove")}: ${money(r.saveProc)} | ${t("pdfScrapRed")}: ${money(r.saveScrap)}`,
+    "", `--- ${t("sec3Title").toUpperCase()} ---`,
+    `${t("lblInvest")}: ${money(r.invest)} | ${t("kpiNet")}: ${money(r.net)}/mes | ${t("kpiPayback")}: ${r.payback===null ? "—" : (r.payback.toFixed(1)+"m")}`,
+    `${t("kpiRoiEst")}: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")} (${money(r.net * 12)} /año)`
+  ].join("\n");
+}
+
+function shareWhatsApp(){ window.open(`https://wa.me/?text=${encodeURIComponent(getSummaryText())}`, '_blank'); }
+
 /* ========================================================
 INICIALIZACIÓN
 ======================================================== */
@@ -1279,10 +1410,14 @@ function bindInputs(){
 
   document.querySelectorAll("[data-study]").forEach(el => {
     const k = el.getAttribute("data-study");
-    if(k && k !== "studyDate" && state.study[k] != null && !el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
+    if(k && state.study[k] != null && !el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
       el.value = state.study[k];
     }
     el.addEventListener("input", () => {
+      if(k) state.study[k] = el.value;
+      persist();
+    });
+    el.addEventListener("change", () => {
       if(k) state.study[k] = el.value;
       persist();
     });
@@ -1323,6 +1458,9 @@ function bindInputs(){
   });
 
   if($("btnPdfReport")) $("btnPdfReport").addEventListener("click", exportPdf);
+  if($("btnWhatsApp")) $("btnWhatsApp").addEventListener("click", shareWhatsApp);
+  if($("btnRecalcReco")) $("btnRecalcReco").addEventListener("click", recommendRegoFixAI);
+
   if($("btnSaveStudyNow")) {
     $("btnSaveStudyNow").addEventListener("click", async () => {
       persist();
@@ -1354,6 +1492,7 @@ function bindInputs(){
   if($("btnResetAll")) {
     $("btnResetAll").addEventListener("click", () => {
       if(!confirm(t("resetConfirm"))) return;
+      
       state.currentStudyId = "study_lab_" + Date.now();
       state.switches = { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true };
       state.study = {
@@ -1364,6 +1503,26 @@ function bindInputs(){
         aiPitch: "", aiMissing: "",
         tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" } ]
       };
+
+      document.querySelectorAll("[data-study]").forEach(el => {
+        const k = el.getAttribute("data-study");
+        if (k === "studyDate") {
+          el.value = state.study.studyDate;
+        } else if (!el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
+          el.value = "";
+        }
+      });
+
+      Object.keys(defaultMathValues).forEach(id => {
+        const el = $(id);
+        if (el) el.value = defaultMathValues[id];
+        delete state.study[id];
+      });
+
+      if ($("aiResultBox")) $("aiResultBox").classList.add("hidden");
+      if ($("aiPitch")) $("aiPitch").value = "";
+      if ($("aiMissing")) $("aiMissing").textContent = "";
+
       persist();
       bindSwitches();
       renderTools();
