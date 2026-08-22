@@ -82,7 +82,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("Error en cut-conditions:", error);
-    // Fallback con el cálculo de ingeniería intacto
     return res.status(200).json({
       holder_reco: holder,
       boquilla_reco: boquilla,
