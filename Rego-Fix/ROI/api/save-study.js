@@ -1,5 +1,5 @@
 // Ruta del archivo: api/save-study.js
-// Función Serverless en Vercel para recibir y almacenar estudios del equipo
+import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,22 +7,28 @@ export default async function handler(req, res) {
   }
 
   try {
-    const studyData = req.body;
-
-    if (!studyData || !studyData.id) {
+    const study = req.body;
+    if (!study || !study.id) {
       return res.status(400).json({ error: 'Datos de estudio incompletos' });
     }
 
-    console.log(`[Master Sync] Estudio recibido: ${studyData.id} | Empresa: ${studyData.company} | Asesor: ${studyData.userName}`);
+    study.sync_status = "synced";
+    study.last_updated = Date.now();
+
+    // Guardar archivo JSON persistente en Vercel Blob
+    const blob = await put(`casos/${study.id}.json`, JSON.stringify(study), {
+      access: 'public',
+      addRandomSuffix: false
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'Estudio guardado en servidor Master correctamente',
-      receivedId: studyData.id,
-      timestamp: new Date().toISOString()
+      url: blob.url,
+      study: study
     });
+
   } catch (error) {
-    console.error('Error al procesar estudio en servidor:', error);
-    return res.status(500).json({ error: 'Error interno en el servidor' });
+    console.error('Error guardando en Vercel Blob:', error);
+    return res.status(500).json({ error: 'Error al persistir en la nube: ' + error.message });
   }
 }
