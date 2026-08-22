@@ -10,7 +10,6 @@ export default async function handler(req, res) {
     const { blobs } = await list({ prefix: 'casos/' });
     const studies = [];
 
-    // Descargar el contenido de cada estudio guardado
     for (const item of blobs) {
       try {
         const response = await fetch(item.url, { cache: 'no-store' });
