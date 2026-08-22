@@ -1255,9 +1255,25 @@ async function renderHistoryList() {
   document.querySelectorAll(".btn-del-study").forEach(btn => {
     btn.addEventListener("click", (e) => {
       const id = e.target.getAttribute("data-id");
-      if (confirm("¿Eliminar este estudio?")) {
+      if (confirm(currentLang === 'es' ? "¿Eliminar este estudio de la nube y del dispositivo?" : "¿Delete this study?")) {
         setTimeout(async () => {
+          // 1. Borrar de la base de datos local
           await deleteStudyFromDB(id);
+
+          // 2. Borrar del servidor en la nube (Vercel Blob)
+          if (navigator.onLine) {
+            try {
+              await fetch("/api/delete-study", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id })
+              });
+            } catch (errCloud) {
+              console.warn("No se pudo conectar a la nube para borrar:", errCloud);
+            }
+          }
+
+          // 3. Actualizar la lista en pantalla sin bloqueos de UI
           renderHistoryList();
         }, 10);
       }
