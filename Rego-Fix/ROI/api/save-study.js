@@ -18,7 +18,8 @@ export default async function handler(req, res) {
     // Guardar archivo JSON persistente en Vercel Blob
     const blob = await put(`casos/${study.id}.json`, JSON.stringify(study), {
       access: 'public',
-      addRandomSuffix: false
+      addRandomSuffix: false,
+      allowOverwrite: true
     });
 
     return res.status(200).json({
