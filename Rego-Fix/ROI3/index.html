@@ -52,21 +52,34 @@ header img, img[alt="REGO-FIX"] {
 .muted{ color: var(--rego-gm); }
 .label{ color: var(--rego-gd); font-weight: 700; font-size:.85rem; }
 
-/* Selector de Idiomas */
+/* Selector de Idiomas Optimizado y Offline */
 .lang-btn {
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   border: 1px solid transparent;
   transition: all 0.2s ease;
   background: transparent;
   cursor: pointer;
+  color: var(--rego-gd);
+}
+.lang-btn svg {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  flex-shrink: 0;
 }
 .lang-btn.active {
   background: #FFFFFF;
   border-color: var(--border);
   box-shadow: 0 2px 5px rgba(0,0,0,0.06);
-  font-weight: 800;
+  color: var(--rego-blue);
+  font-weight: 900;
 }
 
 /* Corrección de Inputs y Signo de Pesos */
@@ -127,20 +140,35 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <div class="flex items-center justify-between w-full sm:w-auto">
       <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-6 sm:h-8 w-auto object-contain shrink-0" onerror="this.style.display='none'">
       
-      <!-- Selector de idioma en móvil integrado en el header -->
+      <!-- Selector de idioma en móvil con SVGs puros -->
       <div class="flex sm:hidden items-center bg-slate-100/90 rounded-lg p-0.5 border border-slate-200">
-        <button class="lang-btn" data-lang="es" title="Español (México)">🇲🇽</button>
-        <button class="lang-btn" data-lang="pt" title="Português (Brasil)">🇧🇷</button>
-        <button class="lang-btn" data-lang="en" title="English (US)">🇺🇸</button>
+        <button class="lang-btn" data-lang="es" title="Español (México)">
+          <svg viewBox="0 0 640 480"><path fill="#006847" d="M0 0h213.3v480H0z"/><path fill="#fff" d="M213.3 0h213.4v480H213.3z"/><path fill="#ce1126" d="M426.7 0H640v480H426.7z"/><circle cx="320" cy="240" r="32" fill="#7a5528"/></svg>
+        </button>
+        <button class="lang-btn" data-lang="pt" title="Português (Brasil)">
+          <svg viewBox="0 0 640 480"><path fill="#009c3b" d="M0 0h640v480H0z"/><path fill="#ffdf00" d="M320 40L600 240 320 440 40 240z"/><circle cx="320" cy="240" r="95" fill="#002776"/></svg>
+        </button>
+        <button class="lang-btn" data-lang="en" title="English (US)">
+          <svg viewBox="0 0 640 480"><path fill="#bd3d44" d="M0 0h640v480H0z"/><path stroke="#fff" stroke-width="37" d="M0 55h640M0 129h640M0 203h640M0 277h640M0 351h640M0 425h640"/><path fill="#192f5d" d="M0 0h260v260H0z"/></svg>
+        </button>
       </div>
     </div>
 
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-      <!-- Selector de idioma en escritorio -->
+      <!-- Selector de idioma en escritorio con SVGs y etiquetas -->
       <div class="hidden sm:flex items-center bg-slate-100/90 rounded-lg p-1 border border-slate-200">
-        <button class="lang-btn" data-lang="es" title="Español (México)">🇲🇽 ES</button>
-        <button class="lang-btn" data-lang="pt" title="Português (Brasil)">🇧🇷 PT</button>
-        <button class="lang-btn" data-lang="en" title="English (US)">🇺🇸 EN</button>
+        <button class="lang-btn" data-lang="es" title="Español (México)">
+          <svg viewBox="0 0 640 480"><path fill="#006847" d="M0 0h213.3v480H0z"/><path fill="#fff" d="M213.3 0h213.4v480H213.3z"/><path fill="#ce1126" d="M426.7 0H640v480H426.7z"/><circle cx="320" cy="240" r="32" fill="#7a5528"/></svg>
+          <span>ES</span>
+        </button>
+        <button class="lang-btn" data-lang="pt" title="Português (Brasil)">
+          <svg viewBox="0 0 640 480"><path fill="#009c3b" d="M0 0h640v480H0z"/><path fill="#ffdf00" d="M320 40L600 240 320 440 40 240z"/><circle cx="320" cy="240" r="95" fill="#002776"/></svg>
+          <span>PT</span>
+        </button>
+        <button class="lang-btn" data-lang="en" title="English (US)">
+          <svg viewBox="0 0 640 480"><path fill="#bd3d44" d="M0 0h640v480H0z"/><path stroke="#fff" stroke-width="37" d="M0 55h640M0 129h640M0 203h640M0 277h640M0 351h640M0 425h640"/><path fill="#192f5d" d="M0 0h260v260H0z"/></svg>
+          <span>EN</span>
+        </button>
       </div>
 
       <div class="text-left sm:text-right">
@@ -852,7 +880,7 @@ function setLanguage(lang) {
   document.documentElement.lang = lang;
   try { localStorage.setItem('rego_lang_v1', lang); } catch(e){}
 
-  // Actualizar clases de botones
+  // Actualizar clases de botones de idioma
   document.querySelectorAll('.lang-btn').forEach(btn => {
     if(btn.dataset.lang === lang) btn.classList.add('active');
     else btn.classList.remove('active');
