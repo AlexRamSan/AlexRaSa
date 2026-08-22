@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Error de configuración: Falta la API Key en el servidor.' });
   }
 
-  // REGLAS MAESTRAS DE REGO-FIX (El "Cerebro" del Catálogo de Ingeniería)
+  // REGLAS MAESTRAS DE REGO-FIX
   const REGO_FIX_EXPERT_RULES = `
     Eres el Ingeniero de Aplicaciones Senior de REGO-FIX.
     Tu objetivo es analizar técnicamente el mecanizado y recomendar la mejor configuración de sujeción (portaherramientas + boquilla) y los argumentos de retorno de inversión.
