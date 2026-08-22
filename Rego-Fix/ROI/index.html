@@ -1231,16 +1231,18 @@ async function renderHistoryList() {
     });
   });
 
-  document.querySelectorAll(".btn-del-study").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
+document.querySelectorAll(".btn-del-study").forEach(btn => {
+    btn.addEventListener("click", (e) => {
       const id = e.target.getAttribute("data-id");
       if (confirm("¿Eliminar este estudio?")) {
-        await deleteStudyFromDB(id);
-        renderHistoryList();
+        // Ejecución diferida para evitar bloqueo de UI (INP optimization)
+        setTimeout(async () => {
+          await deleteStudyFromDB(id);
+          renderHistoryList();
+        }, 10);
       }
     });
   });
-}
 
 /* ========================================================
 RENDERIZADO UI Y GRÁFICA
