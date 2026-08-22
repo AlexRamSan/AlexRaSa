@@ -187,8 +187,8 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <button id="btnOpenHistory" class="btn btn-outline border-blue-300 text-[#28556C] w-full sm:w-auto">
       <span>🗂️</span> <span data-i18n="btnMasterHistory">Historial Master</span>
     </button>
-    <button id="btnSaveStudyNow" class="btn btn-outline border-green-400 text-green-800 w-full sm:w-auto">
-      <span>💾</span> <span data-i18n="btnSaveCloud">Guardar</span>
+    <button id="btnSaveStudyNow" class="btn btn-outline border-green-500 text-green-800 w-full sm:w-auto font-black">
+      <span>☁️</span> <span data-i18n="btnSaveCloud">Guardar Nube</span>
     </button>
     <button id="btnPdfReport" class="btn btn-primary w-full sm:w-auto">
       <span>📄</span> <span data-i18n="btnExportPdf">Exportar PDF</span>
@@ -339,7 +339,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <div id="toolsListContainer" class="space-y-3"></div>
 
 <div class="mt-6 border-t border-slate-100 pt-4">
-<button id="btnRecalcReco" class="btn btn-primary w-full py-2.5 text-sm shadow-sm" data-i18n="btnAnalyze">
+<button id="btnRecalcReco" class="btn btn-primary w-full py-2.5 text-sm shadow-sm font-extrabold" data-i18n="btnAnalyze">
   Analizar y Configurar Ensambles
 </button>
 
@@ -548,7 +548,7 @@ const I18N = {
   es: {
     currencyCode: "USD", currencySymbol: "$", locale: "en-US",
     headerTitle: "ROI Holders REGO-FIX", headerSubtitle: "Análisis Multi-Herramienta y Proceso",
-    btnMasterHistory: "Historial Master", btnSaveCloud: "Guardar", btnExportPdf: "Exportar PDF",
+    btnMasterHistory: "Historial Master", btnSaveCloud: "Guardar Nube", btnExportPdf: "Exportar PDF",
     btnCopy: "Copiar", btnSend: "Enviar", btnReset: "Reset", bannerTitle: "Enfoque: sujeción y ROI real",
     bannerSubtitle: "Estudio, cálculo de ahorros y PDF comercial.", sec0Title: "0) Datos del Cliente",
     badgeStudy: "Estudio", lblDate: "Fecha", lblUser: "Usuario / Asesor", lblRole: "Puesto",
@@ -597,7 +597,7 @@ const I18N = {
   pt: {
     currencyCode: "BRL", currencySymbol: "R$", locale: "pt-BR",
     headerTitle: "ROI Porta-Ferramentas REGO-FIX", headerSubtitle: "Análise Multi-Ferramenta e Processo",
-    btnMasterHistory: "Histórico Master", btnSaveCloud: "Salvar", btnExportPdf: "Exportar PDF",
+    btnMasterHistory: "Histórico Master", btnSaveCloud: "Salvar na Nuvem", btnExportPdf: "Exportar PDF",
     btnCopy: "Copiar", btnSend: "Enviar", btnReset: "Redefinir", bannerTitle: "Foco: fixação e ROI real",
     bannerSubtitle: "Estudo, cálculo de economia e PDF comercial.", sec0Title: "0) Dados do Cliente",
     badgeStudy: "Estudo", lblDate: "Data", lblUser: "Usuário / Consultor", lblRole: "Cargo",
@@ -646,7 +646,7 @@ const I18N = {
   en: {
     currencyCode: "USD", currencySymbol: "$", locale: "en-US",
     headerTitle: "REGO-FIX Toolholding ROI", headerSubtitle: "Multi-Tool & Process Analysis",
-    btnMasterHistory: "Master History", btnSaveCloud: "Save", btnExportPdf: "Export PDF",
+    btnMasterHistory: "Master History", btnSaveCloud: "Save Cloud", btnExportPdf: "Export PDF",
     btnCopy: "Copy", btnSend: "Send", btnReset: "Reset", bannerTitle: "Focus: Toolholding & Real ROI",
     bannerSubtitle: "Study, cost savings calculation & commercial PDF.", sec0Title: "0) Customer Information",
     badgeStudy: "Study", lblDate: "Date", lblUser: "User / Engineer", lblRole: "Role",
@@ -673,7 +673,7 @@ const I18N = {
     lblToolCost: "Tool Cost", lblToolCount: "Active Tools", cardProcTitle: "C) Cycle Time Reduction",
     lblCycAct: "Cycle Current (min/pc)", lblCycNew: "Cycle New (min/pc)", cardScrapTitle: "D) Scrap Reduction",
     lblScrapAct: "Rejects Current/mo", lblScrapNew: "Rejects New/mo", lblScrapCost: "Scrap Part Cost",
-    sec3Title: "3) ROI Results", badgeRoi: "ROI", kpiGross: "Gross Savings", kpiNet: "Net Savings",
+    sec3Title: "3) Results del ROI", badgeRoi: "ROI", kpiGross: "Gross Savings", kpiNet: "Net Savings",
     kpiPayback: "Payback", kpiRoiEst: "Estimated Annual ROI", kpiRoiFormula: "((net*12) / investment)",
     chartActual: "Current Situation", chartRego: "With REGO-FIX", chartTitle: "Cost (USD)",
     copiedAlert: "Copied to clipboard.", copyErrorAlert: "Error copying to clipboard.", resetConfirm: "Clear everything and start a new study?",
@@ -769,7 +769,6 @@ function persist(){
     localStorage.setItem("rego_switches_roi_lab", JSON.stringify(state.switches));
     localStorage.setItem("rego_study_roi_lab", JSON.stringify(state.study));
     
-    // Guardado automático en IndexedDB
     const payload = {
       id: state.currentStudyId,
       timestamp: Date.now(),
@@ -1024,10 +1023,10 @@ async function recommendRegoFixAI() {
   btn.innerHTML = t("aiLoading");
 
   const s = state.study;
-  const toolsContext = s.tools.map((tData, i) => `Caso ${i+1}: Op/Herramienta: ${tData.op} | Setup Actual: ${tData.setup} | Problema: ${tData.problem}`).join("\n");
+  const toolsContext = s.tools.map((tData, i) => `Caso ${i+1}: Op/Herramienta: ${tData.op || 'Sin definir'} | Setup Actual: ${tData.setup || 'Sin definir'} | Problema: ${tData.problem || 'Sin definir'}`).join("\n");
 
   const prompt = `
-    Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}, Prioridad: ${s.priority}, Objetivo: ${s.goal}. Idioma: ${currentLang}. Moneda: ${I18N[currentLang].currencyCode}.
+    Contexto Global: Husillo: ${s.spindleInterface || 'CAT40/HSK63'}, Refrigerante: ${s.coolant || 'Interno'}, Material: ${s.material || 'Acero'}, Prioridad: ${s.priority || 'Vida'}, Objetivo: ${s.goal || 'Optimizar'}. Idioma: ${currentLang}. Moneda: ${I18N[currentLang].currencyCode}.
 
     Casos a evaluar:
     ${toolsContext}
@@ -1035,12 +1034,12 @@ async function recommendRegoFixAI() {
     INSTRUCCIONES CLAVE:
     1. Prioridad poweRgrip (PG). Si el material es difícil (Inconel, Titanio, Inox), usa PG 25 por defecto, a menos que se requiera PG 10/PG 15 para acabados finos o 5 ejes.
     2. NUNCA uses la palabra "estanca". Todas las pinzas estándar PG son selladas para refrigeración interna. Llámalas simplemente "Pinza PG [Tamaño] de [Ø]".
-    3. Si el diámetro es fraccional en pulgadas (ej. 1/8", 15/64", 1/4", 3/8", 1/2"), ponlo en pulgadas.
-    4. Genera un dictamen general de ingeniería (general_pitch) técnico y profesional.
+    3. Si el diámetro es fraccional en pulgadas (ej. 3/32", 1/8", 15/64", 1/4", 3/8", 1/2"), indícalo en pulgadas.
+    4. Devuelve EXACTAMENTE un arreglo 'tools_reco' donde el índice 0 corresponda al Caso 1, índice 1 al Caso 2, etc.
   `;
 
   try {
-    const response = await fetch('/api/recommend.js', {
+    const response = await fetch('/api/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: prompt })
@@ -1049,37 +1048,36 @@ async function recommendRegoFixAI() {
     if (!response.ok) throw new Error("Error en servidor");
 
     const jsonString = await response.json();
-    const recoData = typeof jsonString === "string" ? JSON.parse(jsonString) : jsonString;
+    let recoData = typeof jsonString === "string" ? JSON.parse(jsonString) : jsonString;
 
-    if ($("aiPitch")) $("aiPitch").value = recoData.general_pitch || "";
+    if ($("aiPitch")) $("aiPitch").value = recoData.general_pitch || recoData.pitch || "";
     if ($("aiMissing")) $("aiMissing").textContent = recoData.missing_data || t("aiComplete");
 
-    state.study.aiPitch = recoData.general_pitch;
-    state.study.aiMissing = recoData.missing_data;
+    state.study.aiPitch = recoData.general_pitch || recoData.pitch || "";
+    state.study.aiMissing = recoData.missing_data || "";
 
-    if (recoData.tools_reco && Array.isArray(recoData.tools_reco)) {
-      state.study.tools.forEach((tData, i) => {
-        if (recoData.tools_reco[i] !== undefined) {
-          let rec = recoData.tools_reco[i];
-          if (typeof rec === 'object' && rec !== null) {
-            try {
-              tData.reco = JSON.stringify(rec, null, 2).replace(/[{}"]/g, '').trim();
-            } catch(e) {
-              tData.reco = "Error formateando respuesta.";
-            }
-          } else {
-            tData.reco = String(rec);
-          }
-        }
-      });
+    let list = recoData.tools_reco || recoData.recommendations || recoData.cases || recoData.tools || [];
+    if (!Array.isArray(list) && typeof list === 'object') {
+      list = Object.values(list);
     }
+
+    state.study.tools.forEach((tData, i) => {
+      if (list[i] !== undefined) {
+        let rec = list[i];
+        if (typeof rec === 'object' && rec !== null) {
+          tData.reco = rec.recommendation || rec.reco || rec.propuesta || JSON.stringify(rec, null, 2).replace(/[{}"]/g, '').trim();
+        } else {
+          tData.reco = String(rec).trim();
+        }
+      }
+    });
 
     persist();
     renderTools();
     if ($("aiResultBox")) $("aiResultBox").classList.remove("hidden");
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error al procesar recomendación:", error);
     alert(t("aiError"));
   } finally {
     btn.disabled = false;
@@ -1088,7 +1086,7 @@ async function recommendRegoFixAI() {
 }
 
 /* ========================================================
-SINCRONIZACIÓN CON EL SERVIDOR MASTER (VERCEL)
+SINCRONIZACIÓN Y NUBE PERSISTENTE
 ======================================================== */
 async function syncStudyToServer(studyObj) {
   if (!navigator.onLine) return false;
@@ -1126,9 +1124,10 @@ async function fetchStudiesFromServer() {
 async function syncAllPendingStudies() {
   if (!navigator.onLine) return;
   const all = await getAllStudiesFromDB();
-  const pending = all.filter(s => s.sync_status === "pending");
-  for (const s of pending) {
-    await syncStudyToServer(s);
+  for (const s of all) {
+    if (s.sync_status !== "synced") {
+      await syncStudyToServer(s);
+    }
   }
   updateSyncBadge();
 }
@@ -1152,7 +1151,7 @@ window.addEventListener("online", () => {
 window.addEventListener("offline", updateSyncBadge);
 
 /* ========================================================
-HISTORIAL MASTER Y CONTROL DEL MODAL
+HISTORIAL MASTER Y MODAL
 ======================================================== */
 function openHistoryModal() {
   const modal = $("historyModal");
@@ -1169,18 +1168,31 @@ function closeHistoryModal() {
   modal.classList.add("modal-hidden");
 }
 
+async function forceUploadStudy(id) {
+  const all = await getAllStudiesFromDB();
+  const target = all.find(s => s.id === id);
+  if (target) {
+    const ok = await syncStudyToServer(target);
+    if (ok) {
+      alert("✅ Estudio subido a la nube correctamente.");
+    } else {
+      alert("⚠️ No se pudo subir. Verifica tu conexión a internet.");
+    }
+    renderHistoryList();
+  }
+}
+
 async function renderHistoryList() {
   const container = $("historyListContainer");
   if (!container) return;
-  container.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">Cargando estudios...</div>`;
+  container.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">Cargando estudios de la nube y locales...</div>`;
 
   const localStudies = await getAllStudiesFromDB();
   const serverStudies = await fetchStudiesFromServer();
 
-  // Combinar estudios locales y de la nube sin duplicar IDs
   const combinedMap = new Map();
   serverStudies.forEach(s => combinedMap.set(s.id, { ...s, sync_status: "synced" }));
-  localStudies.forEach(s => combinedMap.set(s.id, s)); // El local tiene prioridad de cambios recientes
+  localStudies.forEach(s => combinedMap.set(s.id, s));
 
   const studies = Array.from(combinedMap.values());
   studies.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -1193,24 +1205,33 @@ async function renderHistoryList() {
   container.innerHTML = "";
   studies.forEach((st) => {
     const isCurrent = st.id === state.currentStudyId;
+    const isSynced = st.sync_status === 'synced';
     const div = document.createElement("div");
     div.className = `p-3 rounded-xl border flex items-center justify-between gap-2 text-xs transition ${isCurrent ? 'bg-blue-50 border-blue-300' : 'bg-slate-50 border-slate-200'}`;
     div.innerHTML = `
       <div class="flex-1">
         <div class="font-bold text-[#28556C] flex items-center gap-2">
           ${st.company || "Sin Empresa"} 
-          <span class="text-[10px] ${st.sync_status === 'synced' ? 'text-green-600' : 'text-amber-600'} font-bold">
-            ${st.sync_status === 'synced' ? '🟢 En la Nube' : '🟡 Local'}
+          <span class="text-[10px] ${isSynced ? 'text-green-700 bg-green-100' : 'text-amber-700 bg-amber-100'} px-1.5 py-0.5 rounded font-black">
+            ${isSynced ? '🟢 En la Nube' : '🟡 Local'}
           </span>
         </div>
         <div class="text-[11px] text-gray-500">Asesor: ${st.userName || "—"} | Fecha: ${st.date || "—"} | Moneda: ${st.currency || "USD"}</div>
       </div>
       <div class="flex items-center gap-1.5">
+        ${!isSynced ? `<button class="btn btn-outline border-amber-500 text-amber-800 text-[11px] py-1 px-2 btn-upload-now" data-id="${st.id}" title="Subir a la nube">☁️ Subir</button>` : ''}
         <button class="btn btn-outline text-[11px] py-1 px-2 btn-load-study" data-id="${st.id}">Abrir</button>
         <button class="btn btn-danger text-[11px] py-1 px-2 btn-del-study" data-id="${st.id}">✕</button>
       </div>
     `;
     container.appendChild(div);
+  });
+
+  document.querySelectorAll(".btn-upload-now").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const id = e.target.getAttribute("data-id");
+      forceUploadStudy(id);
+    });
   });
 
   document.querySelectorAll(".btn-load-study").forEach(btn => {
@@ -1231,11 +1252,10 @@ async function renderHistoryList() {
     });
   });
 
-document.querySelectorAll(".btn-del-study").forEach(btn => {
+  document.querySelectorAll(".btn-del-study").forEach(btn => {
     btn.addEventListener("click", (e) => {
       const id = e.target.getAttribute("data-id");
       if (confirm("¿Eliminar este estudio?")) {
-        // Ejecución diferida para evitar bloqueo de UI (INP optimization)
         setTimeout(async () => {
           await deleteStudyFromDB(id);
           renderHistoryList();
@@ -1243,6 +1263,7 @@ document.querySelectorAll(".btn-del-study").forEach(btn => {
       }
     });
   });
+}
 
 /* ========================================================
 RENDERIZADO UI Y GRÁFICA
@@ -1472,7 +1493,8 @@ function bindInputs(){
       const current = all.find(s => s.id === state.currentStudyId);
       if (current) {
         const ok = await syncStudyToServer(current);
-        alert(ok ? "Estudio sincronizado con el servidor exitosamente." : "Guardado en dispositivo (offline). Se sincronizará automáticamente al conectar.");
+        alert(ok ? "✅ Estudio guardado y subido a la nube correctamente." : "Guardado localmente en dispositivo.");
+        updateSyncBadge();
       }
     });
   }
