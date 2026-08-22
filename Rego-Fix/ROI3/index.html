@@ -82,10 +82,10 @@ header img, img[alt="REGO-FIX"] {
   font-weight: 900;
 }
 
-/* Corrección de Inputs y Signo de Pesos */
+/* Corrección de Inputs y Signo de Moneda */
 .input{ width:100%; border:1px solid #CBD5E1; border-radius: 12px; padding: .6rem .8rem; outline: none; background:#fff; font-size:.9rem; transition: border-color 0.2s; }
 .input:focus{ border-color: var(--rego-blue); box-shadow: 0 0 0 3px rgba(40,85,108,.15); }
-.input.pl-7{ padding-left: 2rem !important; }
+.input.pl-8{ padding-left: 2.2rem !important; }
 textarea.input{ min-height: 80px; resize: vertical; }
 
 .switch{ position:relative; width: 48px; height: 28px; border-radius: 999px; background: rgba(103,112,113,.25); border:1px solid var(--border); cursor:pointer; flex: 0 0 auto; }
@@ -140,7 +140,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <div class="flex items-center justify-between w-full sm:w-auto">
       <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-6 sm:h-8 w-auto object-contain shrink-0" onerror="this.style.display='none'">
       
-      <!-- Selector de idioma en móvil con SVGs puros -->
+      <!-- Selector de idioma en móvil -->
       <div class="flex sm:hidden items-center bg-slate-100/90 rounded-lg p-0.5 border border-slate-200">
         <button class="lang-btn" data-lang="es" title="Español (México)">
           <svg viewBox="0 0 640 480"><path fill="#006847" d="M0 0h213.3v480H0z"/><path fill="#fff" d="M213.3 0h213.4v480H213.3z"/><path fill="#ce1126" d="M426.7 0H640v480H426.7z"/><circle cx="320" cy="240" r="32" fill="#7a5528"/></svg>
@@ -155,7 +155,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
     </div>
 
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-      <!-- Selector de idioma en escritorio con SVGs y etiquetas -->
+      <!-- Selector de idioma en escritorio -->
       <div class="hidden sm:flex items-center bg-slate-100/90 rounded-lg p-1 border border-slate-200">
         <button class="lang-btn" data-lang="es" title="Español (México)">
           <svg viewBox="0 0 640 480"><path fill="#006847" d="M0 0h213.3v480H0z"/><path fill="#fff" d="M213.3 0h213.4v480H213.3z"/><path fill="#ce1126" d="M426.7 0H640v480H426.7z"/><circle cx="320" cy="240" r="32" fill="#7a5528"/></svg>
@@ -237,10 +237,10 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <button id="btnToggleHrCalc" class="text-[11px] font-bold text-[#28556C] underline">🪄 <span data-i18n="btnAssistant">Asistente</span></button>
   </div>
   <div class="relative mt-1 flex items-center">
-    <span class="absolute left-3 font-bold text-gray-500 pointer-events-none">$</span>
-    <input id="costHour" class="input pl-7" type="number" min="0" step="1" value="75">
+    <span id="currencySymbolInput" class="absolute left-3 font-bold text-gray-500 pointer-events-none text-xs sm:text-sm">$</span>
+    <input id="costHour" class="input pl-8" type="number" min="0" step="1" value="75">
   </div>
-  <div class="muted text-[10px] mt-0.5" data-i18n="lblUsdHour">USD/hora</div>
+  <div id="costHourUnit" class="muted text-[10px] mt-0.5" data-i18n="lblCurrHour">USD/hora</div>
 </div>
 
 <div><div class="label" data-i18n="lblPartsMonth">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" min="0" step="1" value="5000"></div>
@@ -248,7 +248,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <div><div class="label" data-i18n="lblConsMonth">Consumibles (USD/mes)</div><input id="consMonth" class="input mt-1" type="number" min="0" step="1" value="0"></div>
 
 <div id="hrCalcPanel" class="col-span-1 sm:col-span-2 lg:col-span-4 bg-slate-50 p-3 rounded-xl border border-slate-200 hidden mt-1">
-  <div class="font-bold text-xs mb-2 text-[#28556C]" data-i18n="calcRefParams">Parámetros referenciales (USD)</div>
+  <div class="font-bold text-xs mb-2 text-[#28556C]" data-i18n="calcRefParams">Parámetros referenciales</div>
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
     <div>
       <div class="label text-[11px]" data-i18n="calcMachineType">Tipo de Máquina</div>
@@ -273,8 +273,8 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <div>
       <div class="label text-[11px]" data-i18n="calcLabor">Mano de Obra</div>
       <select id="calcOperator" class="input mt-0.5 text-xs">
-        <option value="25" selected data-i18n="optOp1">1 Op / 1 Máquina ($25/h)</option>
-        <option value="12.5" data-i18n="optOp2">1 Op / 2 Máquinas ($12.5/h)</option>
+        <option value="25" selected data-i18n="optOp1">1 Op / 1 Máquina</option>
+        <option value="12.5" data-i18n="optOp2">1 Op / 2 Máquinas</option>
         <option value="8" data-i18n="optOpAuto">Celda automatizada</option>
       </select>
     </div>
@@ -452,10 +452,13 @@ textarea.input{ min-height: 80px; resize: vertical; }
 
 <script>
 /* ========================================================
-DICCIONARIOS DE IDIOMA (I18N)
+DICCIONARIOS DE IDIOMA (I18N) Y MONEDA DINÁMICA
 ======================================================== */
 const I18N = {
   es: {
+    currencyCode: "USD",
+    currencySymbol: "$",
+    locale: "en-US",
     headerTitle: "ROI Holders REGO-FIX",
     headerSubtitle: "Análisis Multi-Herramienta y Proceso",
     btnExportPdf: "Exportar PDF",
@@ -477,7 +480,7 @@ const I18N = {
     badgeBase: "Base",
     lblCostHour: "Costo máquina/hora",
     btnAssistant: "Asistente",
-    lblUsdHour: "USD/hora",
+    lblCurrHour: "USD/hora",
     lblPartsMonth: "Piezas por mes",
     lblInvest: "Inversión Total (USD)",
     lblConsMonth: "Consumibles (USD/mes)",
@@ -593,6 +596,9 @@ const I18N = {
     pdfTbd: "Por definir con asesoría..."
   },
   pt: {
+    currencyCode: "BRL",
+    currencySymbol: "R$",
+    locale: "pt-BR",
     headerTitle: "ROI Porta-Ferramentas REGO-FIX",
     headerSubtitle: "Análise Multi-Ferramenta e Processo",
     btnExportPdf: "Exportar PDF",
@@ -614,11 +620,11 @@ const I18N = {
     badgeBase: "Base",
     lblCostHour: "Custo máquina/hora",
     btnAssistant: "Assistente",
-    lblUsdHour: "USD/hora",
+    lblCurrHour: "BRL/hora",
     lblPartsMonth: "Peças por mês",
-    lblInvest: "Investimento Total (USD)",
-    lblConsMonth: "Consumíveis (USD/mês)",
-    calcRefParams: "Parâmetros de referência (USD)",
+    lblInvest: "Investimento Total (BRL)",
+    lblConsMonth: "Consumíveis (BRL/mês)",
+    calcRefParams: "Parâmetros de referência (BRL)",
     calcMachineType: "Tipo de Máquina",
     optLathe2: "Torno CNC (2 Eixos)",
     optMill3: "Centro de Usinagem (3 Eixos)",
@@ -632,8 +638,8 @@ const I18N = {
     optAero: "Aeroespacial",
     optMed: "Médico",
     calcLabor: "Mão de Obra",
-    optOp1: "1 Op / 1 Máquina ($25/h)",
-    optOp2: "1 Op / 2 Máquinas ($12.5/h)",
+    optOp1: "1 Op / 1 Máquina (R$25/h)",
+    optOp2: "1 Op / 2 Máquinas (R$12.5/h)",
     optOpAuto: "Célula automatizada",
     sec1bTitle: "1B) Contexto da Usinagem",
     lblSpindle: "Interface do fuso",
@@ -672,7 +678,7 @@ const I18N = {
     cardLifeTitle: "B) Vida útil das ferramentas",
     lblLifeAct: "Ciclos/ferr (Atual)",
     lblLifeNew: "Ciclos/ferr (Novo)",
-    lblToolCost: "Custo Ferr (USD)",
+    lblToolCost: "Custo Ferr (BRL)",
     lblToolCount: "Ferramentas ativas",
     cardProcTitle: "C) Melhoria de ciclo",
     lblCycAct: "Ciclo Atual (min/peça)",
@@ -680,7 +686,7 @@ const I18N = {
     cardScrapTitle: "D) Redução de Refugo",
     lblScrapAct: "Refugos Atual/mês",
     lblScrapNew: "Refugos Novo/mês",
-    lblScrapCost: "Custo Peça Refugo (USD)",
+    lblScrapCost: "Custo Peça Refugo (BRL)",
     sec3Title: "3) Resultados do ROI",
     badgeRoi: "ROI",
     kpiGross: "Economia bruta",
@@ -690,7 +696,7 @@ const I18N = {
     kpiRoiFormula: "((líquido*12) / investimento)",
     chartActual: "Situação Atual",
     chartRego: "Com REGO-FIX",
-    chartTitle: "Custo (USD)",
+    chartTitle: "Custo (BRL)",
     copiedAlert: "Copiado para a área de transferência.",
     copyErrorAlert: "Erro ao copiar.",
     resetConfirm: "Deseja limpar tudo e iniciar um novo estudo?",
@@ -725,11 +731,14 @@ const I18N = {
     pdfNetSave: "Economia Líquida Mensal",
     pdfPayback: "Tempo de Retorno",
     pdfRoiEst: "ROI Anual Estimado",
-    pdfChartComp: "Comparativo de Custo Operacional Mensal (USD)",
+    pdfChartComp: "Comparativo de Custo Operacional Mensal (BRL)",
     pdfUnnamedTool: "Ferramenta sem nome",
     pdfTbd: "A definir com consultoria..."
   },
   en: {
+    currencyCode: "USD",
+    currencySymbol: "$",
+    locale: "en-US",
     headerTitle: "REGO-FIX Toolholding ROI",
     headerSubtitle: "Multi-Tool & Process Analysis",
     btnExportPdf: "Export PDF",
@@ -751,7 +760,7 @@ const I18N = {
     badgeBase: "Base",
     lblCostHour: "Machine Cost / Hour",
     btnAssistant: "Assistant",
-    lblUsdHour: "USD/hour",
+    lblCurrHour: "USD/hour",
     lblPartsMonth: "Parts per Month",
     lblInvest: "Total Investment (USD)",
     lblConsMonth: "Consumables (USD/month)",
@@ -874,6 +883,15 @@ function t(key) {
   return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.es[key] || key);
 }
 
+function money(n) {
+  const conf = I18N[currentLang] || I18N.es;
+  return Number(n || 0).toLocaleString(conf.locale, {
+    style: "currency",
+    currency: conf.currencyCode,
+    maximumFractionDigits: 0
+  });
+}
+
 function setLanguage(lang) {
   if(!I18N[lang]) lang = 'es';
   currentLang = lang;
@@ -885,6 +903,10 @@ function setLanguage(lang) {
     if(btn.dataset.lang === lang) btn.classList.add('active');
     else btn.classList.remove('active');
   });
+
+  // Actualizar símbolo en el input de costo/hora
+  const symb = $('currencySymbolInput');
+  if(symb) symb.textContent = I18N[currentLang].currencySymbol;
 
   // Traducir textos
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -927,7 +949,6 @@ const mathIds = [
 
 const $ = (id)=>document.getElementById(id);
 const clamp0 = (n)=>Math.max(0, Number(n||0));
-const money = (n) => Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 function safeJson(str, fallback){ try{ return JSON.parse(str); }catch(e){ return fallback; } }
 
 function persist(){
@@ -1098,7 +1119,7 @@ const toolsContext = s.tools.map((tData, i) => `Caso ${i+1}: Op/Herramienta: ${t
 
 const prompt = `
 Eres un Ingeniero experto en REGO-FIX.
-Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}. Idioma preferido: ${currentLang}.
+Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}. Idioma preferido: ${currentLang}. Moneda: ${I18N[currentLang].currencyCode}.
 
 Casos a evaluar:
 ${toolsContext}
@@ -1183,9 +1204,11 @@ function renderChart(costoActual, costoNuevo) {
 const canvas = document.getElementById('roiChart');
 if(!canvas) return;
 
+const curr = I18N[currentLang].currencyCode;
+
 if (roiChartInstance) {
 roiChartInstance.data.labels = [t("chartActual"), t("chartRego")];
-roiChartInstance.data.datasets[0].label = t("chartTitle");
+roiChartInstance.data.datasets[0].label = `${t("chartTitle")} (${curr})`;
 roiChartInstance.data.datasets[0].data = [costoActual, costoNuevo];
 roiChartInstance.update('none');
 } else {
@@ -1194,7 +1217,7 @@ roiChartInstance = new Chart(ctx, {
 type: 'bar',
 data: {
 labels: [t("chartActual"), t("chartRego")],
-datasets: [{ label: t("chartTitle"), data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#8CA015'], borderRadius: 6 }]
+datasets: [{ label: `${t("chartTitle")} (${curr})`, data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#8CA015'], borderRadius: 6 }]
 },
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
 });
@@ -1203,6 +1226,7 @@ options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { di
 
 function renderKPIs(){
 const r = calc();
+const curr = I18N[currentLang].currencyCode;
 
 ["saveTime", "saveLife", "saveProc", "saveScrap"].forEach(id => {
 if($(id)) { $(id).textContent = money(r[id]); $(id).className = "text-sm font-black text-[#8CA015]"; }
@@ -1280,6 +1304,7 @@ function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":
 function buildReportHTML(chartImageBase64){
 const r = calc(), s = state.study;
 const LOGO_URL = "/assets/regofixlogo.png";
+const curr = I18N[currentLang].currencyCode;
 
 const toolsRender = s.tools.map((tData, i) => `
 <div class="box">
@@ -1300,7 +1325,7 @@ ${t("caseLabel")} ${i+1}: ${esc(tData.op || t("pdfUnnamedTool"))}
 </div>
 </div>`).join("");
 
-return `<!doctype html><html lang="${currentLang}"><head><meta charset="utf-8"/><title>${t("pdfTitle")} — REGO-FIX</title><style>:root { --rego-blue: #28556C; --rego-green: #8CA015; --rego-red: #D31B23; --gray-dark: #44474A; --gray-light: #f9fafb; } * { box-sizing: border-box; } body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; padding: 0; margin: 0; background: #fff; } .wrap { padding: 30px 40px; max-width: 800px; margin: 0 auto; } .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--rego-blue); padding-bottom: 15px; margin-bottom: 25px; } .h-left h1 { font-size: 22px; margin: 0 0 5px 0; color: var(--rego-blue); letter-spacing: -0.5px; } .logo { height: 40px; width: auto; object-fit: contain; } h2 { font-size: 14px; margin: 28px 0 12px; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 4px; page-break-after: avoid; } .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin-bottom: 15px; background: var(--gray-light); page-break-inside: avoid; } .box-highlight { background: rgba(40,85,108,.05); border-color: rgba(40,85,108,.2); } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; } .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; } .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; } .k { font-size: 11px; color: #6b7280; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.2px; } .v { font-size: 13px; font-weight: 700; color: #111; } pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; margin: 0; color: #374151; } .text-green { color: var(--rego-green); } .text-blue { color: var(--rego-blue); } .text-red { color: var(--rego-red); } .kpi-large { font-size: 18px; font-weight: 900; } .chart-container { text-align: center; margin-top: 20px; border: 1px solid #eee; padding: 15px; page-break-inside: avoid;} .chart-img { max-width: 100%; height: auto; max-height: 220px; } @media print { .wrap { padding: 0; max-width: 100%; } @page { margin: 1.5cm; } }</style></head><body><div class="wrap"><div class="header"><div class="h-left"><h1>${t("pdfTitle")}</h1><div style="color: var(--gray-dark); font-size: 13px; font-weight: 600; text-transform: uppercase;">${t("pdfSubtitle")}</div><div style="margin-top: 8px; font-size: 12px; color: #666;"><strong>${t("pdfClient")}</strong> ${esc(s.company||"—")} <br><strong>${t("pdfAttention")}</strong> ${esc(s.userName||"—")} (${esc(s.userRole||"—")}) <br><strong>${t("pdfDate")}</strong> ${esc(s.studyDate || "—")}</div></div><div><img class="logo" src="${LOGO_URL}" onerror="this.style.display='none'" /><div style="text-align: right; font-size: 10px; color: #888; margin-top: 5px;">Powered by<br><strong>Consultoría AlexRaSa</strong></div></div></div><h2>${t("pdfSec1")}</h2><div class="box"><div class="grid"><div><div class="k">${t("pdfSpindle")}</div><div class="v">${esc(s.spindleInterface||"—")}</div></div><div><div class="k">${t("pdfCoolant")}</div><div class="v">${esc(s.coolant||"—")}</div></div><div><div class="k">${t("pdfMaterial")}</div><div class="v">${esc(s.material||"—")}</div></div><div><div class="k">${t("pdfGoal")}</div><div class="v">${esc(s.goal||"—")}</div></div></div></div>${s.aiPitch ? `<div class="box box-highlight"><div class="k text-blue mb-2">${t("pdfAiTitle")}</div><pre style="color: var(--rego-blue); font-weight: 600;">${esc(s.aiPitch)}</pre></div>` : ''}<h2>${t("pdfSec2")}</h2>${toolsRender}<h2>${t("pdfSec3")}</h2><div class="box"><div style="margin-bottom: 12px; font-weight:bold; font-size:12px; text-align:center;">${t("pdfBreakdown")}</div><div class="grid-4" style="text-align: center;"><div><div class="k">${t("pdfTimeSetup")}</div><div class="v text-green">${esc(money(r.saveTime))}</div></div><div><div class="k">${t("pdfToolLife")}</div><div class="v text-green">${esc(money(r.saveLife))}</div></div><div><div class="k">${t("pdfProcImprove")}</div><div class="v text-green">${esc(money(r.saveProc))}</div></div><div><div class="k">${t("pdfScrapRed")}</div><div class="v text-green">${esc(money(r.saveScrap))}</div></div></div></div><div class="box" style="border: 2px solid var(--rego-blue);"><div class="grid-3" style="text-align: center;"><div><div class="k">${t("pdfInvest")}</div><div class="v text-blue" style="font-size: 18px; font-weight: 900;">${esc(money(r.invest))}</div></div><div><div class="k">${t("pdfNetSave")}</div><div class="v text-green" style="font-size: 18px; font-weight: 900;">${esc(money(r.net))}</div></div><div><div class="k">${t("pdfPayback")}</div><div class="v" style="font-size: 18px; font-weight: 900; color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+t("monthSuffix")))}</div></div></div><div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;"><div class="k">${t("pdfRoiEst")}</div><div class="v text-green" style="font-size: 18px;">${esc(r.roiAnnual===null?"—":((r.roiAnnual*100).toFixed(0)+"%"))} <span style="color: var(--rego-blue); font-size: 14px;">(${esc(money(r.net * 12))} USD)</span></div></div></div>${chartImageBase64 ? `<div class="box chart-container"><div class="k" style="margin-bottom: 8px;">${t("pdfChartComp")}</div><img src="${chartImageBase64}" class="chart-img" /></div>` : ''}</div></body></html>`;
+return `<!doctype html><html lang="${currentLang}"><head><meta charset="utf-8"/><title>${t("pdfTitle")} — REGO-FIX</title><style>:root { --rego-blue: #28556C; --rego-green: #8CA015; --rego-red: #D31B23; --gray-dark: #44474A; --gray-light: #f9fafb; } * { box-sizing: border-box; } body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; padding: 0; margin: 0; background: #fff; } .wrap { padding: 30px 40px; max-width: 800px; margin: 0 auto; } .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--rego-blue); padding-bottom: 15px; margin-bottom: 25px; } .h-left h1 { font-size: 22px; margin: 0 0 5px 0; color: var(--rego-blue); letter-spacing: -0.5px; } .logo { height: 40px; width: auto; object-fit: contain; } h2 { font-size: 14px; margin: 28px 0 12px; color: var(--rego-blue); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 4px; page-break-after: avoid; } .box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin-bottom: 15px; background: var(--gray-light); page-break-inside: avoid; } .box-highlight { background: rgba(40,85,108,.05); border-color: rgba(40,85,108,.2); } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; } .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; } .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; } .k { font-size: 11px; color: #6b7280; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.2px; } .v { font-size: 13px; font-weight: 700; color: #111; } pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; margin: 0; color: #374151; } .text-green { color: var(--rego-green); } .text-blue { color: var(--rego-blue); } .text-red { color: var(--rego-red); } .kpi-large { font-size: 18px; font-weight: 900; } .chart-container { text-align: center; margin-top: 20px; border: 1px solid #eee; padding: 15px; page-break-inside: avoid;} .chart-img { max-width: 100%; height: auto; max-height: 220px; } @media print { .wrap { padding: 0; max-width: 100%; } @page { margin: 1.5cm; } }</style></head><body><div class="wrap"><div class="header"><div class="h-left"><h1>${t("pdfTitle")}</h1><div style="color: var(--gray-dark); font-size: 13px; font-weight: 600; text-transform: uppercase;">${t("pdfSubtitle")}</div><div style="margin-top: 8px; font-size: 12px; color: #666;"><strong>${t("pdfClient")}</strong> ${esc(s.company||"—")} <br><strong>${t("pdfAttention")}</strong> ${esc(s.userName||"—")} (${esc(s.userRole||"—")}) <br><strong>${t("pdfDate")}</strong> ${esc(s.studyDate || "—")}</div></div><div><img class="logo" src="${LOGO_URL}" onerror="this.style.display='none'" /><div style="text-align: right; font-size: 10px; color: #888; margin-top: 5px;">Powered by<br><strong>Consultoría AlexRaSa</strong></div></div></div><h2>${t("pdfSec1")}</h2><div class="box"><div class="grid"><div><div class="k">${t("pdfSpindle")}</div><div class="v">${esc(s.spindleInterface||"—")}</div></div><div><div class="k">${t("pdfCoolant")}</div><div class="v">${esc(s.coolant||"—")}</div></div><div><div class="k">${t("pdfMaterial")}</div><div class="v">${esc(s.material||"—")}</div></div><div><div class="k">${t("pdfGoal")}</div><div class="v">${esc(s.goal||"—")}</div></div></div></div>${s.aiPitch ? `<div class="box box-highlight"><div class="k text-blue mb-2">${t("pdfAiTitle")}</div><pre style="color: var(--rego-blue); font-weight: 600;">${esc(s.aiPitch)}</pre></div>` : ''}<h2>${t("pdfSec2")}</h2>${toolsRender}<h2>${t("pdfSec3")}</h2><div class="box"><div style="margin-bottom: 12px; font-weight:bold; font-size:12px; text-align:center;">${t("pdfBreakdown")}</div><div class="grid-4" style="text-align: center;"><div><div class="k">${t("pdfTimeSetup")}</div><div class="v text-green">${esc(money(r.saveTime))}</div></div><div><div class="k">${t("pdfToolLife")}</div><div class="v text-green">${esc(money(r.saveLife))}</div></div><div><div class="k">${t("pdfProcImprove")}</div><div class="v text-green">${esc(money(r.saveProc))}</div></div><div><div class="k">${t("pdfScrapRed")}</div><div class="v text-green">${esc(money(r.saveScrap))}</div></div></div></div><div class="box" style="border: 2px solid var(--rego-blue);"><div class="grid-3" style="text-align: center;"><div><div class="k">${t("pdfInvest")}</div><div class="v text-blue" style="font-size: 18px; font-weight: 900;">${esc(money(r.invest))}</div></div><div><div class="k">${t("pdfNetSave")}</div><div class="v text-green" style="font-size: 18px; font-weight: 900;">${esc(money(r.net))}</div></div><div><div class="k">${t("pdfPayback")}</div><div class="v" style="font-size: 18px; font-weight: 900; color: ${r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">${esc(r.payback===null?"—":(r.payback.toFixed(1)+t("monthSuffix")))}</div></div></div><div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #ccc;"><div class="k">${t("pdfRoiEst")}</div><div class="v text-green" style="font-size: 18px;">${esc(r.roiAnnual===null?"—":((r.roiAnnual*100).toFixed(0)+"%"))} <span style="color: var(--rego-blue); font-size: 14px;">(${esc(money(r.net * 12))} ${curr})</span></div></div></div>${chartImageBase64 ? `<div class="box chart-container"><div class="k" style="margin-bottom: 8px;">${t("pdfChartComp")}</div><img src="${chartImageBase64}" class="chart-img" /></div>` : ''}</div></body></html>`;
 }
 
 function exportPdf() {
