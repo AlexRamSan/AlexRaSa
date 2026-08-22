@@ -2,6 +2,15 @@
 import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
+  // Configurar CORS básico por seguridad
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido. Solo POST.' });
   }
@@ -15,7 +24,7 @@ export default async function handler(req, res) {
     study.sync_status = "synced";
     study.last_updated = Date.now();
 
-    // Guardar archivo JSON persistente en Vercel Blob
+    // Guardar o sobrescribir el JSON en Vercel Blob
     const blob = await put(`casos/${study.id}.json`, JSON.stringify(study), {
       access: 'public',
       addRandomSuffix: false,
