@@ -466,7 +466,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <div class="flex justify-between items-center pb-3 border-b border-slate-200">
       <div>
         <h3 class="font-extrabold text-base text-[#28556C]">🗂️ Repositorio Master de Estudios (Test Lab)</h3>
-        <p class="text-xs text-gray-500">Estudios guardados localmente y sincronizados con Vercel</p>
+        <p class="text-xs text-gray-500">Estudios sincronizados con la nube y guardados localmente</p>
       </div>
       <button id="btnCloseHistory" class="text-gray-400 hover:text-gray-700 text-lg font-bold p-1">✕</button>
     </div>
@@ -477,7 +477,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 
     <div class="pt-3 border-t border-slate-200 flex justify-between items-center">
       <button id="btnSyncPending" class="btn btn-outline text-xs border-green-500 text-green-700">
-        🔄 Forzar Sincronización
+        🔄 Refrescar Nube
       </button>
       <button id="btnCloseHistoryFooter" class="btn btn-primary text-xs">Cerrar</button>
     </div>
@@ -926,14 +926,12 @@ function renderTools() {
     });
   });
 
-  document.querySelectorAll(".btn-remove-tool").forEach(el => {
-    el.addEventListener("click", (e) => {
-      const id = parseInt(e.target.getAttribute("data-id"));
-      state.study.tools = state.study.tools.filter(tool => tool.id !== id);
-      persist();
-      renderTools();
-    });
-  });
+  document.querySelectorAll(".btn-remove-tool").forEach(el => el.addEventListener("click", (e) => {
+    const id = parseInt(e.target.getAttribute("data-id"));
+    state.study.tools = state.study.tools.filter(tool => tool.id !== id);
+    persist();
+    renderTools();
+  }));
 }
 
 function updateTool(e, field) {
@@ -1029,34 +1027,16 @@ async function recommendRegoFixAI() {
   const toolsContext = s.tools.map((tData, i) => `Caso ${i+1}: Op/Herramienta: ${tData.op} | Setup Actual: ${tData.setup} | Problema: ${tData.problem}`).join("\n");
 
   const prompt = `
-    Eres un Ingeniero experto en REGO-FIX.
-    Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}. Idioma preferido: ${currentLang}. Moneda: ${I18N[currentLang].currencyCode}.
+    Contexto Global: Husillo: ${s.spindleInterface}, Refrigerante: ${s.coolant}, Material: ${s.material}, Prioridad: ${s.priority}, Objetivo: ${s.goal}. Idioma: ${currentLang}. Moneda: ${I18N[currentLang].currencyCode}.
 
     Casos a evaluar:
     ${toolsContext}
 
-    TU MISIÓN:
-    Lee el texto "Op/Herramienta" de cada caso y extrae lógicamente su diámetro.
-    IMPORTANTE SOBRE UNIDADES: Expresa los diámetros usando el sistema correspondiente (Métrico o Imperial). Si el diámetro equivale a una fracción de pulgada estándar (ej. 6.35mm = 1/4", 12.7mm = 1/2", 3.175mm = 1/8"), escribe SIEMPRE la fracción en pulgadas (ej. 1/4") en lugar del decimal en milímetros. Mantén milímetros (ej. 6mm, 12mm) solo si el caso es claramente métrico.
-
-    Con ese diámetro y el "Problema", define el ENSAMBLE COMPLETO usando estas reglas de tamaño:
-    - poweRgrip (PG): PG10 (hasta 6mm o 1/4"), PG15 (hasta 10mm o 3/8"), PG25 (hasta 20mm o 3/4"), PG32 (hasta 25.4mm o 1"). (Para vibración, desbaste pesado, aceros duros).
-    - micRun (MR): MR11, MR16. (Para microherramientas < 3mm o 1/8").
-    - ER: ER16, ER32. (Maquinado general).
-
-    FORMATO DE RESPUESTA OBLIGATORIO PARA CADA CASO:
-    Tu respuesta en el array 'tools_reco' debe ser exactamente así (en el idioma ${currentLang}):
-    "Recomendación: [Interfaz del Husillo] [Tecnología] [Tamaño] + Boquilla [Tecnología] de [Diámetro de la herramienta en mm o pulgadas fraccionales]. Por qué: [1 línea justificando]."
-
-    INSTRUCCIÓN CRÍTICA PARA EL JSON:
-    Devuelve SOLO un JSON válido. 'tools_reco' debe ser un array de STRINGS, nunca objetos.
-    {
-      "general_pitch": "Argumento comercial de 2 líneas de REGO-FIX.",
-      "tools_reco": [
-        "Respuesta del caso 1 en el formato exacto"
-      ],
-      "missing_data": "Opcional. Datos técnicos extras a verificar en planta."
-    }
+    INSTRUCCIONES CLAVE:
+    1. Prioridad poweRgrip (PG). Si el material es difícil (Inconel, Titanio, Inox), usa PG 25 por defecto, a menos que se requiera PG 10/PG 15 para acabados finos o 5 ejes.
+    2. NUNCA uses la palabra "estanca". Todas las pinzas estándar PG son selladas para refrigeración interna. Llámalas simplemente "Pinza PG [Tamaño] de [Ø]".
+    3. Si el diámetro es fraccional en pulgadas (ej. 1/8", 15/64", 1/4", 3/8", 1/2"), ponlo en pulgadas.
+    4. Genera un dictamen general de ingeniería (general_pitch) técnico y profesional.
   `;
 
   try {
@@ -1129,6 +1109,20 @@ async function syncStudyToServer(studyObj) {
   return false;
 }
 
+async function fetchStudiesFromServer() {
+  if (!navigator.onLine) return [];
+  try {
+    const res = await fetch("/api/get-studies.js");
+    if (res.ok) {
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    }
+  } catch (e) {
+    console.warn("No se pudo obtener el historial del servidor:", e);
+  }
+  return [];
+}
+
 async function syncAllPendingStudies() {
   if (!navigator.onLine) return;
   const all = await getAllStudiesFromDB();
@@ -1180,11 +1174,19 @@ async function renderHistoryList() {
   if (!container) return;
   container.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">Cargando estudios...</div>`;
 
-  const studies = await getAllStudiesFromDB();
+  const localStudies = await getAllStudiesFromDB();
+  const serverStudies = await fetchStudiesFromServer();
+
+  // Combinar estudios locales y de la nube sin duplicar IDs
+  const combinedMap = new Map();
+  serverStudies.forEach(s => combinedMap.set(s.id, { ...s, sync_status: "synced" }));
+  localStudies.forEach(s => combinedMap.set(s.id, s)); // El local tiene prioridad de cambios recientes
+
+  const studies = Array.from(combinedMap.values());
   studies.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
   if (studies.length === 0) {
-    container.innerHTML = `<div class="text-xs text-gray-400 text-center py-6">No hay estudios guardados en la base local aún.</div>`;
+    container.innerHTML = `<div class="text-xs text-gray-400 text-center py-6">No hay estudios guardados en la nube ni localmente.</div>`;
     return;
   }
 
@@ -1198,7 +1200,7 @@ async function renderHistoryList() {
         <div class="font-bold text-[#28556C] flex items-center gap-2">
           ${st.company || "Sin Empresa"} 
           <span class="text-[10px] ${st.sync_status === 'synced' ? 'text-green-600' : 'text-amber-600'} font-bold">
-            ${st.sync_status === 'synced' ? '🟢 Sincronizado' : '🟡 Local'}
+            ${st.sync_status === 'synced' ? '🟢 En la Nube' : '🟡 Local'}
           </span>
         </div>
         <div class="text-[11px] text-gray-500">Asesor: ${st.userName || "—"} | Fecha: ${st.date || "—"} | Moneda: ${st.currency || "USD"}</div>
@@ -1232,7 +1234,7 @@ async function renderHistoryList() {
   document.querySelectorAll(".btn-del-study").forEach(btn => {
     btn.addEventListener("click", async (e) => {
       const id = e.target.getAttribute("data-id");
-      if (confirm("¿Eliminar este estudio del registro?")) {
+      if (confirm("¿Eliminar este estudio?")) {
         await deleteStudyFromDB(id);
         renderHistoryList();
       }
