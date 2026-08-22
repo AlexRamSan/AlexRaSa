@@ -112,6 +112,9 @@ textarea.input{ min-height: 80px; resize: vertical; }
   display: flex; align-items: center; justify-content: center; z-index: 9999;
   padding: 1rem;
 }
+.modal-overlay.hidden, .modal-hidden {
+  display: none !important;
+}
 </style>
 
 <!-- PWA Manifest & Meta para iOS adaptados a /Rego-Fix/ROI/ -->
@@ -457,15 +460,15 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <footer class="text-center pb-4"><div class="by">by alexrasa (Lab ROI)</div></footer>
 </main>
 
-<!-- MODAL DEL HISTORIAL MASTER -->
-<div id="historyModal" class="modal-overlay hidden">
+<!-- MODAL DEL HISTORIAL MASTER (Oculto de forma predeterminada mediante display: none) -->
+<div id="historyModal" class="modal-overlay modal-hidden" style="display: none;">
   <div class="card bg-white w-full max-w-2xl max-h-[85vh] flex flex-col p-4 sm:p-6 shadow-2xl">
     <div class="flex justify-between items-center pb-3 border-b border-slate-200">
       <div>
         <h3 class="font-extrabold text-base text-[#28556C]">🗂️ Repositorio Master de Estudios (Test Lab)</h3>
         <p class="text-xs text-gray-500">Estudios guardados localmente y sincronizados con Vercel</p>
       </div>
-      <button id="btnCloseHistory" class="text-gray-400 hover:text-gray-700 text-lg font-bold">✕</button>
+      <button id="btnCloseHistory" class="text-gray-400 hover:text-gray-700 text-lg font-bold p-1">✕</button>
     </div>
     
     <div id="historyListContainer" class="flex-1 overflow-y-auto py-3 space-y-2">
@@ -1048,8 +1051,23 @@ window.addEventListener("online", () => {
 window.addEventListener("offline", updateSyncBadge);
 
 /* ========================================================
-HISTORIAL MASTER Y MODAL
+HISTORIAL MASTER Y CONTROL DEL MODAL
 ======================================================== */
+function openHistoryModal() {
+  const modal = $("historyModal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  modal.classList.remove("modal-hidden");
+  renderHistoryList();
+}
+
+function closeHistoryModal() {
+  const modal = $("historyModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  modal.classList.add("modal-hidden");
+}
+
 async function renderHistoryList() {
   const container = $("historyListContainer");
   if (!container) return;
@@ -1099,7 +1117,7 @@ async function renderHistoryList() {
         bindInputs();
         renderTools();
         renderAll();
-        $("historyModal").classList.add("hidden");
+        closeHistoryModal();
       }
     });
   });
@@ -1317,14 +1335,17 @@ function bindInputs(){
     });
   }
 
-  if($("btnOpenHistory")) {
-    $("btnOpenHistory").addEventListener("click", () => {
-      $("historyModal").classList.remove("hidden");
-      renderHistoryList();
+  if($("btnOpenHistory")) $("btnOpenHistory").addEventListener("click", openHistoryModal);
+  if($("btnCloseHistory")) $("btnCloseHistory").addEventListener("click", closeHistoryModal);
+  if($("btnCloseHistoryFooter")) $("btnCloseHistoryFooter").addEventListener("click", closeHistoryModal);
+  
+  const modalElem = $("historyModal");
+  if (modalElem) {
+    modalElem.addEventListener("click", (e) => {
+      if (e.target === modalElem) closeHistoryModal();
     });
   }
-  if($("btnCloseHistory")) $("btnCloseHistory").addEventListener("click", () => $("historyModal").classList.add("hidden"));
-  if($("btnCloseHistoryFooter")) $("btnCloseHistoryFooter").addEventListener("click", () => $("historyModal").classList.add("hidden"));
+
   if($("btnSyncPending")) $("btnSyncPending").addEventListener("click", async () => {
     await syncAllPendingStudies();
     renderHistoryList();
