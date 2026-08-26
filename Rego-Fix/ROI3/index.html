@@ -216,7 +216,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-  <div><div class="label" data-i18n="lblDate">Fecha</div><input id="studyDate" class="input bg-slate-50" type="text" data-study="studyDate" readonly></div>
+  <div><div class="label" data-i18n="lblDate">Fecha</div><input id="studyDate" class="input" type="date" data-study="studyDate"></div>
   <div><div class="label" data-i18n="lblUser">Usuario</div><input id="userName" class="input" type="text" placeholder="Nombre" data-study="userName" data-i18n-ph="phName"></div>
   <div><div class="label" data-i18n="lblRole">Puesto</div><input id="userRole" class="input" type="text" placeholder="Ej: Ing. Procesos" data-study="userRole" data-i18n-ph="phRole"></div>
   <div><div class="label" data-i18n="lblCompany">Empresa</div><input id="company" class="input" type="text" placeholder="Razón social" data-study="company" data-i18n-ph="phCompany"></div>
@@ -423,12 +423,19 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <div class="switch" id="swEnergy" data-on="false"><div class="knob"></div></div>
   </div>
   <div id="energyBody" class="space-y-2 text-xs">
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-      <div><label class="label text-[11px]" data-i18n="lblEnergyChanges">Cambios / día</label><input id="energyChangesDay" class="input" type="number" value="50"></div>
-      <div><label class="label text-[11px]" data-i18n="lblEnergyDays">Días lab. / mes</label><input id="energyDaysMonth" class="input" type="number" value="22"></div>
-      <div><label class="label text-[11px]" data-i18n="lblKwhCost">Costo kWh ($)</label><input id="costKwh" class="input" type="number" step="0.01" value="1.40"></div>
-      <div><label class="label text-[11px]" data-i18n="lblPgKw">PG Potencia (kW)</label><input id="pgKw" class="input" type="number" step="0.1" value="0.6"></div>
-      <div><label class="label text-[11px]" data-i18n="lblThermalKw">Térmico Potencia (kW)</label><input id="thermalKw" class="input" type="number" step="0.1" value="13.9"></div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div>
+        <label class="label text-[11px]">Cambios calculados / día</label>
+        <input id="energyChangesDisplay" class="input bg-slate-100 text-slate-600 font-bold" type="text" readonly value="—">
+      </div>
+      <div>
+        <label class="label text-[11px]" data-i18n="lblEnergyDays">Días lab. / mes</label>
+        <input id="energyDaysMonth" class="input" type="number" min="1" max="31" value="22">
+      </div>
+      <div>
+        <label class="label text-[11px]" data-i18n="lblKwhCost">Costo kWh ($)</label>
+        <input id="costKwh" class="input" type="number" step="0.01" value="1.40">
+      </div>
     </div>
     <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveEnergy" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
   </div>
@@ -574,11 +581,8 @@ const I18N = {
     lblScrapCost: "Costo Pza Scrap (USD)",
     cardEnergyTitle: "E) Consumo Eléctrico (PowRgrip vs Térmico / Shrink-Fit)",
     cardEnergySub: "Comparativa de consumo energético directo por ciclo de cambio",
-    lblEnergyChanges: "Cambios / día",
     lblEnergyDays: "Días lab. / mes",
     lblKwhCost: "Costo kWh ($)",
-    lblPgKw: "PG Potencia (kW)",
-    lblThermalKw: "Térmico Potencia (kW)",
     sec3Title: "3) Resultados del ROI",
     badgeRoi: "ROI",
     kpiGross: "Ahorro bruto",
@@ -722,11 +726,8 @@ const I18N = {
     lblScrapCost: "Custo Peça Refugo (BRL)",
     cardEnergyTitle: "E) Consumo de Energia Elétrica (PowRgrip vs Térmico)",
     cardEnergySub: "Comparativo de gasto com energia direta por troca",
-    lblEnergyChanges: "Trocas / dia",
     lblEnergyDays: "Dias trab. / mês",
     lblKwhCost: "Custo kWh (R$)",
-    lblPgKw: "PG Potência (kW)",
-    lblThermalKw: "Térmico Potência (kW)",
     sec3Title: "3) Resultados do ROI",
     badgeRoi: "ROI",
     kpiGross: "Economia bruta",
@@ -870,11 +871,8 @@ const I18N = {
     lblScrapCost: "Scrap Part Cost (USD)",
     cardEnergyTitle: "E) Electrical Energy Savings (PowRgrip vs Shrink-Fit)",
     cardEnergySub: "Comparison of direct power consumption per tool change cycle",
-    lblEnergyChanges: "Changes / day",
     lblEnergyDays: "Working days / mo",
     lblKwhCost: "kWh Rate ($)",
-    lblPgKw: "PG Power (kW)",
-    lblThermalKw: "Shrink-Fit Power (kW)",
     sec3Title: "3) ROI Results",
     badgeRoi: "ROI",
     kpiGross: "Gross Savings",
@@ -987,6 +985,10 @@ tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "" } ]
 }
 };
 
+// Constantes estándar de potencia
+const PG_KW = 0.6;
+const THERMAL_KW = 13.9;
+
 const mathIds = [
 "costHour","partsMonth","invest","consMonth",
 "chgAct","chgNew","chgMinAct","chgMinNew",
@@ -994,7 +996,7 @@ const mathIds = [
 "stpAct","stpNew","stpMinAct","stpMinNew",
 "lifeAct","lifeNew","toolCost","toolCount",
 "cycAct","cycNew","scrapAct","scrapNew","scrapCost",
-"energyChangesDay","energyDaysMonth","costKwh","pgKw","thermalKw"
+"energyDaysMonth","costKwh"
 ];
 
 const $ = (id)=>document.getElementById(id);
@@ -1137,17 +1139,21 @@ const costScrapAct = clamp0($("scrapAct")?.value) * sc;
 saveScrap = Math.max(0, costScrapAct - (clamp0($("scrapNew")?.value) * sc));
 }
 
+// Consumo energético calculado automáticamente
 let costEnergyThermal = 0;
-if(state.switches.energy){
-const changesDay = clamp0($("energyChangesDay")?.value);
-const daysMonth = clamp0($("energyDaysMonth")?.value);
-const kwhCost = clamp0($("costKwh")?.value);
-const pgK = clamp0($("pgKw")?.value);
-const thK = clamp0($("thermalKw")?.value);
+const daysMonth = Math.max(1, clamp0($("energyDaysMonth")?.value));
+const totalChangesMonth = clamp0($("chgAct")?.value);
+const changesDay = totalChangesMonth / daysMonth;
 
-// Costo energético directo por ciclo de cambio
-const pgDaily = changesDay * kwhCost * pgK;
-const thermalDaily = changesDay * kwhCost * thK;
+if($("energyChangesDisplay")) {
+  $("energyChangesDisplay").value = changesDay > 0 ? `${changesDay.toFixed(1)} cambios/día` : '0 cambios/día';
+}
+
+if(state.switches.energy){
+const kwhCost = clamp0($("costKwh")?.value);
+const pgDaily = changesDay * kwhCost * (PG_KW * (15 / 3600));
+const thermalDaily = changesDay * kwhCost * (THERMAL_KW * (180 / 3600));
+
 saveEnergy = Math.max(0, (thermalDaily - pgDaily) * daysMonth);
 costEnergyThermal = thermalDaily * daysMonth;
 }
@@ -1434,17 +1440,25 @@ INICIALIZACIÓN SEGURA
 ======================================================== */
 function bindInputs(){
 if(!state.study.studyDate) state.study.studyDate = new Date().toISOString().split('T')[0];
-if($("studyDate")) $("studyDate").value = state.study.studyDate;
+
+const dateInput = $("studyDate");
+if(dateInput) {
+  dateInput.value = state.study.studyDate;
+  dateInput.addEventListener("change", (e) => {
+    state.study.studyDate = e.target.value;
+    persist();
+  });
+}
 
 document.querySelectorAll("[data-study]").forEach(el => {
-const k = el.getAttribute("data-study");
-if(k && k !== "studyDate" && state.study[k] != null && !el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
-el.value = state.study[k];
-}
-el.addEventListener("input", () => {
-if(k) state.study[k] = el.value;
-persist();
-});
+  const k = el.getAttribute("data-study");
+  if(k && k !== "studyDate" && state.study[k] != null && !el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
+    el.value = state.study[k];
+  }
+  el.addEventListener("input", () => {
+    if(k && k !== "studyDate") state.study[k] = el.value;
+    persist();
+  });
 });
 
 const btnToggleHrCalc = $("btnToggleHrCalc");
