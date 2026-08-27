@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>REGO-FIX Smart Tooling & Machining Assistant</title>
   
   <link rel="manifest" href="manifest.json">
@@ -13,38 +13,47 @@
   <meta name="apple-mobile-web-app-title" content="RF Calculator">
   <link rel="apple-touch-icon" href="https://alexrasa.store/assets/regofixlogo.png">
 
-  <!-- Estilos CSS locales -->
+  <!-- Estilos locales -->
   <link rel="stylesheet" href="./lib/tailwindcss.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
   
   <style>
-    /* ==========================================================================
-       VARIABLES Y ESTILOS GLOBALES
-       ========================================================================== */
     :root { 
       --rego-red: #D31B23; 
       --rego-blue: #28556C; 
       --rego-green: #79A336; 
       --bg-light: #F8FAFC;
-
-      --card-min-height: 84px;
-      --card-padding: 0.65rem 0.8rem;
     }
 
-    body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; color: #1E293B; }
+    body { 
+      background-color: var(--bg-light); 
+      font-family: 'Inter', sans-serif; 
+      color: #1E293B;
+      -webkit-tap-highlight-color: transparent;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
     .mono { font-family: 'JetBrains Mono', monospace; }
     
     .wizard-card {
-      background: #FFFFFF; border-radius: 18px; padding: 1.25rem;
+      background: #FFFFFF; 
+      border-radius: 20px; 
       box-shadow: 0 4px 20px -2px rgba(40, 85, 108, 0.08);
       border: 1px solid #E2E8F0;
     }
 
     .option-card {
-      border: 1.5px solid #CBD5E1; border-radius: 10px; padding: var(--card-padding);
-      cursor: pointer; transition: all 0.15s ease-in-out;
-      background: #FFFFFF; display: flex; flex-direction: column; justify-content: space-between;
-      min-height: var(--card-min-height);
+      border: 1.5px solid #CBD5E1; 
+      border-radius: 12px; 
+      padding: 0.65rem 0.85rem;
+      cursor: pointer; 
+      transition: all 0.15s ease-in-out;
+      background: #FFFFFF; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: space-between;
+      min-height: 80px;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .option-card:hover { border-color: #64748B; background-color: #F8FAFC; }
     .option-card.selected {
@@ -57,107 +66,109 @@
     .card-desc { font-size: 0.72rem; color: #64748B; line-height: 1.25; margin-top: 2px; }
     .card-footer { font-size: 0.68rem; font-weight: 700; color: var(--rego-green); margin-top: 4px; }
 
-    /* ESTILO COMPACTO Y ELEGANTE PARA LOS BADGES */
     .badge-tag {
       font-size: 0.62rem;
       font-weight: 800;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.02em;
       padding: 0.15rem 0.45rem;
       border-radius: 5px;
       white-space: nowrap;
       display: inline-flex;
       align-items: center;
       line-height: 1;
-      border: 1px solid rgba(0,0,0,0.06);
     }
 
-    /* BOTONES VISIBLES */
+    /* Botones de Navegación */
     .btn-primary-rf {
       background-color: var(--rego-red) !important;
       color: #FFFFFF !important;
       font-weight: 900;
       font-size: 0.8rem;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      padding: 0.65rem 1.5rem;
+      padding: 0.7rem 1.4rem;
       border-radius: 10px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      gap: 0.4rem;
       box-shadow: 0 3px 10px rgba(211, 27, 35, 0.25);
-      transition: all 0.15s ease;
-      border: 1px solid transparent;
+      cursor: pointer;
+      min-height: 44px;
     }
-    .btn-primary-rf:hover {
-      background-color: #B0151C !important;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(211, 27, 35, 0.35);
-    }
+    .btn-primary-rf:active { transform: scale(0.97); background-color: #B0151C !important; }
 
     .btn-secondary-rf {
       background-color: #F1F5F9 !important;
       color: #334155 !important;
       font-weight: 800;
       font-size: 0.8rem;
-      padding: 0.65rem 1.25rem;
+      padding: 0.7rem 1.2rem;
       border-radius: 10px;
       border: 1.5px solid #CBD5E1;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s ease;
+      cursor: pointer;
+      min-height: 44px;
     }
-    .btn-secondary-rf:hover {
-      background-color: #E2E8F0 !important;
-      color: #0F172A !important;
-      border-color: #94A3B8;
-    }
+    .btn-secondary-rf:active { transform: scale(0.97); background-color: #E2E8F0 !important; }
 
     .input-box {
-      width: 100%; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0.45rem 0.65rem;
-      font-weight: 700; color: var(--rego-blue); outline: none; transition: all 0.15s; background: #FFFFFF;
+      width: 100%; 
+      border: 1.5px solid #CBD5E1; 
+      border-radius: 8px; 
+      padding: 0.5rem 0.65rem;
+      font-weight: 700; 
+      color: var(--rego-blue); 
+      outline: none; 
+      background: #FFFFFF;
+      font-size: 0.85rem;
+      min-height: 40px;
     }
-    .input-box:focus { border-color: var(--rego-red); box-shadow: 0 0 0 2px rgba(211,27,35,0.1); }
+    .input-box:focus { border-color: var(--rego-red); }
 
     .step-pill {
-      width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center;
+      width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
       justify-content: center; font-weight: 800; font-size: 0.75rem;
-      background: #E2E8F0; color: #64748B; transition: all 0.2s ease;
+      background: #E2E8F0; color: #64748B;
     }
     .step-pill.active { background: var(--rego-red); color: #FFFFFF; }
     .step-pill.completed { background: var(--rego-blue); color: #FFFFFF; }
 
-    .lang-btn { filter: grayscale(100%); opacity: 0.4; transition: all 0.15s ease; cursor: pointer; border-radius: 4px; overflow: hidden; display: inline-flex; }
-    .lang-btn:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
-    .lang-btn.active { filter: grayscale(0%); opacity: 1; transform: scale(1.1); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+    .lang-btn { filter: grayscale(100%); opacity: 0.4; cursor: pointer; border-radius: 4px; overflow: hidden; display: inline-flex; }
+    .lang-btn.active { filter: grayscale(0%); opacity: 1; transform: scale(1.08); }
 
+    /* Scrollbars adaptadas a móvil y tablet */
     .scroll-container {
-      max-height: 330px;
+      max-height: 52vh;
       overflow-y: auto;
       padding-right: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    @media (min-width: 768px) {
+      .scroll-container { max-height: 400px; }
     }
     .scroll-container::-webkit-scrollbar { width: 5px; }
     .scroll-container::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
     .scroll-container::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-    .scroll-container::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
   </style>
 </head>
-<body class="py-4 px-3 md:px-6">
+<body class="py-3 px-3 sm:px-6 md:px-8">
 
-  <main class="max-w-4xl mx-auto">
+  <main class="max-w-5xl mx-auto">
     
-    <!-- Barra Superior -->
-    <header class="flex flex-wrap justify-between items-center mb-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm gap-3">
+    <!-- Barra Superior / Header -->
+    <header class="flex flex-wrap justify-between items-center mb-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm gap-2">
       <div class="flex items-center gap-3">
-        <div class="h-7 flex items-center">
-          <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-6 object-contain" alt="REGO-FIX" onerror="this.onerror=null; this.src='/assets/regofixlogo.png';">
+        <div class="h-8 flex items-center">
+          <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-7 object-contain" alt="REGO-FIX" onerror="this.onerror=null; this.src='/assets/regofixlogo.png';">
         </div>
         <span class="text-xs font-black text-[#28556C] uppercase tracking-wider hidden sm:inline border-l pl-3 border-slate-200">Machining Wizard</span>
       </div>
 
       <div class="flex items-center gap-3">
-        <!-- Botón Instalar App PWA -->
+        <!-- Botón Instalar PWA -->
         <button id="btn-install" class="hidden items-center gap-1 bg-[#28556C] hover:bg-[#1d3d4d] text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           <span>Instalar</span>
@@ -165,10 +176,10 @@
 
         <!-- Selector de Unidad -->
         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
-          <label class="px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition" id="lbl_unit_mm">
+          <label class="px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition" id="lbl_unit_mm">
             <input type="radio" name="unit_sys" value="mm" checked onchange="window.changeUnit('mm')" class="hidden"> Métrico
           </label>
-          <label class="px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500" id="lbl_unit_in">
+          <label class="px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500" id="lbl_unit_in">
             <input type="radio" name="unit_sys" value="in" onchange="window.changeUnit('in')" class="hidden"> Imperial
           </label>
         </div>
@@ -189,43 +200,44 @@
     </header>
 
     <!-- Barra de Pasos -->
-    <div class="mb-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+    <div class="mb-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
       <div class="flex items-center justify-between max-w-xl mx-auto">
         <div class="flex items-center gap-1.5">
           <div id="pill-1" class="step-pill active">1</div>
-          <span id="txt_step1_nav" class="text-[11px] font-bold text-[#28556C] hidden sm:inline">Portaherramientas</span>
+          <span id="txt_step1_nav" class="text-xs font-bold text-[#28556C] hidden sm:inline">Portaherramientas</span>
         </div>
         <div class="h-0.5 flex-1 bg-slate-200 mx-2 rounded"></div>
         <div class="flex items-center gap-1.5">
           <div id="pill-2" class="step-pill">2</div>
-          <span id="txt_step2_nav" class="text-[11px] font-bold text-slate-400 hidden sm:inline">Material</span>
+          <span id="txt_step2_nav" class="text-xs font-bold text-slate-400 hidden sm:inline">Material</span>
         </div>
         <div class="h-0.5 flex-1 bg-slate-200 mx-2 rounded"></div>
         <div class="flex items-center gap-1.5">
           <div id="pill-3" class="step-pill">3</div>
-          <span id="txt_step3_nav" class="text-[11px] font-bold text-slate-400 hidden sm:inline">Operación</span>
+          <span id="txt_step3_nav" class="text-xs font-bold text-slate-400 hidden sm:inline">Operación</span>
         </div>
         <div class="h-0.5 flex-1 bg-slate-200 mx-2 rounded"></div>
         <div class="flex items-center gap-1.5">
           <div id="pill-4" class="step-pill">4</div>
-          <span id="txt_step4_nav" class="text-[11px] font-bold text-slate-400 hidden sm:inline">Herramienta</span>
+          <span id="txt_step4_nav" class="text-xs font-bold text-slate-400 hidden sm:inline">Herramienta</span>
         </div>
       </div>
     </div>
 
     <!-- Wizard Card -->
-    <div class="wizard-card">
+    <div class="wizard-card p-3 sm:p-5 md:p-6">
       
       <!-- PASO 1: Sujeción REGO-FIX -->
       <section id="step-1">
-        <div class="mb-2.5">
+        <div class="mb-3">
           <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step1_badge">Paso 1 de 4</span>
-          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step1_title">Selecciona el Sistema de Sujeción REGO-FIX</h2>
+          <h2 class="text-sm md:text-base font-black text-[#28556C] mt-0.5" id="txt_step1_title">Selecciona el Sistema de Sujeción REGO-FIX</h2>
           <p class="text-[11px] text-slate-500" id="txt_step1_sub">Elige el portaherramientas montado en el husillo.</p>
         </div>
 
-        <div class="scroll-container mb-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        <div class="scroll-container mb-4">
+          <!-- Responsive Grid: 1 col en iPhone, 2 en iPad, 3 en Desktop -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             <div class="option-card" onclick="window.selectOption('holder', 'pg48', this)">
               <div>
                 <div class="flex justify-between items-center">
@@ -289,7 +301,7 @@
                 </div>
                 <p class="card-desc">Herramientas miniatura de Ø0.2 a Ø3.175 mm[cite: 3].</p>
               </div>
-              <div class="card-footer">TIR ≤ 3 µm | Spindles > 40k RPM[cite: 3]</div>
+              <div class="card-footer">TIR ≤ 3 µm | Husillos > 40k RPM[cite: 3]</div>
             </div>
 
             <div class="option-card" onclick="window.selectOption('holder', 'mr_all', this)">
@@ -327,8 +339,8 @@
           </div>
         </div>
 
-        <div class="flex justify-end pt-2.5 border-t border-slate-100">
-          <button onclick="window.goToStep(2)" class="btn-primary-rf" id="btn_next1">
+        <div class="flex justify-end pt-3 border-t border-slate-100">
+          <button type="button" onclick="window.goToStep(2)" class="btn-primary-rf w-full sm:w-auto" id="btn_next1">
             <span>Siguiente: Material</span>
             <span>→</span>
           </button>
@@ -337,23 +349,23 @@
 
       <!-- PASO 2: Material Extendido -->
       <section id="step-2" class="hidden">
-        <div class="mb-2.5">
+        <div class="mb-3">
           <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step2_badge">Paso 2 de 4</span>
-          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step2_title">¿Qué Material vas a Mecanizar?</h2>
+          <h2 class="text-sm md:text-base font-black text-[#28556C] mt-0.5" id="txt_step2_title">¿Qué Material vas a Mecanizar?</h2>
           <p class="text-[11px] text-slate-500" id="txt_step2_sub">Selecciona por sector industrial o tipo de aleación.</p>
         </div>
 
-        <div class="flex flex-wrap gap-1.5 mb-2.5">
-          <button onclick="window.filterMaterials('all', this)" class="mat-filter active px-2.5 py-1 bg-[#28556C] text-white text-[10px] font-bold rounded-lg transition">Todos</button>
-          <button onclick="window.filterMaterials('auto', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Automotriz</button>
-          <button onclick="window.filterMaterials('aero', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Aeroespacial</button>
-          <button onclick="window.filterMaterials('med', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Médico</button>
-          <button onclick="window.filterMaterials('general', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Taller / Moldes</button>
-          <button onclick="window.filterMaterials('nonmetal', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">No Metales</button>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <button type="button" onclick="window.filterMaterials('all', this)" class="mat-filter active px-2.5 py-1 bg-[#28556C] text-white text-[11px] font-bold rounded-lg transition">Todos</button>
+          <button type="button" onclick="window.filterMaterials('auto', this)" class="mat-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">Automotriz</button>
+          <button type="button" onclick="window.filterMaterials('aero', this)" class="mat-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">Aeroespacial</button>
+          <button type="button" onclick="window.filterMaterials('med', this)" class="mat-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">Médico</button>
+          <button type="button" onclick="window.filterMaterials('general', this)" class="mat-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">Taller / Moldes</button>
+          <button type="button" onclick="window.filterMaterials('nonmetal', this)" class="mat-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">No Metales</button>
         </div>
 
-        <div class="scroll-container mb-3">
-          <div id="material_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        <div class="scroll-container mb-4">
+          <div id="material_grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             <!-- AUTOMOTRIZ -->
             <div class="option-card mat-item selected" data-cat="auto" onclick="window.selectOption('material', 'al_a356', this)">
               <div>
@@ -601,9 +613,9 @@
           </div>
         </div>
 
-        <div class="flex justify-between pt-2.5 border-t border-slate-100">
-          <button onclick="window.goToStep(1)" class="btn-secondary-rf" id="btn_back1">← Regresar</button>
-          <button onclick="window.goToStep(3)" class="btn-primary-rf" id="btn_next2">
+        <div class="flex justify-between items-center pt-3 border-t border-slate-100 gap-2">
+          <button type="button" onclick="window.goToStep(1)" class="btn-secondary-rf w-1/2 sm:w-auto" id="btn_back1">← Regresar</button>
+          <button type="button" onclick="window.goToStep(3)" class="btn-primary-rf w-1/2 sm:w-auto" id="btn_next2">
             <span>Siguiente: Operación</span>
             <span>→</span>
           </button>
@@ -612,21 +624,21 @@
 
       <!-- PASO 3: Catálogo de Operaciones -->
       <section id="step-3" class="hidden">
-        <div class="mb-2.5">
+        <div class="mb-3">
           <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step3_badge">Paso 3 de 4</span>
-          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step3_title">¿Qué Tipo de Operación Vas a Realizar?</h2>
+          <h2 class="text-sm md:text-base font-black text-[#28556C] mt-0.5" id="txt_step3_title">¿Qué Tipo de Operación Vas a Realizar?</h2>
           <p class="text-[11px] text-slate-500" id="txt_step3_sub">La herramienta en el siguiente paso se adaptará a tu elección.</p>
         </div>
 
-        <div class="flex flex-wrap gap-1.5 mb-2.5">
-          <button onclick="window.filterOperations('all', this)" class="op-filter active px-2.5 py-1 bg-[#28556C] text-white text-[10px] font-bold rounded-lg transition">Todas</button>
-          <button onclick="window.filterOperations('milling', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Fresado</button>
-          <button onclick="window.filterOperations('hole', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Agujeros & Roscas</button>
-          <button onclick="window.filterOperations('special', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Especiales (3D / Bisel)</button>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <button type="button" onclick="window.filterOperations('all', this)" class="op-filter active px-2.5 py-1 bg-[#28556C] text-white text-[11px] font-bold rounded-lg transition">Todas</button>
+          <button type="button" onclick="window.filterOperations('milling', this)" class="op-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">Fresado</button>
+          <button type="button" onclick="window.filterOperations('hole', this)" class="op-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">Agujeros & Roscas</button>
+          <button type="button" onclick="window.filterOperations('special', this)" class="op-filter px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-lg transition">Especiales</button>
         </div>
 
-        <div class="scroll-container mb-3">
-          <div id="operation_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        <div class="scroll-container mb-4">
+          <div id="operation_grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             <!-- FRESADO -->
             <div class="option-card op-item selected" data-cat="milling" onclick="window.selectOperation('shoulder', this)">
               <div>
@@ -752,9 +764,9 @@
           </div>
         </div>
 
-        <div class="flex justify-between pt-2.5 border-t border-slate-100">
-          <button onclick="window.goToStep(2)" class="btn-secondary-rf" id="btn_back2">← Regresar</button>
-          <button onclick="window.goToStep(4)" class="btn-primary-rf" id="btn_next3">
+        <div class="flex justify-between items-center pt-3 border-t border-slate-100 gap-2">
+          <button type="button" onclick="window.goToStep(2)" class="btn-secondary-rf w-1/2 sm:w-auto" id="btn_back2">← Regresar</button>
+          <button type="button" onclick="window.goToStep(4)" class="btn-primary-rf w-1/2 sm:w-auto" id="btn_next3">
             <span>Siguiente: Herramienta</span>
             <span>→</span>
           </button>
@@ -763,22 +775,22 @@
 
       <!-- PASO 4: Herramienta Filtrada Dinámicamente -->
       <section id="step-4" class="hidden">
-        <div class="mb-2.5">
+        <div class="mb-3">
           <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step4_badge">Paso 4 de 4</span>
-          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step4_title">Herramienta de Corte y Datos de Máquina</h2>
+          <h2 class="text-sm md:text-base font-black text-[#28556C] mt-0.5" id="txt_step4_title">Herramienta de Corte y Datos de Máquina</h2>
           <p class="text-[11px] text-slate-500" id="txt_step4_sub">Herramientas compatibles para la operación seleccionada.</p>
         </div>
 
-        <div class="space-y-3 mb-3">
+        <div class="space-y-3 mb-4">
           <!-- 1. Geometría Compatible Filtrada -->
           <div>
-            <label class="block text-[11px] font-black text-[#28556C] uppercase mb-1" id="lbl_compatible_tools">1. Geometría Compatible:</label>
-            <div id="dynamic_tool_grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
+            <label class="block text-xs font-black text-[#28556C] uppercase mb-1" id="lbl_compatible_tools">1. Geometría Compatible:</label>
+            <div id="dynamic_tool_grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
           </div>
 
           <!-- 2. Sustrato y Recubrimiento -->
           <div>
-            <label class="block text-[11px] font-black text-[#28556C] uppercase mb-1">2. Sustrato / Material del Filo:</label>
+            <label class="block text-xs font-black text-[#28556C] uppercase mb-1">2. Sustrato / Material del Filo:</label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               <div class="option-card selected" onclick="window.selectOption('tool_mat', 'pcd', this)">
                 <span class="card-title">PCD (Diamante)</span>
@@ -816,34 +828,34 @@
           </div>
 
           <!-- 3. Dimensiones y Datos de Máquina -->
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_dia">Diámetro (Ø)</label>
-              <input id="input_dia" type="number" step="0.1" value="20" class="input-box text-center text-xs font-bold">
+              <input id="input_dia" type="number" step="0.1" value="20" class="input-box text-center font-bold">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_z">Filos (Z)</label>
-              <input id="input_z" type="number" value="6" class="input-box text-center text-xs font-bold">
+              <input id="input_z" type="number" value="6" class="input-box text-center font-bold">
             </div>
             <div id="box_pitch" class="hidden">
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Paso Rosca (mm)</label>
-              <input id="input_pitch" type="number" step="0.05" value="1.5" class="input-box text-center text-xs font-bold text-[#D31B23]">
+              <input id="input_pitch" type="number" step="0.05" value="1.5" class="input-box text-center font-bold text-[#D31B23]">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_proj">Proyección (L)</label>
-              <input id="input_stickout" type="number" step="1" value="60" class="input-box text-center text-xs font-bold">
+              <input id="input_stickout" type="number" step="1" value="60" class="input-box text-center font-bold">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_rpmmax">Límite RPM</label>
-              <input id="input_max_rpm" type="number" value="12000" class="input-box text-center text-xs font-black text-[#D31B23]">
+              <input id="input_max_rpm" type="number" value="12000" class="input-box text-center font-black text-[#D31B23]">
             </div>
           </div>
         </div>
 
-        <div class="flex justify-between pt-2.5 border-t border-slate-100">
-          <button onclick="window.goToStep(3)" class="btn-secondary-rf" id="btn_back3">← Regresar</button>
-          <button onclick="window.calcularResultadoFinal()" class="btn-primary-rf" id="btn_calc">
-            <span>Calcular Parámetros Óptimos</span>
+        <div class="flex justify-between items-center pt-3 border-t border-slate-100 gap-2">
+          <button type="button" onclick="window.goToStep(3)" class="btn-secondary-rf w-1/3 sm:w-auto" id="btn_back3">← Regresar</button>
+          <button type="button" onclick="window.calcularResultadoFinal()" class="btn-primary-rf w-2/3 sm:w-auto" id="btn_calc">
+            <span>Calcular Parámetros</span>
             <span>✨</span>
           </button>
         </div>
@@ -856,7 +868,7 @@
             <span class="text-[9px] font-black text-[#79A336] uppercase tracking-wider" id="txt_res_success">Cálculo Optimizado con Éxito</span>
             <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_res_header">Ficha Técnica de Mecanizado Integral</h2>
           </div>
-          <button onclick="window.goToStep(1)" class="text-xs font-bold text-slate-500 hover:text-[#D31B23] underline" id="btn_restart">Modificar Parámetros</button>
+          <button type="button" onclick="window.goToStep(1)" class="text-xs font-bold text-slate-500 hover:text-[#D31B23] underline" id="btn_restart">Modificar Parámetros</button>
         </div>
 
         <!-- Tarjetas de Velocidades Principales -->
@@ -961,7 +973,7 @@
         <!-- Diagnósticos -->
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5">
           <h4 class="text-[10px] font-black text-amber-900 uppercase tracking-wider mb-1" id="txt_res_safety">Diagnóstico de Estabilidad y Seguridad</h4>
-          <ul id="res_tips" class="text-[11px] text-amber-800 space-y-0.5 list-disc pl-4 font-medium leading-relaxed"></ul>
+          <ul id="res_tips" class="text-xs text-amber-800 space-y-0.5 list-disc pl-4 font-medium leading-relaxed"></ul>
         </div>
       </section>
 
@@ -973,7 +985,6 @@
     import { calculateCuttingPhysics } from './api/cut-conditions.js';
     import { COMPATIBLE_TOOLS_BY_OP, generateDiagnostics } from './api/recommend.js';
 
-    // Variables de Estado Reactivo
     let currentLang = 'es';
     let currentUnit = 'mm';
 
@@ -997,10 +1008,10 @@
         step3_badge: "Paso 3 de 4", step3_title: "¿Qué Tipo de Operación Vas a Realizar?", step3_sub: "La herramienta en el siguiente paso se adaptará a tu elección.",
         step4_badge: "Paso 4 de 4", step4_title: "Herramienta de Corte y Datos de Máquina", step4_sub: "Herramientas compatibles para la operación seleccionada.",
         lbl_dia: "Diámetro (Ø)", lbl_z: "Filos / Dientes (Z)", lbl_proj: "Proyección (L)", lbl_rpmmax: "Límite RPM",
-        btn_next: "Siguiente: Material →", btn_back: "← Regresar", btn_calc: "Calcular Parámetros Óptimos ✨",
+        btn_next: "Siguiente: Material →", btn_back: "← Regresar", btn_calc: "Calcular Parámetros ✨",
         res_success: "Cálculo Optimizado con Éxito", res_header: "Ficha Técnica de Mecanizado Integral", res_restart: "Modificar Parámetros",
         res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidad y Seguridad",
-        nav_holder: "Portaherramientas", nav_mat: "Material", nav_op: "Operación", nav_tool: "Herramienta & Máquina",
+        nav_holder: "Porta", nav_mat: "Material", nav_op: "Operación", nav_tool: "Herramienta",
         tip_pg: "<b>powRgrip® asegurado:</b> Concentricidad < 3 µm con excelente amortiguación de vibraciones. Carga equilibrada en los filos[cite: 3].",
         tip_mr: "<b>micRun® verificado:</b> Asegura apriete adecuado con tuerca lisa MR para tolerancias de salto inferiores a 3 µm[cite: 2].",
         tip_er: "<b>Boquilla ER:</b> Verifica el par de apriete recomendado con llave dinamométrica para evitar deflexión[cite: 1].",
@@ -1013,10 +1024,10 @@
         step3_badge: "Step 3 of 4", step3_title: "What Type of Operation Will You Perform?", step3_sub: "The cutting tool in the next step will adapt to your choice.",
         step4_badge: "Step 4 of 4", step4_title: "Cutting Tool & Machine Parameters", step4_sub: "Compatible tools for the selected operation.",
         lbl_dia: "Diameter (Ø)", lbl_z: "Flutes (Z)", lbl_proj: "Stick-out (L)", lbl_rpmmax: "Max RPM",
-        btn_next: "Next: Material →", btn_back: "← Back", btn_calc: "Calculate Optimal Parameters ✨",
+        btn_next: "Next: Material →", btn_back: "← Back", btn_calc: "Calculate Parameters ✨",
         res_success: "Optimized Calculation Ready", res_header: "Comprehensive Machining Data Sheet", res_restart: "Modify Parameters",
         res_cnc: "Suggested CNC Block", res_safety: "Stability & Toolholding Diagnostics",
-        nav_holder: "Toolholder", nav_mat: "Material", nav_op: "Operation", nav_tool: "Tool & Machine",
+        nav_holder: "Holder", nav_mat: "Material", nav_op: "Operation", nav_tool: "Tooling",
         tip_pg: "<b>powRgrip® secured:</b> Total runout < 3 µm with outstanding vibration damping. Equal chip load across all flutes[cite: 3].",
         tip_mr: "<b>micRun® verified:</b> Ensure proper torque with MR wrench to achieve ultra-high concentricity[cite: 2].",
         tip_er: "<b>ER Collet:</b> Make sure to tighten with a calibrated torque wrench. Consider upgrading to powRgrip®[cite: 1].",
@@ -1029,10 +1040,10 @@
         step3_badge: "Passo 3 de 4", step3_title: "Qual Tipo de Operação Será Realizada?", step3_sub: "A ferramenta no próximo passo será adaptada à sua escolha.",
         step4_badge: "Passo 4 de 4", step4_title: "Ferramenta de Corte e Dados da Máquina", step4_sub: "Ferramentas compatíveis para a operação selecionada.",
         lbl_dia: "Diâmetro (Ø)", lbl_z: "Facas (Z)", lbl_proj: "Balanço (L)", lbl_rpmmax: "Limite RPM",
-        btn_next: "Próximo: Material →", btn_back: "← Voltar", btn_calc: "Calcular Parâmetros Ótimos ✨",
+        btn_next: "Próximo: Material →", btn_back: "← Voltar", btn_calc: "Calcular Parâmetros ✨",
         res_success: "Cálculo Otimizado com Sucesso", res_header: "Ficha Técnica de Usinagem Integral", res_restart: "Modificar Parâmetros",
         res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidade e Fixação",
-        nav_holder: "Fixação", nav_mat: "Material", nav_op: "Operação", nav_tool: "Ferramenta & Máquina",
+        nav_holder: "Fixação", nav_mat: "Material", nav_op: "Operação", nav_tool: "Ferramenta",
         tip_pg: "<b>powRgrip® garantido:</b> Batimento < 3 µm com excelente amortecimento harmônico[cite: 3].",
         tip_mr: "<b>micRun® verificado:</b> Aperte com a chave MR recomendada para garantir concentricidade superior[cite: 2].",
         tip_er: "<b>Pinça ER:</b> Verifique o torque correto de aperto. Para maior vida útil, considere powRgrip®[cite: 1].",
@@ -1041,7 +1052,6 @@
       }
     };
 
-    // Registro de funciones globales
     window.selectOption = function(category, value, el) {
       state[category] = value;
       const parent = el.parentElement;
@@ -1151,13 +1161,13 @@
       const btnIn = document.getElementById('lbl_unit_in');
 
       if (unit === 'in') {
-        btnIn.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
-        btnMm.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
+        btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+        btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
         document.getElementById('input_dia').value = '0.75';
         document.getElementById('input_stickout').value = '2.5';
       } else {
-        btnMm.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
-        btnIn.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
+        btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+        btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
         document.getElementById('input_dia').value = '20';
         document.getElementById('input_stickout').value = '60';
       }
@@ -1178,6 +1188,7 @@
       if (stepNumber === 4) {
         renderDynamicTools(state.operation);
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     function renderDynamicTools(opKey) {
@@ -1198,8 +1209,8 @@
         };
 
         card.innerHTML = `
-          <span class="font-black text-xs text-[#28556C]">${tool.title}</span>
-          <span class="text-[9px] text-slate-400 mt-0.5 block">${tool.sub}</span>
+          <span class="card-title">${tool.title}</span>
+          <span class="card-desc">${tool.sub}</span>
         `;
         container.appendChild(card);
       });
@@ -1306,7 +1317,7 @@
       return val > 100 ? Math.round(val).toLocaleString('en') : val.toFixed(1);
     }
 
-    // Inicializar al cargar
+    // Inicializar
     window.setLang('es');
     renderDynamicTools(state.operation);
   </script>
