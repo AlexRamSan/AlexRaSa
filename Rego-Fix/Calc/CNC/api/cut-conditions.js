@@ -1,4 +1,4 @@
-// Base de datos de Materiales (k_c en N/mm2, Vc base, fz base)
+// Base de datos de Materiales (k_c en N/mm2, Vc base en m/min, fz base en mm/z)
 export const MATERIALS_DB = {
   // Automotriz
   'al_a356': { name: 'Aluminio Fundición A356 / A380', kc: 850, vc: 600, fz: 0.14, cat: 'auto' },
@@ -47,7 +47,7 @@ export const SUBSTRATES_DB = {
   'hss_std': { name: 'HSS Estándar (M2)', fVc: 0.30, fFz: 0.75 }
 };
 
-// Función principal de cálculo de física de corte
+// Motor cinemático
 export function calculateCuttingPhysics(params) {
   const { holder, material, operation, tool_type, tool_mat, dia, z, pitch, stickout, max_rpm } = params;
   
@@ -61,7 +61,6 @@ export function calculateCuttingPhysics(params) {
   let ap = dia * 0.5;
   let ae = dia * 0.4;
 
-  // Modificadores por operación y tipo
   if (operation === 'drilling' || tool_type.includes('drill')) {
     ap = dia * 3.0;
     ae = dia;
@@ -110,15 +109,15 @@ export function calculateCuttingPhysics(params) {
     fz *= 0.8;
   }
 
-  // Rigidez según portaherramientas REGO-FIX
+  // Factor de sujeción REGO-FIX
   let fHolder = 1.0;
-  if (holder === 'pg48' || holder === 'pg32') fHolder = 1.18;[cite: 3]
-  else if (holder === 'pg25' || holder === 'pg15' || holder === 'pg10' || holder === 'pg6') fHolder = 1.12;[cite: 3]
-  else if (holder === 'mr_all') fHolder = 1.10;[cite: 2]
-  else if (holder === 'er_up') fHolder = 1.0;[cite: 1]
-  else if (holder === 'er_std') fHolder = 0.85;[cite: 1]
+  if (holder === 'pg48' || holder === 'pg32') fHolder = 1.18;
+  else if (holder === 'pg25' || holder === 'pg15' || holder === 'pg10' || holder === 'pg6') fHolder = 1.12;
+  else if (holder === 'mr_all') fHolder = 1.10;
+  else if (holder === 'er_up') fHolder = 1.0;
+  else if (holder === 'er_std') fHolder = 0.85;
 
-  // Penalización por proyección (Stickout)
+  // Factor de proyección (Stickout)
   const ratioLD = stickout / dia;
   let fLD = 1.0;
   if (ratioLD > 3.5) fLD = 0.85;
@@ -144,13 +143,11 @@ export function calculateCuttingPhysics(params) {
   const vc_m_min = Math.round((rpmFinal * Math.PI * dia) / 1000);
   const vc_sfm = Math.round((rpmFinal * (dia / 25.4)) / 3.82);
 
-  // Espesor real de viruta (Hex)
   const ratioAe = Math.min(ae / dia, 1.0);
   const hex_mm = (ratioAe < 0.5 && !tool_type.includes('drill') && !tool_type.includes('tap'))
     ? fzFinal * (2 * Math.sqrt(ratioAe * (1 - ratioAe)))
     : fzFinal;
 
-  // Potencia y Remoción
   const q_cm3 = (ap * ae * vf_mm_min) / 1000;
   const powerKw = (q_cm3 * kc) / (60 * 1000 * 0.80);
   const tpf = (rpmFinal * z) / 60;
