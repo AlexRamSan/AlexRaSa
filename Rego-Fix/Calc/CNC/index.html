@@ -18,40 +18,101 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
   
   <style>
+    /* ==========================================================================
+       CONTROL CENTRAL DE TAMAÑOS Y COLORES (Ajusta aquí lo que necesites)
+       ========================================================================== */
     :root { 
       --rego-red: #D31B23; 
       --rego-blue: #28556C; 
       --rego-green: #79A336; 
       --bg-light: #F8FAFC;
+
+      /* CONTROL DE TAMAÑO DE TARJETAS */
+      --card-min-height: 82px;      /* Altura mínima de cada tarjeta */
+      --card-padding: 0.6rem 0.75rem; /* Relleno interior */
+      --card-title-size: 0.8rem;     /* Tamaño título (12.8px) */
+      --card-desc-size: 0.7rem;      /* Tamaño descripción (11.2px) */
+      --card-footer-size: 0.65rem;   /* Tamaño texto pie (10.4px) */
+      --grid-gap: 0.5rem;            /* Espacio entre tarjetas */
     }
+
     body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; color: #1E293B; }
     .mono { font-family: 'JetBrains Mono', monospace; }
     
     .wizard-card {
-      background: #FFFFFF; border-radius: 20px; padding: 1.5rem;
-      box-shadow: 0 4px 20px -2px rgba(40, 85, 108, 0.06);
+      background: #FFFFFF; border-radius: 18px; padding: 1.25rem;
+      box-shadow: 0 4px 20px -2px rgba(40, 85, 108, 0.08);
       border: 1px solid #E2E8F0;
     }
 
     .option-card {
-      border: 1.5px solid #E2E8F0; border-radius: 12px; padding: 0.75rem;
+      border: 1.5px solid #CBD5E1; border-radius: 10px; padding: var(--card-padding);
       cursor: pointer; transition: all 0.15s ease-in-out;
       background: #FFFFFF; display: flex; flex-direction: column; justify-content: space-between;
+      min-height: var(--card-min-height);
     }
-    .option-card:hover { border-color: #94A3B8; transform: translateY(-1px); }
+    .option-card:hover { border-color: #64748B; background-color: #F8FAFC; }
     .option-card.selected {
-      border-color: var(--rego-red) !important; background-color: #FEF2F2 !important;
+      border-color: var(--rego-red) !important; 
+      background-color: #FEF2F2 !important;
       box-shadow: 0 0 0 1px var(--rego-red);
     }
 
+    .card-title { font-size: var(--card-title-size); font-weight: 900; color: var(--rego-blue); }
+    .card-desc { font-size: var(--card-desc-size); color: #64748B; line-height: 1.25; margin-top: 2px; }
+    .card-footer { font-size: var(--card-footer-size); font-weight: 700; color: var(--rego-green); margin-top: 4px; }
+
+    /* BOTONES VISIBLES Y DEFINIDOS */
+    .btn-primary-rf {
+      background-color: var(--rego-red) !important;
+      color: #FFFFFF !important;
+      font-weight: 900;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.65rem 1.5rem;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 3px 10px rgba(211, 27, 35, 0.25);
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+    .btn-primary-rf:hover {
+      background-color: #B0151C !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(211, 27, 35, 0.35);
+    }
+
+    .btn-secondary-rf {
+      background-color: #F1F5F9 !important;
+      color: #334155 !important;
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 10px;
+      border: 1.5px solid #CBD5E1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .btn-secondary-rf:hover {
+      background-color: #E2E8F0 !important;
+      color: #0F172A !important;
+      border-color: #94A3B8;
+    }
+
     .input-box {
-      width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; padding: 0.5rem 0.75rem;
+      width: 100%; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0.45rem 0.65rem;
       font-weight: 700; color: var(--rego-blue); outline: none; transition: all 0.15s; background: #FFFFFF;
     }
     .input-box:focus { border-color: var(--rego-red); box-shadow: 0 0 0 2px rgba(211,27,35,0.1); }
 
     .step-pill {
-      width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+      width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center;
       justify-content: center; font-weight: 800; font-size: 0.75rem;
       background: #E2E8F0; color: #64748B; transition: all 0.2s ease;
     }
@@ -61,12 +122,16 @@
     .lang-btn { filter: grayscale(100%); opacity: 0.4; transition: all 0.15s ease; cursor: pointer; border-radius: 4px; overflow: hidden; display: inline-flex; }
     .lang-btn:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
     .lang-btn.active { filter: grayscale(0%); opacity: 1; transform: scale(1.1); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-    
-    /* Scrollbars elegantes */
-    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
-    .custom-scroll::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+    .scroll-container {
+      max-height: 330px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .scroll-container::-webkit-scrollbar { width: 5px; }
+    .scroll-container::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
+    .scroll-container::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    .scroll-container::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
   </style>
 </head>
 <body class="py-4 px-3 md:px-6">
@@ -74,10 +139,10 @@
   <main class="max-w-4xl mx-auto">
     
     <!-- Barra Superior -->
-    <header class="flex flex-wrap justify-between items-center mb-4 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm gap-3">
+    <header class="flex flex-wrap justify-between items-center mb-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm gap-3">
       <div class="flex items-center gap-3">
-        <div class="h-8 flex items-center">
-          <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-7 object-contain" alt="REGO-FIX" onerror="this.onerror=null; this.src='/assets/regofixlogo.png';">
+        <div class="h-7 flex items-center">
+          <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-6 object-contain" alt="REGO-FIX" onerror="this.onerror=null; this.src='/assets/regofixlogo.png';">
         </div>
         <span class="text-xs font-black text-[#28556C] uppercase tracking-wider hidden sm:inline border-l pl-3 border-slate-200">Machining Wizard</span>
       </div>
@@ -91,10 +156,10 @@
 
         <!-- Selector de Unidad -->
         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
-          <label class="px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition" id="lbl_unit_mm">
+          <label class="px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition" id="lbl_unit_mm">
             <input type="radio" name="unit_sys" value="mm" checked onchange="window.changeUnit('mm')" class="hidden"> Métrico
           </label>
-          <label class="px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500" id="lbl_unit_in">
+          <label class="px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500" id="lbl_unit_in">
             <input type="radio" name="unit_sys" value="in" onchange="window.changeUnit('in')" class="hidden"> Imperial
           </label>
         </div>
@@ -115,26 +180,26 @@
     </header>
 
     <!-- Barra de Pasos -->
-    <div class="mb-4 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+    <div class="mb-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
       <div class="flex items-center justify-between max-w-xl mx-auto">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <div id="pill-1" class="step-pill active">1</div>
-          <span id="txt_step1_nav" class="text-xs font-bold text-[#28556C] hidden sm:inline">Portaherramientas</span>
+          <span id="txt_step1_nav" class="text-[11px] font-bold text-[#28556C] hidden sm:inline">Portaherramientas</span>
         </div>
         <div class="h-0.5 flex-1 bg-slate-200 mx-2 rounded"></div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <div id="pill-2" class="step-pill">2</div>
-          <span id="txt_step2_nav" class="text-xs font-bold text-slate-400 hidden sm:inline">Material</span>
+          <span id="txt_step2_nav" class="text-[11px] font-bold text-slate-400 hidden sm:inline">Material</span>
         </div>
         <div class="h-0.5 flex-1 bg-slate-200 mx-2 rounded"></div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <div id="pill-3" class="step-pill">3</div>
-          <span id="txt_step3_nav" class="text-xs font-bold text-slate-400 hidden sm:inline">Operación</span>
+          <span id="txt_step3_nav" class="text-[11px] font-bold text-slate-400 hidden sm:inline">Operación</span>
         </div>
         <div class="h-0.5 flex-1 bg-slate-200 mx-2 rounded"></div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <div id="pill-4" class="step-pill">4</div>
-          <span id="txt_step4_nav" class="text-xs font-bold text-slate-400 hidden sm:inline">Herramienta & Máquina</span>
+          <span id="txt_step4_nav" class="text-[11px] font-bold text-slate-400 hidden sm:inline">Herramienta</span>
         </div>
       </div>
     </div>
@@ -144,660 +209,750 @@
       
       <!-- PASO 1: Sujeción REGO-FIX -->
       <section id="step-1">
-        <div class="mb-3">
-          <span class="text-[11px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step1_badge">Paso 1 de 4</span>
-          <h2 class="text-base md:text-lg font-black text-[#28556C] mt-0.5" id="txt_step1_title">Selecciona el Sistema de Sujeción REGO-FIX</h2>
-          <p class="text-xs text-slate-500" id="txt_step1_sub">Elige el portaherramientas montado en el husillo.</p>
+        <div class="mb-2.5">
+          <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step1_badge">Paso 1 de 4</span>
+          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step1_title">Selecciona el Sistema de Sujeción REGO-FIX</h2>
+          <p class="text-[11px] text-slate-500" id="txt_step1_sub">Elige el portaherramientas montado en el husillo.</p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 mb-4 max-h-[340px] overflow-y-auto pr-1 custom-scroll">
-          <div class="option-card" onclick="window.selectOption('holder', 'pg48', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">powRgrip® PG 48</span>
-                <span class="text-[9px] bg-red-100 text-[#D31B23] px-1.5 py-0.5 rounded font-bold">Pesado</span>
+        <div class="scroll-container mb-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <div class="option-card" onclick="window.selectOption('holder', 'pg48', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">powRgrip® PG 48</span>
+                  <span class="text-[9px] bg-red-100 text-[#D31B23] px-1.5 py-0.5 rounded font-bold">Pesado</span>
+                </div>
+                <p class="card-desc">Mecanizado pesado hasta Ø40 mm (1 1/2 pulg).</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Mecanizado pesado extremo hasta Ø40 mm (1 1/2 pulg)[cite: 3].</p>
+              <div class="card-footer">TIR ≤ 3 µm | Par hasta 2000 Nm</div>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-1.5">TIR ≤ 3 µm | Par hasta 2000 Nm[cite: 3]</div>
-          </div>
 
-          <div class="option-card selected" onclick="window.selectOption('holder', 'pg32', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">powRgrip® PG 32</span>
-                <span class="text-[9px] bg-red-100 text-[#D31B23] px-1.5 py-0.5 rounded font-bold">Máx. Rigidez</span>
+            <div class="option-card selected" onclick="window.selectOption('holder', 'pg32', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">powRgrip® PG 32</span>
+                  <span class="text-[9px] bg-red-100 text-[#D31B23] px-1.5 py-0.5 rounded font-bold">Máx. Rigidez</span>
+                </div>
+                <p class="card-desc">Desbaste severo y fresado agresivo hasta Ø25.4 mm.</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Desbaste severo y fresado agresivo hasta Ø25.4 mm[cite: 3].</p>
+              <div class="card-footer">TIR ≤ 3 µm | Amortiguación total</div>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-1.5">TIR ≤ 3 µm | Amortiguación total[cite: 3]</div>
-          </div>
 
-          <div class="option-card" onclick="window.selectOption('holder', 'pg25', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">powRgrip® PG 25</span>
-                <span class="text-[9px] bg-blue-100 text-[#28556C] px-1.5 py-0.5 rounded font-bold">Estándar Pro</span>
+            <div class="option-card" onclick="window.selectOption('holder', 'pg25', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">powRgrip® PG 25</span>
+                  <span class="text-[9px] bg-blue-100 text-[#28556C] px-1.5 py-0.5 rounded font-bold">Estándar Pro</span>
+                </div>
+                <p class="card-desc">Universal balanceado hasta Ø20.0 mm (3/4 pulg).</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Universal balanceado hasta Ø20.0 mm (3/4 pulg)[cite: 3].</p>
+              <div class="card-footer">TIR ≤ 3 µm | Versatilidad</div>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-1.5">TIR ≤ 3 µm | Versatilidad[cite: 3]</div>
-          </div>
 
-          <div class="option-card" onclick="window.selectOption('holder', 'pg15', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">powRgrip® PG 15</span>
-                <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">HSC / Moldes</span>
+            <div class="option-card" onclick="window.selectOption('holder', 'pg15', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">powRgrip® PG 15</span>
+                  <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">HSC / Moldes</span>
+                </div>
+                <p class="card-desc">Perfil delgado para cavidades hasta Ø10 mm.</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Perfil delgado para cavidades y fresado fino hasta Ø10 mm[cite: 3].</p>
+              <div class="card-footer">TIR ≤ 3 µm | Acceso óptimo</div>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-1.5">TIR ≤ 3 µm | Acceso óptimo[cite: 3]</div>
-          </div>
 
-          <div class="option-card" onclick="window.selectOption('holder', 'pg10', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">powRgrip® PG 10</span>
-                <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">Micro</span>
+            <div class="option-card" onclick="window.selectOption('holder', 'pg10', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">powRgrip® PG 10</span>
+                  <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">Micro</span>
+                </div>
+                <p class="card-desc">Fijación de alta velocidad para Ø1 a Ø6 mm.</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Fijación de alta velocidad para herramientas de Ø1 a Ø6 mm[cite: 3].</p>
+              <div class="card-footer">TIR ≤ 3 µm | Alta velocidad</div>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-1.5">TIR ≤ 3 µm | Alta velocidad[cite: 3]</div>
-          </div>
 
-          <div class="option-card" onclick="window.selectOption('holder', 'pg6', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">powRgrip® PG 6</span>
-                <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">Micro-Fijación</span>
+            <div class="option-card" onclick="window.selectOption('holder', 'pg6', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">powRgrip® PG 6</span>
+                  <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">Micro-Fijación</span>
+                </div>
+                <p class="card-desc">Herramientas miniatura de Ø0.2 a Ø3.175 mm.</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Micro-herramientas de Ø0.2 a Ø3.175 mm (1/8 pulg)[cite: 3].</p>
+              <div class="card-footer">TIR ≤ 3 µm | Spindles > 40k RPM</div>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-1.5">TIR ≤ 3 µm | Spindles > 40k RPM[cite: 3]</div>
-          </div>
 
-          <div class="option-card" onclick="window.selectOption('holder', 'mr_all', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">micRun® (MR 11-32)</span>
-                <span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Tuerca Lisa</span>
+            <div class="option-card" onclick="window.selectOption('holder', 'mr_all', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">micRun® (MR 11-32)</span>
+                  <span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Tuerca Lisa</span>
+                </div>
+                <p class="card-desc">Portapinzas mecánico de ultra-precisión.</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Portapinzas y pinzas de súper precisión mecánica[cite: 2].</p>
+              <div class="card-footer" style="color: var(--rego-blue)">TIR ≤ 3 µm a 3xD | Pinza 2 µm</div>
             </div>
-            <div class="text-[10px] font-bold text-[#28556C] mt-1.5">TIR ≤ 3 µm a 3xD | Pinza 2 µm[cite: 2]</div>
-          </div>
 
-          <div class="option-card" onclick="window.selectOption('holder', 'er_up', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">ER Ultra-Precision (UP)</span>
-                <span class="text-[9px] bg-blue-100 text-[#28556C] px-1.5 py-0.5 rounded font-bold">ER 8 - ER 50</span>
+            <div class="option-card" onclick="window.selectOption('holder', 'er_up', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">ER Ultra-Precision (UP)</span>
+                  <span class="text-[9px] bg-blue-100 text-[#28556C] px-1.5 py-0.5 rounded font-bold">ER 8 - ER 50</span>
+                </div>
+                <p class="card-desc">Pinzas ER con tolerancia de salto estrecha.</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">Pinzas ER rectificadas con tolerancia de salto estrecha[cite: 1].</p>
+              <div class="card-footer">TIR ≤ 5 µm | Balance DIN 6499</div>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-1.5">TIR ≤ 5 µm | Balance DIN 6499[cite: 1]</div>
-          </div>
 
-          <div class="option-card" onclick="window.selectOption('holder', 'er_std', this)">
-            <div>
-              <div class="flex justify-between items-center mb-0.5">
-                <span class="font-black text-[#28556C] text-xs">ER Estándar REGO-FIX</span>
-                <span class="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">Clásico</span>
+            <div class="option-card" onclick="window.selectOption('holder', 'er_std', this)">
+              <div>
+                <div class="flex justify-between items-center">
+                  <span class="card-title">ER Estándar REGO-FIX</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">Clásico</span>
+                </div>
+                <p class="card-desc">El diseño original para uso general.</p>
               </div>
-              <p class="text-[11px] text-slate-500 leading-tight">El diseño original suizo para aplicaciones generales[cite: 1].</p>
+              <div class="card-footer" style="color: #64748B">TIR ≤ 10 µm | Versatilidad</div>
             </div>
-            <div class="text-[10px] font-bold text-slate-500 mt-1.5">TIR ≤ 10 µm | Versatilidad[cite: 1]</div>
           </div>
         </div>
 
-        <div class="flex justify-end pt-3 border-t border-slate-100">
-          <button onclick="window.goToStep(2)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-5 py-2.5 rounded-xl uppercase tracking-wider transition" id="btn_next1">Siguiente: Material →</button>
+        <div class="flex justify-end pt-2.5 border-t border-slate-100">
+          <button onclick="window.goToStep(2)" class="btn-primary-rf" id="btn_next1">
+            <span>Siguiente: Material</span>
+            <span>→</span>
+          </button>
         </div>
       </section>
 
       <!-- PASO 2: Material Extendido -->
       <section id="step-2" class="hidden">
-        <div class="mb-3">
-          <span class="text-[11px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step2_badge">Paso 2 de 4</span>
-          <h2 class="text-base md:text-lg font-black text-[#28556C] mt-0.5" id="txt_step2_title">¿Qué Material vas a Mecanizar?</h2>
-          <p class="text-xs text-slate-500" id="txt_step2_sub">Selecciona por sector industrial o tipo de aleación.</p>
+        <div class="mb-2.5">
+          <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step2_badge">Paso 2 de 4</span>
+          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step2_title">¿Qué Material vas a Mecanizar?</h2>
+          <p class="text-[11px] text-slate-500" id="txt_step2_sub">Selecciona por sector industrial o tipo de aleación.</p>
         </div>
 
-        <div class="flex flex-wrap gap-1.5 mb-3">
-          <button onclick="window.filterMaterials('all', this)" class="mat-filter active px-2.5 py-1 bg-[#28556C] text-white text-[11px] font-bold rounded-lg transition">Todos</button>
-          <button onclick="window.filterMaterials('auto', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">Automotriz</button>
-          <button onclick="window.filterMaterials('aero', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">Aeroespacial</button>
-          <button onclick="window.filterMaterials('med', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">Médico</button>
-          <button onclick="window.filterMaterials('general', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">Taller / Moldes</button>
-          <button onclick="window.filterMaterials('nonmetal', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">No Metales</button>
+        <div class="flex flex-wrap gap-1.5 mb-2.5">
+          <button onclick="window.filterMaterials('all', this)" class="mat-filter active px-2.5 py-1 bg-[#28556C] text-white text-[10px] font-bold rounded-lg transition">Todos</button>
+          <button onclick="window.filterMaterials('auto', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Automotriz</button>
+          <button onclick="window.filterMaterials('aero', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Aeroespacial</button>
+          <button onclick="window.filterMaterials('med', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Médico</button>
+          <button onclick="window.filterMaterials('general', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Taller / Moldes</button>
+          <button onclick="window.filterMaterials('nonmetal', this)" class="mat-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">No Metales</button>
         </div>
 
-        <div id="material_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 mb-4 max-h-[340px] overflow-y-auto pr-1 custom-scroll">
-          <!-- AUTOMOTRIZ -->
-          <div class="option-card mat-item selected" data-cat="auto" onclick="window.selectOption('material', 'al_a356', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Aluminio Fundición A356 / A380</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+        <div class="scroll-container mb-3">
+          <div id="material_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <!-- AUTOMOTRIZ -->
+            <div class="option-card mat-item selected" data-cat="auto" onclick="window.selectOption('material', 'al_a356', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Aluminio Fundición A356 / A380</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+                </div>
+                <p class="card-desc">Alto silicio (> 7% Si). Bloques, rines. Abrasivo.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Alto silicio (> 7% Si). Bloques, rines, carcasas. Abrasivo.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="auto" onclick="window.selectOption('material', 'cgi_iron', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Hierro Vermicular (CGI)</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+            <div class="option-card mat-item" data-cat="auto" onclick="window.selectOption('material', 'cgi_iron', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Hierro Vermicular (CGI)</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+                </div>
+                <p class="card-desc">Bloques diesel de alta presión.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Bloques diesel de alta presión. Mayor dureza que GG25.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'nodular_iron', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Hierro Dúctil (GGG40 / GGG60)</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+            <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'nodular_iron', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Hierro Dúctil (GGG40 / GGG60)</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+                </div>
+                <p class="card-desc">Cigüeñales, manguetas y suspensión.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Cigüeñales, manguetas y componentes de suspensión.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'gray_iron', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Fundición Gris (GG25 / Clase 30)</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+            <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'gray_iron', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Fundición Gris (GG25 / Clase 30)</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+                </div>
+                <p class="card-desc">Discos y tambores de freno. Viruta corta.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Discos y tambores de freno. Viruta fragmentada.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'forged_steel', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Acero Forjado (4340 / 8620)</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+            <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'forged_steel', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Acero Forjado (4340 / 8620)</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+                </div>
+                <p class="card-desc">Bielas, flechas, engranes.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Bielas, flechas, engranes de transmisión.</p>
-          </div>
 
-          <!-- AEROESPACIAL -->
-          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'al_7075', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Aluminio Aeronáutico (7075-T6)</span>
-              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+            <!-- AEROESPACIAL -->
+            <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'al_7075', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Aluminio 7075-T6 / 2024</span>
+                  <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+                </div>
+                <p class="card-desc">Estructuras de ala y fuselaje.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Estructuras de ala y fuselaje. Alta remoción.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'al_li', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Aluminio-Litio (Al-Li 2099)</span>
-              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+            <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'al_li', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Aluminio-Litio (Al-Li 2099)</span>
+                  <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+                </div>
+                <p class="card-desc">Paneles alares de ultra-bajo peso.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Paneles alares avanzados de ultra-bajo peso.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="aero med" onclick="window.selectOption('material', 'ti_6al4v', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Titanio Grado 5 (Ti-6Al-4V)</span>
-              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO / MED</span>
+            <div class="option-card mat-item" data-cat="aero med" onclick="window.selectOption('material', 'ti_6al4v', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Titanio Grado 5 (Ti-6Al-4V)</span>
+                  <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO / MED</span>
+                </div>
+                <p class="card-desc">Trenes de aterrizaje e implantes.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Trenes de aterrizaje, componentes de turbina e implantes.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'ti_5553', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Titanio Beta (Ti-5553)</span>
-              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+            <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'ti_5553', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Titanio Beta (Ti-5553)</span>
+                  <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+                </div>
+                <p class="card-desc">Tenacidad estructural aeroespacial.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Alta tenacidad estructural aeroespacial.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'inconel_718', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Inconel 718 / 625 (HRSA)</span>
-              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+            <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'inconel_718', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Inconel 718 / 625 (HRSA)</span>
+                  <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+                </div>
+                <p class="card-desc">Turbinas y cámaras de combustión.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Discos de turbina, cámaras de combustión. Base níquel.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'waspaloy', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Waspaloy / René 41</span>
-              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+            <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'waspaloy', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Waspaloy / René 41</span>
+                  <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
+                </div>
+                <p class="card-desc">Superaleaciones para calor extremo (> 700°C).</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Superaleaciones para temperaturas extremas (> 700°C).</p>
-          </div>
 
-          <!-- MÉDICO -->
-          <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'ss_316lvm', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Inox Quirúrgico 316LVM</span>
-              <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+            <!-- MÉDICO -->
+            <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'ss_316lvm', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Inox Quirúrgico 316LVM</span>
+                  <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+                </div>
+                <p class="card-desc">Implantes óseos, tornillos e instrumental.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Implantes óseos, tornillos e instrumental médico.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'cocr_alloy', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Cobalto-Cromo (ASTM F75)</span>
-              <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+            <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'cocr_alloy', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Cobalto-Cromo (ASTM F75)</span>
+                  <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+                </div>
+                <p class="card-desc">Prótesis de rodilla, cadera y dental.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Prótesis de rodilla, cadera y componentes dentales.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'ss_174ph', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Inoxidable 17-4 PH / 15-5 PH</span>
-              <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+            <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'ss_174ph', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Inoxidable 17-4 PH / 15-5 PH</span>
+                  <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+                </div>
+                <p class="card-desc">Herramientas quirúrgicas y guías.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Herramientas quirúrgicas y guías de precisión.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="med nonmetal" onclick="window.selectOption('material', 'peek_med', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">PEEK Biocompatible</span>
-              <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+            <div class="option-card mat-item" data-cat="med nonmetal" onclick="window.selectOption('material', 'peek_med', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">PEEK Biocompatible</span>
+                  <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
+                </div>
+                <p class="card-desc">Cajas intersomáticas de columna.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Cajas intersomáticas e implantes espinales.</p>
-          </div>
 
-          <!-- TALLER / MOLDES -->
-          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'al_6061', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Aluminio Estándar (6061-T6)</span>
-              <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+            <!-- TALLER / MOLDES -->
+            <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'al_6061', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Aluminio Estándar (6061-T6)</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+                </div>
+                <p class="card-desc">Placas, prototipos, fixtures y herramentales.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Placas, prototipos, fixtures y herramentales.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'steel_1018', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Acero al Carbón Dulce (1018 / A36)</span>
-              <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+            <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'steel_1018', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Acero Dulce (1018 / A36)</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+                </div>
+                <p class="card-desc">Maquinaria general, herrajes y soldadura.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Maquinaria general, herrajes y soldadura.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'steel_1045', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Acero Medio Carbón (1045 / 4140)</span>
-              <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+            <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'steel_1045', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Acero Medio Carbón (1045 / 4140)</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+                </div>
+                <p class="card-desc">Ejes mecánicos, flechas y pernos.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Ejes mecánicos, flechas, pernos y bridas.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'tool_p20', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Acero Moldes P20 (1.2311)</span>
-              <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
+            <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'tool_p20', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Acero Moldes P20 (1.2311)</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
+                </div>
+                <p class="card-desc">Pre-tratado (28–32 HRC). Inyección de plástico.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Pre-tratado (28–32 HRC). Moldes de inyección.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'tool_h13', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Acero Herramientas H13 / D2</span>
-              <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
+            <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'tool_h13', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Acero Herramientas H13 / D2</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
+                </div>
+                <p class="card-desc">Troqueles de corte, punzones y moldes.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Troqueles de corte, punzones y moldes de fundición.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'hardened_steel', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Aceros Templados (> 52 HRC)</span>
-              <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
+            <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'hardened_steel', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Aceros Templados (> 52 HRC)</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
+                </div>
+                <p class="card-desc">Fresado duro. Exige sujeción rígida (PG/MR)[cite: 2, 3].</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Fresado duro en post-tratamiento. Exige nula vibración (PG/MR)[cite: 2, 3].</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'brass_bronze', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Latón / Bronce / Cobre</span>
-              <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+            <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'brass_bronze', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Latón / Bronce / Cobre</span>
+                  <span class="text-[9px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
+                </div>
+                <p class="card-desc">Bujes, conectores y piezas hidráulicas.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Bujes, conectores y componentes hidráulicos.</p>
-          </div>
 
-          <!-- COMPUESTOS / NO METALES -->
-          <div class="option-card mat-item" data-cat="nonmetal aero auto" onclick="window.selectOption('material', 'cfrp_carbon', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Fibra de Carbono (CFRP)</span>
-              <span class="text-[9px] bg-stone-100 text-stone-700 font-bold px-1.5 py-0.5 rounded">COMPUESTOS</span>
+            <!-- COMPUESTOS / NO METALES -->
+            <div class="option-card mat-item" data-cat="nonmetal aero auto" onclick="window.selectOption('material', 'cfrp_carbon', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Fibra de Carbono (CFRP)</span>
+                  <span class="text-[9px] bg-stone-100 text-stone-700 font-bold px-1.5 py-0.5 rounded">COMPUESTOS</span>
+                </div>
+                <p class="card-desc">Abrasión extrema por fibras de grafito.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Abrasión extrema por fibras de grafito.</p>
-          </div>
 
-          <div class="option-card mat-item" data-cat="nonmetal general" onclick="window.selectOption('material', 'acetal_pom', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Plásticos Técnicos (POM / Delrin)</span>
-              <span class="text-[9px] bg-stone-100 text-stone-700 font-bold px-1.5 py-0.5 rounded">POLÍMEROS</span>
+            <div class="option-card mat-item" data-cat="nonmetal general" onclick="window.selectOption('material', 'acetal_pom', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Plásticos Técnicos (POM / Delrin)</span>
+                  <span class="text-[9px] bg-stone-100 text-stone-700 font-bold px-1.5 py-0.5 rounded">POLÍMEROS</span>
+                </div>
+                <p class="card-desc">Engranes de plástico, aislantes, guías.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Engranes de plástico, aislantes, guías.</p>
           </div>
         </div>
 
-        <div class="flex justify-between pt-3 border-t border-slate-100">
-          <button onclick="window.goToStep(1)" class="text-slate-500 hover:text-slate-800 font-bold text-xs px-3 py-2" id="btn_back1">← Regresar</button>
-          <button onclick="window.goToStep(3)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-5 py-2.5 rounded-xl uppercase tracking-wider transition" id="btn_next2">Siguiente: Operación →</button>
+        <div class="flex justify-between pt-2.5 border-t border-slate-100">
+          <button onclick="window.goToStep(1)" class="btn-secondary-rf" id="btn_back1">← Regresar</button>
+          <button onclick="window.goToStep(3)" class="btn-primary-rf" id="btn_next2">
+            <span>Siguiente: Operación</span>
+            <span>→</span>
+          </button>
         </div>
       </section>
 
       <!-- PASO 3: Catálogo de Operaciones -->
       <section id="step-3" class="hidden">
-        <div class="mb-3">
-          <span class="text-[11px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step3_badge">Paso 3 de 4</span>
-          <h2 class="text-base md:text-lg font-black text-[#28556C] mt-0.5" id="txt_step3_title">¿Qué Tipo de Operación Vas a Realizar?</h2>
-          <p class="text-xs text-slate-500" id="txt_step3_sub">La herramienta en el siguiente paso se adaptará a tu elección.</p>
+        <div class="mb-2.5">
+          <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step3_badge">Paso 3 de 4</span>
+          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step3_title">¿Qué Tipo de Operación Vas a Realizar?</h2>
+          <p class="text-[11px] text-slate-500" id="txt_step3_sub">La herramienta en el siguiente paso se adaptará a tu elección.</p>
         </div>
 
-        <div class="flex flex-wrap gap-1.5 mb-3">
-          <button onclick="window.filterOperations('all', this)" class="op-filter active px-2.5 py-1 bg-[#28556C] text-white text-[11px] font-bold rounded-lg transition">Todas las Operaciones</button>
-          <button onclick="window.filterOperations('milling', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">Fresado</button>
-          <button onclick="window.filterOperations('hole', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">Agujeros & Roscas</button>
-          <button onclick="window.filterOperations('special', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition">Especiales (3D / Bisel)</button>
+        <div class="flex flex-wrap gap-1.5 mb-2.5">
+          <button onclick="window.filterOperations('all', this)" class="op-filter active px-2.5 py-1 bg-[#28556C] text-white text-[10px] font-bold rounded-lg transition">Todas</button>
+          <button onclick="window.filterOperations('milling', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Fresado</button>
+          <button onclick="window.filterOperations('hole', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Agujeros & Roscas</button>
+          <button onclick="window.filterOperations('special', this)" class="op-filter px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition">Especiales (3D / Bisel)</button>
         </div>
 
-        <div id="operation_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 mb-4 max-h-[340px] overflow-y-auto pr-1 custom-scroll">
-          <!-- FRESADO -->
-          <div class="option-card op-item selected" data-cat="milling" onclick="window.selectOperation('shoulder', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Escuadrado / Desbaste</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
+        <div class="scroll-container mb-3">
+          <div id="operation_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <!-- FRESADO -->
+            <div class="option-card op-item selected" data-cat="milling" onclick="window.selectOperation('shoulder', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Escuadrado / Desbaste</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
+                </div>
+                <p class="card-desc">ae ≈ 30 a 50% D, ap ≤ 1.0×D. Carga media.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">ae ≈ 30 a 50% D, ap ≤ 1.0×D. Carga perimetral media.</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('hpc_dynamic', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Fresado Dinámico / Trocoidal (HPC)</span>
-              <span class="text-[9px] bg-green-50 text-green-700 font-bold px-1.5 py-0.5 rounded">ALTA EFICACIA</span>
+            <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('hpc_dynamic', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Fresado Dinámico (HPC)</span>
+                  <span class="text-[9px] bg-green-50 text-green-700 font-bold px-1.5 py-0.5 rounded">ALTA EFICACIA</span>
+                </div>
+                <p class="card-desc">ae ≈ 5 a 15% D, ap ≥ 2.0×D. Gran avance.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">ae ≈ 5 a 15% D, ap ≥ 2.0×D. Alto avance por chip thinning.</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('slotting', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Ranurado Pleno (Slotting 100%)</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
+            <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('slotting', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Ranurado Pleno (Slotting)</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
+                </div>
+                <p class="card-desc">ae = 100% D, ap ≤ 0.5 a 1.0×D.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">ae = 100% D, ap ≤ 0.5 a 1.0×D. Máxima carga radial.</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('hfm_feed', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Alto Avance (High Feed - HFM)</span>
-              <span class="text-[9px] bg-amber-50 text-amber-800 font-bold px-1.5 py-0.5 rounded">FAST FEED</span>
+            <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('hfm_feed', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Alto Avance (HFM)</span>
+                  <span class="text-[9px] bg-amber-50 text-amber-800 font-bold px-1.5 py-0.5 rounded">FAST FEED</span>
+                </div>
+                <p class="card-desc">ap pequeña (< 1.5 mm) con avance de mesa elevado.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Profundidades axiales pequeñas (ap < 1.5 mm) con avance elevado.</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('finishing', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Acabado de Paredes</span>
-              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">ACABADO</span>
+            <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('finishing', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Acabado de Paredes</span>
+                  <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">ACABADO</span>
+                </div>
+                <p class="card-desc">ae ≤ 5 a 10% D, ap ≈ 1.5×D. Para Ra < 0.4 µm.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">ae ≤ 5 a 10% D, ap ≈ 1.5×D. Bajas fuerzas para Ra < 0.4 µm.</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('facemilling', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Planeado / Careado</span>
-              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">CAREADO</span>
+            <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('facemilling', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Planeado / Careado</span>
+                  <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">CAREADO</span>
+                </div>
+                <p class="card-desc">Platos de corte o fresas multidiente.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Mecanizado plano con platos de corte o fresas multidiente.</p>
-          </div>
 
-          <!-- AGUJEROS & ROSCADO -->
-          <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('drilling', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Taladrado (Drilling)</span>
-              <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">TALADRO</span>
+            <!-- AGUJEROS & ROSCADO -->
+            <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('drilling', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Taladrado (Drilling)</span>
+                  <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">TALADRO</span>
+                </div>
+                <p class="card-desc">Agujeros ciegos y pasantes (3xD, 5xD, 8xD).</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Agujeros ciegos y pasantes (3xD, 5xD, 8xD). Avance fn.</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('tapping', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Roscado Rígido (Tapping)</span>
-              <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">ROSCADO</span>
+            <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('tapping', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Roscado Rígido (Tapping)</span>
+                  <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">ROSCADO</span>
+                </div>
+                <p class="card-desc">Roscado macho. Sincronización F = S × Paso[cite: 1, 3].</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Roscado macho. Sincronización F = S × Paso[cite: 1, 3].</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('reaming', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Escariado / Calibrado (Reaming)</span>
-              <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">CALIBRADO</span>
+            <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('reaming', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Escariado (Reaming)</span>
+                  <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">CALIBRADO</span>
+                </div>
+                <p class="card-desc">Ajuste H7/H6 con alta concentricidad (micRun/PG)[cite: 2, 3].</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Ajuste H7/H6 con alta concentricidad (micRun/PG)[cite: 2, 3].</p>
-          </div>
 
-          <!-- ESPECIALES -->
-          <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('3d_contouring', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Copiado 3D / Superficies</span>
-              <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">MOLDES 3D</span>
+            <!-- ESPECIALES -->
+            <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('3d_contouring', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Copiado 3D / Moldes</span>
+                  <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">MOLDES 3D</span>
+                </div>
+                <p class="card-desc">Fresado de contornos con Ball Nose.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Fresado de contornos con fresas esféricas (Ball Nose).</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('thread_milling', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Fresado de Roscas CNC</span>
-              <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">ROSCADO</span>
+            <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('thread_milling', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Fresado de Roscas CNC</span>
+                  <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">ROSCADO</span>
+                </div>
+                <p class="card-desc">Interpolación helicoidal con fresa de roscar.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Generación de rosca por interpolación helicoidal.</p>
-          </div>
 
-          <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('chamfering', this)">
-            <div class="flex justify-between items-start mb-0.5">
-              <span class="font-black text-[#28556C] text-xs">Chaflanado / Biselado (45°/60°)</span>
-              <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">BISELADO</span>
+            <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('chamfering', this)">
+              <div>
+                <div class="flex justify-between items-start">
+                  <span class="card-title">Chaflanado / Biselado</span>
+                  <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">BISELADO</span>
+                </div>
+                <p class="card-desc">Desbarbado y biselado a 45°/60°.</p>
+              </div>
             </div>
-            <p class="text-[11px] text-slate-500 leading-tight">Desbarbado y biselado de cantos afilados.</p>
           </div>
         </div>
 
-        <div class="flex justify-between pt-3 border-t border-slate-100">
-          <button onclick="window.goToStep(2)" class="text-slate-500 hover:text-slate-800 font-bold text-xs px-3 py-2" id="btn_back2">← Regresar</button>
-          <button onclick="window.goToStep(4)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-5 py-2.5 rounded-xl uppercase tracking-wider transition" id="btn_next3">Siguiente: Herramienta & Máquina →</button>
+        <div class="flex justify-between pt-2.5 border-t border-slate-100">
+          <button onclick="window.goToStep(2)" class="btn-secondary-rf" id="btn_back2">← Regresar</button>
+          <button onclick="window.goToStep(4)" class="btn-primary-rf" id="btn_next3">
+            <span>Siguiente: Herramienta</span>
+            <span>→</span>
+          </button>
         </div>
       </section>
 
       <!-- PASO 4: Herramienta Filtrada Dinámicamente -->
       <section id="step-4" class="hidden">
-        <div class="mb-3">
-          <span class="text-[11px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step4_badge">Paso 4 de 4</span>
-          <h2 class="text-base md:text-lg font-black text-[#28556C] mt-0.5" id="txt_step4_title">Herramienta de Corte y Datos de Máquina</h2>
-          <p class="text-xs text-slate-500" id="txt_step4_sub">Herramientas compatibles para la operación seleccionada.</p>
+        <div class="mb-2.5">
+          <span class="text-[10px] font-black text-[#D31B23] uppercase tracking-wider" id="txt_step4_badge">Paso 4 de 4</span>
+          <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_step4_title">Herramienta de Corte y Datos de Máquina</h2>
+          <p class="text-[11px] text-slate-500" id="txt_step4_sub">Herramientas compatibles para la operación seleccionada.</p>
         </div>
 
-        <div class="space-y-3.5 mb-4">
+        <div class="space-y-3 mb-3">
           <!-- 1. Geometría Compatible Filtrada -->
           <div>
-            <label class="block text-xs font-black text-[#28556C] uppercase mb-1" id="lbl_compatible_tools">1. Geometría Compatible:</label>
+            <label class="block text-[11px] font-black text-[#28556C] uppercase mb-1" id="lbl_compatible_tools">1. Geometría Compatible:</label>
             <div id="dynamic_tool_grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
           </div>
 
           <!-- 2. Sustrato y Recubrimiento -->
           <div>
-            <label class="block text-xs font-black text-[#28556C] uppercase mb-1">2. Sustrato / Material del Filo:</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label class="block text-[11px] font-black text-[#28556C] uppercase mb-1">2. Sustrato / Material del Filo:</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               <div class="option-card selected" onclick="window.selectOption('tool_mat', 'pcd', this)">
-                <span class="font-black text-xs text-[#28556C]">PCD (Diamante)</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">Aluminios y compuestos.</p>
+                <span class="card-title">PCD (Diamante)</span>
+                <p class="card-desc">Aluminios y compuestos.</p>
               </div>
               <div class="option-card" onclick="window.selectOption('tool_mat', 'carbide_dlc', this)">
-                <span class="font-black text-xs text-[#28556C]">Carburo + DLC</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">Antifricción carbono.</p>
+                <span class="card-title">Carburo + DLC</span>
+                <p class="card-desc">Antifricción carbono.</p>
               </div>
               <div class="option-card" onclick="window.selectOption('tool_mat', 'carbide_coated', this)">
-                <span class="font-black text-xs text-[#28556C]">Carburo Recubierto</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">AlTiN, TiAlN universal.</p>
+                <span class="card-title">Carburo Recubierto</span>
+                <p class="card-desc">AlTiN, TiAlN universal.</p>
               </div>
               <div class="option-card" onclick="window.selectOption('tool_mat', 'carbide_uncoated', this)">
-                <span class="font-black text-xs text-[#28556C]">Carburo Pulido</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">Micrograno sin recubrir.</p>
+                <span class="card-title">Carburo Pulido</span>
+                <p class="card-desc">Micrograno sin recubrir.</p>
               </div>
               <div class="option-card" onclick="window.selectOption('tool_mat', 'cbn', this)">
-                <span class="font-black text-xs text-[#28556C]">CBN (Nitruro de Boro)</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">Aceros duros > 55 HRC.</p>
+                <span class="card-title">CBN (Nitruro de Boro)</span>
+                <p class="card-desc">Aceros duros > 55 HRC.</p>
               </div>
               <div class="option-card" onclick="window.selectOption('tool_mat', 'ceramic', this)">
-                <span class="font-black text-xs text-[#28556C]">Cerámica / Cermet</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">Alta velocidad en Inconel.</p>
+                <span class="card-title">Cerámica / Cermet</span>
+                <p class="card-desc">Alta velocidad en Inconel.</p>
               </div>
               <div class="option-card" onclick="window.selectOption('tool_mat', 'hss_pm', this)">
-                <span class="font-black text-xs text-[#28556C]">PM HSS / Co8</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">Polvos / Cobalto.</p>
+                <span class="card-title">PM HSS / Co8</span>
+                <p class="card-desc">Polvos / Cobalto.</p>
               </div>
               <div class="option-card" onclick="window.selectOption('tool_mat', 'hss_std', this)">
-                <span class="font-black text-xs text-[#28556C]">HSS Estándar (M2)</span>
-                <p class="text-[10px] text-slate-400 mt-0.5">Acero rápido estándar.</p>
+                <span class="card-title">HSS Estándar (M2)</span>
+                <p class="card-desc">Acero rápido estándar.</p>
               </div>
             </div>
           </div>
 
           <!-- 3. Dimensiones y Datos de Máquina -->
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1" id="lbl_inp_dia">Diámetro (Ø)</label>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_dia">Diámetro (Ø)</label>
               <input id="input_dia" type="number" step="0.1" value="20" class="input-box text-center text-xs font-bold">
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1" id="lbl_inp_z">Filos (Z)</label>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_z">Filos (Z)</label>
               <input id="input_z" type="number" value="6" class="input-box text-center text-xs font-bold">
             </div>
             <div id="box_pitch" class="hidden">
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Paso Rosca (mm)</label>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Paso Rosca (mm)</label>
               <input id="input_pitch" type="number" step="0.05" value="1.5" class="input-box text-center text-xs font-bold text-[#D31B23]">
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1" id="lbl_inp_proj">Proyección (L)</label>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_proj">Proyección (L)</label>
               <input id="input_stickout" type="number" step="1" value="60" class="input-box text-center text-xs font-bold">
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1" id="lbl_inp_rpmmax">Límite RPM</label>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5" id="lbl_inp_rpmmax">Límite RPM</label>
               <input id="input_max_rpm" type="number" value="12000" class="input-box text-center text-xs font-black text-[#D31B23]">
             </div>
           </div>
         </div>
 
-        <div class="flex justify-between pt-3 border-t border-slate-100">
-          <button onclick="window.goToStep(3)" class="text-slate-500 hover:text-slate-800 font-bold text-xs px-3 py-2" id="btn_back3">← Regresar</button>
-          <button onclick="window.calcularResultadoFinal()" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-6 py-2.5 rounded-xl uppercase tracking-wider shadow-lg shadow-red-200 transition" id="btn_calc">Generar Diagnóstico Completo ✨</button>
+        <div class="flex justify-between pt-2.5 border-t border-slate-100">
+          <button onclick="window.goToStep(3)" class="btn-secondary-rf" id="btn_back3">← Regresar</button>
+          <button onclick="window.calcularResultadoFinal()" class="btn-primary-rf" id="btn_calc">
+            <span>Calcular Parámetros Óptimos</span>
+            <span>✨</span>
+          </button>
         </div>
       </section>
 
       <!-- RESULTADOS -->
       <section id="step-results" class="hidden">
-        <div class="border-b border-slate-200 pb-2.5 mb-4 flex justify-between items-center">
+        <div class="border-b border-slate-200 pb-2 mb-3 flex justify-between items-center">
           <div>
-            <span class="text-[10px] font-black text-[#79A336] uppercase tracking-wider" id="txt_res_success">Cálculo Optimizado con Éxito</span>
-            <h2 class="text-base md:text-lg font-black text-[#28556C]" id="txt_res_header">Ficha Técnica de Mecanizado Integral</h2>
+            <span class="text-[9px] font-black text-[#79A336] uppercase tracking-wider" id="txt_res_success">Cálculo Optimizado con Éxito</span>
+            <h2 class="text-sm md:text-base font-black text-[#28556C]" id="txt_res_header">Ficha Técnica de Mecanizado Integral</h2>
           </div>
           <button onclick="window.goToStep(1)" class="text-xs font-bold text-slate-500 hover:text-[#D31B23] underline" id="btn_restart">Modificar Parámetros</button>
         </div>
 
         <!-- Tarjetas de Velocidades Principales -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Velocidad del Husillo (S)</span>
-            <div class="flex items-baseline gap-2 mt-0.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+          <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Velocidad del Husillo (S)</span>
+            <div class="flex items-baseline gap-1.5 mt-0.5">
               <span id="res_rpm" class="text-2xl font-black text-[#D31B23] mono">0</span>
               <span class="text-xs font-bold text-slate-600">RPM</span>
             </div>
-            <div class="text-[11px] text-slate-500 mt-0.5 font-medium" id="res_vc_info">Vc: 0 m/min | 0 SFM</div>
+            <div class="text-[10px] text-slate-500 mt-0.5 font-medium" id="res_vc_info">Vc: 0 m/min | 0 SFM</div>
           </div>
 
-          <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avance Primario de Mesa (F)</span>
-            <div class="flex items-baseline gap-2 mt-0.5">
+          <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Avance Primario de Mesa (F)</span>
+            <div class="flex items-baseline gap-1.5 mt-0.5">
               <span id="res_feed_main" class="text-2xl font-black text-[#28556C] mono">0</span>
               <span class="text-xs font-bold text-slate-600" id="res_feed_main_unit">mm/min</span>
             </div>
-            <div class="text-[11px] text-slate-500 mt-0.5 font-medium" id="res_feed_sec_info">---</div>
+            <div class="text-[10px] text-slate-500 mt-0.5 font-medium" id="res_feed_sec_info">---</div>
           </div>
         </div>
 
         <!-- Conversor de Unidades de Avance -->
-        <div class="bg-white border border-slate-200 rounded-xl p-3 mb-4 shadow-sm">
-          <h4 class="text-[11px] font-black text-[#28556C] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <div class="bg-white border border-slate-200 rounded-xl p-2.5 mb-3 shadow-sm">
+          <h4 class="text-[10px] font-black text-[#28556C] uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <span>⚡ Conversor de Unidades de Avance (Feed Rates)</span>
           </h4>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">AVANCE DE MESA</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">AVANCE DE MESA</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_vf_mm_min">0</span>
-              <span class="text-[10px] font-bold text-slate-500"> mm/min</span>
+              <span class="text-[9px] font-bold text-slate-500"> mm/min</span>
             </div>
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">AVANCE LINEAL</span>
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">AVANCE LINEAL</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_vf_m_min">0.00</span>
-              <span class="text-[10px] font-bold text-slate-500"> m/min</span>
+              <span class="text-[9px] font-bold text-slate-500"> m/min</span>
             </div>
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">IMPERIAL (IPM)</span>
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">IMPERIAL (IPM)</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_vf_ipm">0.0</span>
-              <span class="text-[10px] font-bold text-slate-500"> in/min</span>
+              <span class="text-[9px] font-bold text-slate-500"> in/min</span>
             </div>
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">VEL. CORTE MESA</span>
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">VEL. CORTE MESA</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_vf_ips">0.00</span>
-              <span class="text-[10px] font-bold text-slate-500"> in/seg</span>
+              <span class="text-[9px] font-bold text-slate-500"> in/seg</span>
             </div>
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">CARGA POR DIENTE</span>
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">CARGA POR DIENTE</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_fz_mm">0.000</span>
-              <span class="text-[10px] font-bold text-slate-500"> mm/z</span>
+              <span class="text-[9px] font-bold text-slate-500"> mm/z</span>
             </div>
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">CHIP LOAD (IPT)</span>
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">CHIP LOAD (IPT)</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_fz_in">0.0000</span>
-              <span class="text-[10px] font-bold text-slate-500"> in/z</span>
+              <span class="text-[9px] font-bold text-slate-500"> in/z</span>
             </div>
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">AVANCE POR REV.</span>
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">AVANCE POR REV.</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_fn_mm">0.000</span>
-              <span class="text-[10px] font-bold text-slate-500"> mm/rev</span>
+              <span class="text-[9px] font-bold text-slate-500"> mm/rev</span>
             </div>
-            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
-              <span class="text-[9px] text-slate-400 font-bold block">FEED PER REV (IPR)</span>
+            <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <span class="text-[8px] text-slate-400 font-bold block">FEED PER REV (IPR)</span>
               <span class="font-black text-slate-800 mono text-xs" id="val_fn_in">0.0000</span>
-              <span class="text-[10px] font-bold text-slate-500"> in/rev</span>
+              <span class="text-[9px] font-bold text-slate-500"> in/rev</span>
             </div>
           </div>
         </div>
 
         <!-- Parámetros de Corte y Potencia -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-          <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-center">
-            <span class="text-[9px] font-bold text-slate-400 uppercase">Prof. Axial (ap)</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          <div class="bg-white border border-slate-200 p-2 rounded-xl text-center">
+            <span class="text-[8px] font-bold text-slate-400 uppercase">Prof. Axial (ap)</span>
             <div id="res_ap" class="text-xs font-black text-[#28556C] mono mt-0.5">0 mm</div>
           </div>
-          <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-center">
-            <span class="text-[9px] font-bold text-slate-400 uppercase">Ancho Radial (ae)</span>
+          <div class="bg-white border border-slate-200 p-2 rounded-xl text-center">
+            <span class="text-[8px] font-bold text-slate-400 uppercase">Ancho Radial (ae)</span>
             <div id="res_ae" class="text-xs font-black text-[#28556C] mono mt-0.5">0 mm</div>
           </div>
-          <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-center">
-            <span class="text-[9px] font-bold text-slate-400 uppercase">Potencia Husillo</span>
+          <div class="bg-white border border-slate-200 p-2 rounded-xl text-center">
+            <span class="text-[8px] font-bold text-slate-400 uppercase">Potencia Husillo</span>
             <div id="res_power" class="text-xs font-black text-[#79A336] mono mt-0.5">0 kW</div>
           </div>
-          <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-center">
-            <span class="text-[9px] font-bold text-slate-400 uppercase">Volumen (MRR)</span>
+          <div class="bg-white border border-slate-200 p-2 rounded-xl text-center">
+            <span class="text-[8px] font-bold text-slate-400 uppercase">Volumen (MRR)</span>
             <div id="res_mrr" class="text-xs font-black text-[#79A336] mono mt-0.5">0 cm³/min</div>
           </div>
         </div>
 
         <!-- Bloque CNC -->
-        <div class="bg-[#28556C] p-3.5 rounded-xl text-white mb-4">
-          <div class="flex justify-between items-center mb-1">
-            <span class="text-[11px] font-bold text-blue-200 uppercase tracking-wider" id="txt_res_cnc">Código CNC Sugerido</span>
+        <div class="bg-[#28556C] p-3 rounded-xl text-white mb-3">
+          <div class="flex justify-between items-center mb-0.5">
+            <span class="text-[10px] font-bold text-blue-200 uppercase tracking-wider" id="txt_res_cnc">Código CNC Sugerido</span>
             <span class="text-[9px] bg-[#1d3d4d] px-2 py-0.5 rounded text-blue-300 font-mono" id="res_tpf_info">TPF: 0 Hz</span>
           </div>
           <div id="res_gcode" class="font-mono text-xs font-bold text-green-400">S0 M03 F0</div>
         </div>
 
         <!-- Diagnósticos -->
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
-          <h4 class="text-[11px] font-black text-amber-900 uppercase tracking-wider mb-1" id="txt_res_safety">Diagnóstico de Estabilidad y Seguridad</h4>
-          <ul id="res_tips" class="text-xs text-amber-800 space-y-1 list-disc pl-4 font-medium leading-relaxed"></ul>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5">
+          <h4 class="text-[10px] font-black text-amber-900 uppercase tracking-wider mb-1" id="txt_res_safety">Diagnóstico de Estabilidad y Seguridad</h4>
+          <ul id="res_tips" class="text-[11px] text-amber-800 space-y-0.5 list-disc pl-4 font-medium leading-relaxed"></ul>
         </div>
       </section>
 
@@ -809,7 +964,7 @@
     import { calculateCuttingPhysics } from './api/cut-conditions.js';
     import { COMPATIBLE_TOOLS_BY_OP, generateDiagnostics } from './api/recommend.js';
 
-    // Declaración de Variables de Estado Reactivo
+    // Variables de Estado Reactivo
     let currentLang = 'es';
     let currentUnit = 'mm';
 
@@ -833,7 +988,7 @@
         step3_badge: "Paso 3 de 4", step3_title: "¿Qué Tipo de Operación Vas a Realizar?", step3_sub: "La herramienta en el siguiente paso se adaptará a tu elección.",
         step4_badge: "Paso 4 de 4", step4_title: "Herramienta de Corte y Datos de Máquina", step4_sub: "Herramientas compatibles para la operación seleccionada.",
         lbl_dia: "Diámetro (Ø)", lbl_z: "Filos / Dientes (Z)", lbl_proj: "Proyección (L)", lbl_rpmmax: "Límite RPM",
-        btn_next: "Siguiente →", btn_back: "← Regresar", btn_calc: "Generar Diagnóstico Completo ✨",
+        btn_next: "Siguiente: Material →", btn_back: "← Regresar", btn_calc: "Calcular Parámetros Óptimos ✨",
         res_success: "Cálculo Optimizado con Éxito", res_header: "Ficha Técnica de Mecanizado Integral", res_restart: "Modificar Parámetros",
         res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidad y Seguridad",
         nav_holder: "Portaherramientas", nav_mat: "Material", nav_op: "Operación", nav_tool: "Herramienta & Máquina",
@@ -849,7 +1004,7 @@
         step3_badge: "Step 3 of 4", step3_title: "What Type of Operation Will You Perform?", step3_sub: "The cutting tool in the next step will adapt to your choice.",
         step4_badge: "Step 4 of 4", step4_title: "Cutting Tool & Machine Parameters", step4_sub: "Compatible tools for the selected operation.",
         lbl_dia: "Diameter (Ø)", lbl_z: "Flutes (Z)", lbl_proj: "Stick-out (L)", lbl_rpmmax: "Max RPM",
-        btn_next: "Next →", btn_back: "← Back", btn_calc: "Generate Complete Diagnostics ✨",
+        btn_next: "Next: Material →", btn_back: "← Back", btn_calc: "Calculate Optimal Parameters ✨",
         res_success: "Optimized Calculation Ready", res_header: "Comprehensive Machining Data Sheet", res_restart: "Modify Parameters",
         res_cnc: "Suggested CNC Block", res_safety: "Stability & Toolholding Diagnostics",
         nav_holder: "Toolholder", nav_mat: "Material", nav_op: "Operation", nav_tool: "Tool & Machine",
@@ -865,7 +1020,7 @@
         step3_badge: "Passo 3 de 4", step3_title: "Qual Tipo de Operação Será Realizada?", step3_sub: "A ferramenta no próximo passo será adaptada à sua escolha.",
         step4_badge: "Passo 4 de 4", step4_title: "Ferramenta de Corte e Dados da Máquina", step4_sub: "Ferramentas compatíveis para a operação selecionada.",
         lbl_dia: "Diâmetro (Ø)", lbl_z: "Facas (Z)", lbl_proj: "Balanço (L)", lbl_rpmmax: "Limite RPM",
-        btn_next: "Próximo →", btn_back: "← Voltar", btn_calc: "Gerar Diagnóstico Completo ✨",
+        btn_next: "Próximo: Material →", btn_back: "← Voltar", btn_calc: "Calcular Parâmetros Ótimos ✨",
         res_success: "Cálculo Otimizado com Sucesso", res_header: "Ficha Técnica de Usinagem Integral", res_restart: "Modificar Parâmetros",
         res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidade e Fixação",
         nav_holder: "Fixação", nav_mat: "Material", nav_op: "Operação", nav_tool: "Ferramenta & Máquina",
@@ -955,13 +1110,14 @@
       document.getElementById('lbl_inp_proj').innerText = dict.lbl_proj + (currentUnit === 'in' ? ' (in)' : ' (mm)');
       document.getElementById('lbl_inp_rpmmax').innerText = dict.lbl_rpmmax;
 
-      document.getElementById('btn_next1').innerText = dict.btn_next;
-      document.getElementById('btn_next2').innerText = dict.btn_next;
-      document.getElementById('btn_next3').innerText = dict.btn_next;
+      document.getElementById('btn_next1').querySelector('span').innerText = dict.btn_next;
+      document.getElementById('btn_next2').querySelector('span').innerText = (lang === 'es' ? 'Siguiente: Operación' : (lang === 'en' ? 'Next: Operation' : 'Próximo: Operação'));
+      document.getElementById('btn_next3').querySelector('span').innerText = (lang === 'es' ? 'Siguiente: Herramienta' : (lang === 'en' ? 'Next: Tooling' : 'Próximo: Ferramenta'));
+      
       document.getElementById('btn_back1').innerText = dict.btn_back;
       document.getElementById('btn_back2').innerText = dict.btn_back;
       document.getElementById('btn_back3').innerText = dict.btn_back;
-      document.getElementById('btn_calc').innerText = dict.btn_calc;
+      document.getElementById('btn_calc').querySelector('span').innerText = dict.btn_calc;
 
       document.getElementById('txt_step1_nav').innerText = dict.nav_holder;
       document.getElementById('txt_step2_nav').innerText = dict.nav_mat;
@@ -986,13 +1142,13 @@
       const btnIn = document.getElementById('lbl_unit_in');
 
       if (unit === 'in') {
-        btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
-        btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
+        btnIn.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+        btnMm.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
         document.getElementById('input_dia').value = '0.75';
         document.getElementById('input_stickout').value = '2.5';
       } else {
-        btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
-        btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
+        btnMm.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+        btnIn.className = "px-2.5 py-0.5 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
         document.getElementById('input_dia').value = '20';
         document.getElementById('input_stickout').value = '60';
       }
@@ -1033,8 +1189,8 @@
         };
 
         card.innerHTML = `
-          <span class="font-black text-xs text-[#28556C]">${tool.title}</span>
-          <span class="text-[9px] text-slate-400 mt-0.5 block">${tool.sub}</span>
+          <span class="card-title">${tool.title}</span>
+          <span class="card-desc">${tool.sub}</span>
         `;
         container.appendChild(card);
       });
@@ -1141,7 +1297,7 @@
       return val > 100 ? Math.round(val).toLocaleString('en') : val.toFixed(1);
     }
 
-    // Inicializar al cargar
+    // Inicializar
     window.setLang('es');
     renderDynamicTools(state.operation);
   </script>
