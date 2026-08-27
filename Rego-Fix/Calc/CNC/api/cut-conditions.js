@@ -1,4 +1,4 @@
-// Base de datos de Materiales (k_c en N/mm2, Vc base en m/min, fz base en mm/z)
+// Base de datos de Materiales (kc en N/mm2, Vc base en m/min, fz base en mm/z)
 export const MATERIALS_DB = {
   // Automotriz
   'al_a356': { name: 'Aluminio Fundición A356 / A380', kc: 850, vc: 600, fz: 0.14, cat: 'auto' },
@@ -35,7 +35,7 @@ export const MATERIALS_DB = {
   'acetal_pom': { name: 'Plásticos Técnicos (POM / Delrin)', kc: 350, vc: 450, fz: 0.16, cat: 'nonmetal' }
 };
 
-// Factores de sustrato
+// Factores de corrección por sustrato de herramienta
 export const SUBSTRATES_DB = {
   'pcd': { name: 'PCD (Diamante)', fVc: 2.4, fFz: 1.5 },
   'carbide_dlc': { name: 'Carburo + DLC', fVc: 1.3, fFz: 1.15 },
@@ -47,7 +47,7 @@ export const SUBSTRATES_DB = {
   'hss_std': { name: 'HSS Estándar (M2)', fVc: 0.30, fFz: 0.75 }
 };
 
-// Motor cinemático
+// Motor principal de física de corte
 export function calculateCuttingPhysics(params) {
   const { holder, material, operation, tool_type, tool_mat, dia, z, pitch, stickout, max_rpm } = params;
   
@@ -109,15 +109,15 @@ export function calculateCuttingPhysics(params) {
     fz *= 0.8;
   }
 
-  // Factor de sujeción REGO-FIX
+  // Factor de rigidez del portaherramientas REGO-FIX
   let fHolder = 1.0;
-  if (holder === 'pg48' || holder === 'pg32') fHolder = 1.18;
-  else if (holder === 'pg25' || holder === 'pg15' || holder === 'pg10' || holder === 'pg6') fHolder = 1.12;
-  else if (holder === 'mr_all') fHolder = 1.10;
-  else if (holder === 'er_up') fHolder = 1.0;
-  else if (holder === 'er_std') fHolder = 0.85;
+  if (holder === 'pg48' || holder === 'pg32') fHolder = 1.18;[cite: 3]
+  else if (holder === 'pg25' || holder === 'pg15' || holder === 'pg10' || holder === 'pg6') fHolder = 1.12;[cite: 3]
+  else if (holder === 'mr_all') fHolder = 1.10;[cite: 2]
+  else if (holder === 'er_up') fHolder = 1.0;[cite: 1]
+  else if (holder === 'er_std') fHolder = 0.85;[cite: 1]
 
-  // Factor de proyección (Stickout)
+  // Penalización por voladizo (Stickout L/D)
   const ratioLD = stickout / dia;
   let fLD = 1.0;
   if (ratioLD > 3.5) fLD = 0.85;
