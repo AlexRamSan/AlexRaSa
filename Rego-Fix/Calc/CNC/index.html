@@ -59,7 +59,7 @@
     <!-- Barra Superior -->
     <div class="flex flex-wrap justify-between items-center mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm gap-4">
       <div class="flex items-center gap-3">
-        <!-- Logo desde tus assets locales con fallback nativo -->
+        <!-- Logo local con fallback -->
         <div class="h-9 flex items-center">
           <img src="assets/regofixlogo.png" class="h-8 object-contain" alt="REGO-FIX" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
           <div id="logo-fallback" class="hidden items-center gap-1.5 font-black tracking-tighter text-xl text-[#28556C]">
@@ -69,7 +69,7 @@
             </svg>
           </div>
         </div>
-        <span class="text-xs font-black text-[#28556C] uppercase tracking-wider hidden sm:inline border-l pl-3 border-gray-300">Machining Calculator</span>
+        <span class="text-xs font-black text-[#28556C] uppercase tracking-wider hidden sm:inline border-l pl-3 border-gray-300">Machining Wizard</span>
       </div>
 
       <div class="flex items-center gap-6">
@@ -123,7 +123,7 @@
       </div>
     </div>
 
-    <!-- Contenedor del Wizard -->
+    <!-- Wizard Card -->
     <div class="wizard-card">
       
       <!-- PASO 1: Sujeción REGO-FIX Real de Catálogo -->
@@ -207,7 +207,7 @@
                 <span class="font-black text-[#28556C] text-sm">micRun® (MR 11/16/25/32)</span>
                 <span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold">Nut Collet</span>
               </div>
-              <p class="text-xs text-gray-500">Portapinzas y pinzas mecánicas de súper precisión con tuerca lisa[cite: 2].</p>
+              <p class="text-xs text-gray-500">Portapinzas y pinzas de súper precisión con tuerca lisa[cite: 2].</p>
             </div>
             <div class="text-[10px] font-bold text-[#28556C] mt-2">T.I.R. ≤ 3 µm @ 3×D | Pinza 2 µm[cite: 2]</div>
           </div>
@@ -240,7 +240,7 @@
         </div>
       </section>
 
-      <!-- PASO 2: Catálogo Extendido de Materiales -->
+      <!-- PASO 2: Material Extendido -->
       <section id="step-2" class="hidden">
         <div class="mb-4">
           <span class="text-xs font-black text-[#D31B23] uppercase tracking-wider" id="txt_step2_badge">Paso 2 de 4</span>
@@ -462,49 +462,123 @@
         </div>
       </section>
 
-      <!-- PASO 3: Catálogo de Operaciones -->
+      <!-- PASO 3: Catálogo Completo de Operaciones -->
       <section id="step-3" class="hidden">
-        <div class="mb-5">
+        <div class="mb-4">
           <span class="text-xs font-black text-[#D31B23] uppercase tracking-wider" id="txt_step3_badge">Paso 3 de 4</span>
           <h2 class="text-lg md:text-xl font-black text-[#28556C] mt-1" id="txt_step3_title">¿Qué Tipo de Operación Vas a Realizar?</h2>
-          <p class="text-xs text-gray-500 mt-0.5" id="txt_step3_sub">Define el enganche radial ($a_e$) y la profundidad axial ($a_p$).</p>
+          <p class="text-xs text-gray-500 mt-0.5" id="txt_step3_sub">La herramienta en el siguiente paso se adaptará a tu elección.</p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-          <div class="option-card selected" onclick="selectOption('operation', 'shoulder', this)">
-            <span class="font-black text-[#28556C] text-sm">Escuadrado / Desbaste Convencional</span>
-            <p class="text-xs text-gray-500 mt-1">$a_e \approx 30\text{–}50\% D$, $a_p \le 1.0\times D$.</p>
-          </div>
+        <!-- Filtro por Tipo de Operación -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button onclick="filterOperations('all')" class="op-filter active px-3 py-1 bg-[#28556C] text-white text-xs font-bold rounded-lg transition">Todas las Operaciones</button>
+          <button onclick="filterOperations('milling')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Fresado (Milling)</button>
+          <button onclick="filterOperations('hole')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Agujeros & Roscas (Holemaking)</button>
+          <button onclick="filterOperations('special')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Especiales (3D / Roscas)</button>
+        </div>
 
-          <div class="option-card" onclick="selectOption('operation', 'hpc_dynamic', this)">
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <span class="font-black text-[#28556C] text-sm">Fresado Dinámico / Trocoidal</span>
-                <span class="text-[9px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full font-bold">HPC</span>
-              </div>
-              <p class="text-xs text-gray-500">$a_e \approx 5\text{–}15\% D$, $a_p \ge 2.0\times D$. Corrección por chip thinning.</p>
+        <div id="operation_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6 max-h-[380px] overflow-y-auto pr-1">
+          
+          <!-- FRESADO -->
+          <div class="option-card op-item selected" data-cat="milling" onclick="selectOperation('shoulder', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Escuadrado / Desbaste Convencional</span>
+              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
             </div>
+            <p class="text-xs text-gray-500">$a_e \approx 30\text{–}50\% D$, $a_p \le 1.0\times D$. Carga perimetral media.</p>
           </div>
 
-          <div class="option-card" onclick="selectOption('operation', 'slotting', this)">
-            <span class="font-black text-[#28556C] text-sm">Ranurado Pleno (Slotting 100%)</span>
-            <p class="text-xs text-gray-500 mt-1">$a_e = 100\% D$, $a_p \le 0.5\text{–}1.0\times D$. Máxima carga radial.</p>
-          </div>
-
-          <div class="option-card" onclick="selectOption('operation', 'finishing', this)">
-            <span class="font-black text-[#28556C] text-sm">Acabado Superficial Fino</span>
-            <p class="text-xs text-gray-500 mt-1">$a_e \le 5\text{–}10\% D$, $a_p \approx 1.5\times D$. Bajas fuerzas para $R_a < 0.4\,\mu\text{m}$.</p>
-          </div>
-
-          <div class="option-card" onclick="selectOption('operation', 'hfm_feed', this)">
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <span class="font-black text-[#28556C] text-sm">Alto Avance (High Feed - HFM)</span>
-                <span class="text-[9px] bg-red-100 text-[#D31B23] px-1.5 py-0.5 rounded-full font-bold">Fast Feed</span>
-              </div>
-              <p class="text-xs text-gray-500">Profundidades axiales pequeñas ($a_p < 1.5\text{ mm}$) con avance de mesa elevado.</p>
+          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('hpc_dynamic', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Fresado Dinámico / Trocoidal (HPC)</span>
+              <span class="text-[9px] bg-green-50 text-green-700 font-bold px-1.5 py-0.5 rounded">ALTA EFICACIA</span>
             </div>
+            <p class="text-xs text-gray-500">$a_e \approx 5\text{–}15\% D$, $a_p \ge 2.0\times D$. Alto avance por chip thinning.</p>
           </div>
+
+          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('slotting', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Ranurado Pleno (Slotting 100%)</span>
+              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
+            </div>
+            <p class="text-xs text-gray-500">$a_e = 100\% D$, $a_p \le 0.5\text{–}1.0\times D$. Máxima carga radial.</p>
+          </div>
+
+          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('hfm_feed', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Alto Avance (High Feed - HFM)</span>
+              <span class="text-[9px] bg-amber-50 text-amber-800 font-bold px-1.5 py-0.5 rounded">FAST FEED</span>
+            </div>
+            <p class="text-xs text-gray-500">Profundidades axiales pequeñas ($a_p < 1.5\text{ mm}$) con avance de mesa elevado.</p>
+          </div>
+
+          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('finishing', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Acabado Superficial de Paredes</span>
+              <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">ACABADO</span>
+            </div>
+            <p class="text-xs text-gray-500">$a_e \le 5\text{–}10\% D$, $a_p \approx 1.5\times D$. Bajas fuerzas para $R_a < 0.4\,\mu\text{m}$.</p>
+          </div>
+
+          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('facemilling', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Planeado / Careado (Face Milling)</span>
+              <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">CAREADO</span>
+            </div>
+            <p class="text-xs text-gray-500">Mecanizado plano con platos de corte o fresas multidiente.</p>
+          </div>
+
+          <!-- AGUJEROS & ROSCADO -->
+          <div class="option-card op-item" data-cat="hole" onclick="selectOperation('drilling', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Taladrado / Perforado (Drilling)</span>
+              <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">TALADRO</span>
+            </div>
+            <p class="text-xs text-gray-500">Agujeros ciegos y pasantes (3xD, 5xD, 8xD). Avance por vuelta ($f_n$).</p>
+          </div>
+
+          <div class="option-card op-item" data-cat="hole" onclick="selectOperation('tapping', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Roscado Rígido Sincronizado (Tapping)</span>
+              <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">ROSCADO</span>
+            </div>
+            <p class="text-xs text-gray-500">Roscado macho por corte o laminación. Sincronización $F = S \times Paso$[cite: 1, 3].</p>
+          </div>
+
+          <div class="option-card op-item" data-cat="hole" onclick="selectOperation('reaming', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Escariado / Calibrado (Reaming)</span>
+              <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">CALIBRADO</span>
+            </div>
+            <p class="text-xs text-gray-500">Ajuste de tolerancias H7/H6 con alta concentricidad (micRun/PG)[cite: 2, 3].</p>
+          </div>
+
+          <!-- ESPECIALES -->
+          <div class="option-card op-item" data-cat="special" onclick="selectOperation('3d_contouring', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Copiado 3D / Moldes y Superficies</span>
+              <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">MOLDES 3D</span>
+            </div>
+            <p class="text-xs text-gray-500">Fresado de contornos complejos con fresas esféricas (Ball Nose).</p>
+          </div>
+
+          <div class="option-card op-item" data-cat="special" onclick="selectOperation('thread_milling', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Fresado de Roscas por Interpolación</span>
+              <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">ROSCADO CNC</span>
+            </div>
+            <p class="text-xs text-gray-500">Generación de rosca helicoidal con fresa de roscar.</p>
+          </div>
+
+          <div class="option-card op-item" data-cat="special" onclick="selectOperation('chamfering', this)">
+            <div class="flex justify-between items-start mb-1">
+              <span class="font-black text-[#28556C] text-sm">Chaflanado y Desbarbado (Chamfer)</span>
+              <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">BISELADO</span>
+            </div>
+            <p class="text-xs text-gray-500">Biselado a 45°/60° y rotura de cantos afilados.</p>
+          </div>
+
         </div>
 
         <div class="flex justify-between">
@@ -513,44 +587,21 @@
         </div>
       </section>
 
-      <!-- PASO 4: Herramienta Completa (Tipo, Sustrato, Medidas y Máquina) -->
+      <!-- PASO 4: Herramienta Filtrada Dinámicamente según la Operación -->
       <section id="step-4" class="hidden">
         <div class="mb-5">
           <span class="text-xs font-black text-[#D31B23] uppercase tracking-wider" id="txt_step4_badge">Paso 4 de 4</span>
-          <h2 class="text-lg md:text-xl font-black text-[#28556C] mt-1" id="txt_step4_title">Herramienta de Corte y Límites de Husillo</h2>
-          <p class="text-xs text-gray-500 mt-0.5" id="txt_step4_sub">Selecciona el tipo de herramienta, su material constitutivo y dimensiones.</p>
+          <h2 class="text-lg md:text-xl font-black text-[#28556C] mt-1" id="txt_step4_title">Herramienta de Corte y Datos de Máquina</h2>
+          <p class="text-xs text-gray-500 mt-0.5" id="txt_step4_sub">Herramientas filtradas y compatibles para la operación seleccionada.</p>
         </div>
 
         <div class="space-y-4 mb-6">
           
-          <!-- 1. Tipo de Herramienta -->
+          <!-- 1. Geometría Compatible Filtrada -->
           <div>
-            <label class="block text-xs font-black text-[#28556C] uppercase mb-1.5">1. Tipo de Herramienta / Geometría:</label>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-              <div class="option-card selected text-center py-2" onclick="selectOption('tool_type', 'endmill', this); updateToolGeometryDefaults();">
-                <span class="font-black text-xs text-[#28556C]">Endmill Plano</span>
-                <span class="text-[9px] text-gray-400">Fresado general</span>
-              </div>
-              <div class="option-card text-center py-2" onclick="selectOption('tool_type', 'drill', this); updateToolGeometryDefaults();">
-                <span class="font-black text-xs text-[#28556C]">Broca (Drill)</span>
-                <span class="text-[9px] text-gray-400">Taladrado z=2</span>
-              </div>
-              <div class="option-card text-center py-2" onclick="selectOption('tool_type', 'tap', this); updateToolGeometryDefaults();">
-                <span class="font-black text-xs text-[#28556C]">Machuelo (Tap)</span>
-                <span class="text-[9px] text-gray-400">Roscado rígido[cite: 1, 3]</span>
-              </div>
-              <div class="option-card text-center py-2" onclick="selectOption('tool_type', 'facemill', this); updateToolGeometryDefaults();">
-                <span class="font-black text-xs text-[#28556C]">Careador / Platos</span>
-                <span class="text-[9px] text-gray-400">Insertos multipaso</span>
-              </div>
-              <div class="option-card text-center py-2" onclick="selectOption('tool_type', 'reamer', this); updateToolGeometryDefaults();">
-                <span class="font-black text-xs text-[#28556C]">Escariador</span>
-                <span class="text-[9px] text-gray-400">Calibrado / Reaming</span>
-              </div>
-              <div class="option-card text-center py-2" onclick="selectOption('tool_type', 'ballnose', this); updateToolGeometryDefaults();">
-                <span class="font-black text-xs text-[#28556C]">Ball Nose</span>
-                <span class="text-[9px] text-gray-400">Moldes 3D</span>
-              </div>
+            <label class="block text-xs font-black text-[#28556C] uppercase mb-1.5" id="lbl_compatible_tools">1. Geometría de Herramienta Compatible:</label>
+            <div id="dynamic_tool_grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              <!-- Renderizado dinámicamente con JS según el Paso 3 -->
             </div>
           </div>
 
@@ -568,7 +619,7 @@
               </div>
               <div class="option-card" onclick="selectOption('tool_mat', 'carbide_coated', this)">
                 <span class="font-black text-xs text-[#28556C]">Carburo Recubierto</span>
-                <p class="text-[9px] text-gray-400 mt-0.5">AlTiN, TiAlN, nACo universal.</p>
+                <p class="text-[9px] text-gray-400 mt-0.5">AlTiN, TiAlN universal.</p>
               </div>
               <div class="option-card" onclick="selectOption('tool_mat', 'carbide_uncoated', this)">
                 <span class="font-black text-xs text-[#28556C]">Carburo sin Recubrir</span>
@@ -580,7 +631,7 @@
               </div>
               <div class="option-card" onclick="selectOption('tool_mat', 'ceramic', this)">
                 <span class="font-black text-xs text-[#28556C]">Cerámica / Cermet</span>
-                <p class="text-[9px] text-gray-400 mt-0.5">Altísima velocidad en Inconel/acero.</p>
+                <p class="text-[9px] text-gray-400 mt-0.5">Alta velocidad en Inconel/acero.</p>
               </div>
               <div class="option-card" onclick="selectOption('tool_mat', 'hss_pm', this)">
                 <span class="font-black text-xs text-[#28556C]">PM HSS / HSS-Co8</span>
@@ -634,7 +685,7 @@
           <button onclick="goToStep(1)" class="text-xs font-bold text-gray-500 hover:text-[#D31B23] underline" id="btn_restart">Modificar Parámetros</button>
         </div>
 
-        <!-- Velocidades Principales -->
+        <!-- Tarjetas de Velocidades Principales -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
           <div class="bg-[#F8FAFC] border border-gray-200 p-4 rounded-2xl">
             <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Velocidad del Husillo (S)</span>
@@ -760,12 +811,59 @@
       max_rpm: 12000
     };
 
+    // Matriz de Herramientas Compatibles por Operación
+    const COMPATIBLE_TOOLS_BY_OP = {
+      'shoulder': [
+        { id: 'endmill', title: 'Endmill Plano', sub: 'Fresado cilíndrico estándar', z: 4 },
+        { id: 'facemill', title: 'Fresa de Escuadrar', sub: 'Con insertos intercambiables', z: 5 }
+      ],
+      'hpc_dynamic': [
+        { id: 'endmill_trochoidal', title: 'Endmill HPC / Trocoidal', sub: 'Hélice variable z=4 a 7', z: 5 },
+        { id: 'endmill', title: 'Endmill Sólido', sub: 'Gavilanes pulidos', z: 4 }
+      ],
+      'slotting': [
+        { id: 'endmill_3flute', title: 'Endmill 3 Filos', sub: 'Máximo desalojo de viruta', z: 3 },
+        { id: 'endmill', title: 'Endmill 4 Filos', sub: 'Ranurado convencional', z: 4 }
+      ],
+      'hfm_feed': [
+        { id: 'high_feed_mill', title: 'Fresa High Feed (HFM)', sub: 'Radio toroidal / gran avance', z: 4 }
+      ],
+      'finishing': [
+        { id: 'endmill_finishing', title: 'Endmill Acabado', sub: 'Multi-filos z=6 a 8', z: 6 },
+        { id: 'endmill', title: 'Endmill Plano', sub: 'Paredes verticales', z: 4 }
+      ],
+      'facemilling': [
+        { id: 'facemill', title: 'Plato de Carear (Face Mill)', sub: 'Insertos a 45° o 90°', z: 5 }
+      ],
+      'drilling': [
+        { id: 'drill', title: 'Broca de Carburo / HSS', sub: 'Taladrado z=2 con refrigeración interna', z: 2 },
+        { id: 'step_drill', title: 'Broca Escalonada', sub: 'Taladro + chaflán simultáneo', z: 2 }
+      ],
+      'tapping': [
+        { id: 'tap_cutting', title: 'Machuelo de Corte', sub: 'Gavilanes rectos o helicoidales', z: 4 },
+        { id: 'tap_forming', title: 'Machuelo de Laminación / Roll', sub: 'Sin viruta (laminado en frío)', z: 4 }
+      ],
+      'reaming': [
+        { id: 'reamer', title: 'Escariador de Precisión (Reamer)', sub: 'Corte multi-filo z=6 a 8 para H7', z: 6 }
+      ],
+      '3d_contouring': [
+        { id: 'ballnose', title: 'Fresa Esférica (Ball Nose)', sub: 'Copiado y superficies orgánicas', z: 2 },
+        { id: 'bullnose', title: 'Fresa Tórica (Bull Nose)', sub: 'Punta con radio de esquina', z: 4 }
+      ],
+      'thread_milling': [
+        { id: 'thread_mill', title: 'Fresa de Roscar por Interpolación', sub: 'Rosca CNC helicoidal', z: 4 }
+      ],
+      'chamfering': [
+        { id: 'chamfer_mill', title: 'Fresa de Chaflanar (45° / 60°)', sub: 'Desbarbado y biselado de bordes', z: 4 }
+      ]
+    };
+
     const i18n = {
       es: {
-        step1_badge: "Paso 1 de 4", step1_title: "Selecciona el Sistema de Sujeción REGO-FIX", step1_sub: "Elige el portaherramientas montado en el husillo.",
+        step1_badge: "Paso 1 de 4", step1_title: "Selecciona el Sistema de Sujeción REGO-FIX", step1_sub: "Elige el portaherramientas o boquilla montada en la máquina.",
         step2_badge: "Paso 2 de 4", step2_title: "¿Qué Material vas a Mecanizar?", step2_sub: "Selecciona por sector industrial o tipo de aleación.",
-        step3_badge: "Paso 3 de 4", step3_title: "¿Qué Tipo de Operación Vas a Realizar?", step3_sub: "Define el enganche radial (ae) y la profundidad axial (ap).",
-        step4_badge: "Paso 4 de 4", step4_title: "Herramienta de Corte y Datos de Máquina", step4_sub: "Ingresa la geometría exacta, la proyección del portaherramientas y el tope de tu máquina.",
+        step3_badge: "Paso 3 de 4", step3_title: "¿Qué Tipo de Operación Vas a Realizar?", step3_sub: "La herramienta en el siguiente paso se adaptará a tu elección.",
+        step4_badge: "Paso 4 de 4", step4_title: "Herramienta de Corte y Datos de Máquina", step4_sub: "Herramientas filtradas y compatibles para la operación seleccionada.",
         lbl_dia: "Diámetro (Ø)", lbl_z: "Filos / Dientes (Z)", lbl_proj: "Proyección / Stickout (L)", lbl_rpmmax: "Límite Husillo (RPM)",
         btn_next: "Siguiente →", btn_back: "← Regresar", btn_calc: "Generar Diagnóstico Completo ✨",
         res_success: "Cálculo Optimizado con Éxito", res_header: "Ficha Técnica de Mecanizado Integral", res_restart: "Modificar Parámetros",
@@ -780,8 +878,8 @@
       en: {
         step1_badge: "Step 1 of 4", step1_title: "Select Your REGO-FIX Clamping System", step1_sub: "Choose the toolholder or collet system mounted on the spindle.",
         step2_badge: "Step 2 of 4", step2_title: "What Workpiece Material Are You Machining?", step2_sub: "Select by industry sector or alloy group.",
-        step3_badge: "Step 3 of 4", step3_title: "What Type of Operation Will You Perform?", step3_sub: "Defines radial engagement (ae) and axial depth of cut (ap).",
-        step4_badge: "Step 4 of 4", step4_title: "Cutting Tool & Machine Parameters", step4_sub: "Enter geometry, stickout length, and spindle limitations.",
+        step3_badge: "Step 3 of 4", step3_title: "What Type of Operation Will You Perform?", step3_sub: "The cutting tool in the next step will adapt to your choice.",
+        step4_badge: "Step 4 of 4", step4_title: "Cutting Tool & Machine Parameters", step4_sub: "Filtered compatible tools for the selected operation.",
         lbl_dia: "Diameter (Ø)", lbl_z: "Flutes (Z)", lbl_proj: "Stick-out (L)", lbl_rpmmax: "Max Spindle (RPM)",
         btn_next: "Next →", btn_back: "← Back", btn_calc: "Generate Complete Diagnostics ✨",
         res_success: "Optimized Calculation Ready", res_header: "Comprehensive Machining Data Sheet", res_restart: "Modify Parameters",
@@ -796,8 +894,8 @@
       pt: {
         step1_badge: "Passo 1 de 4", step1_title: "Selecione o Sistema de Fixação REGO-FIX", step1_sub: "Escolha o mandril ou pinça montada no spindle.",
         step2_badge: "Passo 2 de 4", step2_title: "Qual Material Você Vai Usinar?", step2_sub: "Selecione por setor industrial ou grupo de ligas.",
-        step3_badge: "Passo 3 de 4", step3_title: "Qual Tipo de Operação Será Realizada?", step3_sub: "Define o contato radial (ae) e profundidade axial (ap).",
-        step4_badge: "Passo 4 de 4", step4_title: "Ferramenta de Corte e Dados da Máquina", step4_sub: "Insira a geometria, balanço da ferramenta e limites do spindle.",
+        step3_badge: "Passo 3 de 4", step3_title: "Qual Tipo de Operação Será Realizada?", step3_sub: "A ferramenta no próximo passo será adaptada à sua escolha.",
+        step4_badge: "Passo 4 de 4", step4_title: "Ferramenta de Corte e Dados da Máquina", step4_sub: "Ferramentas filtradas e compatíveis para a operação selecionada.",
         lbl_dia: "Diâmetro (Ø)", lbl_z: "Facas (Z)", lbl_proj: "Balanço (L)", lbl_rpmmax: "Limite Spindle (RPM)",
         btn_next: "Próximo →", btn_back: "← Voltar", btn_calc: "Gerar Diagnóstico Completo ✨",
         res_success: "Cálculo Otimizado com Sucesso", res_header: "Ficha Técnica de Usinagem Integral", res_restart: "Modificar Parâmetros",
@@ -811,27 +909,71 @@
       }
     };
 
-    function updateToolGeometryDefaults() {
-      const type = state.tool_type;
+    function selectOperation(opKey, el) {
+      selectOption('operation', opKey, el);
+      renderDynamicTools(opKey);
+    }
+
+    function renderDynamicTools(opKey) {
+      const container = document.getElementById('dynamic_tool_grid');
+      container.innerHTML = '';
+
+      const compatibleTools = COMPATIBLE_TOOLS_BY_OP[opKey] || COMPATIBLE_TOOLS_BY_OP['shoulder'];
+      state.tool_type = compatibleTools[0].id;
+
+      compatibleTools.forEach((tool, index) => {
+        const card = document.createElement('div');
+        card.className = `option-card text-center py-2.5 ${index === 0 ? 'selected' : ''}`;
+        card.onclick = function() {
+          container.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          state.tool_type = tool.id;
+          handleToolSelectionEffects(tool);
+        };
+
+        card.innerHTML = `
+          <span class="font-black text-xs text-[#28556C]">${tool.title}</span>
+          <span class="text-[9px] text-gray-400 mt-0.5 block">${tool.sub}</span>
+        `;
+        container.appendChild(card);
+      });
+
+      handleToolSelectionEffects(compatibleTools[0]);
+    }
+
+    function handleToolSelectionEffects(tool) {
       const pitchBox = document.getElementById('box_pitch');
-      
-      if (type === 'tap') {
+      if (state.operation === 'tapping' || tool.id.includes('tap')) {
         pitchBox.classList.remove('hidden');
-        document.getElementById('input_z').value = 4;
       } else {
         pitchBox.classList.add('hidden');
       }
 
-      if (type === 'drill') {
-        document.getElementById('input_z').value = 2;
-      } else if (type === 'reamer') {
-        document.getElementById('input_z').value = 6;
-      } else if (type === 'facemill') {
-        document.getElementById('input_dia').value = (currentUnit === 'in' ? 2.0 : 50);
-        document.getElementById('input_z').value = 5;
-      } else if (type === 'endmill' && document.getElementById('input_z').value == 2) {
-        document.getElementById('input_z').value = 4;
+      if (tool.z) {
+        document.getElementById('input_z').value = tool.z;
       }
+
+      if (tool.id === 'facemill') {
+        document.getElementById('input_dia').value = (currentUnit === 'in' ? 2.0 : 50);
+      }
+    }
+
+    function filterOperations(cat) {
+      document.querySelectorAll('.op-filter').forEach(btn => {
+        btn.classList.remove('active', 'bg-[#28556C]', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-700');
+      });
+      event.target.classList.add('active', 'bg-[#28556C]', 'text-white');
+      event.target.classList.remove('bg-gray-100', 'text-gray-700');
+
+      const items = document.querySelectorAll('.op-item');
+      items.forEach(item => {
+        if (cat === 'all' || item.getAttribute('data-cat').includes(cat)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
     }
 
     function filterMaterials(cat) {
@@ -938,6 +1080,10 @@
       }
       document.getElementById('step-results').classList.add('hidden');
       document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+
+      if (stepNumber === 4) {
+        renderDynamicTools(state.operation);
+      }
     }
 
     function calcularResultadoFinal() {
@@ -954,30 +1100,23 @@
       let fz_base = 0.08; 
       let kc = 1400; 
 
-      // 1. Coeficientes por Material
+      // 1. Material
       switch (state.material) {
-        // AUTOMOTRIZ
         case 'al_a356': kc = 850; vc_base = 600; fz_base = 0.14; break;
         case 'cgi_iron': kc = 1900; vc_base = 140; fz_base = 0.10; break;
         case 'nodular_iron': kc = 1600; vc_base = 180; fz_base = 0.12; break;
         case 'gray_iron': kc = 1350; vc_base = 220; fz_base = 0.14; break;
         case 'forged_steel': kc = 2100; vc_base = 160; fz_base = 0.08; break;
-
-        // AEROESPACIAL
         case 'al_7075': kc = 700; vc_base = 800; fz_base = 0.16; break;
         case 'al_li': kc = 750; vc_base = 650; fz_base = 0.14; break;
         case 'ti_6al4v': kc = 2800; vc_base = 55; fz_base = 0.055; break;
         case 'ti_5553': kc = 3100; vc_base = 40; fz_base = 0.045; break;
         case 'inconel_718': kc = 3300; vc_base = 35; fz_base = 0.038; break;
         case 'waspaloy': kc = 3500; vc_base = 28; fz_base = 0.032; break;
-
-        // MÉDICO
         case 'ss_316lvm': kc = 2400; vc_base = 110; fz_base = 0.050; break;
         case 'cocr_alloy': kc = 3400; vc_base = 35; fz_base = 0.035; break;
         case 'ss_174ph': kc = 2600; vc_base = 95; fz_base = 0.050; break;
         case 'peek_med': kc = 380; vc_base = 350; fz_base = 0.12; break;
-
-        // TALLER / MOLDES
         case 'al_6061': kc = 700; vc_base = 700; fz_base = 0.15; break;
         case 'steel_1018': kc = 1800; vc_base = 190; fz_base = 0.085; break;
         case 'steel_1045': kc = 2000; vc_base = 160; fz_base = 0.075; break;
@@ -985,76 +1124,81 @@
         case 'tool_h13': kc = 2400; vc_base = 110; fz_base = 0.055; break;
         case 'hardened_steel': kc = 3200; vc_base = 75; fz_base = 0.035; break;
         case 'brass_bronze': kc = 800; vc_base = 350; fz_base = 0.14; break;
-
-        // COMPUESTOS / POLÍMEROS
         case 'cfrp_carbon': kc = 500; vc_base = 180; fz_base = 0.05; break;
         case 'acetal_pom': kc = 350; vc_base = 450; fz_base = 0.16; break;
       }
 
-      // 2. Modificador por Sustrato de Herramienta
+      // 2. Sustrato
       let factorSustratoVc = 1.0;
       let factorSustratoFz = 1.0;
 
       switch (state.tool_mat) {
-        case 'pcd': 
-          factorSustratoVc = 2.4; factorSustratoFz = 1.5; break;
-        case 'carbide_dlc': 
-          factorSustratoVc = 1.3; factorSustratoFz = 1.15; break;
-        case 'carbide_coated': 
-          factorSustratoVc = 1.0; factorSustratoFz = 1.0; break;
-        case 'carbide_uncoated': 
-          factorSustratoVc = 0.85; factorSustratoFz = 0.95; break;
-        case 'cbn': 
-          factorSustratoVc = 2.0; factorSustratoFz = 0.85; break;
-        case 'ceramic': 
-          factorSustratoVc = 2.5; factorSustratoFz = 0.70; break;
-        case 'hss_pm': 
-          factorSustratoVc = 0.45; factorSustratoFz = 0.85; break;
-        case 'hss_std': 
-          factorSustratoVc = 0.30; factorSustratoFz = 0.75; break;
+        case 'pcd': factorSustratoVc = 2.4; factorSustratoFz = 1.5; break;
+        case 'carbide_dlc': factorSustratoVc = 1.3; factorSustratoFz = 1.15; break;
+        case 'carbide_coated': factorSustratoVc = 1.0; factorSustratoFz = 1.0; break;
+        case 'carbide_uncoated': factorSustratoVc = 0.85; factorSustratoFz = 0.95; break;
+        case 'cbn': factorSustratoVc = 2.0; factorSustratoFz = 0.85; break;
+        case 'ceramic': factorSustratoVc = 2.5; factorSustratoFz = 0.70; break;
+        case 'hss_pm': factorSustratoVc = 0.45; factorSustratoFz = 0.85; break;
+        case 'hss_std': factorSustratoVc = 0.30; factorSustratoFz = 0.75; break;
       }
 
       let vc = vc_base * factorSustratoVc;
       let fz = fz_base * factorSustratoFz;
 
-      // 3. Modificadores por Tipo de Herramienta y Cinemática
+      // 3. Modificadores por Operación y Geometría
       let ap_mm = dia_mm * 0.5;
       let ae_mm = dia_mm * 0.4;
 
-      if (state.tool_type === 'drill') {
-        ap_mm = dia_mm * 3.0; // Taladrado profundo estándar
-        ae_mm = dia_mm; 
-        vc = vc * 0.70; 
-        fz = dia_mm * 0.018; // fz como avance por labio de taladrado
-      } else if (state.tool_type === 'tap') {
-        ap_mm = dia_mm * 2.0; 
+      if (state.operation === 'drilling' || state.tool_type.includes('drill')) {
+        ap_mm = dia_mm * 3.0;
         ae_mm = dia_mm;
-        vc = (state.material.includes('al') ? 25 : (state.material.includes('inconel') ? 6 : 12)) * (state.tool_mat === 'carbide_coated' ? 1.8 : 1.0);
-      } else if (state.tool_type === 'reamer') {
+        vc = vc * 0.70;
+        fz = dia_mm * 0.018; // avance por labio
+      } else if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
         ap_mm = dia_mm * 2.0;
+        ae_mm = dia_mm;
+        vc = (state.material.includes('al') ? 25 : (state.material.includes('inconel') ? 6 : 14)) * (state.tool_mat === 'carbide_coated' ? 1.8 : 1.0);
+      } else if (state.operation === 'reaming' || state.tool_type === 'reamer') {
+        ap_mm = dia_mm * 2.5;
         ae_mm = dia_mm * 0.05;
         vc = vc * 0.35;
         fz = fz * 1.5;
-      } else if (state.tool_type === 'facemill') {
+      } else if (state.operation === 'facemilling' || state.tool_type === 'facemill') {
         ap_mm = 2.5;
         ae_mm = dia_mm * 0.75;
         fz = fz * 1.3;
-      } else if (state.tool_type === 'ballnose') {
+      } else if (state.operation === '3d_contouring' || state.tool_type.includes('ball')) {
         ap_mm = dia_mm * 0.10;
         ae_mm = dia_mm * 0.15;
         fz = fz * 0.75;
-      } else {
-        // Endmill convencional según operación seleccionada
-        switch (state.operation) {
-          case 'shoulder': ap_mm = dia_mm * 0.5; ae_mm = dia_mm * 0.4; break;
-          case 'hpc_dynamic': ap_mm = dia_mm * 1.8; ae_mm = dia_mm * 0.10; fz = fz * 1.35; break;
-          case 'slotting': ap_mm = dia_mm * 0.4; ae_mm = dia_mm * 1.0; fz = fz * 0.75; break;
-          case 'finishing': ap_mm = dia_mm * 1.2; ae_mm = dia_mm * 0.05; fz = fz * 0.50; break;
-          case 'hfm_feed': ap_mm = Math.min(1.2, dia_mm * 0.06); ae_mm = dia_mm * 0.65; fz = fz * 2.8; break;
-        }
+      } else if (state.operation === 'hpc_dynamic') {
+        ap_mm = dia_mm * 1.8;
+        ae_mm = dia_mm * 0.10;
+        fz = fz * 1.35;
+      } else if (state.operation === 'slotting') {
+        ap_mm = dia_mm * 0.4;
+        ae_mm = dia_mm * 1.0;
+        fz = fz * 0.75;
+      } else if (state.operation === 'hfm_feed') {
+        ap_mm = Math.min(1.2, dia_mm * 0.06);
+        ae_mm = dia_mm * 0.65;
+        fz = fz * 2.8;
+      } else if (state.operation === 'finishing') {
+        ap_mm = dia_mm * 1.2;
+        ae_mm = dia_mm * 0.05;
+        fz = fz * 0.50;
+      } else if (state.operation === 'thread_milling') {
+        ap_mm = dia_mm * 1.5;
+        ae_mm = dia_mm * 0.15;
+        vc = vc * 0.8;
+      } else if (state.operation === 'chamfering') {
+        ap_mm = 1.0;
+        ae_mm = 1.0;
+        fz = fz * 0.8;
       }
 
-      // 4. Factores de Sujeción REGO-FIX
+      // 4. Factor de Sujeción REGO-FIX
       let factorSujecion = 1.0;
       if (state.holder === 'pg48' || state.holder === 'pg32') factorSujecion = 1.18;
       else if (state.holder === 'pg25' || state.holder === 'pg15' || state.holder === 'pg10' || state.holder === 'pg6') factorSujecion = 1.12;
@@ -1068,15 +1212,14 @@
       if (ratioLD > 3.5) factorLD = 0.85;
       if (ratioLD > 5.0) factorLD = 0.70;
 
-      // 5. Cálculo Cinemático Final
+      // 5. Cálculo Cinemático
       let rpmTeorico = (vc * 1000) / (Math.PI * dia_mm);
       let rpmFinal = Math.min(rpmTeorico, state.max_rpm);
       
       let fzFinal_mm = fz * factorSujecion * factorLD;
       let vf_mm_min = 0;
 
-      if (state.tool_type === 'tap') {
-        // Machuelo: F = RPM * Paso
+      if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
         vf_mm_min = rpmFinal * state.pitch;
         fzFinal_mm = state.pitch / state.z;
       } else {
@@ -1089,7 +1232,7 @@
       let vf_ips = vf_ipm / 60;
       
       let fz_in = fzFinal_mm / 25.4;
-      let fn_mm = (state.tool_type === 'tap') ? state.pitch : fzFinal_mm * state.z;
+      let fn_mm = (state.operation === 'tapping') ? state.pitch : fzFinal_mm * state.z;
       let fn_in = fn_mm / 25.4;
 
       let vc_m_min = Math.round((rpmFinal * Math.PI * dia_mm) / 1000);
@@ -1097,7 +1240,9 @@
 
       // Chip thinning
       let ratioAe = Math.min(ae_mm / dia_mm, 1.0);
-      let hex_mm = (ratioAe < 0.5 && state.tool_type === 'endmill') ? fzFinal_mm * (2 * Math.sqrt(ratioAe * (1 - ratioAe))) : fzFinal_mm;
+      let hex_mm = (ratioAe < 0.5 && !state.tool_type.includes('drill') && !state.tool_type.includes('tap')) 
+        ? fzFinal_mm * (2 * Math.sqrt(ratioAe * (1 - ratioAe))) 
+        : fzFinal_mm;
 
       // Potencia
       let q_cm3 = (ap_mm * ae_mm * vf_mm_min) / 1000;
@@ -1143,9 +1288,13 @@
       document.getElementById('res_tpf_info').innerText = `TPF: ${Math.round(tpf)} Hz`;
       
       let feedGcode = isInch ? Math.round(vf_ipm) : Math.round(vf_mm_min);
-      document.getElementById('res_gcode').innerText = (state.tool_type === 'tap') 
-        ? `S${Math.round(rpmFinal)} M03 G84 Z-${ap_mm.toFixed(1)} F${state.pitch}`
-        : `S${Math.round(rpmFinal)} M03 F${feedGcode}`;
+      if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
+        document.getElementById('res_gcode').innerText = `S${Math.round(rpmFinal)} M03 G84 Z-${ap_mm.toFixed(1)} F${state.pitch}`;
+      } else if (state.operation === 'drilling') {
+        document.getElementById('res_gcode').innerText = `S${Math.round(rpmFinal)} M03 G81 Z-${ap_mm.toFixed(1)} R2.0 F${feedGcode}`;
+      } else {
+        document.getElementById('res_gcode').innerText = `S${Math.round(rpmFinal)} M03 F${feedGcode}`;
+      }
 
       // Diagnósticos
       const tipsList = document.getElementById('res_tips');
@@ -1160,8 +1309,8 @@
       else if (state.holder === 'mr_all') addTip(dict.tip_mr);
       else addTip(dict.tip_er);
 
-      if (state.tool_type === 'tap') {
-        addTip(`<b>Roscado Sincronizado:</b> Paso configurado a ${state.pitch} mm/vuelta. Avance calculado estrictamente como F = S × Paso.`);
+      if (state.operation === 'tapping') {
+        addTip(`<b>Roscado Sincronizado:</b> Paso configurado a ${state.pitch} mm/hilo. Avance programado estrictamente como $F = S \\times Paso$.`);
       }
 
       if (ratioLD > 3.5) addTip(dict.tip_proj_warn + ` (L/D = ${ratioLD.toFixed(1)}).`);
