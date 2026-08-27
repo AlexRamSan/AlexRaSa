@@ -111,11 +111,17 @@ export function calculateCuttingPhysics(params) {
 
   // Factor de rigidez del portaherramientas REGO-FIX
   let fHolder = 1.0;
-  if (holder === 'pg48' || holder === 'pg32') fHolder = 1.18;[cite: 3]
-  else if (holder === 'pg25' || holder === 'pg15' || holder === 'pg10' || holder === 'pg6') fHolder = 1.12;[cite: 3]
-  else if (holder === 'mr_all') fHolder = 1.10;[cite: 2]
-  else if (holder === 'er_up') fHolder = 1.0;[cite: 1]
-  else if (holder === 'er_std') fHolder = 0.85;[cite: 1]
+  if (holder === 'pg48' || holder === 'pg32') {
+    fHolder = 1.18;
+  } else if (holder === 'pg25' || holder === 'pg15' || holder === 'pg10' || holder === 'pg6') {
+    fHolder = 1.12;
+  } else if (holder === 'mr_all') {
+    fHolder = 1.10;
+  } else if (holder === 'er_up') {
+    fHolder = 1.0;
+  } else if (holder === 'er_std') {
+    fHolder = 0.85;
+  }
 
   // Penalización por voladizo (Stickout L/D)
   const ratioLD = stickout / dia;
