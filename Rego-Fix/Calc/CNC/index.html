@@ -59,15 +59,9 @@
     <!-- Barra Superior -->
     <div class="flex flex-wrap justify-between items-center mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm gap-4">
       <div class="flex items-center gap-3">
-        <!-- Logo local con fallback -->
+        <!-- Logo cargado desde la raíz absoluta de tu servidor -->
         <div class="h-9 flex items-center">
-          <img src="assets/regofixlogo.png" class="h-8 object-contain" alt="REGO-FIX" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
-          <div id="logo-fallback" class="hidden items-center gap-1.5 font-black tracking-tighter text-xl text-[#28556C]">
-            <span>REGO-FIX</span>
-            <svg class="w-5 h-5 text-[#D31B23]" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="12,2 22,20 2,20" />
-            </svg>
-          </div>
+          <img src="https://alexrasa.store/assets/regofixlogo.png" class="h-8 object-contain" alt="REGO-FIX" onerror="this.onerror=null; this.src='/assets/regofixlogo.png';">
         </div>
         <span class="text-xs font-black text-[#28556C] uppercase tracking-wider hidden sm:inline border-l pl-3 border-gray-300">Machining Wizard</span>
       </div>
@@ -470,16 +464,14 @@
           <p class="text-xs text-gray-500 mt-0.5" id="txt_step3_sub">La herramienta en el siguiente paso se adaptará a tu elección.</p>
         </div>
 
-        <!-- Filtro por Tipo de Operación -->
         <div class="flex flex-wrap gap-2 mb-4">
           <button onclick="filterOperations('all')" class="op-filter active px-3 py-1 bg-[#28556C] text-white text-xs font-bold rounded-lg transition">Todas las Operaciones</button>
           <button onclick="filterOperations('milling')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Fresado (Milling)</button>
-          <button onclick="filterOperations('hole')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Agujeros & Roscas (Holemaking)</button>
+          <button onclick="filterOperations('hole')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Agujeros & Roscas</button>
           <button onclick="filterOperations('special')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Especiales (3D / Roscas)</button>
         </div>
 
         <div id="operation_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6 max-h-[380px] overflow-y-auto pr-1">
-          
           <!-- FRESADO -->
           <div class="option-card op-item selected" data-cat="milling" onclick="selectOperation('shoulder', this)">
             <div class="flex justify-between items-start mb-1">
@@ -578,7 +570,6 @@
             </div>
             <p class="text-xs text-gray-500">Biselado a 45°/60° y rotura de cantos afilados.</p>
           </div>
-
         </div>
 
         <div class="flex justify-between">
@@ -587,7 +578,7 @@
         </div>
       </section>
 
-      <!-- PASO 4: Herramienta Filtrada Dinámicamente según la Operación -->
+      <!-- PASO 4: Herramienta Filtrada Dinámicamente -->
       <section id="step-4" class="hidden">
         <div class="mb-5">
           <span class="text-xs font-black text-[#D31B23] uppercase tracking-wider" id="txt_step4_badge">Paso 4 de 4</span>
@@ -596,13 +587,10 @@
         </div>
 
         <div class="space-y-4 mb-6">
-          
           <!-- 1. Geometría Compatible Filtrada -->
           <div>
             <label class="block text-xs font-black text-[#28556C] uppercase mb-1.5" id="lbl_compatible_tools">1. Geometría de Herramienta Compatible:</label>
-            <div id="dynamic_tool_grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              <!-- Renderizado dinámicamente con JS según el Paso 3 -->
-            </div>
+            <div id="dynamic_tool_grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
           </div>
 
           <!-- 2. Sustrato y Recubrimiento -->
@@ -797,117 +785,6 @@
   <script>
     let currentLang = 'es';
     let currentUnit = 'mm';
-
-    const state = {
-      holder: 'pg32',
-      material: 'al_a356',
-      operation: 'shoulder',
-      tool_type: 'endmill',
-      tool_mat: 'pcd',
-      dia: 20,
-      z: 6,
-      pitch: 1.5,
-      stickout: 60,
-      max_rpm: 12000
-    };
-
-    // Matriz de Herramientas Compatibles por Operación
-    const COMPATIBLE_TOOLS_BY_OP = {
-      'shoulder': [
-        { id: 'endmill', title: 'Endmill Plano', sub: 'Fresado cilíndrico estándar', z: 4 },
-        { id: 'facemill', title: 'Fresa de Escuadrar', sub: 'Con insertos intercambiables', z: 5 }
-      ],
-      'hpc_dynamic': [
-        { id: 'endmill_trochoidal', title: 'Endmill HPC / Trocoidal', sub: 'Hélice variable z=4 a 7', z: 5 },
-        { id: 'endmill', title: 'Endmill Sólido', sub: 'Gavilanes pulidos', z: 4 }
-      ],
-      'slotting': [
-        { id: 'endmill_3flute', title: 'Endmill 3 Filos', sub: 'Máximo desalojo de viruta', z: 3 },
-        { id: 'endmill', title: 'Endmill 4 Filos', sub: 'Ranurado convencional', z: 4 }
-      ],
-      'hfm_feed': [
-        { id: 'high_feed_mill', title: 'Fresa High Feed (HFM)', sub: 'Radio toroidal / gran avance', z: 4 }
-      ],
-      'finishing': [
-        { id: 'endmill_finishing', title: 'Endmill Acabado', sub: 'Multi-filos z=6 a 8', z: 6 },
-        { id: 'endmill', title: 'Endmill Plano', sub: 'Paredes verticales', z: 4 }
-      ],
-      'facemilling': [
-        { id: 'facemill', title: 'Plato de Carear (Face Mill)', sub: 'Insertos a 45° o 90°', z: 5 }
-      ],
-      'drilling': [
-        { id: 'drill', title: 'Broca de Carburo / HSS', sub: 'Taladrado z=2 con refrigeración interna', z: 2 },
-        { id: 'step_drill', title: 'Broca Escalonada', sub: 'Taladro + chaflán simultáneo', z: 2 }
-      ],
-      'tapping': [
-        { id: 'tap_cutting', title: 'Machuelo de Corte', sub: 'Gavilanes rectos o helicoidales', z: 4 },
-        { id: 'tap_forming', title: 'Machuelo de Laminación / Roll', sub: 'Sin viruta (laminado en frío)', z: 4 }
-      ],
-      'reaming': [
-        { id: 'reamer', title: 'Escariador de Precisión (Reamer)', sub: 'Corte multi-filo z=6 a 8 para H7', z: 6 }
-      ],
-      '3d_contouring': [
-        { id: 'ballnose', title: 'Fresa Esférica (Ball Nose)', sub: 'Copiado y superficies orgánicas', z: 2 },
-        { id: 'bullnose', title: 'Fresa Tórica (Bull Nose)', sub: 'Punta con radio de esquina', z: 4 }
-      ],
-      'thread_milling': [
-        { id: 'thread_mill', title: 'Fresa de Roscar por Interpolación', sub: 'Rosca CNC helicoidal', z: 4 }
-      ],
-      'chamfering': [
-        { id: 'chamfer_mill', title: 'Fresa de Chaflanar (45° / 60°)', sub: 'Desbarbado y biselado de bordes', z: 4 }
-      ]
-    };
-
-    const i18n = {
-      es: {
-        step1_badge: "Paso 1 de 4", step1_title: "Selecciona el Sistema de Sujeción REGO-FIX", step1_sub: "Elige el portaherramientas o boquilla montada en la máquina.",
-        step2_badge: "Paso 2 de 4", step2_title: "¿Qué Material vas a Mecanizar?", step2_sub: "Selecciona por sector industrial o tipo de aleación.",
-        step3_badge: "Paso 3 de 4", step3_title: "¿Qué Tipo de Operación Vas a Realizar?", step3_sub: "La herramienta en el siguiente paso se adaptará a tu elección.",
-        step4_badge: "Paso 4 de 4", step4_title: "Herramienta de Corte y Datos de Máquina", step4_sub: "Herramientas filtradas y compatibles para la operación seleccionada.",
-        lbl_dia: "Diámetro (Ø)", lbl_z: "Filos / Dientes (Z)", lbl_proj: "Proyección / Stickout (L)", lbl_rpmmax: "Límite Husillo (RPM)",
-        btn_next: "Siguiente →", btn_back: "← Regresar", btn_calc: "Generar Diagnóstico Completo ✨",
-        res_success: "Cálculo Optimizado con Éxito", res_header: "Ficha Técnica de Mecanizado Integral", res_restart: "Modificar Parámetros",
-        res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidad y Seguridad",
-        nav_holder: "Portaherramientas", nav_mat: "Material", nav_op: "Operación", nav_tool: "Herramienta & Máquina",
-        tip_pg: "<b>powRgrip® asegurado:</b> Concentricidad < 3 µm con excelente amortiguación de vibraciones. Carga equilibrada en los filos[cite: 3].",
-        tip_mr: "<b>micRun® verificado:</b> Asegura apriete adecuado con tuerca lisa MR para tolerancias de salto inferiores a 3 µm[cite: 2].",
-        tip_er: "<b>Boquilla ER:</b> Verifica el par de apriete recomendado con llave dinamométrica para evitar deflexión[cite: 1].",
-        tip_proj_warn: "⚠️ <b>Alerta de Voladizo Largo:</b> La proyección supera 3.5×D. La deflexión elástica puede inducir vibraciones armónicas.",
-        tip_rpm_limit: "⚠️ <b>Tope de Husillo Activo:</b> Las RPM se ajustaron al límite de la máquina manteniendo la carga por diente óptima."
-      },
-      en: {
-        step1_badge: "Step 1 of 4", step1_title: "Select Your REGO-FIX Clamping System", step1_sub: "Choose the toolholder or collet system mounted on the spindle.",
-        step2_badge: "Step 2 of 4", step2_title: "What Workpiece Material Are You Machining?", step2_sub: "Select by industry sector or alloy group.",
-        step3_badge: "Step 3 of 4", step3_title: "What Type of Operation Will You Perform?", step3_sub: "The cutting tool in the next step will adapt to your choice.",
-        step4_badge: "Step 4 of 4", step4_title: "Cutting Tool & Machine Parameters", step4_sub: "Filtered compatible tools for the selected operation.",
-        lbl_dia: "Diameter (Ø)", lbl_z: "Flutes (Z)", lbl_proj: "Stick-out (L)", lbl_rpmmax: "Max Spindle (RPM)",
-        btn_next: "Next →", btn_back: "← Back", btn_calc: "Generate Complete Diagnostics ✨",
-        res_success: "Optimized Calculation Ready", res_header: "Comprehensive Machining Data Sheet", res_restart: "Modify Parameters",
-        res_cnc: "Suggested CNC Block", res_safety: "Stability & Toolholding Diagnostics",
-        nav_holder: "Toolholder", nav_mat: "Material", nav_op: "Operation", nav_tool: "Tool & Machine",
-        tip_pg: "<b>powRgrip® secured:</b> Total runout < 3 µm with outstanding vibration damping. Equal chip load across all flutes[cite: 3].",
-        tip_mr: "<b>micRun® verified:</b> Ensure proper torque with MR wrench to achieve ultra-high concentricity[cite: 2].",
-        tip_er: "<b>ER Collet:</b> Make sure to tighten with a calibrated torque wrench. Consider upgrading to powRgrip®[cite: 1].",
-        tip_proj_warn: "⚠️ <b>Long Stick-out Alert:</b> Overhang exceeds 3.5×D. Ensure high clamping rigidity to avoid chatter.",
-        tip_rpm_limit: "⚠️ <b>Spindle Limit Active:</b> Cutting speed was adjusted to respect your machine RPM limit."
-      },
-      pt: {
-        step1_badge: "Passo 1 de 4", step1_title: "Selecione o Sistema de Fixação REGO-FIX", step1_sub: "Escolha o mandril ou pinça montada no spindle.",
-        step2_badge: "Passo 2 de 4", step2_title: "Qual Material Você Vai Usinar?", step2_sub: "Selecione por setor industrial ou grupo de ligas.",
-        step3_badge: "Passo 3 de 4", step3_title: "Qual Tipo de Operação Será Realizada?", step3_sub: "A ferramenta no próximo passo será adaptada à sua escolha.",
-        step4_badge: "Passo 4 de 4", step4_title: "Ferramenta de Corte e Dados da Máquina", step4_sub: "Ferramentas filtradas e compatíveis para a operação selecionada.",
-        lbl_dia: "Diâmetro (Ø)", lbl_z: "Facas (Z)", lbl_proj: "Balanço (L)", lbl_rpmmax: "Limite Spindle (RPM)",
-        btn_next: "Próximo →", btn_back: "← Voltar", btn_calc: "Gerar Diagnóstico Completo ✨",
-        res_success: "Cálculo Otimizado com Sucesso", res_header: "Ficha Técnica de Usinagem Integral", res_restart: "Modificar Parâmetros",
-        res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidade e Fixação",
-        nav_holder: "Fixação", nav_mat: "Material", nav_op: "Operação", nav_tool: "Ferramenta & Máquina",
-        tip_pg: "<b>powRgrip® garantido:</b> Batimento < 3 µm com excelente amortecimento harmônico[cite: 3].",
-        tip_mr: "<b>micRun® verificado:</b> Aperte com a chave MR recomendada para garantir concentricidade superior[cite: 2].",
-        tip_er: "<b>Pinça ER:</b> Verifique o torque correto de aperto. Para maior vida útil, considere powRgrip®[cite: 1].",
-        tip_proj_warn: "⚠️ <b>Alerta de Balanço Longo:</b> L/D > 3.5×D. Utilize mandril de alta rigidez para evitar vibração.",
-        tip_rpm_limit: "⚠️ <b>Limite do Spindle Ativo:</b> As RPMs foram ajustadas ao limite da máquina."
-      }
-    };
 
     function selectOperation(opKey, el) {
       selectOption('operation', opKey, el);
@@ -1154,7 +1031,7 @@
         ap_mm = dia_mm * 3.0;
         ae_mm = dia_mm;
         vc = vc * 0.70;
-        fz = dia_mm * 0.018; // avance por labio
+        fz = dia_mm * 0.018; 
       } else if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
         ap_mm = dia_mm * 2.0;
         ae_mm = dia_mm;
