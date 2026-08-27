@@ -1,10 +1,10 @@
-const CACHE_NAME = 'regofix-cnc-calc-v9';
+const CACHE_NAME = 'regofix-cnc-calc-v10';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './lib/tailwindcss.css',
-  './assets/AppLogo2.png'
+  'https://alexrasa.store/assets/AppLogo2.png'
 ];
 
 self.addEventListener('install', (event) => {
