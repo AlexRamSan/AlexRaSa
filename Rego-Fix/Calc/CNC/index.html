@@ -13,8 +13,8 @@
   <meta name="apple-mobile-web-app-title" content="RF Calculator">
   <link rel="apple-touch-icon" href="https://alexrasa.store/assets/regofixlogo.png">
 
-  <!-- Respaldo CDN de Tailwind con fallback local -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Estilos y librerías locales -->
+  <link rel="stylesheet" href="./lib/tailwindcss.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
   
   <style>
@@ -25,14 +25,14 @@
       --bg-light: #F8FAFC;
     }
 
-    /* Regla crítica para evitar que se encimen los pasos si falla Tailwind */
+    /* Regla crítica para evitar que se encimen los pasos en iOS */
     .hidden { display: none !important; }
 
     * { box-sizing: border-box; }
 
     body { 
       background-color: var(--bg-light); 
-      font-family: 'Inter', sans-serif; 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
       color: #1E293B;
       -webkit-tap-highlight-color: transparent;
       margin: 0;
@@ -64,7 +64,7 @@
       display: flex; 
       flex-direction: column; 
       justify-content: space-between;
-      min-height: 82px;
+      min-height: 80px;
       user-select: none;
       -webkit-user-select: none;
       touch-action: manipulation;
@@ -92,7 +92,6 @@
       line-height: 1;
     }
 
-    /* Botones principales */
     .btn-primary-rf {
       background-color: var(--rego-red) !important;
       color: #FFFFFF !important;
@@ -163,7 +162,7 @@
     .lang-btn.active { filter: grayscale(0%); opacity: 1; transform: scale(1.08); }
 
     .scroll-container {
-      max-height: 55vh;
+      max-height: 52vh;
       overflow-y: auto;
       padding-right: 4px;
       -webkit-overflow-scrolling: touch;
@@ -252,7 +251,7 @@
         </div>
 
         <div class="scroll-container mb-4">
-          <!-- 1 columna en móvil, 2 en tablet, 3 en desktop -->
+          <!-- 1 col en móvil, 2 en tablet, 3 en desktop -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             <div class="option-card" onclick="window.selectOption('holder', 'pg48', this)">
               <div>
@@ -871,7 +870,7 @@
         <div class="flex flex-col-reverse sm:flex-row justify-between items-center pt-3 border-t border-slate-100 gap-2">
           <button type="button" onclick="window.goToStep(3)" class="btn-secondary-rf" id="btn_back3">← Regresar</button>
           <button type="button" onclick="window.calcularResultadoFinal()" class="btn-primary-rf" id="btn_calc">
-            <span>Calcular Parámetros Óptimos</span>
+            <span>Calcular Parámetros</span>
             <span>✨</span>
           </button>
         </div>
@@ -996,346 +995,536 @@
     </div>
   </main>
 
-  <!-- Módulos ES6 -->
-  <script type="module">
-    import { calculateCuttingPhysics } from './api/cut-conditions.js';
-    import { COMPATIBLE_TOOLS_BY_OP, generateDiagnostics } from './api/recommend.js';
+  <!-- Lógica Javascript Nativa Inmediata (Compatible con todos los navegadores iOS y Desktop) -->
+  <script>
+    (function() {
+      // Estado global
+      window.currentLang = 'es';
+      window.currentUnit = 'mm';
 
-    let currentLang = 'es';
-    let currentUnit = 'mm';
+      window.state = {
+        holder: 'pg32',
+        material: 'al_a356',
+        operation: 'shoulder',
+        tool_type: 'endmill',
+        tool_mat: 'pcd',
+        dia: 20,
+        z: 6,
+        pitch: 1.5,
+        stickout: 60,
+        max_rpm: 12000
+      };
 
-    const state = {
-      holder: 'pg32',
-      material: 'al_a356',
-      operation: 'shoulder',
-      tool_type: 'endmill',
-      tool_mat: 'pcd',
-      dia: 20,
-      z: 6,
-      pitch: 1.5,
-      stickout: 60,
-      max_rpm: 12000
-    };
+      const MATERIALS_DB = {
+        'al_a356': { kc: 850, vc: 600, fz: 0.14 },
+        'cgi_iron': { kc: 1900, vc: 140, fz: 0.10 },
+        'nodular_iron': { kc: 1600, vc: 180, fz: 0.12 },
+        'gray_iron': { kc: 1350, vc: 220, fz: 0.14 },
+        'forged_steel': { kc: 2100, vc: 160, fz: 0.08 },
+        'al_7075': { kc: 700, vc: 800, fz: 0.16 },
+        'al_li': { kc: 750, vc: 650, fz: 0.14 },
+        'ti_6al4v': { kc: 2800, vc: 55, fz: 0.055 },
+        'ti_5553': { kc: 3100, vc: 40, fz: 0.045 },
+        'inconel_718': { kc: 3300, vc: 35, fz: 0.038 },
+        'waspaloy': { kc: 3500, vc: 28, fz: 0.032 },
+        'ss_316lvm': { kc: 2400, vc: 110, fz: 0.050 },
+        'cocr_alloy': { kc: 3400, vc: 35, fz: 0.035 },
+        'ss_174ph': { kc: 2600, vc: 95, fz: 0.050 },
+        'peek_med': { kc: 380, vc: 350, fz: 0.12 },
+        'al_6061': { kc: 700, vc: 700, fz: 0.15 },
+        'steel_1018': { kc: 1800, vc: 190, fz: 0.085 },
+        'steel_1045': { kc: 2000, vc: 160, fz: 0.075 },
+        'tool_p20': { kc: 2200, vc: 130, fz: 0.065 },
+        'tool_h13': { kc: 2400, vc: 110, fz: 0.055 },
+        'hardened_steel': { kc: 3200, vc: 75, fz: 0.035 },
+        'brass_bronze': { kc: 800, vc: 350, fz: 0.14 },
+        'cfrp_carbon': { kc: 500, vc: 180, fz: 0.05 },
+        'acetal_pom': { kc: 350, vc: 450, fz: 0.16 }
+      };
 
-    const i18n = {
-      es: {
-        step1_badge: "Paso 1 de 4", step1_title: "Selecciona el Sistema de Sujeción REGO-FIX", step1_sub: "Elige el portaherramientas montado en el husillo.",
-        step2_badge: "Paso 2 de 4", step2_title: "¿Qué Material vas a Mecanizar?", step2_sub: "Selecciona por sector industrial o tipo de aleación.",
-        step3_badge: "Paso 3 de 4", step3_title: "¿Qué Tipo de Operación Vas a Realizar?", step3_sub: "La herramienta en el siguiente paso se adaptará a tu elección.",
-        step4_badge: "Paso 4 de 4", step4_title: "Herramienta de Corte y Datos de Máquina", step4_sub: "Herramientas compatibles para la operación seleccionada.",
-        lbl_dia: "Diámetro (Ø)", lbl_z: "Filos / Dientes (Z)", lbl_proj: "Proyección (L)", lbl_rpmmax: "Límite RPM",
-        btn_next: "Siguiente: Material →", btn_back: "← Regresar", btn_calc: "Calcular Parámetros ✨",
-        res_success: "Cálculo Optimizado con Éxito", res_header: "Ficha Técnica de Mecanizado Integral", res_restart: "Modificar Parámetros",
-        res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidad y Seguridad",
-        nav_holder: "Porta", nav_mat: "Material", nav_op: "Operación", nav_tool: "Herramienta",
-        tip_pg: "<b>powRgrip® asegurado:</b> Concentricidad < 3 µm con excelente amortiguación de vibraciones. Carga equilibrada en los filos.",
-        tip_mr: "<b>micRun® verificado:</b> Asegura apriete adecuado con tuerca lisa MR para tolerancias de salto inferiores a 3 µm.",
-        tip_er: "<b>Boquilla ER:</b> Verifica el par de apriete recomendado con llave dinamométrica para evitar deflexión.",
-        tip_proj_warn: "⚠️ <b>Alerta de Voladizo Largo:</b> La proyección supera 3.5×D. La deflexión elástica puede inducir vibraciones armónicas.",
-        tip_rpm_limit: "⚠️ <b>Tope de Husillo Activo:</b> Las RPM se ajustaron al límite de la máquina manteniendo la carga por diente óptima."
-      },
-      en: {
-        step1_badge: "Step 1 of 4", step1_title: "Select Your REGO-FIX Clamping System", step1_sub: "Choose the toolholder or collet system mounted on the spindle.",
-        step2_badge: "Step 2 of 4", step2_title: "What Workpiece Material Are You Machining?", step2_sub: "Select by industry sector or alloy group.",
-        step3_badge: "Step 3 of 4", step3_title: "What Type of Operation Will You Perform?", step3_sub: "The cutting tool in the next step will adapt to your choice.",
-        step4_badge: "Step 4 of 4", step4_title: "Cutting Tool & Machine Parameters", step4_sub: "Compatible tools for the selected operation.",
-        lbl_dia: "Diameter (Ø)", lbl_z: "Flutes (Z)", lbl_proj: "Stick-out (L)", lbl_rpmmax: "Max RPM",
-        btn_next: "Next: Material →", btn_back: "← Back", btn_calc: "Calculate Parameters ✨",
-        res_success: "Optimized Calculation Ready", res_header: "Comprehensive Machining Data Sheet", res_restart: "Modify Parameters",
-        res_cnc: "Suggested CNC Block", res_safety: "Stability & Toolholding Diagnostics",
-        nav_holder: "Holder", nav_mat: "Material", nav_op: "Operation", nav_tool: "Tooling",
-        tip_pg: "<b>powRgrip® secured:</b> Total runout < 3 µm with outstanding vibration damping. Equal chip load across all flutes.",
-        tip_mr: "<b>micRun® verified:</b> Ensure proper torque with MR wrench to achieve ultra-high concentricity.",
-        tip_er: "<b>ER Collet:</b> Make sure to tighten with a calibrated torque wrench. Consider upgrading to powRgrip®.",
-        tip_proj_warn: "⚠️ <b>Long Stick-out Alert:</b> Overhang exceeds 3.5×D. Ensure high clamping rigidity to avoid chatter.",
-        tip_rpm_limit: "⚠️ <b>Spindle Limit Active:</b> Cutting speed was adjusted to respect your machine RPM limit."
-      },
-      pt: {
-        step1_badge: "Passo 1 de 4", step1_title: "Selecione o Sistema de Fixação REGO-FIX", step1_sub: "Escolha o mandril ou pinça montada no spindle.",
-        step2_badge: "Passo 2 de 4", step2_title: "Qual Material Você Vai Usinar?", step2_sub: "Selecione por setor industrial ou grupo de ligas.",
-        step3_badge: "Passo 3 de 4", step3_title: "Qual Tipo de Operação Será Realizada?", step3_sub: "A ferramenta no próximo passo será adaptada à sua escolha.",
-        step4_badge: "Passo 4 de 4", step4_title: "Ferramenta de Corte e Dados da Máquina", step4_sub: "Ferramentas compatíveis para a operação selecionada.",
-        lbl_dia: "Diâmetro (Ø)", lbl_z: "Facas (Z)", lbl_proj: "Balanço (L)", lbl_rpmmax: "Limite RPM",
-        btn_next: "Próximo: Material →", btn_back: "← Voltar", btn_calc: "Calcular Parâmetros ✨",
-        res_success: "Cálculo Otimizado com Sucesso", res_header: "Ficha Técnica de Usinagem Integral", res_restart: "Modificar Parâmetros",
-        res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidade e Fixação",
-        nav_holder: "Fixação", nav_mat: "Material", nav_op: "Operação", nav_tool: "Ferramenta",
-        tip_pg: "<b>powRgrip® garantido:</b> Batimento < 3 µm com excelente amortecimento harmônico.",
-        tip_mr: "<b>micRun® verificado:</b> Aperte com a chave MR recomendada para garantir concentricidade superior.",
-        tip_er: "<b>Pinça ER:</b> Verifique o torque correto de aperto. Para maior vida útil, considere powRgrip®.",
-        tip_proj_warn: "⚠️ <b>Alerta de Balanço Longo:</b> L/D > 3.5×D. Utilize mandril de alta rigidez para evitar vibração.",
-        tip_rpm_limit: "⚠️ <b>Limite do Spindle Ativo:</b> As RPMs foram ajustadas ao limite da máquina."
-      }
-    };
+      const SUBSTRATES_DB = {
+        'pcd': { fVc: 2.4, fFz: 1.5 },
+        'carbide_dlc': { fVc: 1.3, fFz: 1.15 },
+        'carbide_coated': { fVc: 1.0, fFz: 1.0 },
+        'carbide_uncoated': { fVc: 0.85, fFz: 0.95 },
+        'cbn': { fVc: 2.0, fFz: 0.85 },
+        'ceramic': { fVc: 2.5, fFz: 0.70 },
+        'hss_pm': { fVc: 0.45, fFz: 0.85 },
+        'hss_std': { fVc: 0.30, fFz: 0.75 }
+      };
 
-    window.selectOption = function(category, value, el) {
-      state[category] = value;
-      const parent = el.parentElement;
-      parent.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
-      el.classList.add('selected');
-    };
+      const COMPATIBLE_TOOLS_BY_OP = {
+        'shoulder': [
+          { id: 'endmill', title: 'Endmill Plano', sub: 'Fresado estándar', z: 4 },
+          { id: 'facemill', title: 'Fresa Escuadrar', sub: 'Insertos indexables', z: 5 }
+        ],
+        'hpc_dynamic': [
+          { id: 'endmill_trochoidal', title: 'Endmill HPC', sub: 'Hélice variable', z: 5 },
+          { id: 'endmill', title: 'Endmill Sólido', sub: 'Gavilanes pulidos', z: 4 }
+        ],
+        'slotting': [
+          { id: 'endmill_3flute', title: 'Endmill 3 Filos', sub: 'Gran desalojo', z: 3 },
+          { id: 'endmill', title: 'Endmill 4 Filos', sub: 'Ranurado estándar', z: 4 }
+        ],
+        'hfm_feed': [
+          { id: 'high_feed_mill', title: 'Fresa High Feed', sub: 'Radio toroidal', z: 4 }
+        ],
+        'finishing': [
+          { id: 'endmill_finishing', title: 'Endmill Acabado', sub: 'Multi-filos z=6-8', z: 6 },
+          { id: 'endmill', title: 'Endmill Plano', sub: 'Paredes verticales', z: 4 }
+        ],
+        'facemilling': [
+          { id: 'facemill', title: 'Plato Carear', sub: 'Insertos 45°/90°', z: 5 }
+        ],
+        'drilling': [
+          { id: 'drill', title: 'Broca Carburo', sub: 'Refrigeración interna', z: 2 }
+        ],
+        'tapping': [
+          { id: 'tap_cutting', title: 'Machuelo Corte', sub: 'Gavilanes rectos', z: 4 },
+          { id: 'tap_forming', title: 'Machuelo Roll', sub: 'Sin viruta', z: 4 }
+        ],
+        'reaming': [
+          { id: 'reamer', title: 'Escariador H7', sub: 'Multi-filo precisión', z: 6 }
+        ],
+        '3d_contouring': [
+          { id: 'ballnose', title: 'Fresa Esférica', sub: 'Copiado 3D', z: 2 },
+          { id: 'bullnose', title: 'Fresa Tórica', sub: 'Radio en punta', z: 4 }
+        ],
+        'thread_milling': [
+          { id: 'thread_mill', title: 'Fresa de Roscar', sub: 'Rosca helicoidal CNC', z: 4 }
+        ],
+        'chamfering': [
+          { id: 'chamfer_mill', title: 'Fresa Chaflanar', sub: 'Biselado 45°/60°', z: 4 }
+        ]
+      };
 
-    window.selectOperation = function(opKey, el) {
-      window.selectOption('operation', opKey, el);
-      renderDynamicTools(opKey);
-    };
-
-    window.filterOperations = function(cat, btnEl) {
-      document.querySelectorAll('.op-filter').forEach(btn => {
-        btn.classList.remove('active', 'bg-[#28556C]', 'text-white');
-        btn.classList.add('bg-slate-100', 'text-slate-700');
-      });
-      if (btnEl) {
-        btnEl.classList.add('active', 'bg-[#28556C]', 'text-white');
-        btnEl.classList.remove('bg-slate-100', 'text-slate-700');
-      }
-
-      const items = document.querySelectorAll('.op-item');
-      items.forEach(item => {
-        if (cat === 'all' || item.getAttribute('data-cat').includes(cat)) {
-          item.style.display = 'flex';
-        } else {
-          item.style.display = 'none';
+      const i18n = {
+        es: {
+          step1_badge: "Paso 1 de 4", step1_title: "Selecciona el Sistema de Sujeción REGO-FIX", step1_sub: "Elige el portaherramientas montado en el husillo.",
+          step2_badge: "Paso 2 de 4", step2_title: "¿Qué Material vas a Mecanizar?", step2_sub: "Selecciona por sector industrial o tipo de aleación.",
+          step3_badge: "Paso 3 de 4", step3_title: "¿Qué Tipo de Operación Vas a Realizar?", step3_sub: "La herramienta en el siguiente paso se adaptará a tu elección.",
+          step4_badge: "Paso 4 de 4", step4_title: "Herramienta de Corte y Datos de Máquina", step4_sub: "Herramientas compatibles para la operación seleccionada.",
+          lbl_dia: "Diámetro (Ø)", lbl_z: "Filos (Z)", lbl_proj: "Proyección (L)", lbl_rpmmax: "Límite RPM",
+          btn_next: "Siguiente: Material →", btn_back: "← Regresar", btn_calc: "Calcular Parámetros ✨",
+          res_success: "Cálculo Optimizado con Éxito", res_header: "Ficha Técnica de Mecanizado Integral", res_restart: "Modificar Parámetros",
+          res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidad y Seguridad",
+          nav_holder: "Porta", nav_mat: "Material", nav_op: "Operación", nav_tool: "Herramienta",
+          tip_pg: "<b>powRgrip® asegurado:</b> Concentricidad < 3 µm con excelente amortiguación de vibraciones. Carga equilibrada en los filos.",
+          tip_mr: "<b>micRun® verificado:</b> Asegura apriete adecuado con tuerca lisa MR para tolerancias de salto inferiores a 3 µm.",
+          tip_er: "<b>Boquilla ER:</b> Verifica el par de apriete recomendado con llave dinamométrica para evitar deflexión.",
+          tip_proj_warn: "⚠️ <b>Alerta de Voladizo Largo:</b> La proyección supera 3.5×D. La deflexión elástica puede inducir vibraciones armónicas.",
+          tip_rpm_limit: "⚠️ <b>Tope de Husillo Activo:</b> Las RPM se ajustaron al límite de la máquina manteniendo la carga por diente óptima."
+        },
+        en: {
+          step1_badge: "Step 1 of 4", step1_title: "Select Your REGO-FIX Clamping System", step1_sub: "Choose the toolholder mounted on the spindle.",
+          step2_badge: "Step 2 of 4", step2_title: "What Workpiece Material Are You Machining?", step2_sub: "Select by industry sector or alloy group.",
+          step3_badge: "Step 3 of 4", step3_title: "What Type of Operation Will You Perform?", step3_sub: "The cutting tool in the next step will adapt to your choice.",
+          step4_badge: "Step 4 of 4", step4_title: "Cutting Tool & Machine Parameters", step4_sub: "Filtered compatible tools for the selected operation.",
+          lbl_dia: "Diameter (Ø)", lbl_z: "Flutes (Z)", lbl_proj: "Stick-out (L)", lbl_rpmmax: "Max RPM",
+          btn_next: "Next: Material →", btn_back: "← Back", btn_calc: "Calculate Parameters ✨",
+          res_success: "Optimized Calculation Ready", res_header: "Comprehensive Machining Data Sheet", res_restart: "Modify Parameters",
+          res_cnc: "Suggested CNC Block", res_safety: "Stability & Toolholding Diagnostics",
+          nav_holder: "Holder", nav_mat: "Material", nav_op: "Operation", nav_tool: "Tooling",
+          tip_pg: "<b>powRgrip® secured:</b> Total runout < 3 µm with outstanding vibration damping. Equal chip load across all flutes.",
+          tip_mr: "<b>micRun® verified:</b> Ensure proper torque with MR wrench to achieve ultra-high concentricity.",
+          tip_er: "<b>ER Collet:</b> Make sure to tighten with a calibrated torque wrench. Consider upgrading to powRgrip®.",
+          tip_proj_warn: "⚠️ <b>Long Stick-out Alert:</b> Overhang exceeds 3.5×D. Ensure high clamping rigidity to avoid chatter.",
+          tip_rpm_limit: "⚠️ <b>Spindle Limit Active:</b> Cutting speed was adjusted to respect your machine RPM limit."
+        },
+        pt: {
+          step1_badge: "Passo 1 de 4", step1_title: "Selecione o Sistema de Fixação REGO-FIX", step1_sub: "Escolha o mandril montado no spindle.",
+          step2_badge: "Passo 2 de 4", step2_title: "Qual Material Você Vai Usinar?", step2_sub: "Selecione por setor industrial ou grupo de ligas.",
+          step3_badge: "Passo 3 de 4", step3_title: "Qual Tipo de Operação Será Realizada?", step3_sub: "A ferramenta no próximo passo será adaptada à sua escolha.",
+          step4_badge: "Passo 4 de 4", step4_title: "Ferramenta de Corte e Dados da Máquina", step4_sub: "Ferramentas compatíveis para a operação selecionada.",
+          lbl_dia: "Diâmetro (Ø)", lbl_z: "Facas (Z)", lbl_proj: "Balanço (L)", lbl_rpmmax: "Limite RPM",
+          btn_next: "Próximo: Material →", btn_back: "← Voltar", btn_calc: "Calcular Parâmetros ✨",
+          res_success: "Cálculo Otimizado com Sucesso", res_header: "Ficha Técnica de Usinagem Integral", res_restart: "Modificar Parâmetros",
+          res_cnc: "Código CNC Sugerido", res_safety: "Diagnóstico de Estabilidade e Fixação",
+          nav_holder: "Fixação", nav_mat: "Material", nav_op: "Operação", nav_tool: "Ferramenta",
+          tip_pg: "<b>powRgrip® garantido:</b> Batimento < 3 µm com excelente amortecimento harmônico.",
+          tip_mr: "<b>micRun® verificado:</b> Aperte com a chave MR recomendada para garantir concentricidade superior.",
+          tip_er: "<b>Pinça ER:</b> Verifique o torque correto de aperto. Para maior vida útil, considere powRgrip®.",
+          tip_proj_warn: "⚠️ <b>Alerta de Balanço Longo:</b> L/D > 3.5×D. Utilize mandril de alta rigidez para evitar vibração.",
+          tip_rpm_limit: "⚠️ <b>Limite do Spindle Ativo:</b> As RPMs foram ajustadas ao limite da máquina."
         }
-      });
-    };
+      };
 
-    window.filterMaterials = function(cat, btnEl) {
-      document.querySelectorAll('.mat-filter').forEach(btn => {
-        btn.classList.remove('active', 'bg-[#28556C]', 'text-white');
-        btn.classList.add('bg-slate-100', 'text-slate-700');
-      });
-      if (btnEl) {
-        btnEl.classList.add('active', 'bg-[#28556C]', 'text-white');
-        btnEl.classList.remove('bg-slate-100', 'text-slate-700');
-      }
-
-      const items = document.querySelectorAll('.mat-item');
-      items.forEach(item => {
-        if (cat === 'all' || item.getAttribute('data-cat').includes(cat)) {
-          item.style.display = 'flex';
-        } else {
-          item.style.display = 'none';
+      // Control de Pasos
+      window.goToStep = function(stepNumber) {
+        for (let i = 1; i <= 4; i++) {
+          const stepEl = document.getElementById('step-' + i);
+          const pill = document.getElementById('pill-' + i);
+          if (stepEl) stepEl.classList.add('hidden');
+          if (pill) {
+            pill.classList.remove('active', 'completed');
+            if (i < stepNumber) pill.classList.add('completed');
+            if (i === stepNumber) pill.classList.add('active');
+          }
         }
-      });
-    };
+        const resEl = document.getElementById('step-results');
+        if (resEl) resEl.classList.add('hidden');
 
-    window.setLang = function(lang) {
-      currentLang = lang;
-      const dict = i18n[lang];
+        const targetStep = document.getElementById('step-' + stepNumber);
+        if (targetStep) targetStep.classList.remove('hidden');
 
-      document.getElementById('txt_step1_badge').innerText = dict.step1_badge;
-      document.getElementById('txt_step1_title').innerText = dict.step1_title;
-      document.getElementById('txt_step1_sub').innerText = dict.step1_sub;
+        if (stepNumber === 4) {
+          renderDynamicTools(window.state.operation);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
 
-      document.getElementById('txt_step2_badge').innerText = dict.step2_badge;
-      document.getElementById('txt_step2_title').innerText = dict.step2_title;
-      document.getElementById('txt_step2_sub').innerText = dict.step2_sub;
+      // Selección de opciones
+      window.selectOption = function(category, value, el) {
+        window.state[category] = value;
+        if (el && el.parentElement) {
+          const siblings = el.parentElement.querySelectorAll('.option-card');
+          siblings.forEach(function(card) { card.classList.remove('selected'); });
+          el.classList.add('selected');
+        }
+      };
 
-      document.getElementById('txt_step3_badge').innerText = dict.step3_badge;
-      document.getElementById('txt_step3_title').innerText = dict.step3_title;
-      document.getElementById('txt_step3_sub').innerText = dict.step3_sub;
+      window.selectOperation = function(opKey, el) {
+        window.selectOption('operation', opKey, el);
+        renderDynamicTools(opKey);
+      };
 
-      document.getElementById('txt_step4_badge').innerText = dict.step4_badge;
-      document.getElementById('txt_step4_title').innerText = dict.step4_title;
-      document.getElementById('txt_step4_sub').innerText = dict.step4_sub;
+      window.filterOperations = function(cat, btnEl) {
+        document.querySelectorAll('.op-filter').forEach(function(btn) {
+          btn.classList.remove('active', 'bg-[#28556C]', 'text-white');
+          btn.classList.add('bg-slate-100', 'text-slate-700');
+        });
+        if (btnEl) {
+          btnEl.classList.add('active', 'bg-[#28556C]', 'text-white');
+          btnEl.classList.remove('bg-slate-100', 'text-slate-700');
+        }
+        document.querySelectorAll('.op-item').forEach(function(item) {
+          if (cat === 'all' || item.getAttribute('data-cat').indexOf(cat) !== -1) {
+            item.style.display = 'flex';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      };
 
-      document.getElementById('lbl_inp_dia').innerText = dict.lbl_dia + (currentUnit === 'in' ? ' (in)' : ' (mm)');
-      document.getElementById('lbl_inp_z').innerText = dict.lbl_z;
-      document.getElementById('lbl_inp_proj').innerText = dict.lbl_proj + (currentUnit === 'in' ? ' (in)' : ' (mm)');
-      document.getElementById('lbl_inp_rpmmax').innerText = dict.lbl_rpmmax;
+      window.filterMaterials = function(cat, btnEl) {
+        document.querySelectorAll('.mat-filter').forEach(function(btn) {
+          btn.classList.remove('active', 'bg-[#28556C]', 'text-white');
+          btn.classList.add('bg-slate-100', 'text-slate-700');
+        });
+        if (btnEl) {
+          btnEl.classList.add('active', 'bg-[#28556C]', 'text-white');
+          btnEl.classList.remove('bg-slate-100', 'text-slate-700');
+        }
+        document.querySelectorAll('.mat-item').forEach(function(item) {
+          if (cat === 'all' || item.getAttribute('data-cat').indexOf(cat) !== -1) {
+            item.style.display = 'flex';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      };
 
-      document.getElementById('btn_next1').querySelector('span').innerText = dict.btn_next;
-      document.getElementById('btn_next2').querySelector('span').innerText = (lang === 'es' ? 'Siguiente: Operación →' : (lang === 'en' ? 'Next: Operation →' : 'Próximo: Operação →'));
-      document.getElementById('btn_next3').querySelector('span').innerText = (lang === 'es' ? 'Siguiente: Herramienta →' : (lang === 'en' ? 'Next: Tooling →' : 'Próximo: Ferramenta →'));
-      
-      document.getElementById('btn_back1').innerText = dict.btn_back;
-      document.getElementById('btn_back2').innerText = dict.btn_back;
-      document.getElementById('btn_back3').innerText = dict.btn_back;
-      document.getElementById('btn_calc').querySelector('span').innerText = dict.btn_calc;
+      function renderDynamicTools(opKey) {
+        const container = document.getElementById('dynamic_tool_grid');
+        if (!container) return;
+        container.innerHTML = '';
 
-      document.getElementById('txt_step1_nav').innerText = dict.nav_holder;
-      document.getElementById('txt_step2_nav').innerText = dict.nav_mat;
-      document.getElementById('txt_step3_nav').innerText = dict.nav_op;
-      document.getElementById('txt_step4_nav').innerText = dict.nav_tool;
+        const compatibleTools = COMPATIBLE_TOOLS_BY_OP[opKey] || COMPATIBLE_TOOLS_BY_OP['shoulder'];
+        window.state.tool_type = compatibleTools[0].id;
 
-      document.getElementById('txt_res_success').innerText = dict.res_success;
-      document.getElementById('txt_res_header').innerText = dict.res_header;
-      document.getElementById('btn_restart').innerText = dict.res_restart;
-      document.getElementById('txt_res_cnc').innerText = dict.res_cnc;
-      document.getElementById('txt_res_safety').innerText = dict.res_safety;
+        compatibleTools.forEach(function(tool, index) {
+          const card = document.createElement('div');
+          card.className = 'option-card text-center py-2 ' + (index === 0 ? 'selected' : '');
+          card.onclick = function() {
+            container.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
+            window.state.tool_type = tool.id;
+            handleToolSelectionEffects(tool);
+          };
 
-      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById(`btn_${lang}`).classList.add('active');
-    };
+          card.innerHTML = '<span class="card-title">' + tool.title + '</span><span class="card-desc">' + tool.sub + '</span>';
+          container.appendChild(card);
+        });
 
-    window.changeUnit = function(unit) {
-      if (unit === currentUnit) return;
-      currentUnit = unit;
-
-      const btnMm = document.getElementById('lbl_unit_mm');
-      const btnIn = document.getElementById('lbl_unit_in');
-
-      if (unit === 'in') {
-        btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
-        btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
-        document.getElementById('input_dia').value = '0.75';
-        document.getElementById('input_stickout').value = '2.5';
-      } else {
-        btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
-        btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
-        document.getElementById('input_dia').value = '20';
-        document.getElementById('input_stickout').value = '60';
+        handleToolSelectionEffects(compatibleTools[0]);
       }
-      window.setLang(currentLang);
-    };
 
-    window.goToStep = function(stepNumber) {
-      for (let i = 1; i <= 4; i++) {
-        document.getElementById(`step-${i}`).classList.add('hidden');
-        const pill = document.getElementById(`pill-${i}`);
-        pill.classList.remove('active', 'completed');
-        if (i < stepNumber) pill.classList.add('completed');
-        if (i === stepNumber) pill.classList.add('active');
+      function handleToolSelectionEffects(tool) {
+        const pitchBox = document.getElementById('box_pitch');
+        if (pitchBox) {
+          if (window.state.operation === 'tapping' || tool.id.indexOf('tap') !== -1) {
+            pitchBox.classList.remove('hidden');
+          } else {
+            pitchBox.classList.add('hidden');
+          }
+        }
+        if (tool.z) {
+          const inputZ = document.getElementById('input_z');
+          if (inputZ) inputZ.value = tool.z;
+        }
+        if (tool.id === 'facemill') {
+          const inputDia = document.getElementById('input_dia');
+          if (inputDia) inputDia.value = (window.currentUnit === 'in' ? 2.0 : 50);
+        }
       }
-      document.getElementById('step-results').classList.add('hidden');
-      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
 
-      if (stepNumber === 4) {
-        renderDynamicTools(state.operation);
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+      window.setLang = function(lang) {
+        window.currentLang = lang;
+        const dict = i18n[lang];
 
-    function renderDynamicTools(opKey) {
-      const container = document.getElementById('dynamic_tool_grid');
-      container.innerHTML = '';
+        document.getElementById('txt_step1_badge').innerText = dict.step1_badge;
+        document.getElementById('txt_step1_title').innerText = dict.step1_title;
+        document.getElementById('txt_step1_sub').innerText = dict.step1_sub;
 
-      const compatibleTools = COMPATIBLE_TOOLS_BY_OP[opKey] || COMPATIBLE_TOOLS_BY_OP['shoulder'];
-      state.tool_type = compatibleTools[0].id;
+        document.getElementById('txt_step2_badge').innerText = dict.step2_badge;
+        document.getElementById('txt_step2_title').innerText = dict.step2_title;
+        document.getElementById('txt_step2_sub').innerText = dict.step2_sub;
 
-      compatibleTools.forEach((tool, index) => {
-        const card = document.createElement('div');
-        card.className = `option-card text-center py-2 ${index === 0 ? 'selected' : ''}`;
-        card.onclick = function() {
-          container.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          state.tool_type = tool.id;
-          handleToolSelectionEffects(tool);
+        document.getElementById('txt_step3_badge').innerText = dict.step3_badge;
+        document.getElementById('txt_step3_title').innerText = dict.step3_title;
+        document.getElementById('txt_step3_sub').innerText = dict.step3_sub;
+
+        document.getElementById('txt_step4_badge').innerText = dict.step4_badge;
+        document.getElementById('txt_step4_title').innerText = dict.step4_title;
+        document.getElementById('txt_step4_sub').innerText = dict.step4_sub;
+
+        document.getElementById('lbl_inp_dia').innerText = dict.lbl_dia + (window.currentUnit === 'in' ? ' (in)' : ' (mm)');
+        document.getElementById('lbl_inp_z').innerText = dict.lbl_z;
+        document.getElementById('lbl_inp_proj').innerText = dict.lbl_proj + (window.currentUnit === 'in' ? ' (in)' : ' (mm)');
+        document.getElementById('lbl_inp_rpmmax').innerText = dict.lbl_rpmmax;
+
+        document.getElementById('btn_next1').querySelector('span').innerText = dict.btn_next;
+        document.getElementById('btn_next2').querySelector('span').innerText = (lang === 'es' ? 'Siguiente: Operación →' : (lang === 'en' ? 'Next: Operation →' : 'Próximo: Operação →'));
+        document.getElementById('btn_next3').querySelector('span').innerText = (lang === 'es' ? 'Siguiente: Herramienta →' : (lang === 'en' ? 'Next: Tooling →' : 'Próximo: Ferramenta →'));
+        
+        document.getElementById('btn_back1').innerText = dict.btn_back;
+        document.getElementById('btn_back2').innerText = dict.btn_back;
+        document.getElementById('btn_back3').innerText = dict.btn_back;
+        document.getElementById('btn_calc').querySelector('span').innerText = dict.btn_calc;
+
+        document.getElementById('txt_step1_nav').innerText = dict.nav_holder;
+        document.getElementById('txt_step2_nav').innerText = dict.nav_mat;
+        document.getElementById('txt_step3_nav').innerText = dict.nav_op;
+        document.getElementById('txt_step4_nav').innerText = dict.nav_tool;
+
+        document.getElementById('txt_res_success').innerText = dict.res_success;
+        document.getElementById('txt_res_header').innerText = dict.res_header;
+        document.getElementById('btn_restart').innerText = dict.res_restart;
+        document.getElementById('txt_res_cnc').innerText = dict.res_cnc;
+        document.getElementById('txt_res_safety').innerText = dict.res_safety;
+
+        document.querySelectorAll('.lang-btn').forEach(function(btn) { btn.classList.remove('active'); });
+        const activeBtn = document.getElementById('btn_' + lang);
+        if (activeBtn) activeBtn.classList.add('active');
+      };
+
+      window.changeUnit = function(unit) {
+        if (unit === window.currentUnit) return;
+        window.currentUnit = unit;
+
+        const btnMm = document.getElementById('lbl_unit_mm');
+        const btnIn = document.getElementById('lbl_unit_in');
+
+        if (unit === 'in') {
+          btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+          btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
+          document.getElementById('input_dia').value = '0.75';
+          document.getElementById('input_stickout').value = '2.5';
+        } else {
+          btnMm.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+          btnIn.className = "px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition text-slate-500";
+          document.getElementById('input_dia').value = '20';
+          document.getElementById('input_stickout').value = '60';
+        }
+        window.setLang(window.currentLang);
+      };
+
+      // Cálculo Físico Cinemático
+      window.calcularResultadoFinal = function() {
+        window.state.dia = parseFloat(document.getElementById('input_dia').value) || (window.currentUnit === 'in' ? 0.75 : 20);
+        window.state.z = parseInt(document.getElementById('input_z').value) || 4;
+        window.state.pitch = parseFloat(document.getElementById('input_pitch').value) || 1.5;
+        window.state.stickout = parseFloat(document.getElementById('input_stickout').value) || (window.currentUnit === 'in' ? 2.5 : 60);
+        window.state.max_rpm = parseFloat(document.getElementById('input_max_rpm').value) || 12000;
+
+        const dia_mm = (window.currentUnit === 'in') ? window.state.dia * 25.4 : window.state.dia;
+        const stickout_mm = (window.currentUnit === 'in') ? window.state.stickout * 25.4 : window.state.stickout;
+
+        const matData = MATERIALS_DB[window.state.material] || MATERIALS_DB['al_a356'];
+        const subData = SUBSTRATES_DB[window.state.tool_mat] || SUBSTRATES_DB['pcd'];
+
+        let vc = matData.vc * subData.fVc;
+        let fz = matData.fz * subData.fFz;
+        let kc = matData.kc;
+
+        let ap = dia_mm * 0.5;
+        let ae = dia_mm * 0.4;
+
+        if (window.state.operation === 'drilling' || window.state.tool_type.indexOf('drill') !== -1) {
+          ap = dia_mm * 3.0;
+          ae = dia_mm;
+          vc *= 0.70;
+          fz = dia_mm * 0.018;
+        } else if (window.state.operation === 'tapping' || window.state.tool_type.indexOf('tap') !== -1) {
+          ap = dia_mm * 2.0;
+          ae = dia_mm;
+          vc = (window.state.material.indexOf('al') !== -1 ? 25 : (window.state.material.indexOf('inconel') !== -1 ? 6 : 14)) * (window.state.tool_mat === 'carbide_coated' ? 1.8 : 1.0);
+        } else if (window.state.operation === 'reaming' || window.state.tool_type === 'reamer') {
+          ap = dia_mm * 2.5;
+          ae = dia_mm * 0.05;
+          vc *= 0.35;
+          fz *= 1.5;
+        } else if (window.state.operation === 'facemilling' || window.state.tool_type === 'facemill') {
+          ap = 2.5;
+          ae = dia_mm * 0.75;
+          fz *= 1.3;
+        } else if (window.state.operation === '3d_contouring' || window.state.tool_type.indexOf('ball') !== -1) {
+          ap = dia_mm * 0.10;
+          ae = dia_mm * 0.15;
+          fz *= 0.75;
+        } else if (window.state.operation === 'hpc_dynamic') {
+          ap = dia_mm * 1.8;
+          ae = dia_mm * 0.10;
+          fz *= 1.35;
+        } else if (window.state.operation === 'slotting') {
+          ap = dia_mm * 0.4;
+          ae = dia_mm * 1.0;
+          fz *= 0.75;
+        } else if (window.state.operation === 'hfm_feed') {
+          ap = Math.min(1.2, dia_mm * 0.06);
+          ae = dia_mm * 0.65;
+          fz *= 2.8;
+        } else if (window.state.operation === 'finishing') {
+          ap = dia_mm * 1.2;
+          ae = dia_mm * 0.05;
+          fz *= 0.50;
+        } else if (window.state.operation === 'thread_milling') {
+          ap = dia_mm * 1.5;
+          ae = dia_mm * 0.15;
+          vc *= 0.8;
+        } else if (window.state.operation === 'chamfering') {
+          ap = 1.0;
+          ae = 1.0;
+          fz *= 0.8;
+        }
+
+        let fHolder = 1.0;
+        if (window.state.holder === 'pg48' || window.state.holder === 'pg32') fHolder = 1.18;
+        else if (window.state.holder === 'pg25' || window.state.holder === 'pg15' || window.state.holder === 'pg10' || window.state.holder === 'pg6') fHolder = 1.12;
+        else if (window.state.holder === 'mr_all') fHolder = 1.10;
+        else if (window.state.holder === 'er_up') fHolder = 1.0;
+        else if (window.state.holder === 'er_std') fHolder = 0.85;
+
+        const ratioLD = stickout_mm / dia_mm;
+        let fLD = 1.0;
+        if (ratioLD > 3.5) fLD = 0.85;
+        if (ratioLD > 5.0) fLD = 0.70;
+
+        const rpmTeorico = (vc * 1000) / (Math.PI * dia_mm);
+        const rpmFinal = Math.min(rpmTeorico, window.state.max_rpm);
+        const fzFinal = fz * fHolder * fLD;
+        
+        let vf_mm_min = (window.state.operation === 'tapping' || window.state.tool_type.indexOf('tap') !== -1)
+          ? (rpmFinal * window.state.pitch)
+          : (rpmFinal * window.state.z * fzFinal);
+
+        const vf_m_min = vf_mm_min / 1000;
+        const vf_ipm = vf_mm_min / 25.4;
+        const vf_ips = vf_ipm / 60;
+
+        const fz_in = fzFinal / 25.4;
+        const fn_mm = (window.state.operation === 'tapping') ? window.state.pitch : fzFinal * window.state.z;
+        const fn_in = fn_mm / 25.4;
+
+        const vc_m_min = Math.round((rpmFinal * Math.PI * dia_mm) / 1000);
+        const vc_sfm = Math.round((rpmFinal * (dia_mm / 25.4)) / 3.82);
+
+        const q_cm3 = (ap * ae * vf_mm_min) / 1000;
+        const powerKw = (q_cm3 * kc) / (60 * 1000 * 0.80);
+        const tpf = (rpmFinal * window.state.z) / 60;
+
+        const dict = i18n[window.currentLang];
+        const isInch = window.currentUnit === 'in';
+
+        // Render en pantalla
+        document.getElementById('res_rpm').innerText = Math.round(rpmFinal).toLocaleString('en');
+        document.getElementById('res_vc_info').innerText = 'Vc: ' + vc_m_min + ' m/min | ' + vc_sfm + ' SFM';
+
+        if (isInch) {
+          document.getElementById('res_feed_main').innerText = vf_ipm.toFixed(1);
+          document.getElementById('res_feed_main_unit').innerText = 'in/min (IPM)';
+          document.getElementById('res_feed_sec_info').innerText = 'Equivale a ' + Math.round(vf_mm_min) + ' mm/min | ' + vf_m_min.toFixed(2) + ' m/min';
+        } else {
+          document.getElementById('res_feed_main').innerText = Math.round(vf_mm_min).toLocaleString('en');
+          document.getElementById('res_feed_main_unit').innerText = 'mm/min';
+          document.getElementById('res_feed_sec_info').innerText = 'Equivale a ' + vf_ipm.toFixed(1) + ' in/min (IPM) | ' + vf_m_min.toFixed(2) + ' m/min';
+        }
+
+        document.getElementById('val_vf_mm_min').innerText = Math.round(vf_mm_min).toLocaleString('en');
+        document.getElementById('val_vf_m_min').innerText = vf_m_min.toFixed(2);
+        document.getElementById('val_vf_ipm').innerText = vf_ipm.toFixed(1);
+        document.getElementById('val_vf_ips').innerText = vf_ips.toFixed(2);
+
+        document.getElementById('val_fz_mm').innerText = fzFinal.toFixed(3);
+        document.getElementById('val_fz_in').innerText = fz_in.toFixed(4);
+        document.getElementById('val_fn_mm').innerText = fn_mm.toFixed(3);
+        document.getElementById('val_fn_in').innerText = fn_in.toFixed(4);
+
+        const apDisplay = isInch ? (ap / 25.4).toFixed(3) + ' in' : ap.toFixed(1) + ' mm';
+        const aeDisplay = isInch ? (ae / 25.4).toFixed(3) + ' in' : ae.toFixed(1) + ' mm';
+        document.getElementById('res_ap').innerText = apDisplay;
+        document.getElementById('res_ae').innerText = aeDisplay;
+
+        document.getElementById('res_power').innerText = powerKw.toFixed(1) + ' kW (' + (powerKw * 1.341).toFixed(1) + ' HP)';
+        document.getElementById('res_mrr').innerText = isInch ? (q_cm3 / 16.387).toFixed(1) + ' in³/min' : (q_cm3 > 100 ? Math.round(q_cm3).toLocaleString('en') : q_cm3.toFixed(1)) + ' cm³/min';
+        document.getElementById('res_tpf_info').innerText = 'TPF: ' + Math.round(tpf) + ' Hz';
+        
+        const feedGcode = isInch ? Math.round(vf_ipm) : Math.round(vf_mm_min);
+        if (window.state.operation === 'tapping' || window.state.tool_type.indexOf('tap') !== -1) {
+          document.getElementById('res_gcode').innerText = 'S' + Math.round(rpmFinal) + ' M03 G84 Z-' + ap.toFixed(1) + ' F' + window.state.pitch;
+        } else if (window.state.operation === 'drilling') {
+          document.getElementById('res_gcode').innerText = 'S' + Math.round(rpmFinal) + ' M03 G81 Z-' + ap.toFixed(1) + ' R2.0 F' + feedGcode;
+        } else {
+          document.getElementById('res_gcode').innerText = 'S' + Math.round(rpmFinal) + ' M03 F' + feedGcode;
+        }
+
+        const tipsList = document.getElementById('res_tips');
+        tipsList.innerHTML = '';
+        
+        const addTip = function(msg) {
+          const li = document.createElement('li');
+          li.innerHTML = msg;
+          tipsList.appendChild(li);
         };
 
-        card.innerHTML = `
-          <span class="card-title">${tool.title}</span>
-          <span class="card-desc">${tool.sub}</span>
-        `;
-        container.appendChild(card);
+        if (window.state.holder.indexOf('pg') === 0) addTip(dict.tip_pg);
+        else if (window.state.holder === 'mr_all') addTip(dict.tip_mr);
+        else addTip(dict.tip_er);
+
+        if (window.state.operation === 'tapping') {
+          addTip('<b>Roscado Sincronizado:</b> Paso configurado a ' + window.state.pitch + ' mm/hilo. Avance programado como F = S × Paso.');
+        }
+
+        if (ratioLD > 3.5) addTip(dict.tip_proj_warn + ' (L/D = ' + ratioLD.toFixed(1) + ').');
+        if (rpmTeorico > window.state.max_rpm) addTip(dict.tip_rpm_limit);
+
+        for (let i = 1; i <= 4; i++) {
+          const s = document.getElementById('step-' + i);
+          const p = document.getElementById('pill-' + i);
+          if (s) s.classList.add('hidden');
+          if (p) p.classList.add('completed');
+        }
+        const resultsEl = document.getElementById('step-results');
+        if (resultsEl) resultsEl.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      // Inicialización inmediata al terminar de cargar el DOM
+      document.addEventListener('DOMContentLoaded', function() {
+        window.setLang('es');
+        renderDynamicTools(window.state.operation);
       });
-
-      handleToolSelectionEffects(compatibleTools[0]);
-    }
-
-    function handleToolSelectionEffects(tool) {
-      const pitchBox = document.getElementById('box_pitch');
-      if (state.operation === 'tapping' || tool.id.includes('tap')) {
-        pitchBox.classList.remove('hidden');
-      } else {
-        pitchBox.classList.add('hidden');
-      }
-
-      if (tool.z) {
-        document.getElementById('input_z').value = tool.z;
-      }
-
-      if (tool.id === 'facemill') {
-        document.getElementById('input_dia').value = (currentUnit === 'in' ? 2.0 : 50);
-      }
-    }
-
-    window.calcularResultadoFinal = function() {
-      state.dia = parseFloat(document.getElementById('input_dia').value) || (currentUnit === 'in' ? 0.75 : 20);
-      state.z = parseInt(document.getElementById('input_z').value) || 4;
-      state.pitch = parseFloat(document.getElementById('input_pitch').value) || 1.5;
-      state.stickout = parseFloat(document.getElementById('input_stickout').value) || (currentUnit === 'in' ? 2.5 : 60);
-      state.max_rpm = parseFloat(document.getElementById('input_max_rpm').value) || 12000;
-
-      const dia_mm = (currentUnit === 'in') ? state.dia * 25.4 : state.dia;
-      const stickout_mm = (currentUnit === 'in') ? state.stickout * 25.4 : state.stickout;
-
-      const results = calculateCuttingPhysics({
-        ...state,
-        dia: dia_mm,
-        stickout: stickout_mm
-      });
-
-      const dict = i18n[currentLang];
-      const isInch = currentUnit === 'in';
-
-      // Renderizado de Resultados
-      document.getElementById('res_rpm').innerText = Math.round(results.rpmFinal).toLocaleString('en');
-      document.getElementById('res_vc_info').innerText = `Vc: ${results.vc_m_min} m/min | ${results.vc_sfm} SFM`;
-
-      if (isInch) {
-        document.getElementById('res_feed_main').innerText = results.vf_ipm.toFixed(1);
-        document.getElementById('res_feed_main_unit').innerText = 'in/min (IPM)';
-        document.getElementById('res_feed_sec_info').innerText = `Equivale a ${Math.round(results.vf_mm_min)} mm/min | ${results.vf_m_min.toFixed(2)} m/min`;
-      } else {
-        document.getElementById('res_feed_main').innerText = Math.round(results.vf_mm_min).toLocaleString('en');
-        document.getElementById('res_feed_main_unit').innerText = 'mm/min';
-        document.getElementById('res_feed_sec_info').innerText = `Equivale a ${results.vf_ipm.toFixed(1)} in/min (IPM) | ${results.vf_m_min.toFixed(2)} m/min`;
-      }
-
-      document.getElementById('val_vf_mm_min').innerText = Math.round(results.vf_mm_min).toLocaleString('en');
-      document.getElementById('val_vf_m_min').innerText = results.vf_m_min.toFixed(2);
-      document.getElementById('val_vf_ipm').innerText = results.vf_ipm.toFixed(1);
-      document.getElementById('val_vf_ips').innerText = results.vf_ips.toFixed(2);
-
-      document.getElementById('val_fz_mm').innerText = results.fzFinal.toFixed(3);
-      document.getElementById('val_fz_in').innerText = results.fz_in.toFixed(4);
-      document.getElementById('val_fn_mm').innerText = results.fn_mm.toFixed(3);
-      document.getElementById('val_fn_in').innerText = results.fn_in.toFixed(4);
-
-      let apDisplay = isInch ? (results.ap / 25.4).toFixed(3) + ' in' : results.ap.toFixed(1) + ' mm';
-      let aeDisplay = isInch ? (results.ae / 25.4).toFixed(3) + ' in' : results.ae.toFixed(1) + ' mm';
-      document.getElementById('res_ap').innerText = apDisplay;
-      document.getElementById('res_ae').innerText = aeDisplay;
-
-      document.getElementById('res_power').innerText = `${results.powerKw.toFixed(1)} kW (${(results.powerKw * 1.341).toFixed(1)} HP)`;
-      document.getElementById('res_mrr').innerText = isInch ? `${(results.q_cm3 / 16.387).toFixed(1)} in³/min` : `${q_cm3_format(results.q_cm3)} cm³/min`;
-      document.getElementById('res_tpf_info').innerText = `TPF: ${Math.round(results.tpf)} Hz`;
-      
-      let feedGcode = isInch ? Math.round(results.vf_ipm) : Math.round(results.vf_mm_min);
-      if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
-        document.getElementById('res_gcode').innerText = `S${Math.round(results.rpmFinal)} M03 G84 Z-${results.ap.toFixed(1)} F${state.pitch}`;
-      } else if (state.operation === 'drilling') {
-        document.getElementById('res_gcode').innerText = `S${Math.round(results.rpmFinal)} M03 G81 Z-${results.ap.toFixed(1)} R2.0 F${feedGcode}`;
-      } else {
-        document.getElementById('res_gcode').innerText = `S${Math.round(results.rpmFinal)} M03 F${feedGcode}`;
-      }
-
-      const tipsList = document.getElementById('res_tips');
-      tipsList.innerHTML = '';
-      const diagnostics = generateDiagnostics(state, results, dict);
-      diagnostics.forEach((msg) => {
-        const li = document.createElement('li');
-        li.innerHTML = msg;
-        tipsList.appendChild(li);
-      });
-
-      for (let i = 1; i <= 4; i++) {
-        document.getElementById(`step-${i}`).classList.add('hidden');
-        document.getElementById(`pill-${i}`).classList.add('completed');
-      }
-      document.getElementById('step-results').classList.remove('hidden');
-      document.getElementById('step-results').scrollIntoView({ behavior: 'smooth' });
-    };
-
-    function q_cm3_format(val) {
-      return val > 100 ? Math.round(val).toLocaleString('en') : val.toFixed(1);
-    }
-
-    // Inicializar al cargar
-    window.setLang('es');
-    renderDynamicTools(state.operation);
+    })();
   </script>
 </body>
 </html>
