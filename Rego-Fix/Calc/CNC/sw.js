@@ -1,4 +1,4 @@
-const CACHE_NAME = 'regofix-cnc-calc-v3';
+const CACHE_NAME = 'regofix-cnc-calc-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
