@@ -1,11 +1,12 @@
-const CACHE_NAME = 'regofix-cnc-calc-v1';
+const CACHE_NAME = 'regofix-cnc-calc-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './api/cut-conditions.js',
   './api/recommend.js',
-  './lib/tailwindcss.js',
+  './lib/tailwindcss.css',
+  './lib/chart.js',
   'https://alexrasa.store/assets/regofixlogo.png'
 ];
 
