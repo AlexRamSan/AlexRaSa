@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>REGO-FIX Smart Tooling & Machining Assistant</title>
   
-  <!-- Configuración PWA / Mobile Web App -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#28556C">
   <meta name="mobile-web-app-capable" content="yes">
@@ -14,8 +13,10 @@
   <meta name="apple-mobile-web-app-title" content="RF Calculator">
   <link rel="apple-touch-icon" href="https://alexrasa.store/assets/regofixlogo.png">
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Script desde CDN o lib local -->
+  <script src="lib/tailwindcss.js" onerror="this.src='https://cdn.tailwindcss.com';"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  
   <style>
     :root { 
       --rego-red: #D31B23; 
@@ -76,7 +77,7 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <!-- Botón Instalar App (Solo aparece si el navegador lo permite) -->
+        <!-- Botón Instalar App PWA -->
         <button id="btn-install" class="hidden items-center gap-1.5 bg-[#28556C] hover:bg-[#1d3d4d] text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           <span>Instalar App</span>
@@ -85,22 +86,22 @@
         <!-- Selector de Unidad -->
         <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
           <label class="px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition" id="lbl_unit_mm">
-            <input type="radio" name="unit_sys" value="mm" checked onchange="changeUnit('mm')" class="hidden"> Metric (mm)
+            <input type="radio" name="unit_sys" value="mm" checked onchange="window.changeUnit('mm')" class="hidden"> Metric (mm)
           </label>
           <label class="px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition text-gray-500" id="lbl_unit_in">
-            <input type="radio" name="unit_sys" value="in" onchange="changeUnit('in')" class="hidden"> Imperial (in)
+            <input type="radio" name="unit_sys" value="in" onchange="window.changeUnit('in')" class="hidden"> Imperial (in)
           </label>
         </div>
 
         <!-- Selector de Idioma -->
         <div class="flex gap-2">
-          <div onclick="setLang('es')" id="btn_es" class="lang-btn active w-7 h-5 border border-gray-200" title="Español">
+          <div onclick="window.setLang('es')" id="btn_es" class="lang-btn active w-7 h-5 border border-gray-200" title="Español">
             <svg viewBox="0 0 640 480" class="w-full h-full"><rect width="213.3" height="480" fill="#006847"/><rect x="213.3" width="213.4" height="480" fill="#fff"/><rect x="426.7" width="213.3" height="480" fill="#ce1126"/><circle cx="320" cy="240" r="30" fill="#8b5a2b"/></svg>
           </div>
-          <div onclick="setLang('en')" id="btn_en" class="lang-btn w-7 h-5 border border-gray-200" title="English">
+          <div onclick="window.setLang('en')" id="btn_en" class="lang-btn w-7 h-5 border border-gray-200" title="English">
             <svg viewBox="0 0 640 480" class="w-full h-full"><rect width="640" height="480" fill="#bd3d44"/><path stroke="#fff" stroke-width="37" d="M0,55.4H640M0,129.2H640M0,203H640M0,276.9H640M0,350.8H640M0,424.6H640"/><rect width="256" height="258.5" fill="#192f5d"/></svg>
           </div>
-          <div onclick="setLang('pt')" id="btn_pt" class="lang-btn w-7 h-5 border border-gray-200" title="Português">
+          <div onclick="window.setLang('pt')" id="btn_pt" class="lang-btn w-7 h-5 border border-gray-200" title="Português">
             <svg viewBox="0 0 640 480" class="w-full h-full"><rect width="640" height="480" fill="#009c3b"/><polygon points="320,40 600,240 320,440 40,240" fill="#ffdf00"/><circle cx="320" cy="240" r="105" fill="#002776"/></svg>
           </div>
         </div>
@@ -132,7 +133,7 @@
       </div>
     </div>
 
-    <!-- Contenedor del Wizard -->
+    <!-- Wizard Card -->
     <div class="wizard-card">
       
       <!-- PASO 1: Sujeción REGO-FIX -->
@@ -144,108 +145,108 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6 max-h-[400px] overflow-y-auto pr-1">
-          <div class="option-card" onclick="selectOption('holder', 'pg48', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'pg48', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">powRgrip® PG 48</span>
                 <span class="text-[9px] bg-red-100 text-[#D31B23] px-1.5 py-0.5 rounded-full font-bold">Pesado</span>
               </div>
-              <p class="text-xs text-gray-500">Mecanizado pesado extremo hasta Ø40.0 mm (1 1/2 pulg).</p>
+              <p class="text-xs text-gray-500">Mecanizado pesado extremo hasta Ø40.0 mm (1 1/2 pulg)[cite: 3].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Par hasta 2000 Nm</div>
+            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Par hasta 2000 Nm[cite: 3]</div>
           </div>
 
-          <div class="option-card selected" onclick="selectOption('holder', 'pg32', this)">
+          <div class="option-card selected" onclick="window.selectOption('holder', 'pg32', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">powRgrip® PG 32</span>
                 <span class="text-[9px] bg-red-100 text-[#D31B23] px-1.5 py-0.5 rounded-full font-bold">Máx. Rigidez</span>
               </div>
-              <p class="text-xs text-gray-500">Desbaste severo y fresado agresivo hasta Ø25.4 mm (1 pulg).</p>
+              <p class="text-xs text-gray-500">Desbaste severo y fresado agresivo hasta Ø25.4 mm (1 pulg)[cite: 3].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Gran amortiguación</div>
+            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Gran amortiguación[cite: 3]</div>
           </div>
 
-          <div class="option-card" onclick="selectOption('holder', 'pg25', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'pg25', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">powRgrip® PG 25</span>
                 <span class="text-[9px] bg-blue-100 text-[#28556C] px-1.5 py-0.5 rounded-full font-bold">Estándar Pro</span>
               </div>
-              <p class="text-xs text-gray-500">Universal balanceado hasta Ø20.0 mm (3/4 pulg).</p>
+              <p class="text-xs text-gray-500">Universal balanceado hasta Ø20.0 mm (3/4 pulg)[cite: 3].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Alta versatilidad</div>
+            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Alta versatilidad[cite: 3]</div>
           </div>
 
-          <div class="option-card" onclick="selectOption('holder', 'pg15', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'pg15', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">powRgrip® PG 15</span>
                 <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">HSC / Moldes</span>
               </div>
-              <p class="text-xs text-gray-500">Perfil delgado para cavidades y fresado fino hasta Ø10 mm.</p>
+              <p class="text-xs text-gray-500">Perfil delgado para cavidades y fresado fino hasta Ø10 mm[cite: 3].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Acceso óptimo</div>
+            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Acceso óptimo[cite: 3]</div>
           </div>
 
-          <div class="option-card" onclick="selectOption('holder', 'pg10', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'pg10', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">powRgrip® PG 10</span>
                 <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">Micro-Acceso</span>
               </div>
-              <p class="text-xs text-gray-500">Fijación de alta velocidad para diámetros de Ø1 a Ø6 mm.</p>
+              <p class="text-xs text-gray-500">Fijación de alta velocidad para diámetros de Ø1 a Ø6 mm[cite: 3].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Alta velocidad</div>
+            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Alta velocidad[cite: 3]</div>
           </div>
 
-          <div class="option-card" onclick="selectOption('holder', 'pg6', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'pg6', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">powRgrip® PG 6</span>
                 <span class="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">Micro-Fijación</span>
               </div>
-              <p class="text-xs text-gray-500">Para micro-herramientas desde Ø0.2 mm hasta Ø3.175 mm (1/8 pulg).</p>
+              <p class="text-xs text-gray-500">Para micro-herramientas desde Ø0.2 mm hasta Ø3.175 mm (1/8 pulg)[cite: 3].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Husillos > 40k RPM</div>
+            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 3 µm | Husillos > 40k RPM[cite: 3]</div>
           </div>
 
-          <div class="option-card" onclick="selectOption('holder', 'mr_all', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'mr_all', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">micRun® (MR 11/16/25/32)</span>
                 <span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold">Tuerca Lisa</span>
               </div>
-              <p class="text-xs text-gray-500">Portapinzas y pinzas mecánicas de súper precisión.</p>
+              <p class="text-xs text-gray-500">Portapinzas y pinzas mecánicas de súper precisión[cite: 2].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#28556C] mt-2">TIR ≤ 3 µm a 3xD | Pinza 2 µm</div>
+            <div class="text-[10px] font-bold text-[#28556C] mt-2">TIR ≤ 3 µm a 3xD | Pinza 2 µm[cite: 2]</div>
           </div>
 
-          <div class="option-card" onclick="selectOption('holder', 'er_up', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'er_up', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">ER Ultra-Precision (UP)</span>
                 <span class="text-[9px] bg-blue-100 text-[#28556C] px-1.5 py-0.5 rounded-full font-bold">ER 8 - ER 50</span>
               </div>
-              <p class="text-xs text-gray-500">Pinzas ER rectificadas con tolerancia de salto estrecha.</p>
+              <p class="text-xs text-gray-500">Pinzas ER rectificadas con tolerancia de salto estrecha[cite: 1].</p>
             </div>
-            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 5 µm | Balance DIN 6499</div>
+            <div class="text-[10px] font-bold text-[#79A336] mt-2">TIR ≤ 5 µm | Balance DIN 6499[cite: 1]</div>
           </div>
 
-          <div class="option-card" onclick="selectOption('holder', 'er_std', this)">
+          <div class="option-card" onclick="window.selectOption('holder', 'er_std', this)">
             <div>
               <div class="flex justify-between items-center mb-1">
                 <span class="font-black text-[#28556C] text-sm">ER Estándar REGO-FIX</span>
                 <span class="text-[9px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded-full font-bold">ER Clásico</span>
               </div>
-              <p class="text-xs text-gray-500">El diseño original suizo para aplicaciones generales.</p>
+              <p class="text-xs text-gray-500">El diseño original suizo para aplicaciones generales[cite: 1].</p>
             </div>
-            <div class="text-[10px] font-bold text-gray-500 mt-2">TIR ≤ 10 µm | Máxima versatilidad</div>
+            <div class="text-[10px] font-bold text-gray-500 mt-2">TIR ≤ 10 µm | Máxima versatilidad[cite: 1]</div>
           </div>
         </div>
 
         <div class="flex justify-end">
-          <button onclick="goToStep(2)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-6 py-3 rounded-xl uppercase tracking-wider transition" id="btn_next1">Siguiente: Material →</button>
+          <button onclick="window.goToStep(2)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-6 py-3 rounded-xl uppercase tracking-wider transition" id="btn_next1">Siguiente: Material →</button>
         </div>
       </section>
 
@@ -258,17 +259,17 @@
         </div>
 
         <div class="flex flex-wrap gap-2 mb-4">
-          <button onclick="filterMaterials('all')" class="mat-filter active px-3 py-1 bg-[#28556C] text-white text-xs font-bold rounded-lg transition">Todos</button>
-          <button onclick="filterMaterials('auto')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Automotriz</button>
-          <button onclick="filterMaterials('aero')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Aeroespacial</button>
-          <button onclick="filterMaterials('med')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Médico</button>
-          <button onclick="filterMaterials('general')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Taller / Moldes</button>
-          <button onclick="filterMaterials('nonmetal')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">No Metales</button>
+          <button onclick="window.filterMaterials('all')" class="mat-filter active px-3 py-1 bg-[#28556C] text-white text-xs font-bold rounded-lg transition">Todos</button>
+          <button onclick="window.filterMaterials('auto')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Automotriz</button>
+          <button onclick="window.filterMaterials('aero')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Aeroespacial</button>
+          <button onclick="window.filterMaterials('med')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Médico</button>
+          <button onclick="window.filterMaterials('general')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Taller / Moldes</button>
+          <button onclick="window.filterMaterials('nonmetal')" class="mat-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">No Metales</button>
         </div>
 
         <div id="material_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6 max-h-[380px] overflow-y-auto pr-1">
           <!-- AUTOMOTRIZ -->
-          <div class="option-card mat-item selected" data-cat="auto" onclick="selectOption('material', 'al_a356', this)">
+          <div class="option-card mat-item selected" data-cat="auto" onclick="window.selectOption('material', 'al_a356', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Aluminio Fundición A356 / A380</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
@@ -276,7 +277,7 @@
             <p class="text-xs text-gray-500">Alto silicio (> 7% Si). Bloques de motor, rines, carcasas. Abrasivo.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="auto" onclick="selectOption('material', 'cgi_iron', this)">
+          <div class="option-card mat-item" data-cat="auto" onclick="window.selectOption('material', 'cgi_iron', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Hierro Compactado Vermicular (CGI)</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
@@ -284,7 +285,7 @@
             <p class="text-xs text-gray-500">Bloques diesel de alta presión. Mayor resistencia y abrasión que GG25.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="auto general" onclick="selectOption('material', 'nodular_iron', this)">
+          <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'nodular_iron', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Hierro Dúctil / Nodular (GGG40 / GGG60)</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
@@ -292,7 +293,7 @@
             <p class="text-xs text-gray-500">Cigüeñales, manguetas, calibradores de freno.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="auto general" onclick="selectOption('material', 'gray_iron', this)">
+          <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'gray_iron', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Fundición Gris (GG20 / GG25 / Clase 30)</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
@@ -300,7 +301,7 @@
             <p class="text-xs text-gray-500">Discos y tambores de freno, bancadas. Viruta fragmentada.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="auto general" onclick="selectOption('material', 'forged_steel', this)">
+          <div class="option-card mat-item" data-cat="auto general" onclick="window.selectOption('material', 'forged_steel', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Acero Forjado (4340 / 8620 / Eje)</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">AUTO</span>
@@ -309,7 +310,7 @@
           </div>
 
           <!-- AEROESPACIAL -->
-          <div class="option-card mat-item" data-cat="aero" onclick="selectOption('material', 'al_7075', this)">
+          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'al_7075', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Aluminio Aeronáutico (7075-T6 / 2024)</span>
               <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
@@ -317,7 +318,7 @@
             <p class="text-xs text-gray-500">Estructuras de ala, fuselaje. Excelente maquinabilidad.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="selectOption('material', 'al_li', this)">
+          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'al_li', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Aluminio-Litio (Al-Li 2099 / 2195)</span>
               <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
@@ -325,7 +326,7 @@
             <p class="text-xs text-gray-500">Paneles alares avanzados de ultra-bajo peso.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="aero med" onclick="selectOption('material', 'ti_6al4v', this)">
+          <div class="option-card mat-item" data-cat="aero med" onclick="window.selectOption('material', 'ti_6al4v', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Titanio Grado 5 (Ti-6Al-4V)</span>
               <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO / MED</span>
@@ -333,7 +334,7 @@
             <p class="text-xs text-gray-500">Trenes de aterrizaje, componentes de turbina e implantes.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="selectOption('material', 'ti_5553', this)">
+          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'ti_5553', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Titanio Beta (Ti-5Al-5V-5Mo-3Cr)</span>
               <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
@@ -341,7 +342,7 @@
             <p class="text-xs text-gray-500">Alta tenacidad estructural. Difícil maquinabilidad.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="selectOption('material', 'inconel_718', this)">
+          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'inconel_718', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Inconel 718 / 625 (Base Níquel)</span>
               <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
@@ -349,7 +350,7 @@
             <p class="text-xs text-gray-500">Discos de turbina, cámaras de combustión. Superaleación HRSA.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="aero" onclick="selectOption('material', 'waspaloy', this)">
+          <div class="option-card mat-item" data-cat="aero" onclick="window.selectOption('material', 'waspaloy', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Waspaloy / René 41</span>
               <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">AERO</span>
@@ -358,7 +359,7 @@
           </div>
 
           <!-- MÉDICO -->
-          <div class="option-card mat-item" data-cat="med" onclick="selectOption('material', 'ss_316lvm', this)">
+          <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'ss_316lvm', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Inox Quirúrgico 316LVM / 1.4441</span>
               <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
@@ -366,7 +367,7 @@
             <p class="text-xs text-gray-500">Implantes temporales, tornillos óseos e instrumental médico.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="med" onclick="selectOption('material', 'cocr_alloy', this)">
+          <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'cocr_alloy', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Cobalto-Cromo (CoCrMo / ASTM F75)</span>
               <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
@@ -374,7 +375,7 @@
             <p class="text-xs text-gray-500">Prótesis de rodilla, cadera y piezas dentales.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="med" onclick="selectOption('material', 'ss_174ph', this)">
+          <div class="option-card mat-item" data-cat="med" onclick="window.selectOption('material', 'ss_174ph', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Inoxidable 17-4 PH / 15-5 PH</span>
               <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO / AERO</span>
@@ -382,7 +383,7 @@
             <p class="text-xs text-gray-500">Herramientas quirúrgicas, ejes de precisión y guías.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="med nonmetal" onclick="selectOption('material', 'peek_med', this)">
+          <div class="option-card mat-item" data-cat="med nonmetal" onclick="window.selectOption('material', 'peek_med', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">PEEK Médico / Biocompatible</span>
               <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">MÉDICO</span>
@@ -391,7 +392,7 @@
           </div>
 
           <!-- TALLER / MOLDES -->
-          <div class="option-card mat-item" data-cat="general" onclick="selectOption('material', 'al_6061', this)">
+          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'al_6061', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Aluminio Estándar (6061-T6 / 6082)</span>
               <span class="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
@@ -399,7 +400,7 @@
             <p class="text-xs text-gray-500">El aluminio universal en talleres. Placas, prototipos, fixtures.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="selectOption('material', 'steel_1018', this)">
+          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'steel_1018', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Acero al Carbón Dulce (1018 / 1020 / A36)</span>
               <span class="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
@@ -407,7 +408,7 @@
             <p class="text-xs text-gray-500">Maquinaria general, herrajes y soldadura.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="selectOption('material', 'steel_1045', this)">
+          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'steel_1045', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Acero al Medio Carbón (1045 / 4140 Recocido)</span>
               <span class="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
@@ -415,7 +416,7 @@
             <p class="text-xs text-gray-500">Ejes mecánicos, flechas, pernos y bridas industriales.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="selectOption('material', 'tool_p20', this)">
+          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'tool_p20', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Acero para Moldes P20 / 1.2311</span>
               <span class="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
@@ -423,7 +424,7 @@
             <p class="text-xs text-gray-500">Pre-tratado (28–32 HRC). Moldes de inyección de plástico.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="selectOption('material', 'tool_h13', this)">
+          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'tool_h13', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Acero para Herramientas H13 / D2</span>
               <span class="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
@@ -431,7 +432,7 @@
             <p class="text-xs text-gray-500">Troqueles de corte, punzones y moldes de fundición.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="selectOption('material', 'hardened_steel', this)">
+          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'hardened_steel', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Aceros Templados (> 52 HRC / Hard Milling)</span>
               <span class="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded">MOLDES</span>
@@ -439,7 +440,7 @@
             <p class="text-xs text-gray-500">Fresado duro en post-tratamiento. Exige nula vibración (PG/MR)[cite: 2, 3].</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="general" onclick="selectOption('material', 'brass_bronze', this)">
+          <div class="option-card mat-item" data-cat="general" onclick="window.selectOption('material', 'brass_bronze', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Latón / Bronce Fosforado / Cobre</span>
               <span class="text-[9px] bg-gray-100 text-gray-700 font-bold px-1.5 py-0.5 rounded">TALLER</span>
@@ -448,7 +449,7 @@
           </div>
 
           <!-- COMPUESTOS / NO METALES -->
-          <div class="option-card mat-item" data-cat="nonmetal aero auto" onclick="selectOption('material', 'cfrp_carbon', this)">
+          <div class="option-card mat-item" data-cat="nonmetal aero auto" onclick="window.selectOption('material', 'cfrp_carbon', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Fibra de Carbono (CFRP) / Paneles</span>
               <span class="text-[9px] bg-stone-100 text-stone-700 font-bold px-1.5 py-0.5 rounded">COMPUESTOS</span>
@@ -456,7 +457,7 @@
             <p class="text-xs text-gray-500">Abrasión extrema por fibras de grafito. Delaminación crítica.</p>
           </div>
 
-          <div class="option-card mat-item" data-cat="nonmetal general" onclick="selectOption('material', 'acetal_pom', this)">
+          <div class="option-card mat-item" data-cat="nonmetal general" onclick="window.selectOption('material', 'acetal_pom', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Plásticos Técnicos (POM / Delrin / Nylon)</span>
               <span class="text-[9px] bg-stone-100 text-stone-700 font-bold px-1.5 py-0.5 rounded">POLÍMEROS</span>
@@ -466,8 +467,8 @@
         </div>
 
         <div class="flex justify-between">
-          <button onclick="goToStep(1)" class="text-gray-500 hover:text-gray-800 font-bold text-xs px-4 py-3" id="btn_back1">← Regresar</button>
-          <button onclick="goToStep(3)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-6 py-3 rounded-xl uppercase tracking-wider transition" id="btn_next2">Siguiente: Operación →</button>
+          <button onclick="window.goToStep(1)" class="text-gray-500 hover:text-gray-800 font-bold text-xs px-4 py-3" id="btn_back1">← Regresar</button>
+          <button onclick="window.goToStep(3)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-6 py-3 rounded-xl uppercase tracking-wider transition" id="btn_next2">Siguiente: Operación →</button>
         </div>
       </section>
 
@@ -480,15 +481,15 @@
         </div>
 
         <div class="flex flex-wrap gap-2 mb-4">
-          <button onclick="filterOperations('all')" class="op-filter active px-3 py-1 bg-[#28556C] text-white text-xs font-bold rounded-lg transition">Todas las Operaciones</button>
-          <button onclick="filterOperations('milling')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Fresado (Milling)</button>
-          <button onclick="filterOperations('hole')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Agujeros & Roscas</button>
-          <button onclick="filterOperations('special')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Especiales (3D / Roscas)</button>
+          <button onclick="window.filterOperations('all')" class="op-filter active px-3 py-1 bg-[#28556C] text-white text-xs font-bold rounded-lg transition">Todas las Operaciones</button>
+          <button onclick="window.filterOperations('milling')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Fresado (Milling)</button>
+          <button onclick="window.filterOperations('hole')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Agujeros & Roscas</button>
+          <button onclick="window.filterOperations('special')" class="op-filter px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition">Especiales (3D / Roscas)</button>
         </div>
 
         <div id="operation_grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-6 max-h-[380px] overflow-y-auto pr-1">
           <!-- FRESADO -->
-          <div class="option-card op-item selected" data-cat="milling" onclick="selectOperation('shoulder', this)">
+          <div class="option-card op-item selected" data-cat="milling" onclick="window.selectOperation('shoulder', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Escuadrado / Desbaste Convencional</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
@@ -496,7 +497,7 @@
             <p class="text-xs text-gray-500">ae ≈ 30 a 50% D, ap ≤ 1.0×D. Carga perimetral media.</p>
           </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('hpc_dynamic', this)">
+          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('hpc_dynamic', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Fresado Dinámico / Trocoidal (HPC)</span>
               <span class="text-[9px] bg-green-50 text-green-700 font-bold px-1.5 py-0.5 rounded">ALTA EFICACIA</span>
@@ -504,7 +505,7 @@
             <p class="text-xs text-gray-500">ae ≈ 5 a 15% D, ap ≥ 2.0×D. Alto avance por adelgazamiento de viruta.</p>
           </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('slotting', this)">
+          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('slotting', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Ranurado Pleno (Slotting 100%)</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">FRESADO</span>
@@ -512,7 +513,7 @@
             <p class="text-xs text-gray-500">ae = 100% D, ap ≤ 0.5 a 1.0×D. Máxima carga radial.</p>
           </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('hfm_feed', this)">
+          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('hfm_feed', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Alto Avance (High Feed - HFM)</span>
               <span class="text-[9px] bg-amber-50 text-amber-800 font-bold px-1.5 py-0.5 rounded">FAST FEED</span>
@@ -520,7 +521,7 @@
             <p class="text-xs text-gray-500">Profundidades axiales pequeñas (ap < 1.5 mm) con avance de mesa elevado.</p>
           </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('finishing', this)">
+          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('finishing', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Acabado Superficial de Paredes</span>
               <span class="text-[9px] bg-blue-50 text-[#28556C] font-bold px-1.5 py-0.5 rounded">ACABADO</span>
@@ -528,7 +529,7 @@
             <p class="text-xs text-gray-500">ae ≤ 5 a 10% D, ap ≈ 1.5×D. Bajas fuerzas para Ra < 0.4 µm.</p>
           </div>
 
-          <div class="option-card op-item" data-cat="milling" onclick="selectOperation('facemilling', this)">
+          <div class="option-card op-item" data-cat="milling" onclick="window.selectOperation('facemilling', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Planeado / Careado (Face Milling)</span>
               <span class="text-[9px] bg-red-50 text-[#D31B23] font-bold px-1.5 py-0.5 rounded">CAREADO</span>
@@ -537,7 +538,7 @@
           </div>
 
           <!-- AGUJEROS & ROSCADO -->
-          <div class="option-card op-item" data-cat="hole" onclick="selectOperation('drilling', this)">
+          <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('drilling', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Taladrado / Perforado (Drilling)</span>
               <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">TALADRO</span>
@@ -545,7 +546,7 @@
             <p class="text-xs text-gray-500">Agujeros ciegos y pasantes (3xD, 5xD, 8xD). Avance por vuelta (fn).</p>
           </div>
 
-          <div class="option-card op-item" data-cat="hole" onclick="selectOperation('tapping', this)">
+          <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('tapping', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Roscado Rígido Sincronizado (Tapping)</span>
               <span class="text-[9px] bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">ROSCADO</span>
@@ -553,7 +554,7 @@
             <p class="text-xs text-gray-500">Roscado macho por corte o laminación. Sincronización F = S × Paso[cite: 1, 3].</p>
           </div>
 
-          <div class="option-card op-item" data-cat="hole" onclick="selectOperation('reaming', this)">
+          <div class="option-card op-item" data-cat="hole" onclick="window.selectOperation('reaming', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Escariado / Calibrado (Reaming)</span>
               <span class="text-[9px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded">CALIBRADO</span>
@@ -562,7 +563,7 @@
           </div>
 
           <!-- ESPECIALES -->
-          <div class="option-card op-item" data-cat="special" onclick="selectOperation('3d_contouring', this)">
+          <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('3d_contouring', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Copiado 3D / Moldes y Superficies</span>
               <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">MOLDES 3D</span>
@@ -570,7 +571,7 @@
             <p class="text-xs text-gray-500">Fresado de contornos complejos con fresas esféricas (Ball Nose).</p>
           </div>
 
-          <div class="option-card op-item" data-cat="special" onclick="selectOperation('thread_milling', this)">
+          <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('thread_milling', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Fresado de Roscas por Interpolación</span>
               <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">ROSCADO CNC</span>
@@ -578,7 +579,7 @@
             <p class="text-xs text-gray-500">Generación de rosca helicoidal con fresa de roscar.</p>
           </div>
 
-          <div class="option-card op-item" data-cat="special" onclick="selectOperation('chamfering', this)">
+          <div class="option-card op-item" data-cat="special" onclick="window.selectOperation('chamfering', this)">
             <div class="flex justify-between items-start mb-1">
               <span class="font-black text-[#28556C] text-sm">Chaflanado y Desbarbado (Chamfer)</span>
               <span class="text-[9px] bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.5 rounded">BISELADO</span>
@@ -588,8 +589,8 @@
         </div>
 
         <div class="flex justify-between">
-          <button onclick="goToStep(2)" class="text-gray-500 hover:text-gray-800 font-bold text-xs px-4 py-3" id="btn_back2">← Regresar</button>
-          <button onclick="goToStep(4)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-6 py-3 rounded-xl uppercase tracking-wider transition" id="btn_next3">Siguiente: Herramienta & Máquina →</button>
+          <button onclick="window.goToStep(2)" class="text-gray-500 hover:text-gray-800 font-bold text-xs px-4 py-3" id="btn_back2">← Regresar</button>
+          <button onclick="window.goToStep(4)" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-6 py-3 rounded-xl uppercase tracking-wider transition" id="btn_next3">Siguiente: Herramienta & Máquina →</button>
         </div>
       </section>
 
@@ -612,35 +613,35 @@
           <div>
             <label class="block text-xs font-black text-[#28556C] uppercase mb-1.5">2. Sustrato / Material del Filo:</label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div class="option-card selected" onclick="selectOption('tool_mat', 'pcd', this)">
+              <div class="option-card selected" onclick="window.selectOption('tool_mat', 'pcd', this)">
                 <span class="font-black text-xs text-[#28556C]">PCD (Diamante)</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">Aluminios y compuestos abrasivos.</p>
               </div>
-              <div class="option-card" onclick="selectOption('tool_mat', 'carbide_dlc', this)">
+              <div class="option-card" onclick="window.selectOption('tool_mat', 'carbide_dlc', this)">
                 <span class="font-black text-xs text-[#28556C]">Carburo + DLC</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">Antifricción base carbono.</p>
               </div>
-              <div class="option-card" onclick="selectOption('tool_mat', 'carbide_coated', this)">
+              <div class="option-card" onclick="window.selectOption('tool_mat', 'carbide_coated', this)">
                 <span class="font-black text-xs text-[#28556C]">Carburo Recubierto</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">AlTiN, TiAlN universal.</p>
               </div>
-              <div class="option-card" onclick="selectOption('tool_mat', 'carbide_uncoated', this)">
+              <div class="option-card" onclick="window.selectOption('tool_mat', 'carbide_uncoated', this)">
                 <span class="font-black text-xs text-[#28556C]">Carburo sin Recubrir</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">Micrograno pulido espejo.</p>
               </div>
-              <div class="option-card" onclick="selectOption('tool_mat', 'cbn', this)">
+              <div class="option-card" onclick="window.selectOption('tool_mat', 'cbn', this)">
                 <span class="font-black text-xs text-[#28556C]">CBN (Nitruro de Boro)</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">Fundición dura y aceros > 55 HRC.</p>
               </div>
-              <div class="option-card" onclick="selectOption('tool_mat', 'ceramic', this)">
+              <div class="option-card" onclick="window.selectOption('tool_mat', 'ceramic', this)">
                 <span class="font-black text-xs text-[#28556C]">Cerámica / Cermet</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">Alta velocidad en Inconel/acero.</p>
               </div>
-              <div class="option-card" onclick="selectOption('tool_mat', 'hss_pm', this)">
+              <div class="option-card" onclick="window.selectOption('tool_mat', 'hss_pm', this)">
                 <span class="font-black text-xs text-[#28556C]">PM HSS / HSS-Co8</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">Metalurgia de polvos / Cobalto.</p>
               </div>
-              <div class="option-card" onclick="selectOption('tool_mat', 'hss_std', this)">
+              <div class="option-card" onclick="window.selectOption('tool_mat', 'hss_std', this)">
                 <span class="font-black text-xs text-[#28556C]">HSS Estándar (M2)</span>
                 <p class="text-[9px] text-gray-400 mt-0.5">Acero rápido convencional.</p>
               </div>
@@ -673,8 +674,8 @@
         </div>
 
         <div class="flex justify-between">
-          <button onclick="goToStep(3)" class="text-gray-500 hover:text-gray-800 font-bold text-xs px-4 py-3" id="btn_back3">← Regresar</button>
-          <button onclick="calcularResultadoFinal()" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-8 py-3 rounded-xl uppercase tracking-wider shadow-lg shadow-red-200 transition" id="btn_calc">Generar Diagnóstico Completo ✨</button>
+          <button onclick="window.goToStep(3)" class="text-gray-500 hover:text-gray-800 font-bold text-xs px-4 py-3" id="btn_back3">← Regresar</button>
+          <button onclick="window.calcularResultadoFinal()" class="bg-[#D31B23] hover:bg-red-800 text-white font-black text-xs px-8 py-3 rounded-xl uppercase tracking-wider shadow-lg shadow-red-200 transition" id="btn_calc">Generar Diagnóstico Completo ✨</button>
         </div>
       </section>
 
@@ -685,7 +686,7 @@
             <span class="text-xs font-black text-[#79A336] uppercase tracking-wider" id="txt_res_success">Cálculo Optimizado con Éxito</span>
             <h2 class="text-lg md:text-xl font-black text-[#28556C]" id="txt_res_header">Ficha Técnica de Mecanizado Integral</h2>
           </div>
-          <button onclick="goToStep(1)" class="text-xs font-bold text-gray-500 hover:text-[#D31B23] underline" id="btn_restart">Modificar Parámetros</button>
+          <button onclick="window.goToStep(1)" class="text-xs font-bold text-gray-500 hover:text-[#D31B23] underline" id="btn_restart">Modificar Parámetros</button>
         </div>
 
         <!-- Tarjetas de Velocidades Principales -->
@@ -797,42 +798,190 @@
     </div>
   </main>
 
-  <script>
-    let currentLang = 'es';
-    let currentUnit = 'mm';
-    let deferredPrompt = null;
+  <!-- Módulos JavaScript (ES6 Modules) -->
+  <script type="module">
+    import { calculateCuttingPhysics } from './api/cut-conditions.js';
+    import { COMPATIBLE_TOOLS_BY_OP, generateDiagnostics } from './api/recommend.js';
 
-    // Registro PWA Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then((reg) => console.log('ServiceWorker registrado:', reg.scope))
-          .catch((err) => console.log('Error registrando ServiceWorker:', err));
+    // Exponer funciones globales al objeto window para los eventos onclick en el DOM
+    window.selectOption = function(category, value, el) {
+      state[category] = value;
+      const parent = el.parentElement;
+      parent.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
+      el.classList.add('selected');
+    };
+
+    window.selectOperation = function(opKey, el) {
+      window.selectOption('operation', opKey, el);
+      renderDynamicTools(opKey);
+    };
+
+    window.filterOperations = function(cat) {
+      document.querySelectorAll('.op-filter').forEach(btn => {
+        btn.classList.remove('active', 'bg-[#28556C]', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-700');
       });
+      event.target.classList.add('active', 'bg-[#28556C]', 'text-white');
+      event.target.classList.remove('bg-gray-100', 'text-gray-700');
+
+      const items = document.querySelectorAll('.op-item');
+      items.forEach(item => {
+        if (cat === 'all' || item.getAttribute('data-cat').includes(cat)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    };
+
+    window.filterMaterials = function(cat) {
+      document.querySelectorAll('.mat-filter').forEach(btn => {
+        btn.classList.remove('active', 'bg-[#28556C]', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-700');
+      });
+      event.target.classList.add('active', 'bg-[#28556C]', 'text-white');
+      event.target.classList.remove('bg-gray-100', 'text-gray-700');
+
+      const items = document.querySelectorAll('.mat-item');
+      items.forEach(item => {
+        if (cat === 'all' || item.getAttribute('data-cat').includes(cat)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    };
+
+    window.setLang = function(lang) {
+      currentLang = lang;
+      const dict = i18n[lang];
+
+      document.getElementById('txt_step1_badge').innerText = dict.step1_badge;
+      document.getElementById('txt_step1_title').innerText = dict.step1_title;
+      document.getElementById('txt_step1_sub').innerText = dict.step1_sub;
+
+      document.getElementById('txt_step2_badge').innerText = dict.step2_badge;
+      document.getElementById('txt_step2_title').innerText = dict.step2_title;
+      document.getElementById('txt_step2_sub').innerText = dict.step2_sub;
+
+      document.getElementById('txt_step3_badge').innerText = dict.step3_badge;
+      document.getElementById('txt_step3_title').innerText = dict.step3_title;
+      document.getElementById('txt_step3_sub').innerText = dict.step3_sub;
+
+      document.getElementById('txt_step4_badge').innerText = dict.step4_badge;
+      document.getElementById('txt_step4_title').innerText = dict.step4_title;
+      document.getElementById('txt_step4_sub').innerText = dict.step4_sub;
+
+      document.getElementById('lbl_inp_dia').innerText = dict.lbl_dia + (currentUnit === 'in' ? ' (in)' : ' (mm)');
+      document.getElementById('lbl_inp_z').innerText = dict.lbl_z;
+      document.getElementById('lbl_inp_proj').innerText = dict.lbl_proj + (currentUnit === 'in' ? ' (in)' : ' (mm)');
+      document.getElementById('lbl_inp_rpmmax').innerText = dict.lbl_rpmmax;
+
+      document.getElementById('btn_next1').innerText = dict.btn_next;
+      document.getElementById('btn_next2').innerText = dict.btn_next;
+      document.getElementById('btn_next3').innerText = dict.btn_next;
+      document.getElementById('btn_back1').innerText = dict.btn_back;
+      document.getElementById('btn_back2').innerText = dict.btn_back;
+      document.getElementById('btn_back3').innerText = dict.btn_back;
+      document.getElementById('btn_calc').innerText = dict.btn_calc;
+
+      document.getElementById('txt_step1_nav').innerText = dict.nav_holder;
+      document.getElementById('txt_step2_nav').innerText = dict.nav_mat;
+      document.getElementById('txt_step3_nav').innerText = dict.nav_op;
+      document.getElementById('txt_step4_nav').innerText = dict.nav_tool;
+
+      document.getElementById('txt_res_success').innerText = dict.res_success;
+      document.getElementById('txt_res_header').innerText = dict.res_header;
+      document.getElementById('btn_restart').innerText = dict.res_restart;
+      document.getElementById('txt_res_cnc').innerText = dict.res_cnc;
+      document.getElementById('txt_res_safety').innerText = dict.res_safety;
+
+      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`btn_${lang}`).classList.add('active');
+    };
+
+    window.changeUnit = function(unit) {
+      if (unit === currentUnit) return;
+      currentUnit = unit;
+
+      const btnMm = document.getElementById('lbl_unit_mm');
+      const btnIn = document.getElementById('lbl_unit_in');
+
+      if (unit === 'in') {
+        btnIn.className = "px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+        btnMm.className = "px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition text-gray-500";
+        document.getElementById('input_dia').value = '0.75';
+        document.getElementById('input_stickout').value = '2.5';
+      } else {
+        btnMm.className = "px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition bg-white text-[#28556C] shadow-sm";
+        btnIn.className = "px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition text-gray-500";
+        document.getElementById('input_dia').value = '20';
+        document.getElementById('input_stickout').value = '60';
+      }
+      window.setLang(currentLang);
+    };
+
+    window.goToStep = function(stepNumber) {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`step-${i}`).classList.add('hidden');
+        const pill = document.getElementById(`pill-${i}`);
+        pill.classList.remove('active', 'completed');
+        if (i < stepNumber) pill.classList.add('completed');
+        if (i === stepNumber) pill.classList.add('active');
+      }
+      document.getElementById('step-results').classList.add('hidden');
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+
+      if (stepNumber === 4) {
+        renderDynamicTools(state.operation);
+      }
+    };
+
+    function renderDynamicTools(opKey) {
+      const container = document.getElementById('dynamic_tool_grid');
+      container.innerHTML = '';
+
+      const compatibleTools = COMPATIBLE_TOOLS_BY_OP[opKey] || COMPATIBLE_TOOLS_BY_OP['shoulder'];
+      state.tool_type = compatibleTools[0].id;
+
+      compatibleTools.forEach((tool, index) => {
+        const card = document.createElement('div');
+        card.className = `option-card text-center py-2.5 ${index === 0 ? 'selected' : ''}`;
+        card.onclick = function() {
+          container.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          state.tool_type = tool.id;
+          handleToolSelectionEffects(tool);
+        };
+
+        card.innerHTML = `
+          <span class="font-black text-xs text-[#28556C]">${tool.title}</span>
+          <span class="text-[9px] text-gray-400 mt-0.5 block">${tool.sub}</span>
+        `;
+        container.appendChild(card);
+      });
+
+      handleToolSelectionEffects(compatibleTools[0]);
     }
 
-    // Instalación PWA
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const btnInstall = document.getElementById('btn-install');
-      if (btnInstall) {
-        btnInstall.classList.remove('hidden');
-        btnInstall.classList.add('flex');
-        btnInstall.addEventListener('click', async () => {
-          if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-              btnInstall.classList.add('hidden');
-            }
-            deferredPrompt = null;
-          }
-        });
+    function handleToolSelectionEffects(tool) {
+      const pitchBox = document.getElementById('box_pitch');
+      if (state.operation === 'tapping' || tool.id.includes('tap')) {
+        pitchBox.classList.remove('hidden');
+      } else {
+        pitchBox.classList.add('hidden');
       }
-    });
 
-    function calcularResultadoFinal() {
+      if (tool.z) {
+        document.getElementById('input_z').value = tool.z;
+      }
+
+      if (tool.id === 'facemill') {
+        document.getElementById('input_dia').value = (currentUnit === 'in' ? 2.0 : 50);
+      }
+    }
+
+    window.calcularResultadoFinal = function() {
       state.dia = parseFloat(document.getElementById('input_dia').value) || (currentUnit === 'in' ? 0.75 : 20);
       state.z = parseInt(document.getElementById('input_z').value) || 4;
       state.pitch = parseFloat(document.getElementById('input_pitch').value) || 1.5;
@@ -842,218 +991,65 @@
       const dia_mm = (currentUnit === 'in') ? state.dia * 25.4 : state.dia;
       const stickout_mm = (currentUnit === 'in') ? state.stickout * 25.4 : state.stickout;
 
-      let vc_base = 200; 
-      let fz_base = 0.08; 
-      let kc = 1400; 
-
-      // 1. Material
-      switch (state.material) {
-        case 'al_a356': kc = 850; vc_base = 600; fz_base = 0.14; break;
-        case 'cgi_iron': kc = 1900; vc_base = 140; fz_base = 0.10; break;
-        case 'nodular_iron': kc = 1600; vc_base = 180; fz_base = 0.12; break;
-        case 'gray_iron': kc = 1350; vc_base = 220; fz_base = 0.14; break;
-        case 'forged_steel': kc = 2100; vc_base = 160; fz_base = 0.08; break;
-        case 'al_7075': kc = 700; vc_base = 800; fz_base = 0.16; break;
-        case 'al_li': kc = 750; vc_base = 650; fz_base = 0.14; break;
-        case 'ti_6al4v': kc = 2800; vc_base = 55; fz_base = 0.055; break;
-        case 'ti_5553': kc = 3100; vc_base = 40; fz_base = 0.045; break;
-        case 'inconel_718': kc = 3300; vc_base = 35; fz_base = 0.038; break;
-        case 'waspaloy': kc = 3500; vc_base = 28; fz_base = 0.032; break;
-        case 'ss_316lvm': kc = 2400; vc_base = 110; fz_base = 0.050; break;
-        case 'cocr_alloy': kc = 3400; vc_base = 35; fz_base = 0.035; break;
-        case 'ss_174ph': kc = 2600; vc_base = 95; fz_base = 0.050; break;
-        case 'peek_med': kc = 380; vc_base = 350; fz_base = 0.12; break;
-        case 'al_6061': kc = 700; vc_base = 700; fz_base = 0.15; break;
-        case 'steel_1018': kc = 1800; vc_base = 190; fz_base = 0.085; break;
-        case 'steel_1045': kc = 2000; vc_base = 160; fz_base = 0.075; break;
-        case 'tool_p20': kc = 2200; vc_base = 130; fz_base = 0.065; break;
-        case 'tool_h13': kc = 2400; vc_base = 110; fz_base = 0.055; break;
-        case 'hardened_steel': kc = 3200; vc_base = 75; fz_base = 0.035; break;
-        case 'brass_bronze': kc = 800; vc_base = 350; fz_base = 0.14; break;
-        case 'cfrp_carbon': kc = 500; vc_base = 180; fz_base = 0.05; break;
-        case 'acetal_pom': kc = 350; vc_base = 450; fz_base = 0.16; break;
-      }
-
-      // 2. Sustrato
-      let factorSustratoVc = 1.0;
-      let factorSustratoFz = 1.0;
-
-      switch (state.tool_mat) {
-        case 'pcd': factorSustratoVc = 2.4; factorSustratoFz = 1.5; break;
-        case 'carbide_dlc': factorSustratoVc = 1.3; factorSustratoFz = 1.15; break;
-        case 'carbide_coated': factorSustratoVc = 1.0; factorSustratoFz = 1.0; break;
-        case 'carbide_uncoated': factorSustratoVc = 0.85; factorSustratoFz = 0.95; break;
-        case 'cbn': factorSustratoVc = 2.0; factorSustratoFz = 0.85; break;
-        case 'ceramic': factorSustratoVc = 2.5; factorSustratoFz = 0.70; break;
-        case 'hss_pm': factorSustratoVc = 0.45; factorSustratoFz = 0.85; break;
-        case 'hss_std': factorSustratoVc = 0.30; factorSustratoFz = 0.75; break;
-      }
-
-      let vc = vc_base * factorSustratoVc;
-      let fz = fz_base * factorSustratoFz;
-
-      // 3. Operación
-      let ap_mm = dia_mm * 0.5;
-      let ae_mm = dia_mm * 0.4;
-
-      if (state.operation === 'drilling' || state.tool_type.includes('drill')) {
-        ap_mm = dia_mm * 3.0;
-        ae_mm = dia_mm;
-        vc = vc * 0.70;
-        fz = dia_mm * 0.018;
-      } else if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
-        ap_mm = dia_mm * 2.0;
-        ae_mm = dia_mm;
-        vc = (state.material.includes('al') ? 25 : (state.material.includes('inconel') ? 6 : 14)) * (state.tool_mat === 'carbide_coated' ? 1.8 : 1.0);
-      } else if (state.operation === 'reaming' || state.tool_type === 'reamer') {
-        ap_mm = dia_mm * 2.5;
-        ae_mm = dia_mm * 0.05;
-        vc = vc * 0.35;
-        fz = fz * 1.5;
-      } else if (state.operation === 'facemilling' || state.tool_type === 'facemill') {
-        ap_mm = 2.5;
-        ae_mm = dia_mm * 0.75;
-        fz = fz * 1.3;
-      } else if (state.operation === '3d_contouring' || state.tool_type.includes('ball')) {
-        ap_mm = dia_mm * 0.10;
-        ae_mm = dia_mm * 0.15;
-        fz = fz * 0.75;
-      } else if (state.operation === 'hpc_dynamic') {
-        ap_mm = dia_mm * 1.8;
-        ae_mm = dia_mm * 0.10;
-        fz = fz * 1.35;
-      } else if (state.operation === 'slotting') {
-        ap_mm = dia_mm * 0.4;
-        ae_mm = dia_mm * 1.0;
-        fz = fz * 0.75;
-      } else if (state.operation === 'hfm_feed') {
-        ap_mm = Math.min(1.2, dia_mm * 0.06);
-        ae_mm = dia_mm * 0.65;
-        fz = fz * 2.8;
-      } else if (state.operation === 'finishing') {
-        ap_mm = dia_mm * 1.2;
-        ae_mm = dia_mm * 0.05;
-        fz = fz * 0.50;
-      } else if (state.operation === 'thread_milling') {
-        ap_mm = dia_mm * 1.5;
-        ae_mm = dia_mm * 0.15;
-        vc = vc * 0.8;
-      } else if (state.operation === 'chamfering') {
-        ap_mm = 1.0;
-        ae_mm = 1.0;
-        fz = fz * 0.8;
-      }
-
-      // 4. Factor de Sujeción REGO-FIX
-      let factorSujecion = 1.0;
-      if (state.holder === 'pg48' || state.holder === 'pg32') factorSujecion = 1.18;
-      else if (state.holder === 'pg25' || state.holder === 'pg15' || state.holder === 'pg10' || state.holder === 'pg6') factorSujecion = 1.12;
-      else if (state.holder === 'mr_all') factorSujecion = 1.10;
-      else if (state.holder === 'er_up') factorSujecion = 1.0;
-      else if (state.holder === 'er_std') factorSujecion = 0.85;
-
-      const ratioLD = stickout_mm / dia_mm;
-      let factorLD = 1.0;
-      if (ratioLD > 3.5) factorLD = 0.85;
-      if (ratioLD > 5.0) factorLD = 0.70;
-
-      // 5. Cinemática
-      let rpmTeorico = (vc * 1000) / (Math.PI * dia_mm);
-      let rpmFinal = Math.min(rpmTeorico, state.max_rpm);
-      
-      let fzFinal_mm = fz * factorSujecion * factorLD;
-      let vf_mm_min = 0;
-
-      if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
-        vf_mm_min = rpmFinal * state.pitch;
-        fzFinal_mm = state.pitch / state.z;
-      } else {
-        vf_mm_min = rpmFinal * state.z * fzFinal_mm;
-      }
-
-      let vf_m_min = vf_mm_min / 1000;
-      let vf_ipm = vf_mm_min / 25.4;
-      let vf_ips = vf_ipm / 60;
-      
-      let fz_in = fzFinal_mm / 25.4;
-      let fn_mm = (state.operation === 'tapping') ? state.pitch : fzFinal_mm * state.z;
-      let fn_in = fn_mm / 25.4;
-
-      let vc_m_min = Math.round((rpmFinal * Math.PI * dia_mm) / 1000);
-      let vc_sfm = Math.round((rpmFinal * (dia_mm / 25.4)) / 3.82);
-
-      let ratioAe = Math.min(ae_mm / dia_mm, 1.0);
-      let hex_mm = (ratioAe < 0.5 && !state.tool_type.includes('drill') && !state.tool_type.includes('tap')) 
-        ? fzFinal_mm * (2 * Math.sqrt(ratioAe * (1 - ratioAe))) 
-        : fzFinal_mm;
-
-      let q_cm3 = (ap_mm * ae_mm * vf_mm_min) / 1000;
-      let powerKw = (q_cm3 * kc) / (60 * 1000 * 0.80);
-      let tpf = (rpmFinal * state.z) / 60;
+      const results = calculateCuttingPhysics({
+        ...state,
+        dia: dia_mm,
+        stickout: stickout_mm
+      });
 
       const dict = i18n[currentLang];
       const isInch = currentUnit === 'in';
 
-      // 6. Renderizado
-      document.getElementById('res_rpm').innerText = Math.round(rpmFinal).toLocaleString('en');
-      document.getElementById('res_vc_info').innerText = `Vc: ${vc_m_min} m/min | ${vc_sfm} SFM`;
+      // Renderizado
+      document.getElementById('res_rpm').innerText = Math.round(results.rpmFinal).toLocaleString('en');
+      document.getElementById('res_vc_info').innerText = `Vc: ${results.vc_m_min} m/min | ${results.vc_sfm} SFM`;
 
       if (isInch) {
-        document.getElementById('res_feed_main').innerText = vf_ipm.toFixed(1);
+        document.getElementById('res_feed_main').innerText = results.vf_ipm.toFixed(1);
         document.getElementById('res_feed_main_unit').innerText = 'in/min (IPM)';
-        document.getElementById('res_feed_sec_info').innerText = `Equivale a ${Math.round(vf_mm_min)} mm/min | ${vf_m_min.toFixed(2)} m/min`;
+        document.getElementById('res_feed_sec_info').innerText = `Equivale a ${Math.round(results.vf_mm_min)} mm/min | ${results.vf_m_min.toFixed(2)} m/min`;
       } else {
-        document.getElementById('res_feed_main').innerText = Math.round(vf_mm_min).toLocaleString('en');
+        document.getElementById('res_feed_main').innerText = Math.round(results.vf_mm_min).toLocaleString('en');
         document.getElementById('res_feed_main_unit').innerText = 'mm/min';
-        document.getElementById('res_feed_sec_info').innerText = `Equivale a ${vf_ipm.toFixed(1)} in/min (IPM) | ${vf_m_min.toFixed(2)} m/min`;
+        document.getElementById('res_feed_sec_info').innerText = `Equivale a ${results.vf_ipm.toFixed(1)} in/min (IPM) | ${results.vf_m_min.toFixed(2)} m/min`;
       }
 
-      document.getElementById('val_vf_mm_min').innerText = Math.round(vf_mm_min).toLocaleString('en');
-      document.getElementById('val_vf_m_min').innerText = vf_m_min.toFixed(2);
-      document.getElementById('val_vf_ipm').innerText = vf_ipm.toFixed(1);
-      document.getElementById('val_vf_ips').innerText = vf_ips.toFixed(2);
+      document.getElementById('val_vf_mm_min').innerText = Math.round(results.vf_mm_min).toLocaleString('en');
+      document.getElementById('val_vf_m_min').innerText = results.vf_m_min.toFixed(2);
+      document.getElementById('val_vf_ipm').innerText = results.vf_ipm.toFixed(1);
+      document.getElementById('val_vf_ips').innerText = results.vf_ips.toFixed(2);
 
-      document.getElementById('val_fz_mm').innerText = fzFinal_mm.toFixed(3);
-      document.getElementById('val_fz_in').innerText = fz_in.toFixed(4);
-      document.getElementById('val_fn_mm').innerText = fn_mm.toFixed(3);
-      document.getElementById('val_fn_in').innerText = fn_in.toFixed(4);
+      document.getElementById('val_fz_mm').innerText = results.fzFinal.toFixed(3);
+      document.getElementById('val_fz_in').innerText = results.fz_in.toFixed(4);
+      document.getElementById('val_fn_mm').innerText = results.fn_mm.toFixed(3);
+      document.getElementById('val_fn_in').innerText = results.fn_in.toFixed(4);
 
-      let apDisplay = isInch ? (ap_mm / 25.4).toFixed(3) + ' in' : ap_mm.toFixed(1) + ' mm';
-      let aeDisplay = isInch ? (ae_mm / 25.4).toFixed(3) + ' in' : ae_mm.toFixed(1) + ' mm';
+      let apDisplay = isInch ? (results.ap / 25.4).toFixed(3) + ' in' : results.ap.toFixed(1) + ' mm';
+      let aeDisplay = isInch ? (results.ae / 25.4).toFixed(3) + ' in' : results.ae.toFixed(1) + ' mm';
       document.getElementById('res_ap').innerText = apDisplay;
       document.getElementById('res_ae').innerText = aeDisplay;
 
-      document.getElementById('res_power').innerText = `${powerKw.toFixed(1)} kW (${(powerKw * 1.341).toFixed(1)} HP)`;
-      document.getElementById('res_mrr').innerText = isInch ? `${(q_cm3 / 16.387).toFixed(1)} in³/min` : `${q_cm3.toFixed(1)} cm³/min`;
-      document.getElementById('res_tpf_info').innerText = `TPF: ${Math.round(tpf)} Hz`;
+      document.getElementById('res_power').innerText = `${results.powerKw.toFixed(1)} kW (${(results.powerKw * 1.341).toFixed(1)} HP)`;
+      document.getElementById('res_mrr').innerText = isInch ? `${(results.q_cm3 / 16.387).toFixed(1)} in³/min` : `${results.q_cm3.toFixed(1)} cm³/min`;
+      document.getElementById('res_tpf_info').innerText = `TPF: ${Math.round(results.tpf)} Hz`;
       
-      let feedGcode = isInch ? Math.round(vf_ipm) : Math.round(vf_mm_min);
+      let feedGcode = isInch ? Math.round(results.vf_ipm) : Math.round(results.vf_mm_min);
       if (state.operation === 'tapping' || state.tool_type.includes('tap')) {
-        document.getElementById('res_gcode').innerText = `S${Math.round(rpmFinal)} M03 G84 Z-${ap_mm.toFixed(1)} F${state.pitch}`;
+        document.getElementById('res_gcode').innerText = `S${Math.round(results.rpmFinal)} M03 G84 Z-${results.ap.toFixed(1)} F${state.pitch}`;
       } else if (state.operation === 'drilling') {
-        document.getElementById('res_gcode').innerText = `S${Math.round(rpmFinal)} M03 G81 Z-${ap_mm.toFixed(1)} R2.0 F${feedGcode}`;
+        document.getElementById('res_gcode').innerText = `S${Math.round(results.rpmFinal)} M03 G81 Z-${results.ap.toFixed(1)} R2.0 F${feedGcode}`;
       } else {
-        document.getElementById('res_gcode').innerText = `S${Math.round(rpmFinal)} M03 F${feedGcode}`;
+        document.getElementById('res_gcode').innerText = `S${Math.round(results.rpmFinal)} M03 F${feedGcode}`;
       }
 
       const tipsList = document.getElementById('res_tips');
       tipsList.innerHTML = '';
-      const addTip = (msg) => {
+      const diagnostics = generateDiagnostics(state, results, dict);
+      diagnostics.forEach((msg) => {
         const li = document.createElement('li');
         li.innerHTML = msg;
         tipsList.appendChild(li);
-      };
-
-      if (state.holder.startsWith('pg')) addTip(dict.tip_pg);
-      else if (state.holder === 'mr_all') addTip(dict.tip_mr);
-      else addTip(dict.tip_er);
-
-      if (state.operation === 'tapping') {
-        addTip(`<b>Roscado Sincronizado:</b> Paso configurado a ${state.pitch} mm/hilo. Avance programado estrictamente como F = S × Paso.`);
-      }
-
-      if (ratioLD > 3.5) addTip(dict.tip_proj_warn + ` (L/D = ${ratioLD.toFixed(1)}).`);
-      if (rpmTeorico > state.max_rpm) addTip(dict.tip_rpm_limit);
+      });
 
       for (let i = 1; i <= 4; i++) {
         document.getElementById(`step-${i}`).classList.add('hidden');
@@ -1061,13 +1057,11 @@
       }
       document.getElementById('step-results').classList.remove('hidden');
       document.getElementById('step-results').scrollIntoView({ behavior: 'smooth' });
-    }
+    };
 
-    // Inicialización al cargar la página
-    window.addEventListener('DOMContentLoaded', () => {
-      setLang('es');
-      renderDynamicTools(state.operation);
-    });
+    // Inicializar al cargar
+    window.setLang('es');
+    renderDynamicTools(state.operation);
   </script>
 </body>
 </html>
