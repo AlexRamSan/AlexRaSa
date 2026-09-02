@@ -1,97 +1,109 @@
 import { createClient } from '@supabase/supabase-js';
 
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
 export default async function handler(req, res) {
+  // Configuración de CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: 'Faltan credenciales de Supabase en variables de entorno.' });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // 1. GET: Consultar todo el inventario
+    // 1. GET: Consultar inventario completo ordenado
     if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('inventory')
-        .select('*')
+        .select('sku, stock')
         .order('sku', { ascending: true });
 
       if (error) throw error;
-      return res.status(200).json(data || []);
+      return res.status(200).json(data);
     }
 
-    // 2. POST: Dar de alta, ingresar o dar de baja cantidades
+    // 2. POST: Manejar movimiento o auto-creación
     if (req.method === 'POST') {
-      const { sku, name, quantityChange = 0, initialStock = 0 } = req.body || {};
+      const { sku, quantityChange, initialStock } = req.body || {};
 
       if (!sku) {
-        return res.status(400).json({ error: 'El SKU es obligatorio.' });
+        return res.status(400).json({ error: 'Falta el SKU.' });
       }
 
-      const cleanSku = sku.trim();
-      const change = parseInt(quantityChange, 10) || 0;
-
-      // Buscar si el producto ya existe
-      const { data: existing, error: searchError } = await supabase
+      // Buscar si el SKU ya existe
+      const { data: item, error: fetchError } = await supabase
         .from('inventory')
-        .select('*')
-        .eq('sku', cleanSku)
+        .select('stock')
+        .eq('sku', sku)
         .maybeSingle();
 
-      if (searchError) throw searchError;
+      if (fetchError) throw fetchError;
 
-      if (!existing) {
-        // Producto nuevo: se registra con el stock inicial indicado
-        const initQty = Math.max(0, parseInt(initialStock, 10) || change || 0);
-        const { data: inserted, error: insertError } = await supabase
+      // Si NO existe, lo creamos automáticamente
+      if (!item) {
+        const startingStock = initialStock !== undefined 
+          ? Number(initialStock) 
+          : (Number(quantityChange) > 0 ? Number(quantityChange) : 0);
+
+        const { error: insertError } = await supabase
           .from('inventory')
-          .insert([{
-            sku: cleanSku,
-            name: name ? name.trim() : 'Herramienta REGO-FIX',
-            stock: initQty,
-            last_updated: new Date().toISOString()
-          }])
-          .select()
-          .single();
+          .insert([{ sku, stock: startingStock, last_updated: new Date().toISOString() }]);
 
         if (insertError) throw insertError;
-        return res.status(200).json({ success: true, item: inserted, message: 'Producto nuevo creado con éxito.' });
+        return res.status(200).json({ success: true, sku, newStock: startingStock, created: true });
       }
 
-      // Producto existente: sumar o restar la cantidad indicada
-      const updatedStock = Math.max(0, existing.stock + change);
+      // Si YA existe, calculamos el nuevo stock asegurando tipos numéricos
+      const change = quantityChange !== undefined ? Number(quantityChange) : 0;
+      const currentStock = Number(item.stock) || 0;
+      const newStock = Math.max(0, currentStock + change);
 
-      const { data: updated, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from('inventory')
-        .update({
-          stock: updatedStock,
-          name: name ? name.trim() : existing.name,
-          last_updated: new Date().toISOString()
-        })
-        .eq('sku', cleanSku)
-        .select()
-        .single();
+        .update({ stock: newStock, last_updated: new Date().toISOString() })
+        .eq('sku', sku);
 
       if (updateError) throw updateError;
+      return res.status(200).json({ success: true, sku, newStock, created: false });
+    }
 
-      return res.status(200).json({
-        success: true,
-        item: updated,
-        message: `Stock de ${cleanSku} actualizado: ${updatedStock} pzas (${change >= 0 ? '+' : ''}${change})`
+    // 3. PUT: Carga masiva o actualización manual directa en lote (Batch Upsert)
+    if (req.method === 'PUT') {
+      const { items } = req.body || {};
+
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'El formato debe ser un arreglo no vacío de elementos.' });
+      }
+
+      const now = new Date().toISOString();
+      const payload = items.map(el => ({
+        sku: el.sku,
+        stock: Number(el.stock) || 0,
+        last_updated: now
+      }));
+
+      // Una sola petición a Supabase para todo el arreglo
+      const { error: upsertError } = await supabase
+        .from('inventory')
+        .upsert(payload, { onConflict: 'sku' });
+
+      if (upsertError) throw upsertError;
+
+      return res.status(200).json({ 
+        success: true, 
+        message: `${payload.length} productos actualizados correctamente.` 
       });
     }
 
     return res.status(405).json({ error: 'Método no permitido.' });
+
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message || 'Error interno del servidor.' });
   }
 }
