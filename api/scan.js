@@ -1,6 +1,4 @@
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
-async function handler(req, res) {
+export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
@@ -27,7 +25,6 @@ async function handler(req, res) {
 
         const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
-        // Llamada directa a la API REST de Google Gemini (Evita conflictos de librerías)
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
         const payload = {
@@ -58,7 +55,6 @@ async function handler(req, res) {
             throw new Error(data.error?.message || 'Error en la respuesta de Google Gemini.');
         }
 
-        // Extraer el texto de la respuesta de Google
         const sku = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'NO_DETECTADO';
         
         return res.status(200).json({ sku });
@@ -68,8 +64,6 @@ async function handler(req, res) {
     }
 }
 
-handler.config = {
+export const config = {
     api: { bodyParser: { sizeLimit: '4mb' } }
 };
-
-module.exports = handler;
