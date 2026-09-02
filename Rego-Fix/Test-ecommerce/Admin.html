@@ -151,7 +151,6 @@
                 
                 if (data.sku && data.sku !== 'NO_DETECTADO') {
                     skuInput.value = data.sku;
-                    // Auto-registrar en Supabase si no existe al escanear
                     await registerOrTouchSku(data.sku);
                 } else {
                     alert('Gemini no logró identificar un SKU claro.');
@@ -199,14 +198,21 @@
                     body: JSON.stringify({ sku: sku, quantityChange: change })
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    const textErr = await response.text();
+                    throw new Error(textErr || `Status ${response.status}`);
+                }
+
                 if (response.ok && data.success) {
                     alert(`¡Actualizado! Stock actual de ${sku}: ${data.newStock}`);
                 } else {
-                    alert(`Error: ${data.error}`);
+                    alert(`Error de servidor: ${data.error || JSON.stringify(data)}`);
                 }
             } catch (error) {
-                alert('Error de conexión.');
+                alert(`Error de conexión o servidor: ${error.message}`);
             }
         }
 
