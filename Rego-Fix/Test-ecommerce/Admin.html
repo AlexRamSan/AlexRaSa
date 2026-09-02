@@ -104,18 +104,19 @@
             skuInput.value = '';
 
             try {
-                // Apunta directo a tu archivo api/scan.js
+                // Apunta a tu archivo api/scan.js
                 const response = await fetch('/api/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ imageBase64 })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Error del servidor: ${response.status}`);
-                }
-
                 const data = await response.json();
+
+                // Si hay error 500, lanzamos el mensaje exacto que mandó scan.js
+                if (!response.ok) {
+                    throw new Error(data.error || `Error HTTP: ${response.status}`);
+                }
                 
                 if (data.sku && data.sku !== 'NO_DETECTADO') {
                     skuInput.value = data.sku;
@@ -125,8 +126,9 @@
                     alert('Gemini no logró identificar un SKU claro. Intenta enfocar mejor la etiqueta.');
                 }
             } catch (error) {
-                alert('Error al conectar con la API de visión. Revisa tu panel de Vercel.');
-                console.error(error);
+                // Aquí te mostrará exactamente qué está fallando (la llave, la imagen, etc)
+                alert(`Error devuelto por el servidor: ${error.message}`);
+                console.error("Detalle del error:", error);
             } finally {
                 loadingIndicator.classList.add('hidden');
             }
@@ -143,7 +145,7 @@
             if(!confirm(`¿Seguro que deseas registrar el movimiento: ${actionName} 1 pieza de ${sku}?`)) return;
 
             try {
-                // Apunta directo a tu archivo api/inventory.js
+                // Apunta a tu archivo api/inventory.js
                 const response = await fetch('/api/inventory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
