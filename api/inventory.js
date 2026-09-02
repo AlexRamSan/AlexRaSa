@@ -1,99 +1,97 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({ error: 'Faltan credenciales de Supabase en variables de entorno.' });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  try {
+    // 1. GET: Consultar todo el inventario
+    if (req.method === 'GET') {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .order('sku', { ascending: true });
+
+      if (error) throw error;
+      return res.status(200).json(data || []);
     }
 
-    try {
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+    // 2. POST: Dar de alta, ingresar o dar de baja cantidades
+    if (req.method === 'POST') {
+      const { sku, name, quantityChange = 0, initialStock = 0 } = req.body || {};
 
-        if (!supabaseUrl || !supabaseKey) {
-            return res.status(500).json({ error: "Faltan las credenciales de Supabase en Vercel." });
-        }
+      if (!sku) {
+        return res.status(400).json({ error: 'El SKU es obligatorio.' });
+      }
 
-        const supabase = createClient(supabaseUrl, supabaseKey);
+      const cleanSku = sku.trim();
+      const change = parseInt(quantityChange, 10) || 0;
 
-        // 1. GET: Consultar inventario completo
-        if (req.method === 'GET') {
-            const { data, error } = await supabase.from('inventory').select('*').order('sku', { ascending: true });
-            if (error) throw error;
-            return res.status(200).json(data);
-        }
+      // Buscar si el producto ya existe
+      const { data: existing, error: searchError } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('sku', cleanSku)
+        .maybeSingle();
 
-        // 2. POST: Manejar movimiento o auto-creación asegurando el campo 'name'
-        if (req.method === 'POST') {
-            const { sku, quantityChange, initialStock, name } = req.body;
-            
-            if (!sku) {
-                return res.status(400).json({ error: "Falta el SKU." });
-            }
+      if (searchError) throw searchError;
 
-            const { data: item, error: fetchError } = await supabase
-                .from('inventory')
-                .select('stock')
-                .eq('sku', sku)
-                .single();
+      if (!existing) {
+        // Producto nuevo: se registra con el stock inicial indicado
+        const initQty = Math.max(0, parseInt(initialStock, 10) || change || 0);
+        const { data: inserted, error: insertError } = await supabase
+          .from('inventory')
+          .insert([{
+            sku: cleanSku,
+            name: name ? name.trim() : 'Herramienta REGO-FIX',
+            stock: initQty,
+            last_updated: new Date().toISOString()
+          }])
+          .select()
+          .single();
 
-            // Si NO existe, lo creamos asignando un nombre por defecto para cumplir con la BD
-            if (fetchError || !item) {
-                const startingStock = initialStock !== undefined ? initialStock : (quantityChange > 0 ? quantityChange : 0);
-                const productName = name || `Pieza REGO-FIX ${sku}`;
+        if (insertError) throw insertError;
+        return res.status(200).json({ success: true, item: inserted, message: 'Producto nuevo creado con éxito.' });
+      }
 
-                const { error: insertError } = await supabase
-                    .from('inventory')
-                    .insert([{ sku: sku, name: productName, stock: startingStock, last_updated: new Date() }]);
+      // Producto existente: sumar o restar la cantidad indicada
+      const updatedStock = Math.max(0, existing.stock + change);
 
-                if (insertError) throw insertError;
-                return res.status(200).json({ success: true, sku, newStock: startingStock, created: true });
-            }
+      const { data: updated, error: updateError } = await supabase
+        .from('inventory')
+        .update({
+          stock: updatedStock,
+          name: name ? name.trim() : existing.name,
+          last_updated: new Date().toISOString()
+        })
+        .eq('sku', cleanSku)
+        .select()
+        .single();
 
-            // Si YA existe, calculamos el nuevo stock
-            const change = quantityChange !== undefined ? quantityChange : 0;
-            const newStock = Math.max(0, item.stock + change);
+      if (updateError) throw updateError;
 
-            const { error: updateError } = await supabase
-                .from('inventory')
-                .update({ stock: newStock, last_updated: new Date() })
-                .eq('sku', sku);
-
-            if (updateError) throw updateError;
-
-            return res.status(200).json({ success: true, sku, newStock, created: false });
-        }
-
-        // 3. PUT: Modificación manual completa (Ajustar stock exacto o nombre)
-        if (req.method === 'PUT') {
-            const { sku, stock, name } = req.body;
-            
-            if (!sku) {
-                return res.status(400).json({ error: "Falta el SKU." });
-            }
-
-            const updateFields = { last_updated: new Date() };
-            if (stock !== undefined) updateFields.stock = parseInt(stock);
-            if (name !== undefined) updateFields.name = name;
-
-            const { error: updateError } = await supabase
-                .from('inventory')
-                .update(updateFields)
-                .eq('sku', sku);
-
-            if (updateError) throw updateError;
-
-            return res.status(200).json({ success: true, message: "Actualizado correctamente." });
-        }
-
-        return res.status(405).json({ error: 'Método no permitido.' });
-
-    } catch (error) {
-        console.error("Error en inventory.js:", error);
-        return res.status(500).json({ error: error.message || 'Error interno en el servidor de inventario.' });
+      return res.status(200).json({
+        success: true,
+        item: updated,
+        message: `Stock de ${cleanSku} actualizado: ${updatedStock} pzas (${change >= 0 ? '+' : ''}${change})`
+      });
     }
+
+    return res.status(405).json({ error: 'Método no permitido.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
 }
