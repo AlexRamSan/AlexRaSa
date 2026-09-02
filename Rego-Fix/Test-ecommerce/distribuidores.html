@@ -7,12 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Oculto en pantalla estándar */
         #printable-quote {
             display: none;
         }
 
-        /* Reglas exclusivas para vista de impresión / PDF */
         @media print {
             body {
                 background: #ffffff !important;
@@ -173,7 +171,6 @@
                             </tr>
                         </thead>
                         <tbody id="pricing-rows" class="divide-y divide-gray-100">
-                            <!-- Filas dinámicas -->
                         </tbody>
                     </table>
                 </div>
@@ -217,6 +214,11 @@
                 </button>
             </div>
 
+            <!-- BANNER DE TIEMPO DE ENTREGA ESTIMADO EN EL MODAL -->
+            <div id="cart-leadtime-banner" class="mb-4 p-3 rounded-xl border flex items-center gap-3 text-xs">
+                <!-- Se llena dinámicamente -->
+            </div>
+
             <!-- Tabla de partidas en carrito -->
             <div class="overflow-y-auto flex-1 mb-4">
                 <table class="w-full text-left text-xs">
@@ -225,6 +227,7 @@
                             <th class="p-2">SKU</th>
                             <th class="p-2">Producto</th>
                             <th class="p-2 text-center">Cant.</th>
+                            <th class="p-2 text-center">Disponibilidad</th>
                             <th class="p-2 text-right">P. Neto</th>
                             <th class="p-2 text-right">Total</th>
                             <th class="p-2 text-center">Quitar</th>
@@ -273,7 +276,7 @@
         </div>
     </div>
 
-    <!-- VISTA IMPRIMIBLE (SIN CLASE 'hidden' PARA PERMITIR IMPRESIÓN COMPLETA) -->
+    <!-- VISTA IMPRIMIBLE PARA PDF -->
     <div id="printable-quote" class="p-8 bg-white max-w-4xl mx-auto">
         <div class="flex justify-between items-center border-b pb-4 mb-4">
             <div>
@@ -288,12 +291,19 @@
             </div>
         </div>
 
+        <!-- RECUADRO DE TIEMPO DE ENTREGA OFICIAL EN PDF -->
+        <div class="border border-blue-200 bg-blue-50/50 rounded-lg p-3 mb-4 text-xs flex justify-between items-center">
+            <span><strong>Tiempo de Entrega Estimado:</strong></span>
+            <span id="print-leadtime" class="font-black text-[#003DA5] text-sm"></span>
+        </div>
+
         <table class="w-full text-left text-xs mb-6 border border-gray-300">
             <thead class="bg-gray-100 border-b border-gray-300">
                 <tr>
                     <th class="p-2 border-r border-gray-300">SKU</th>
                     <th class="p-2 border-r border-gray-300">Descripción</th>
                     <th class="p-2 border-r border-gray-300 text-center">Cant.</th>
+                    <th class="p-2 border-r border-gray-300 text-center">Estado Stock</th>
                     <th class="p-2 border-r border-gray-300 text-right">PVP Lista</th>
                     <th class="p-2 border-r border-gray-300 text-center">Descto.</th>
                     <th class="p-2 border-r border-gray-300 text-right">P. Neto</th>
@@ -555,6 +565,24 @@
             renderPricingTable(filtered);
         }
 
+        // LÓGICA DE TIEMPO DE ENTREGA
+        function calculateLeadTime() {
+            // Revisa si todo lo cotizado cuenta con inventario suficiente
+            let allAvailableInStock = true;
+
+            for (const item of quoteCart) {
+                const available = liveStockMap[item.sku] !== undefined ? liveStockMap[item.sku] : 0;
+                if (item.qty > available || available <= 0) {
+                    allAvailableInStock = false;
+                    break;
+                }
+            }
+
+            return allAvailableInStock 
+                ? 'Entrega inmediata tras recibir orden de compra' 
+                : '2 a 3 semanas';
+        }
+
         function addToQuote(sku) {
             const prod = MASTER_PRODUCTS.find(p => p.sku === sku);
             if (!prod) return;
@@ -609,15 +637,47 @@
 
         function renderCartModal() {
             const tbody = document.getElementById('cart-items-tbody');
+            const leadTimeBanner = document.getElementById('cart-leadtime-banner');
             let subtotal = 0;
+
+            const leadTime = calculateLeadTime();
+
+            // Configuración visual del banner según el resultado
+            if (leadTime === 'Entrega inmediata tras recibir orden de compra') {
+                leadTimeBanner.className = "mb-4 p-3 rounded-xl border border-green-200 bg-green-50 text-green-900 flex items-center justify-between text-xs";
+                leadTimeBanner.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-green-600 text-base"></i>
+                        <span><strong>Tiempo de Entrega:</strong> Entrega inmediata tras recibir orden de compra</span>
+                    </div>
+                    <span class="bg-green-200/80 font-bold px-2 py-0.5 rounded text-[11px]">Stock 100% Disponible</span>
+                `;
+            } else {
+                leadTimeBanner.className = "mb-4 p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 flex items-center justify-between text-xs";
+                leadTimeBanner.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-clock text-amber-600 text-base"></i>
+                        <span><strong>Tiempo de Entrega:</strong> 2 a 3 semanas</span>
+                    </div>
+                    <span class="bg-amber-200/80 font-bold px-2 py-0.5 rounded text-[11px]">Partidas sobre pedido</span>
+                `;
+            }
 
             tbody.innerHTML = quoteCart.map((it, idx) => {
                 subtotal += it.totalNet;
+                const stockAvail = liveStockMap[it.sku] !== undefined ? liveStockMap[it.sku] : 0;
+                const hasEnoughStock = it.qty <= stockAvail && stockAvail > 0;
+
+                const stockItemBadge = hasEnoughStock
+                    ? `<span class="text-green-700 font-bold text-[10px] bg-green-100 px-2 py-0.5 rounded">Inmediata (${stockAvail} pzas)</span>`
+                    : `<span class="text-amber-700 font-bold text-[10px] bg-amber-100 px-2 py-0.5 rounded">2-3 sem (${stockAvail} en almacén)</span>`;
+
                 return `
                     <tr class="hover:bg-gray-50">
                         <td class="p-2 font-mono text-[11px] font-bold text-[#003DA5]">${it.sku}</td>
                         <td class="p-2 font-semibold text-gray-800">${it.name}</td>
                         <td class="p-2 text-center font-bold">${it.qty}</td>
+                        <td class="p-2 text-center">${stockItemBadge}</td>
                         <td class="p-2 text-right font-mono">$${it.unitNet.toFixed(2)}</td>
                         <td class="p-2 text-right font-mono font-bold text-gray-900">$${it.totalNet.toFixed(2)}</td>
                         <td class="p-2 text-center">
@@ -655,28 +715,35 @@
             }
         }
 
-        // DESCARGA EN PDF (MEMBRETE CORPORATIVO)
+        // DESCARGA EN PDF (MEMBRETE CORPORATIVO CON TIEMPO DE ENTREGA)
         function downloadQuotePDF() {
             if (quoteCart.length === 0) {
                 alert('No hay partidas en la cotización.');
                 return;
             }
 
+            const leadTime = calculateLeadTime();
             const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+            
             document.getElementById('print-date').innerText = printDate;
             document.getElementById('print-distributor').innerText = `${currentDistData.name} (${currentDistData.category})`;
             document.getElementById('print-client').innerText = selectedClient || 'Cliente General';
+            document.getElementById('print-leadtime').innerText = leadTime;
 
             let subtotal = 0;
             const printTbody = document.getElementById('print-items-tbody');
             printTbody.innerHTML = quoteCart.map(it => {
                 subtotal += it.totalNet;
                 const discPct = Math.round(it.discountRate * 100);
+                const stockAvail = liveStockMap[it.sku] !== undefined ? liveStockMap[it.sku] : 0;
+                const statusStr = (it.qty <= stockAvail && stockAvail > 0) ? 'En Stock' : '2-3 semanas';
+
                 return `
                     <tr class="border-b border-gray-300">
                         <td class="p-2 border-r border-gray-300 font-mono">${it.sku}</td>
                         <td class="p-2 border-r border-gray-300 font-bold">${it.name}</td>
                         <td class="p-2 border-r border-gray-300 text-center">${it.qty}</td>
+                        <td class="p-2 border-r border-gray-300 text-center font-semibold text-[11px]">${statusStr}</td>
                         <td class="p-2 border-r border-gray-300 text-right">$${it.price.toFixed(2)}</td>
                         <td class="p-2 border-r border-gray-300 text-center font-bold text-blue-900">-${discPct}%</td>
                         <td class="p-2 border-r border-gray-300 text-right font-mono">$${it.unitNet.toFixed(2)}</td>
@@ -692,11 +759,10 @@
             document.getElementById('print-iva').innerText = `$${iva.toFixed(2)} USD`;
             document.getElementById('print-total').innerText = `$${total.toFixed(2)} USD`;
 
-            // Dispara el visor de impresión nativo del navegador para Guardar como PDF
             window.print();
         }
 
-        // ENVÍO DE COTIZACIÓN POR CORREO
+        // ENVÍO DE COTIZACIÓN POR CORREO (INCLUYENDO TIEMPO DE ENTREGA)
         async function sendQuoteEmail() {
             const emailTo = document.getElementById('quote-email').value.trim();
             const btn = document.getElementById('btn-send-quote');
@@ -704,6 +770,7 @@
             let subtotal = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
             let iva = subtotal * 0.16;
             let total = subtotal + iva;
+            const leadTime = calculateLeadTime();
 
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando...`;
@@ -717,6 +784,7 @@
                         client: selectedClient,
                         items: quoteCart,
                         totals: { subtotal, iva, total },
+                        leadTime: leadTime,
                         emailTo: emailTo || undefined
                     })
                 });
@@ -724,7 +792,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error al procesar la cotización.');
 
-                alert(data.message);
+                alert(`${data.message}\nTiempo de entrega asignado: ${leadTime}`);
             } catch (err) {
                 alert(`Error al enviar cotización: ${err.message}`);
             } finally {
