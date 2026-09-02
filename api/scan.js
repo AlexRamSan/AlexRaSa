@@ -27,10 +27,11 @@ export default async function handler(req, res) {
 
         const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
-        // Usamos la librería oficial de Google
+        // Inicializamos la librería oficial
         const genAI = new GoogleGenerativeAI(apiKey);
-        // Pedimos el modelo estándar que la librería reconoce nativamente
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        // Usamos el identificador exacto con versión compatible con la API actual
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
 
         const prompt = "Eres un asistente de almacén industrial. Analiza esta imagen y extrae ÚNICAMENTE el número de parte (SKU) del producto REGO-FIX. Ejemplos de formato: '7610.98100', '1725.12700'. No escribas texto adicional, ni explicaciones, solo el número exacto. Si no detectas nada, responde 'NO_DETECTADO'.";
         
