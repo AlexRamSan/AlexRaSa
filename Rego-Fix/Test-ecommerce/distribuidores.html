@@ -7,7 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .system-border { border-top: 5px solid #003DA5; }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-quote, #printable-quote * { visibility: visible; }
+            #printable-quote { position: absolute; left: 0; top: 0; width: 100%; }
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
@@ -20,6 +24,10 @@
             </div>
             <div id="user-header-badge" class="hidden text-xs flex items-center gap-3">
                 <span id="dist-badge-name" class="font-bold bg-white text-[#003DA5] px-3 py-1 rounded-full shadow-sm"></span>
+                <button onclick="openCartModal()" id="cart-header-btn" class="bg-[#D1D811] hover:bg-lime-500 text-black px-3 py-1 rounded-full font-bold shadow-sm flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Cotización (<span id="cart-count">0</span>)</span>
+                </button>
                 <button onclick="logoutDistributor()" class="text-white hover:text-gray-200 underline text-xs">Cerrar sesión</button>
             </div>
         </div>
@@ -30,7 +38,7 @@
         <!-- VISTA 1: LOGIN -->
         <div id="view-login" class="max-w-md mx-auto mt-12 bg-white p-8 rounded-2xl shadow-md border border-gray-200">
             <h2 class="text-xl font-bold text-[#003DA5] mb-2">Acceso a Distribuidores Autorizados</h2>
-            <p class="text-xs text-gray-500 mb-6">Consulte listas de precios netas y condiciones comerciales 2026.</p>
+            <p class="text-xs text-gray-500 mb-6">Consulte listas de precios netas, existencias actuales y condiciones comerciales 2026.</p>
 
             <div class="space-y-4">
                 <div>
@@ -53,7 +61,7 @@
             <div class="border-b pb-4 mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-[#003DA5] bg-blue-50 px-2 py-1 rounded">Paso 1 de 2 Obligatorio</span>
                 <h2 class="text-xl font-bold text-gray-900 mt-2">Selección de Cliente Final para Cotización</h2>
-                <p class="text-xs text-gray-500 mt-1">Por política comercial, debe seleccionar la cuenta a la cual se destinará esta cotización antes de visualizar los precios preferenciales.</p>
+                <p class="text-xs text-gray-500 mt-1">Por política comercial, seleccione la cuenta a la cual se destinará esta cotización antes de visualizar existencias y precios netos.</p>
             </div>
 
             <!-- Selector de cuentas ya asignadas -->
@@ -69,7 +77,7 @@
                 </div>
             </div>
 
-            <!-- Formulario para dar de alta prospecto nuevo -->
+            <!-- Formulario prospecto nuevo -->
             <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
                 <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2"><i class="fa-solid fa-user-plus mr-1"></i> ¿Cotizar a un Nuevo Cliente?</h3>
                 <p class="text-xs text-gray-500 mb-4">El sistema validará en tiempo real que la empresa no pertenezca a la cartera de Venta Directa de REGO-FIX.</p>
@@ -83,41 +91,70 @@
             </div>
         </div>
 
-        <!-- VISTA 3: CATÁLOGO Y LISTA DE PRECIOS DESBLOQUEADA -->
+        <!-- VISTA 3: CATÁLOGO, EXISTENCIAS, FILTROS Y COTIZADOR -->
         <div id="view-catalog" class="mt-4 hidden space-y-6">
             
-            <!-- Barra de Contexto del Cliente -->
+            <!-- Barra de Contexto del Cliente y Carrito -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between md:items-center gap-3">
                 <div>
                     <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Cotización Activa Para:</span>
                     <h3 id="current-client-display" class="text-lg font-black text-[#003DA5]"></h3>
                 </div>
-                <button onclick="changeClient()" class="text-xs font-bold text-gray-600 hover:text-black border border-gray-300 px-3 py-1.5 rounded-lg bg-gray-50 transition">
-                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Cambiar Cliente
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="openCartModal()" class="text-xs font-bold bg-[#003DA5] hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span>Ver Cotización (<span id="cart-inline-count">0</span>)</span>
+                    </button>
+                    <button onclick="changeClient()" class="text-xs font-bold text-gray-600 hover:text-black border border-gray-300 px-3 py-2 rounded-lg bg-gray-50 transition">
+                        <i class="fa-solid fa-arrows-rotate mr-1"></i> Cambiar Cliente
+                    </button>
+                </div>
             </div>
 
-            <!-- Encabezado de Lista de Precios -->
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold text-gray-800">Lista de Precios y Disponibilidad 2026</h2>
-                <span id="dist-category-tag" class="text-xs font-bold px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200"></span>
+            <!-- FILTROS POR SKU, NOMBRE, TECNOLOGÍA Y BOTÓN DE REFRESCAR STOCK -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-1">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-xs"></i>
+                        <input type="text" id="catalog-search" onkeyup="filterCatalog()" placeholder="Buscar SKU (ej. 1725.10000) o Descripción..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
+                    </div>
+                    
+                    <select id="catalog-tech-filter" onchange="filterCatalog()" class="border border-gray-300 p-2 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#003DA5]">
+                        <option value="">-- Todas las Tecnologías --</option>
+                        <option value="PG">powRgrip (PG)</option>
+                        <option value="ER">Pinzas / Portaherramientas ER</option>
+                        <option value="Maquinas">Unidades de Sujeción (Máquinas)</option>
+                        <option value="Otros">Accesorios y Otros</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="refreshLiveStock()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-lg font-bold border transition flex items-center gap-1" title="Actualizar Existencias">
+                        <i class="fa-solid fa-boxes-stacked text-[#003DA5]"></i>
+                        <span>Actualizar Stock</span>
+                    </button>
+                    <span id="dist-category-tag" class="text-xs font-bold px-3 py-2 rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-200 whitespace-nowrap"></span>
+                </div>
             </div>
 
+            <!-- TABLA DE PRECIOS, INVENTARIO ACTUAL Y COTIZADOR -->
             <div id="products-table-container" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-gray-50 border-b text-gray-500 uppercase font-bold tracking-wider">
                             <tr>
-                                <th class="p-4">SKU / Producto</th>
-                                <th class="p-4">Línea</th>
-                                <th class="p-4 text-center">Stock Almacén</th>
-                                <th class="p-4 text-right">Precio Lista (PVP)</th>
-                                <th class="p-4 text-center">Descuento</th>
+                                <th class="p-4">SKU / Descripción</th>
+                                <th class="p-4">Tecnología</th>
+                                <th class="p-4 text-center bg-blue-50/50 text-[#003DA5]">Stock Almacén</th>
+                                <th class="p-4 text-right">PVP Lista</th>
+                                <th class="p-4 text-center">Descto.</th>
                                 <th class="p-4 text-right">Su Precio Neto</th>
+                                <th class="p-4 text-center">Cantidad</th>
+                                <th class="p-4 text-center">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="pricing-rows" class="divide-y divide-gray-100">
-                            <!-- Filas dinámicas -->
+                            <!-- Filas con stock sincronizado en vivo -->
                         </tbody>
                     </table>
                 </div>
@@ -127,15 +164,14 @@
 
     </main>
 
-    <!-- MODAL DE ADVERTENCIA DE SANCIÓN / CUENTA PROTEGIDA -->
-    <div id="modal-penalty" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <!-- MODAL 1: ADVERTENCIA DE SANCIÓN COMERCIAL -->
+    <div id="modal-penalty" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border-t-8 border-red-600">
             <div class="flex items-center space-x-3 text-red-600 mb-4">
                 <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
                 <h3 class="text-lg font-black uppercase tracking-wide">Aviso de Cumplimiento Comercial</h3>
             </div>
             <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-xs text-red-800 leading-relaxed font-medium" id="penalty-text">
-                <!-- Texto de penalización devuelto por la API -->
             </div>
             <p class="text-[11px] text-gray-500 mb-6">
                 Este intento de consulta ha sido registrado en el sistema de auditoría de REGO-FIX México para revisión del Gerente de Ventas.
@@ -143,6 +179,122 @@
             <button onclick="closePenaltyModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition">
                 Entendido y de Acuerdo
             </button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: DETALLE, DESCARGA Y ENVÍO DE COTIZACIÓN -->
+    <div id="modal-cart" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-gray-200 flex flex-col max-h-[90vh]">
+            
+            <div class="flex justify-between items-start border-b pb-3 mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice text-[#003DA5]"></i> Resumen de Cotización B2B
+                    </h3>
+                    <p class="text-xs text-gray-500">Cliente: <strong id="cart-client-name" class="text-gray-800"></strong></p>
+                </div>
+                <button onclick="closeCartModal()" class="text-gray-400 hover:text-gray-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Tabla de partidas cotizadas -->
+            <div class="overflow-y-auto flex-1 mb-4">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-gray-50 text-gray-500 uppercase font-bold text-[10px]">
+                        <tr>
+                            <th class="p-2">SKU</th>
+                            <th class="p-2">Producto</th>
+                            <th class="p-2 text-center">Cant.</th>
+                            <th class="p-2 text-right">P. Neto</th>
+                            <th class="p-2 text-right">Total</th>
+                            <th class="p-2 text-center">Quitar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-items-tbody" class="divide-y divide-gray-100">
+                        <!-- Partidas agregadas -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totales -->
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-1.5 text-xs mb-4">
+                <div class="flex justify-between text-gray-600">
+                    <span>Subtotal Neto (USD):</span>
+                    <span id="cart-subtotal" class="font-bold font-mono">$0.00</span>
+                </div>
+                <div class="flex justify-between text-gray-600">
+                    <span>IVA (16%):</span>
+                    <span id="cart-iva" class="font-bold font-mono">$0.00</span>
+                </div>
+                <div class="flex justify-between text-base font-black text-[#003DA5] border-t pt-1.5">
+                    <span>Total Cotización (USD):</span>
+                    <span id="cart-total" class="font-mono">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="space-y-3">
+                <div class="flex gap-2">
+                    <input type="email" id="quote-email" placeholder="Correo para recibir copia formal (Opcional)" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
+                    <button onclick="sendQuoteEmail()" id="btn-send-quote" class="bg-[#003DA5] hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar por Correo
+                    </button>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="downloadQuotePDF()" class="flex-1 bg-[#D1D811] hover:bg-lime-500 text-black font-bold py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-download"></i> Descargar Cotización (PDF)
+                    </button>
+                    <button onclick="clearQuote()" class="text-xs text-red-600 hover:text-red-800 px-3 py-2 font-semibold">
+                        Vaciar
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- VISTA IMPRIMIBLE PARA PDF -->
+    <div id="printable-quote" class="hidden p-8 bg-white max-w-4xl mx-auto">
+        <div class="flex justify-between items-center border-b pb-4 mb-4">
+            <div>
+                <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="REGO-FIX" class="h-10 mb-2">
+                <h1 class="text-lg font-black text-[#003DA5]">REGO-FIX México - Cotización Comercial B2B</h1>
+                <p class="text-xs text-gray-500">Documento Oficial de Precios y Disponibilidad</p>
+            </div>
+            <div class="text-right text-xs">
+                <p><strong>Fecha:</strong> <span id="print-date"></span></p>
+                <p><strong>Distribuidor:</strong> <span id="print-distributor"></span></p>
+                <p><strong>Cliente Final:</strong> <span id="print-client"></span></p>
+            </div>
+        </div>
+
+        <table class="w-full text-left text-xs mb-6 border border-gray-300">
+            <thead class="bg-gray-100 border-b">
+                <tr>
+                    <th class="p-2 border-r">SKU</th>
+                    <th class="p-2 border-r">Descripción</th>
+                    <th class="p-2 border-r text-center">Cant.</th>
+                    <th class="p-2 border-r text-right">PVP Lista</th>
+                    <th class="p-2 border-r text-center">Descto.</th>
+                    <th class="p-2 border-r text-right">P. Neto</th>
+                    <th class="p-2 text-right">Importe Neto</th>
+                </tr>
+            </thead>
+            <tbody id="print-items-tbody"></tbody>
+        </table>
+
+        <div class="flex justify-end text-xs mb-8">
+            <div class="w-64 space-y-1">
+                <div class="flex justify-between"><span>Subtotal:</span> <strong id="print-subtotal"></strong></div>
+                <div class="flex justify-between"><span>IVA (16%):</span> <strong id="print-iva"></strong></div>
+                <div class="flex justify-between text-sm font-black border-t pt-1"><span>Total USD:</span> <strong id="print-total"></strong></div>
+            </div>
+        </div>
+
+        <div class="text-[10px] text-gray-500 border-t pt-3">
+            <p><strong>Condiciones Comerciales:</strong> Precios expresados en Dólares Americanos (USD) más IVA. Precios sujetos a cambios sin previo aviso según la matriz comercial 2026 de REGO-FIX México. Vigencia: 15 días naturales.</p>
         </div>
     </div>
 
@@ -162,6 +314,7 @@
         let currentDistData = null;
         let selectedClient = null;
         let liveStockMap = {};
+        let quoteCart = [];
 
         async function login() {
             const u = document.getElementById('dist-user').value.trim();
@@ -174,7 +327,7 @@
                 return;
             }
 
-            if ((u === 'usuario1' && p === 'usuario1') || (u === 'usuario2' && p === 'usuario2')) {
+            if ((u === 'usuario1' && p === 'usuario1') || (u === 'usuario2' && p === 'usuario2') || (u === 'usuario_bronce')) {
                 currentUser = u;
                 alertBox.classList.add('hidden');
                 await loadDistributorSession();
@@ -219,13 +372,33 @@
                     });
                 }
 
-                fetchLiveStock().catch(e => console.warn('Stock warning:', e));
+                // Cargar inventario antes de entrar al catálogo
+                await fetchLiveStock();
 
             } catch (err) {
                 alert(err.message);
                 document.getElementById('view-client-selection').classList.add('hidden');
                 document.getElementById('view-login').classList.remove('hidden');
             }
+        }
+
+        async function fetchLiveStock() {
+            try {
+                const res = await fetch('/api/inventory');
+                if (!res.ok) return;
+                const items = await res.json();
+                liveStockMap = {};
+                items.forEach(item => {
+                    liveStockMap[item.sku] = item.stock;
+                });
+            } catch (e) {
+                console.warn('No se pudo sincronizar inventario en vivo:', e);
+            }
+        }
+
+        async function refreshLiveStock() {
+            await fetchLiveStock();
+            filterCatalog();
         }
 
         function confirmExistingClient() {
@@ -255,14 +428,12 @@
 
                 const data = await res.json();
 
-                // BLOQUEO INMEDIATO SI ES CUENTA PROTEGIDA (403)
                 if (res.status === 403 && data.penaltyNotice) {
                     document.getElementById('penalty-text').innerText = data.message;
                     document.getElementById('modal-penalty').classList.remove('hidden');
                     return;
                 }
 
-                // SI OCURRE UN CONFLICTO O ERROR (400, 409, 500)
                 if (!res.ok) {
                     alert(data.error || 'No se pudo procesar la cuenta.');
                     return;
@@ -281,12 +452,15 @@
             document.getElementById('new-client-name').value = '';
         }
 
-        function proceedToPricing(clientName) {
+        async function proceedToPricing(clientName) {
             selectedClient = clientName;
             document.getElementById('current-client-display').innerText = selectedClient;
+            document.getElementById('cart-client-name').innerText = selectedClient;
             document.getElementById('dist-category-tag').innerText = `Nivel: ${currentDistData.category}`;
 
-            renderPricingTable();
+            // Asegurar que el stock más reciente esté mapeado
+            await fetchLiveStock();
+            renderPricingTable(MASTER_PRODUCTS);
 
             document.getElementById('view-client-selection').classList.add('hidden');
             document.getElementById('view-catalog').classList.remove('hidden');
@@ -297,48 +471,246 @@
             document.getElementById('view-client-selection').classList.remove('hidden');
         }
 
-        function renderPricingTable() {
+        // RENDERIZADO DEL CATÁLOGO CON EL INVENTARIO EN VIVO
+        function renderPricingTable(products) {
             const tbody = document.getElementById('pricing-rows');
-            tbody.innerHTML = MASTER_PRODUCTS.map(prod => {
-                const discountRate = currentDistData.discounts[prod.line] || 0;
+
+            if (!products || products.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-400">No se encontraron productos coincidentes.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = products.map(prod => {
+                const discountRate = (currentDistData.discounts && currentDistData.discounts[prod.line]) !== undefined 
+                    ? currentDistData.discounts[prod.line] 
+                    : 0.10;
+
                 const netPrice = prod.price * (1 - discountRate);
                 const discountPct = Math.round(discountRate * 100);
 
-                const stock = liveStockMap[prod.sku] !== undefined ? liveStockMap[prod.sku] : '...';
+                // Stock real obtenido de Supabase
+                const stock = liveStockMap[prod.sku] !== undefined ? liveStockMap[prod.sku] : 0;
                 const stockBadge = stock > 0 
-                    ? `<span class="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full text-[10px]">${stock} pzas</span>`
-                    : `<span class="bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full text-[10px]">Agotado (2 sem)</span>`;
+                    ? `<span class="bg-green-100 text-green-800 font-bold px-2.5 py-1 rounded-full text-xs shadow-xs"><i class="fa-solid fa-check mr-1"></i>${stock} pzas</span>`
+                    : `<span class="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full text-xs shadow-xs"><i class="fa-solid fa-ban mr-1"></i>0 pzas</span>`;
 
                 return `
                     <tr class="hover:bg-gray-50 transition">
                         <td class="p-4">
                             <div class="font-bold text-gray-900">${prod.name}</div>
-                            <div class="font-mono text-gray-400 text-[11px]">${prod.sku}</div>
+                            <div class="font-mono text-[#003DA5] font-bold text-[11px]">${prod.sku}</div>
                         </td>
                         <td class="p-4 font-semibold text-gray-600">${prod.line}</td>
-                        <td class="p-4 text-center">${stockBadge}</td>
-                        <td class="p-4 text-right font-semibold text-gray-400 line-through">$${prod.price.toLocaleString('en-US', {minimumFractionDigits: 2})} USD</td>
-                        <td class="p-4 text-center">
-                            <span class="bg-blue-100 text-[#003DA5] font-black px-2 py-1 rounded text-xs">-${discountPct}%</span>
+                        <td class="p-4 text-center bg-blue-50/30">
+                            ${stockBadge}
                         </td>
-                        <td class="p-4 text-right font-black text-base text-[#003DA5]">
-                            $${netPrice.toLocaleString('en-US', {minimumFractionDigits: 2})} <span class="text-[10px] font-normal text-gray-500">USD</span>
+                        <td class="p-4 text-right font-semibold text-gray-400 line-through">$${prod.price.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="p-4 text-center">
+                            <span class="bg-blue-100 text-[#003DA5] font-black px-2 py-0.5 rounded text-xs">-${discountPct}%</span>
+                        </td>
+                        <td class="p-4 text-right font-black text-sm text-[#003DA5]">
+                            $${netPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                        </td>
+                        <td class="p-4 text-center">
+                            <input type="number" id="qty-${prod.sku}" min="1" value="1" class="w-14 border border-gray-300 rounded p-1 text-center font-bold text-xs bg-white">
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="addToQuote('${prod.sku}')" class="bg-[#003DA5] hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm mx-auto">
+                                <i class="fa-solid fa-plus text-[10px]"></i> Cotizar
+                            </button>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        async function fetchLiveStock() {
-            try {
-                const res = await fetch('/api/inventory');
-                if (!res.ok) return;
-                const items = await res.json();
-                items.forEach(item => {
-                    liveStockMap[item.sku] = item.stock;
+        function filterCatalog() {
+            const query = document.getElementById('catalog-search').value.toLowerCase().trim();
+            const tech = document.getElementById('catalog-tech-filter').value;
+
+            const filtered = MASTER_PRODUCTS.filter(p => {
+                const matchSearch = (!query) || 
+                    p.sku.toLowerCase().includes(query) || 
+                    p.name.toLowerCase().includes(query);
+
+                const matchTech = (!tech) || p.line === tech;
+
+                return matchSearch && matchTech;
+            });
+
+            renderPricingTable(filtered);
+        }
+
+        // GESTIÓN DE PARTIDAS DE COTIZACIÓN
+        function addToQuote(sku) {
+            const prod = MASTER_PRODUCTS.find(p => p.sku === sku);
+            if (!prod) return;
+
+            const qtyInput = document.getElementById(`qty-${sku}`);
+            const qty = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
+
+            const discountRate = (currentDistData.discounts && currentDistData.discounts[prod.line]) !== undefined 
+                ? currentDistData.discounts[prod.line] 
+                : 0.10;
+            const unitNet = prod.price * (1 - discountRate);
+
+            const existing = quoteCart.find(it => it.sku === sku);
+            if (existing) {
+                existing.qty += qty;
+                existing.totalNet = existing.qty * unitNet;
+            } else {
+                quoteCart.push({
+                    sku: prod.sku,
+                    name: prod.name,
+                    line: prod.line,
+                    price: prod.price,
+                    discountRate: discountRate,
+                    unitNet: unitNet,
+                    qty: qty,
+                    totalNet: qty * unitNet
                 });
-            } catch (e) {
-                console.error(e);
+            }
+
+            updateCartBadges();
+            alert(`Se agregaron ${qty} pza(s) de ${prod.sku} a la cotización.`);
+        }
+
+        function updateCartBadges() {
+            const count = quoteCart.reduce((sum, it) => sum + it.qty, 0);
+            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-inline-count').innerText = count;
+        }
+
+        function openCartModal() {
+            if (quoteCart.length === 0) {
+                alert('La cotización no tiene productos agregados todavía. Selecciona la cantidad y haz clic en "Cotizar".');
+                return;
+            }
+            renderCartModal();
+            document.getElementById('modal-cart').classList.remove('hidden');
+        }
+
+        function closeCartModal() {
+            document.getElementById('modal-cart').classList.add('hidden');
+        }
+
+        function renderCartModal() {
+            const tbody = document.getElementById('cart-items-tbody');
+            let subtotal = 0;
+
+            tbody.innerHTML = quoteCart.map((it, idx) => {
+                subtotal += it.totalNet;
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 font-mono text-[11px] font-bold text-[#003DA5]">${it.sku}</td>
+                        <td class="p-2 font-semibold text-gray-800">${it.name}</td>
+                        <td class="p-2 text-center font-bold">${it.qty}</td>
+                        <td class="p-2 text-right font-mono">$${it.unitNet.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono font-bold text-gray-900">$${it.totalNet.toFixed(2)}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="removeCartItem(${idx})" class="text-red-500 hover:text-red-700">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            document.getElementById('cart-subtotal').innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
+            document.getElementById('cart-iva').innerText = `$${iva.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
+            document.getElementById('cart-total').innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
+        }
+
+        function removeCartItem(idx) {
+            quoteCart.splice(idx, 1);
+            updateCartBadges();
+            if (quoteCart.length === 0) {
+                closeCartModal();
+            } else {
+                renderCartModal();
+            }
+        }
+
+        function clearQuote() {
+            if (confirm('¿Deseas vaciar todas las partidas de la cotización?')) {
+                quoteCart = [];
+                updateCartBadges();
+                closeCartModal();
+            }
+        }
+
+        // DESCARGA EN PDF (MEMBRETE CORPORATIVO)
+        function downloadQuotePDF() {
+            const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('print-date').innerText = printDate;
+            document.getElementById('print-distributor').innerText = `${currentDistData.name} (${currentDistData.category})`;
+            document.getElementById('print-client').innerText = selectedClient;
+
+            let subtotal = 0;
+            const printTbody = document.getElementById('print-items-tbody');
+            printTbody.innerHTML = quoteCart.map(it => {
+                subtotal += it.totalNet;
+                const discPct = Math.round(it.discountRate * 100);
+                return `
+                    <tr class="border-b">
+                        <td class="p-2 border-r font-mono">${it.sku}</td>
+                        <td class="p-2 border-r font-bold">${it.name}</td>
+                        <td class="p-2 border-r text-center">${it.qty}</td>
+                        <td class="p-2 border-r text-right">$${it.price.toFixed(2)}</td>
+                        <td class="p-2 border-r text-center">-${discPct}%</td>
+                        <td class="p-2 border-r text-right font-mono">$${it.unitNet.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono font-bold">$${it.totalNet.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            document.getElementById('print-subtotal').innerText = `$${subtotal.toFixed(2)} USD`;
+            document.getElementById('print-iva').innerText = `$${iva.toFixed(2)} USD`;
+            document.getElementById('print-total').innerText = `$${total.toFixed(2)} USD`;
+
+            window.print();
+        }
+
+        // ENVÍO DE COTIZACIÓN POR CORREO
+        async function sendQuoteEmail() {
+            const emailTo = document.getElementById('quote-email').value.trim();
+            const btn = document.getElementById('btn-send-quote');
+
+            let subtotal = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
+            let iva = subtotal * 0.16;
+            let total = subtotal + iva;
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando...`;
+
+            try {
+                const res = await fetch('/api/contactos?action=send_quote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        distributor: currentDistData,
+                        client: selectedClient,
+                        items: quoteCart,
+                        totals: { subtotal, iva, total },
+                        emailTo: emailTo || undefined
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al procesar la cotización.');
+
+                alert(data.message);
+            } catch (err) {
+                alert(`Error al enviar cotización: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar por Correo`;
             }
         }
 
@@ -346,9 +718,11 @@
             currentUser = null;
             currentDistData = null;
             selectedClient = null;
+            quoteCart = [];
+            updateCartBadges();
             document.getElementById('user-header-badge').classList.add('hidden');
             document.getElementById('view-catalog').classList.add('hidden');
-            document.getElementById('view-client-selection').classList.add('hidden');
+            document.getElementById('view-client-selection').classList.remove('hidden');
             document.getElementById('view-login').classList.remove('hidden');
             document.getElementById('dist-user').value = '';
             document.getElementById('dist-pass').value = '';
