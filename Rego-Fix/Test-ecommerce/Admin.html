@@ -126,6 +126,17 @@
             }
         }
 
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.srcObject = null;
+            video.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            btnCapture.disabled = true;
+        }
+
         async function captureAndScan() {
             const MAX_WIDTH = 800; 
             const scale = MAX_WIDTH / video.videoWidth;
@@ -151,6 +162,7 @@
                 
                 if (data.sku && data.sku !== 'NO_DETECTADO') {
                     skuInput.value = data.sku;
+                    stopCamera(); // Apaga la cámara inmediatamente al detectar el SKU
                     await registerOrTouchSku(data.sku);
                 } else {
                     alert('Gemini no logró identificar un SKU claro.');
