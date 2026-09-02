@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Matriz oficial de descuentos REGO-FIX 2026
 const DISTRIBUTOR_RULES = {
   'usuario1': {
     name: 'Distribuidor AHNSA',
@@ -27,7 +28,9 @@ export default async function handler(req, res) {
 
   const { dominio, action, user } = req.query;
 
-  // RUTA 1: APOLLO
+  // ====================================================
+  // RUTA 1: BÚSQUEDA DE CONTACTOS EN APOLLO
+  // ====================================================
   if (dominio) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido' });
     const API_KEY = process.env.APOLLO_API_KEY;
@@ -64,7 +67,9 @@ export default async function handler(req, res) {
     }
   }
 
-  // RUTA 2: DISTRIBUIDORES
+  // ====================================================
+  // RUTA 2: GESTIÓN Y VALIDACIÓN DE DISTRIBUIDORES
+  // ====================================================
   if (action === 'distributors' || req.method === 'POST') {
     try {
       const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -95,15 +100,16 @@ export default async function handler(req, res) {
         });
       }
 
-      // POST: Validación / Registro de cuentas
+      // POST: Validación y Registro estricto de cuentas
       if (req.method === 'POST') {
         const { user: postUser, customerName, taxId } = req.body || {};
         const distInfo = DISTRIBUTOR_RULES[postUser];
         if (!distInfo) return res.status(401).json({ error: 'Distribuidor no autorizado.' });
 
-        const cleanName = (customerName || '').trim();
+        const cleanName = (customerName || '').trim().toUpperCase();
         if (!cleanName) return res.status(400).json({ error: 'Nombre de cliente inválido.' });
 
+        // 1. Buscar coincidencias por nombre
         const { data: existing, error: searchError } = await supabase
           .from('customer_accounts')
           .select('*')
@@ -111,7 +117,15 @@ export default async function handler(req, res) {
 
         if (searchError) throw searchError;
 
-        const directMatch = (existing || []).find(c => c.account_group === 'Direct sale' || c.status === 'Locked');
+        const records = existing || [];
+
+        // 2. BLOQUEO DE CUENTA PROTEGIDA (Venta Directa o Estatus Locked)
+        const directMatch = records.find(c => 
+          c.account_group === 'Direct sale' || 
+          c.status === 'Locked' ||
+          c.customer_name.toUpperCase().includes('BOCAR')
+        );
+
         if (directMatch) {
           return res.status(403).json({
             blocked: true,
@@ -120,16 +134,26 @@ export default async function handler(req, res) {
           });
         }
 
-        const otherDist = (existing || []).find(c => c.account_group === 'Distributor' && !c.salesman.toLowerCase().includes(distInfo.name.toLowerCase()));
-        if (otherDist) {
-          return res.status(409).json({ error: `La cuenta "${otherDist.customer_name}" ya se encuentra asignada a otra firma de distribución.` });
+        // 3. BLOQUEO DE DUPLICADOS O ASIGNACIÓN A OTRO DISTRIBUIDOR
+        const existingDist = records.find(c => c.customer_name.toUpperCase() === cleanName);
+        if (existingDist) {
+          if (!existingDist.salesman.toLowerCase().includes(distInfo.name.toLowerCase())) {
+            return res.status(409).json({
+              error: `La cuenta "${existingDist.customer_name}" ya se encuentra asignada a otra firma de distribución (${existingDist.salesman}).`
+            });
+          } else {
+            return res.status(409).json({
+              error: `La cuenta "${cleanName}" ya está dada de alta en su lista de clientes asignados.`
+            });
+          }
         }
 
+        // 4. Inserción de cuenta nueva libre
         const { data: newAccount, error: insertError } = await supabase
           .from('customer_accounts')
           .insert([{
             tax_id: taxId || null,
-            customer_name: cleanName.toUpperCase(),
+            customer_name: cleanName,
             status: 'Active',
             salesman: distInfo.name,
             account_group: 'Distributor'
@@ -142,7 +166,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
           success: true,
           account: newAccount,
-          message: `Cuenta "${cleanName.toUpperCase()}" registrada y asignada exitosamente a ${distInfo.name}.`
+          message: `Cuenta "${cleanName}" registrada y asignada exitosamente a ${distInfo.name}.`
         });
       }
 
