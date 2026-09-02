@@ -2,12 +2,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Permite a Vercel recibir fotos grandes
-export const config = {
-    api: { bodyParser: { sizeLimit: '10mb' } }
-};
-
-module.exports = async (req, res) => {
+async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
@@ -34,6 +29,13 @@ module.exports = async (req, res) => {
         return res.status(200).json({ sku });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Error procesando la imagen' });
+        return res.status(500).json({ error: 'Error procesando la imagen con Gemini' });
     }
+}
+
+// Configuración para permitir a Vercel recibir fotos grandes
+handler.config = {
+    api: { bodyParser: { sizeLimit: '10mb' } }
 };
+
+module.exports = handler;
