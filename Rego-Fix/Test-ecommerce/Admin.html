@@ -3,292 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Inventario - Rego-fix</title>
+    <title>Administración de Inventario - REGO-FIX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        .system-border { border-top: 5px solid #003DA5; }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
-    <header class="bg-[#003DA5] text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <div class="font-bold text-lg"><i class="fa-solid fa-boxes-stacked mr-2"></i> Admin Inventario</div>
-        <a href="index.html" class="text-sm underline hover:text-gray-200">Ir a la Tienda</a>
+    <header class="bg-[#003DA5] text-white p-4 shadow-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="REGO-FIX" class="h-7 filter brightness-0 invert">
+                <span class="text-xs font-bold uppercase tracking-widest bg-blue-900 px-2.5 py-1 rounded">Control de Stock</span>
+            </div>
+            <div class="space-x-3">
+                <a href="distribuidores.html" class="bg-blue-800 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded font-semibold transition">
+                    Portal B2B
+                </a>
+                <a href="index.html" class="bg-[#D1D811] hover:bg-lime-500 text-black text-xs px-3 py-1.5 rounded font-bold transition shadow">
+                    Ir a Tienda
+                </a>
+            </div>
+        </div>
     </header>
 
-    <main class="max-w-xl mx-auto p-4 space-y-6 mt-4">
-        
-        <!-- SECCIÓN 1: ESCÁNER -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">1. Escanear Pieza</h2>
-            
-            <div class="relative bg-black rounded-lg overflow-hidden aspect-[4/3] flex items-center justify-center mb-4 shadow-inner">
-                <video id="camera-feed" autoplay playsinline class="w-full h-full object-cover hidden"></video>
-                <div id="camera-placeholder" class="text-gray-500 flex flex-col items-center">
-                    <i class="fa-solid fa-camera text-4xl mb-2"></i>
-                    <span class="text-sm">Cámara apagada</span>
+    <main class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- SECCIÓN 1: ESCÁNER Y OPERACIÓN POR LOTE -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Panel de lectura / captura -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h2 class="text-base font-bold text-gray-900 mb-2 flex items-center">
+                    <i class="fa-solid fa-barcode text-[#003DA5] mr-2 text-lg"></i> Escaneo y Registro Rápido
+                </h2>
+                <p class="text-xs text-gray-500 mb-4">Escanea el código de barras/Datamatrix o escribe el SKU manualmente.</p>
+
+                <!-- Lector QR/Barcode Cámara -->
+                <div id="reader-container" class="mb-4 hidden">
+                    <div id="reader" class="w-full rounded-xl overflow-hidden border border-gray-300"></div>
+                    <button onclick="stopCamera()" class="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-gray-700 py-1.5 rounded-lg text-xs font-bold transition">
+                        Detener Cámara
+                    </button>
+                </div>
+
+                <div class="flex gap-2 mb-4">
+                    <button onclick="startCamera()" class="flex-1 bg-[#003DA5] hover:bg-blue-800 text-white py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-camera"></i> <span>Abrir Cámara</span>
+                    </button>
+                    <button onclick="loadInventory()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold transition border border-gray-300" title="Refrescar datos">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-3 pt-3 border-t border-gray-100">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">SKU / Código:</label>
+                        <input type="text" id="input-sku" placeholder="Ej. 1725.10000" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs font-mono font-bold focus:outline-none focus:border-[#003DA5]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Descripción / Nombre:</label>
+                        <input type="text" id="input-name" placeholder="Ej. Boquilla PG 25" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
+                    </div>
+
+                    <!-- SELECTOR DE CANTIDAD -->
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                        <label class="block text-xs font-black text-[#003DA5] mb-1">Cantidad a Mover:</label>
+                        <div class="flex items-center gap-2">
+                            <button onclick="adjustInputQty(-1)" class="bg-white hover:bg-gray-100 text-gray-700 w-9 h-9 rounded-lg border font-bold text-base transition flex items-center justify-center">-</button>
+                            <input type="number" id="input-qty" value="1" min="1" class="flex-1 border border-gray-300 p-2 rounded-lg text-center font-black text-sm text-[#003DA5] focus:outline-none bg-white">
+                            <button onclick="adjustInputQty(1)" class="bg-white hover:bg-gray-100 text-gray-700 w-9 h-9 rounded-lg border font-bold text-base transition flex items-center justify-center">+</button>
+                        </div>
+                    </div>
+
+                    <!-- BOTONES DE INGRESO Y SALIDA POR CANTIDAD -->
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button onclick="handleStockMovement(true)" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-plus-circle text-sm"></i> <span>Dar Ingreso (+)</span>
+                        </button>
+                        <button onclick="handleStockMovement(false)" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-minus-circle text-sm"></i> <span>Dar de Baja (-)</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex gap-2">
-                <button id="btn-start-camera" onclick="startCamera()" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white py-3 rounded font-semibold text-sm transition">
-                    <i class="fa-solid fa-video mr-1"></i> Encender
-                </button>
-                <button id="btn-capture" onclick="captureAndScan()" disabled class="flex-1 bg-[#00B2E2] disabled:bg-gray-300 disabled:text-gray-500 hover:bg-blue-500 text-white py-3 rounded font-bold text-sm transition shadow">
-                    <i class="fa-solid fa-expand mr-1"></i> Leer SKU
-                </button>
-            </div>
-            
-            <canvas id="canvas" class="hidden"></canvas>
-        </div>
-
-        <!-- SECCIÓN 2: GESTIÓN RÁPIDA Y MOVIMIENTOS -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">2. Gestión de Stock</h2>
-            
-            <div id="loading-indicator" class="hidden mb-4 p-3 bg-blue-50 text-blue-700 rounded text-sm font-semibold flex items-center justify-center">
-                <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Gemini analizando imagen...
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-gray-500 mb-1">Número de Parte (SKU):</label>
-                <input type="text" id="sku-input" placeholder="Ej. 7610.98100" class="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-lg font-mono font-bold focus:outline-none focus:border-[#003DA5] transition">
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <button onclick="updateStock(1)" class="bg-[#D1D811] hover:bg-lime-500 text-black py-3 rounded-lg font-bold text-base shadow transition flex items-center justify-center">
-                    <i class="fa-solid fa-plus mr-2"></i> + Ingreso
-                </button>
-                <button onclick="updateStock(-1)" class="bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-bold text-base shadow transition flex items-center justify-center">
-                    <i class="fa-solid fa-minus mr-2"></i> - Salida
-                </button>
-            </div>
-
-            <button onclick="loadInventoryList()" class="w-full bg-[#003DA5] hover:bg-blue-800 text-white py-3 rounded-lg font-bold text-sm transition shadow flex items-center justify-center">
-                <i class="fa-solid fa-list mr-2"></i> Ver y Administrar Catálogo Completo
-            </button>
-        </div>
-
-        <!-- SECCIÓN 3: TABLA DE CONTROL MANUAL Y EDICIÓN -->
-        <div id="inventory-list-container" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hidden">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Catálogo y Edición Manual</h2>
-                <button onclick="document.getElementById('inventory-list-container').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-sm">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            
-            <p class="text-xs text-gray-500 mb-3">Aquí puedes modificar el stock o el nombre directamente, o dar de alta un producto nuevo ingresando sus datos abajo.</p>
-
-            <!-- Formulario para agregar nuevo manual -->
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4 space-y-2">
-                <div class="text-xs font-bold text-gray-600">Agregar nuevo SKU manualmente:</div>
-                <div class="grid grid-cols-3 gap-2">
-                    <input type="text" id="manual-sku" placeholder="SKU" class="border p-2 rounded text-xs font-mono">
-                    <input type="text" id="manual-name" placeholder="Nombre / Descripción" class="border p-2 rounded text-xs">
-                    <input type="number" id="manual-stock" placeholder="Stock" class="border p-2 rounded text-xs" value="1">
+            <!-- Panel de Notificaciones y Ayuda -->
+            <div class="space-y-4">
+                <div id="status-card" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="text-sm font-bold text-gray-800 mb-2">Última Operación</h3>
+                    <div id="status-message" class="text-xs text-gray-500 bg-gray-50 p-4 rounded-xl border border-dashed border-gray-300 min-h-[90px] flex items-center justify-center text-center">
+                        Listo para registrar movimientos de almacén.
+                    </div>
                 </div>
-                <button onclick="addNewItemManual()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded text-xs font-bold transition">
-                    <i class="fa-solid fa-plus-circle mr-1"></i> Guardar Nuevo Producto en BD
-                </button>
+
+                <div class="bg-blue-900 text-white p-5 rounded-2xl shadow-sm">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#D1D811] mb-2"><i class="fa-solid fa-circle-info mr-1"></i> Instrucciones de Operación</h4>
+                    <ul class="text-xs text-blue-100 space-y-1.5 list-disc list-inside">
+                        <li>Ingresa o escanea el código exacto de REGO-FIX.</li>
+                        <li>Indica en el campo <strong>Cantidad</strong> el número exacto de piezas (ej. 5, 10, 50).</li>
+                        <li>Haz clic en <strong>Dar Ingreso</strong> para sumarlas al almacén.</li>
+                        <li>Haz clic en <strong>Dar de Baja</strong> para descontarlas inmediatamente.</li>
+                    </ul>
+                </div>
             </div>
 
-            <div id="inventory-items" class="space-y-3 max-h-96 overflow-y-auto">
-                <!-- Se llena dinámicamente -->
+        </div>
+
+        <!-- SECCIÓN 2: TABLA DE INVENTARIO COMPLETO -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-5 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-gray-900">Existencias Actuales en Almacén</h2>
+                    <p class="text-xs text-gray-500">Stock sincronizado con Supabase en tiempo real.</p>
+                </div>
+                <input type="text" id="search-inventory" onkeyup="filterInventoryTable()" placeholder="Buscar por SKU o Producto..." class="border border-gray-300 p-2 rounded-lg text-xs w-full md:w-64 focus:outline-none focus:border-[#003DA5]">
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-gray-50 border-b text-gray-500 uppercase font-bold tracking-wider">
+                        <tr>
+                            <th class="p-4">SKU</th>
+                            <th class="p-4">Descripción</th>
+                            <th class="p-4 text-center">Stock Actual</th>
+                            <th class="p-4">Última Actualización</th>
+                            <th class="p-4 text-right">Ajuste Directo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body" class="divide-y divide-gray-100 font-medium">
+                        <tr>
+                            <td colspan="5" class="p-8 text-center text-gray-400">Cargando catálogo...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
     </main>
 
     <script>
-        const video = document.getElementById('camera-feed');
-        const canvas = document.getElementById('canvas');
-        const btnCapture = document.getElementById('btn-capture');
-        const placeholder = document.getElementById('camera-placeholder');
-        const loadingIndicator = document.getElementById('loading-indicator');
-        const skuInput = document.getElementById('sku-input');
-        let stream = null;
+        let inventoryData = [];
+        let html5QrCode = null;
 
-        async function startCamera() {
+        function adjustInputQty(amount) {
+            const qtyInput = document.getElementById('input-qty');
+            let current = parseInt(qtyInput.value, 10) || 1;
+            current = Math.max(1, current + amount);
+            qtyInput.value = current;
+        }
+
+        async function loadInventory() {
+            const tbody = document.getElementById('inventory-table-body');
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                video.srcObject = stream;
-                video.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-                btnCapture.disabled = false;
+                const res = await fetch('/api/inventory');
+                if (!res.ok) throw new Error('Error al cargar inventario.');
+                inventoryData = await res.json();
+                renderInventoryTable(inventoryData);
             } catch (err) {
-                alert('No se pudo acceder a la cámara.');
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-red-500">${err.message}</td></tr>`;
             }
         }
 
-        async function captureAndScan() {
-            const MAX_WIDTH = 800; 
-            const scale = MAX_WIDTH / video.videoWidth;
-            canvas.width = MAX_WIDTH;
-            canvas.height = video.videoHeight * scale;
-            
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageBase64 = canvas.toDataURL('image/jpeg', 0.6);
-            
-            loadingIndicator.classList.remove('hidden');
-            skuInput.value = '';
-
-            try {
-                const response = await fetch('/api/scan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageBase64 })
-                });
-
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error);
-                
-                if (data.sku && data.sku !== 'NO_DETECTADO') {
-                    skuInput.value = data.sku;
-                    // Auto-registrar en Supabase si no existe al escanear
-                    await registerOrTouchSku(data.sku);
-                } else {
-                    alert('Gemini no logró identificar un SKU claro.');
-                }
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-            } finally {
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-
-        async function registerOrTouchSku(sku) {
-            try {
-                await fetch('/api/inventory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sku: sku, quantityChange: 0 })
-                });
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        async function updateStock(change) {
-            const sku = skuInput.value.trim();
-            if (!sku) {
-                alert('Escribe o escanea un SKU primero.');
+        function renderInventoryTable(items) {
+            const tbody = document.getElementById('inventory-table-body');
+            if (!items || items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">No hay productos registrados aún.</td></tr>`;
                 return;
             }
 
+            tbody.innerHTML = items.map(item => {
+                const stockBadge = item.stock > 0 
+                    ? `<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold text-xs">${item.stock} pzas</span>`
+                    : `<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold text-xs">0 pzas (Agotado)</span>`;
+
+                const dateStr = item.last_updated ? new Date(item.last_updated).toLocaleString() : 'Reciente';
+
+                return `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="p-4 font-mono font-bold text-[#003DA5]">${item.sku}</td>
+                        <td class="p-4 text-gray-900 font-bold">${item.name || 'Herramienta REGO-FIX'}</td>
+                        <td class="p-4 text-center">${stockBadge}</td>
+                        <td class="p-4 text-gray-400 text-[11px]">${dateStr}</td>
+                        <td class="p-4 text-right">
+                            <div class="inline-flex items-center gap-1">
+                                <button onclick="quickSelect('${item.sku}', '${(item.name || '').replace(/'/g, "\\'")}', 1, true)" class="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 px-2.5 py-1 rounded text-xs font-bold transition" title="Ingresar 1">+1</button>
+                                <button onclick="quickSelect('${item.sku}', '${(item.name || '').replace(/'/g, "\\'")}', 5, true)" class="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 px-2.5 py-1 rounded text-xs font-bold transition" title="Ingresar 5">+5</button>
+                                <button onclick="quickSelect('${item.sku}', '${(item.name || '').replace(/'/g, "\\'")}', 1, false)" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2.5 py-1 rounded text-xs font-bold transition ml-1" title="Bajar 1">-1</button>
+                                <button onclick="quickSelect('${item.sku}', '${(item.name || '').replace(/'/g, "\\'")}', 5, false)" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2.5 py-1 rounded text-xs font-bold transition" title="Bajar 5">-5</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterInventoryTable() {
+            const query = document.getElementById('search-inventory').value.toLowerCase();
+            const filtered = inventoryData.filter(i => 
+                (i.sku && i.sku.toLowerCase().includes(query)) ||
+                (i.name && i.name.toLowerCase().includes(query))
+            );
+            renderInventoryTable(filtered);
+        }
+
+        function quickSelect(sku, name, qty, isAddition) {
+            document.getElementById('input-sku').value = sku;
+            document.getElementById('input-name').value = name;
+            document.getElementById('input-qty').value = qty;
+            handleStockMovement(isAddition);
+        }
+
+        async function handleStockMovement(isAddition) {
+            const sku = document.getElementById('input-sku').value.trim();
+            const name = document.getElementById('input-name').value.trim();
+            const qty = parseInt(document.getElementById('input-qty').value, 10) || 1;
+            const statusBox = document.getElementById('status-message');
+
+            if (!sku) {
+                alert('Por favor ingrese o escanee un SKU.');
+                return;
+            }
+
+            const quantityChange = isAddition ? qty : -qty;
+
+            statusBox.innerHTML = `<span class="text-blue-600 font-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Procesando ${isAddition ? 'ingreso' : 'baja'} de ${qty} pzas...</span>`;
+
             try {
-                const response = await fetch('/api/inventory', {
+                const res = await fetch('/api/inventory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sku: sku, quantityChange: change })
+                    body: JSON.stringify({
+                        sku,
+                        name: name || undefined,
+                        quantityChange
+                    })
                 });
 
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    alert(`¡Actualizado! Stock actual de ${sku}: ${data.newStock}`);
-                } else {
-                    alert(`Error: ${data.error}`);
-                }
-            } catch (error) {
-                alert('Error de conexión.');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al actualizar inventario.');
+
+                statusBox.innerHTML = `
+                    <div class="text-green-700 font-bold">
+                        <i class="fa-solid fa-circle-check text-base mr-1"></i> ${data.message}
+                    </div>
+                `;
+
+                // Recargar tabla completa
+                await loadInventory();
+
+            } catch (err) {
+                statusBox.innerHTML = `
+                    <div class="text-red-600 font-bold">
+                        <i class="fa-solid fa-triangle-exclamation text-base mr-1"></i> Error: ${err.message}
+                    </div>
+                `;
             }
         }
 
-        async function loadInventoryList() {
-            const container = document.getElementById('inventory-list-container');
-            const listDiv = document.getElementById('inventory-items');
-            
-            listDiv.innerHTML = '<div class="text-center text-gray-500 py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando base de datos...</div>';
+        // Cámara / Escáner
+        function startCamera() {
+            const container = document.getElementById('reader-container');
             container.classList.remove('hidden');
 
-            try {
-                const response = await fetch('/api/inventory');
-                const items = await response.json();
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    const cleanCode = decodedText.trim();
+                    document.getElementById('input-sku').value = cleanCode;
 
-                if (!response.ok) throw new Error(items.error);
+                    // Si existe en catálogo, autollenar nombre
+                    const match = inventoryData.find(i => i.sku === cleanCode);
+                    if (match && match.name) {
+                        document.getElementById('input-name').value = match.name;
+                    }
 
-                if (items.length === 0) {
-                    listDiv.innerHTML = '<div class="text-gray-500 text-center py-2">No hay registros.</div>';
-                    return;
+                    stopCamera();
+                },
+                (errorMessage) => {
+                    // escaneando frame
                 }
+            ).catch(err => {
+                alert('No se pudo acceder a la cámara: ' + err);
+                container.classList.add('hidden');
+            });
+        }
 
-                listDiv.innerHTML = items.map(item => `
-                    <div class="bg-gray-50 p-3 rounded-lg border border-space flex flex-col gap-2">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-[#003DA5] font-mono text-sm">${item.sku}</span>
-                            <span class="text-xs text-gray-400">Act: ${new Date(item.last_updated || Date.now()).toLocaleDateString()}</span>
-                        </div>
-                        <input type="text" id="name-${item.sku}" value="${item.name || ''}" placeholder="Descripción de la pieza" class="border p-1.5 rounded text-xs bg-white">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-1">
-                                <span class="text-xs font-semibold text-gray-600">Stock:</span>
-                                <input type="number" id="stock-${item.sku}" value="${item.stock}" class="border p-1.5 rounded w-20 text-center font-mono font-bold text-sm bg-white">
-                            </div>
-                            <button onclick="saveManualEdit('${item.sku}')" class="bg-[#003DA5] hover:bg-blue-800 text-white px-3 py-1.5 rounded text-xs font-bold transition">
-                                <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Cambios
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                listDiv.innerHTML = `<div class="text-red-500 text-center py-2">Error: ${error.message}</div>`;
+        function stopCamera() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    document.getElementById('reader-container').classList.add('hidden');
+                }).catch(e => console.error(e));
+            } else {
+                document.getElementById('reader-container').classList.add('hidden');
             }
         }
 
-        async function saveManualEdit(sku) {
-            const newStock = document.getElementById(`stock-${sku}`).value;
-            const newName = document.getElementById(`name-${sku}`).value;
-
-            try {
-                const response = await fetch('/api/inventory', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sku: sku, stock: newStock, name: newName })
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    alert(`¡Cambios guardados para ${sku}!`);
-                    loadInventoryList();
-                } else {
-                    alert(`Error: ${data.error}`);
-                }
-            } catch (e) {
-                alert('Error al guardar cambios.');
-            }
-        }
-
-        async function addNewItemManual() {
-            const sku = document.getElementById('manual-sku').value.trim();
-            const name = document.getElementById('manual-name').value.trim();
-            const stock = document.getElementById('manual-stock').value;
-
-            if (!sku || !name) {
-                alert('Debes ingresar al menos el SKU y el nombre del producto.');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/inventory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sku: sku, name: name, initialStock: parseInt(stock) || 0 })
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    alert('¡Producto agregado con éxito!');
-                    document.getElementById('manual-sku').value = '';
-                    document.getElementById('manual-name').value = '';
-                    document.getElementById('manual-stock').value = '1';
-                    loadInventoryList();
-                } else {
-                    alert(`Error: ${data.error}`);
-                }
-            } catch (e) {
-                alert('Error al registrar el producto.');
-            }
-        }
+        // Cargar inventario al entrar
+        loadInventory();
     </script>
 </body>
 </html>
