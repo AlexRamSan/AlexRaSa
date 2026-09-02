@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Distribuidores - REGO-FIX México</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .system-border { border-top: 5px solid #003DA5; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <header class="bg-[#003DA5] text-white p-4 shadow-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="REGO-FIX" class="h-7 filter brightness-0 invert">
+                <span class="text-xs font-bold uppercase tracking-widest bg-blue-900 px-2.5 py-1 rounded">B2B Distribuidores</span>
+            </div>
+            <div id="user-header-badge" class="hidden text-xs flex items-center gap-3">
+                <span id="dist-badge-name" class="font-bold bg-white text-[#003DA5] px-3 py-1 rounded-full shadow-sm"></span>
+                <button onclick="logoutDistributor()" class="text-white hover:text-gray-200 underline text-xs">Cerrar sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-6">
+
+        <!-- VISTA 1: LOGIN -->
+        <div id="view-login" class="max-w-md mx-auto mt-12 bg-white p-8 rounded-2xl shadow-md border border-gray-200">
+            <h2 class="text-xl font-bold text-[#003DA5] mb-2">Acceso a Distribuidores Autorizados</h2>
+            <p class="text-xs text-gray-500 mb-6">Consulte listas de precios netas y condiciones comerciales 2026.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Usuario de Distribución:</label>
+                    <input type="text" id="dist-user" placeholder="Ej. usuario1" class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Contraseña:</label>
+                    <input type="password" id="dist-pass" placeholder="••••••••" class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
+                </div>
+                <div id="login-alert" class="hidden text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200 font-semibold"></div>
+                <button onclick="login()" class="w-full bg-[#D1D811] hover:bg-lime-500 text-black font-bold py-3 rounded-lg text-sm transition shadow">
+                    Ingresar al Portal
+                </button>
+            </div>
+        </div>
+
+        <!-- VISTA 2: SELECCIÓN O REGISTRO DE CLIENTE FINAL -->
+        <div id="view-client-selection" class="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-2xl shadow-md border border-gray-200 hidden">
+            <div class="border-b pb-4 mb-6">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[#003DA5] bg-blue-50 px-2 py-1 rounded">Paso 1 de 2 Obligatorio</span>
+                <h2 class="text-xl font-bold text-gray-900 mt-2">Selección de Cliente Final para Cotización</h2>
+                <p class="text-xs text-gray-500 mt-1">Por política comercial, debe seleccionar la cuenta a la cual se destinará esta cotización antes de visualizar los precios preferenciales.</p>
+            </div>
+
+            <!-- Selector de cuentas ya asignadas -->
+            <div class="space-y-4 mb-8">
+                <label class="block text-xs font-bold text-gray-700">Seleccionar entre sus Cuentas Asignadas:</label>
+                <div class="flex gap-2">
+                    <select id="select-assigned-client" class="flex-1 border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
+                        <option value="">-- Cargando sus cuentas autorizadas... --</option>
+                    </select>
+                    <button onclick="confirmExistingClient()" class="bg-[#003DA5] hover:bg-blue-800 text-white px-5 py-3 rounded-lg text-sm font-bold transition">
+                        Continuar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulario para dar de alta prospecto nuevo -->
+            <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2"><i class="fa-solid fa-user-plus mr-1"></i> ¿Cotizar a un Nuevo Cliente?</h3>
+                <p class="text-xs text-gray-500 mb-4">El sistema validará en tiempo real que la empresa no pertenezca a la cartera de Venta Directa de REGO-FIX.</p>
+                <div class="space-y-3">
+                    <input type="text" id="new-client-name" placeholder="Razón Social o Nombre Comercial de la Empresa" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs">
+                    <input type="text" id="new-client-rfc" placeholder="RFC (Opcional)" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs">
+                    <button onclick="registerAndCheckClient()" class="w-full bg-gray-800 hover:bg-black text-white font-bold py-2.5 rounded-lg text-xs transition">
+                        Validar y Asignar Nuevo Cliente
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 3: CATÁLOGO Y LISTA DE PRECIOS DESBLOQUEADA -->
+        <div id="view-catalog" class="mt-4 hidden space-y-6">
+            
+            <!-- Barra de Contexto del Cliente -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between md:items-center gap-3">
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Cotización Activa Para:</span>
+                    <h3 id="current-client-display" class="text-lg font-black text-[#003DA5]"></h3>
+                </div>
+                <button onclick="changeClient()" class="text-xs font-bold text-gray-600 hover:text-black border border-gray-300 px-3 py-1.5 rounded-lg bg-gray-50 transition">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Cambiar Cliente
+                </button>
+            </div>
+
+            <!-- Tarjetas de Productos con Precios Calculados -->
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800">Lista de Precios y Disponibilidad 2026</h2>
+                <span id="dist-category-tag" class="text-xs font-bold px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200"></span>
+            </div>
+
+            <div id="products-table-container" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-50 border-b text-gray-500 uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="p-4">SKU / Producto</th>
+                                <th class="p-4">Línea</th>
+                                <th class="p-4 text-center">Stock Almacén</th>
+                                <th class="p-4 text-right">Precio Lista (PVP)</th>
+                                <th class="p-4 text-center">Descuento</th>
+                                <th class="p-4 text-right">Su Precio Neto</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricing-rows" class="divide-y divide-gray-100">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL DE ADVERTENCIA DE SANCIÓN / CUENTA PROTEGIDA -->
+    <div id="modal-penalty" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border-t-8 border-red-600">
+            <div class="flex items-center space-x-3 text-red-600 mb-4">
+                <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+                <h3 class="text-lg font-black uppercase tracking-wide">Aviso de Cumplimiento Comercial</h3>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-xs text-red-800 leading-relaxed font-medium" id="penalty-text">
+                <!-- Se llena con el texto estricto -->
+            </div>
+            <p class="text-[11px] text-gray-500 mb-6">
+                Este intento de consulta ha sido registrado en el sistema de auditoría de REGO-FIX México para revisión del Gerente de Ventas.
+            </p>
+            <button onclick="closePenaltyModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition">
+                Entendido y de Acuerdo
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Catálogo Maestro de los 8 Productos oficiales
+        const MASTER_PRODUCTS = [
+            { sku: "7610.98100", name: "PGU 9800 Máquina Automática", line: "Maquinas", price: 10000 },
+            { sku: "1725.10000", name: "Boquilla / Collet PG 25", line: "PG", price: 145 },
+            { sku: "4140.72540", name: "Portaherramientas PG BT40", line: "PG", price: 285 },
+            { sku: "4140.12536", name: "Portaherramientas ER BT40+", line: "ER", price: 185 },
+            { sku: "1132.05000", name: "Boquilla / Collet ER 32", line: "ER", price: 45 },
+            { sku: "7500.00000", name: "Forcemaster Spindle Gauge", line: "Otros", price: 1850 },
+            { sku: "7510.00005", name: "3D Edge Finder (Metric)", line: "Otros", price: 450 },
+            { sku: "7831.63200", name: "Spindle Taper Cleaner (STC)", line: "Otros", price: 65 }
+        ];
+
+        let currentUser = null;
+        let currentDistData = null;
+        let selectedClient = null;
+        let liveStockMap = {};
+
+        async function login() {
+            const u = document.getElementById('dist-user').value.trim();
+            const p = document.getElementById('dist-pass').value.trim();
+            const alertBox = document.getElementById('login-alert');
+
+            if (!u || !p) {
+                alertBox.innerText = 'Por favor ingrese usuario y contraseña.';
+                alertBox.classList.remove('hidden');
+                return;
+            }
+
+            // Validación de credenciales
+            if ((u === 'usuario1' && p === 'usuario1') || (u === 'usuario2' && p === 'usuario2')) {
+                currentUser = u;
+                alertBox.classList.add('hidden');
+                await loadDistributorSession();
+            } else {
+                alertBox.innerText = 'Credenciales no autorizadas.';
+                alertBox.classList.remove('hidden');
+            }
+        }
+
+        async function loadDistributorSession() {
+            try {
+                // Consultar backend
+                const res = await fetch(`/api/distributors?user=${currentUser}`);
+                if (!res.ok) throw new Error('Error al conectar con la política de distribución.');
+                
+                const data = await res.json();
+                currentDistData = data.distributor;
+
+                // Actualizar cabecera
+                document.getElementById('dist-badge-name').innerText = `${currentDistData.name} (${currentDistData.category})`;
+                document.getElementById('user-header-badge').classList.remove('hidden');
+
+                // Llenar selector de cuentas
+                const select = document.getElementById('select-assigned-client');
+                select.innerHTML = '<option value="">-- Seleccionar de la lista --</option>';
+                
+                data.assignedAccounts.forEach(acc => {
+                    const opt = document.createElement('option');
+                    opt.value = acc.customer_name;
+                    opt.innerText = acc.customer_name;
+                    select.appendChild(opt);
+                });
+
+                // Cargar stock en vivo
+                await fetchLiveStock();
+
+                // Cambiar vista
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-client-selection').classList.remove('hidden');
+
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function confirmExistingClient() {
+            const clientName = document.getElementById('select-assigned-client').value;
+            if (!clientName) {
+                alert('Debe seleccionar un cliente asignado de la lista.');
+                return;
+            }
+            proceedToPricing(clientName);
+        }
+
+        async function registerAndCheckClient() {
+            const name = document.getElementById('new-client-name').value.trim();
+            const rfc = document.getElementById('new-client-rfc').value.trim();
+
+            if (!name) {
+                alert('Ingrese el nombre o razón social de la empresa.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/distributors', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: currentUser, customerName: name, taxId: rfc })
+                });
+
+                const data = await res.json();
+
+                // DETECCIÓN DE CUENTA PROTEGIDA (SANCIÓN COMERCIAL)
+                if (res.status === 403 && data.penaltyNotice) {
+                    document.getElementById('penalty-text').innerText = data.message;
+                    document.getElementById('modal-penalty').classList.remove('hidden');
+                    return;
+                }
+
+                if (!res.ok) {
+                    alert(data.error || 'No se pudo procesar la cuenta.');
+                    return;
+                }
+
+                alert(data.message);
+                proceedToPricing(name.toUpperCase());
+
+            } catch (e) {
+                alert('Error al validar la cuenta.');
+            }
+        }
+
+        function closePenaltyModal() {
+            document.getElementById('modal-penalty').classList.add('hidden');
+            document.getElementById('new-client-name').value = '';
+        }
+
+        function proceedToPricing(clientName) {
+            selectedClient = clientName;
+            document.getElementById('current-client-display').innerText = selectedClient;
+            document.getElementById('dist-category-tag').innerText = `Nivel: ${currentDistData.category}`;
+
+            renderPricingTable();
+
+            document.getElementById('view-client-selection').classList.add('hidden');
+            document.getElementById('view-catalog').classList.remove('hidden');
+        }
+
+        function changeClient() {
+            document.getElementById('view-catalog').classList.add('hidden');
+            document.getElementById('view-client-selection').classList.remove('hidden');
+        }
+
+        function renderPricingTable() {
+            const tbody = document.getElementById('pricing-rows');
+            tbody.innerHTML = MASTER_PRODUCTS.map(prod => {
+                const discountRate = currentDistData.discounts[prod.line] || 0;
+                const netPrice = prod.price * (1 - discountRate);
+                const discountPct = Math.round(discountRate * 100);
+
+                const stock = liveStockMap[prod.sku] !== undefined ? liveStockMap[prod.sku] : '...';
+                const stockBadge = stock > 0 
+                    ? `<span class="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full text-[10px]">${stock} pzas</span>`
+                    : `<span class="bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full text-[10px]">Agotado (2 sem)</span>`;
+
+                return `
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="p-4">
+                            <div class="font-bold text-gray-900">${prod.name}</div>
+                            <div class="font-mono text-gray-400 text-[11px]">${prod.sku}</div>
+                        </td>
+                        <td class="p-4 font-semibold text-gray-600">${prod.line}</td>
+                        <td class="p-4 text-center">${stockBadge}</td>
+                        <td class="p-4 text-right font-semibold text-gray-400 line-through">$${prod.price.toLocaleString('en-US', {minimumFractionDigits: 2})} USD</td>
+                        <td class="p-4 text-center">
+                            <span class="bg-blue-100 text-[#003DA5] font-black px-2 py-1 rounded text-xs">-${discountPct}%</span>
+                        </td>
+                        <td class="p-4 text-right font-black text-base text-[#003DA5]">
+                            $${netPrice.toLocaleString('en-US', {minimumFractionDigits: 2})} <span class="text-[10px] font-normal text-gray-500">USD</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function fetchLiveStock() {
+            try {
+                const res = await fetch('/api/inventory');
+                if (!res.ok) return;
+                const items = await res.json();
+                items.forEach(item => {
+                    liveStockMap[item.sku] = item.stock;
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function logoutDistributor() {
+            currentUser = null;
+            currentDistData = null;
+            selectedClient = null;
+            document.getElementById('user-header-badge').classList.add('hidden');
+            document.getElementById('view-catalog').classList.add('hidden');
+            document.getElementById('view-client-selection').classList.add('hidden');
+            document.getElementById('view-login').classList.remove('hidden');
+            document.getElementById('dist-user').value = '';
+            document.getElementById('dist-pass').value = '';
+        }
+    </script>
+</body>
+</html>
