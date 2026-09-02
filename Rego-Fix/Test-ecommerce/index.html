@@ -208,4 +208,160 @@
         <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
             <div>
                 <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="Logo" class="h-8 mb-4 filter brightness-0 invert">
-                <p
+                <p class="text-blue-100">Obtenga excelencia en fijación y metrología de herramientas para su taller.</p>
+            </div>
+            <div>
+                <h3 class="font-bold text-base mb-2">REGO-FIX MÉXICO</h3>
+                <p class="text-blue-100 text-xs leading-relaxed">Boulevard Universitario Primer Retorno, Núm. Ext. 1, Núm. Int. 82B, La Pradera, El Marqués, 76269, Querétaro, México.</p>
+            </div>
+            <div>
+                <h3 class="font-bold text-base mb-2">Contacto</h3>
+                <p class="text-blue-100 text-xs">Teléfono: +52 442 888 0796</p>
+                <p class="text-blue-100 text-xs">Correo: info@rego-fix.mx</p>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto border-t border-blue-400 mt-8 pt-4 text-center text-xs text-blue-200">
+            Copyright © 2026 – Test e-commerce Rego-fix Mexico. Todos los derechos reservados.
+        </div>
+    </footer>
+
+    <div id="cart-drawer" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden transition-opacity">
+        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col p-6">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h2 class="text-lg font-bold text-gray-800">Carrito - Rego-fix México</h2>
+                <button onclick="toggleCart()" class="text-gray-500 hover:text-black"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div id="cart-items" class="flex-1 overflow-y-auto py-4 space-y-4">
+                <p class="text-gray-500 text-center py-8">El carrito está vacío.</p>
+            </div>
+
+            <div class="border-t pt-4 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span>Subtotal:</span>
+                    <span id="subtotal-amount" class="font-semibold">$0.00 USD</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span>IVA (16%):</span>
+                    <span id="iva-amount" class="font-semibold">$0.00 USD</span>
+                </div>
+                <div class="flex justify-between text-base font-bold text-[#003DA5] border-t pt-2">
+                    <span>Total con IVA:</span>
+                    <span id="total-amount">$0.00 USD</span>
+                </div>
+
+                <div class="bg-gray-50 p-3 rounded border text-xs text-gray-600 mt-2">
+                    <label class="flex items-center font-medium text-gray-800 mb-1 cursor-pointer">
+                        <input type="checkbox" id="need-invoice" class="mr-2"> Solicitar Factura Fiscal (CFDI 4.0)
+                    </label>
+                    <p class="text-gray-500">Capturará su RFC y régimen fiscal en el siguiente paso.</p>
+                </div>
+
+                <div class="mt-3">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Método de Pago:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="selectPayment('PayPal')" id="btn-paypal" class="border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-[#003DA5] bg-blue-50 text-[#003DA5] shadow-sm">
+                            <i class="fa-brands fa-paypal"></i> <span>PayPal</span>
+                        </button>
+                        <button onclick="selectPayment('Card')" id="btn-card" class="border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+                            <i class="fa-solid fa-credit-card"></i> <span>Tarjeta de Crédito</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="processCheckout()" class="w-full bg-[#D1D811] hover:bg-lime-500 text-black font-bold py-3 rounded shadow mt-3 transition text-center block">
+                    Proceder al Pago Seguro
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Registramos las variables y funciones en el objeto global "window" para evitar conflictos en Vercel/Node
+        window.cart = [];
+        window.selectedPaymentMethod = 'PayPal';
+
+        window.toggleCart = function() {
+            document.getElementById('cart-drawer').classList.toggle('hidden');
+        };
+
+        window.addToCart = function(name, price) {
+            window.cart.push({ name, price });
+            window.updateCartUI();
+            
+            const drawer = document.getElementById('cart-drawer');
+            if(drawer.classList.contains('hidden')) {
+                window.toggleCart();
+            }
+        };
+
+        window.selectPayment = function(method) {
+            window.selectedPaymentMethod = method;
+            const btnPaypal = document.getElementById('btn-paypal');
+            const btnCard = document.getElementById('btn-card');
+            
+            if(method === 'PayPal') {
+                btnPaypal.className = "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-[#003DA5] bg-blue-50 text-[#003DA5] shadow-sm";
+                btnCard.className = "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
+            } else {
+                btnCard.className = "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-[#003DA5] bg-blue-50 text-[#003DA5] shadow-sm";
+                btnPaypal.className = "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
+            }
+        };
+
+        window.updateCartUI = function() {
+            const container = document.getElementById('cart-items');
+            const cartCount = document.getElementById('cart-count');
+            cartCount.innerText = window.cart.length;
+
+            if (window.cart.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center py-8">El carrito está vacío.</p>`;
+                document.getElementById('subtotal-amount').innerText = '$0.00 USD';
+                document.getElementById('iva-amount').innerText = '$0.00 USD';
+                document.getElementById('total-amount').innerText = '$0.00 USD';
+                return;
+            }
+
+            let html = '';
+            let subtotal = 0;
+
+            window.cart.forEach((item, index) => {
+                subtotal += item.price;
+                html += `
+                    <div class="flex justify-between items-center bg-white p-3 rounded border border-gray-100 shadow-sm">
+                        <div>
+                            <h5 class="font-semibold text-sm text-gray-800">${item.name}</h5>
+                            <p class="text-xs text-gray-500 font-mono mt-1">$${item.price.toFixed(2)} USD</p>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500 transition text-sm p-2">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            let iva = subtotal * 0.16;
+            let total = subtotal + iva;
+
+            container.innerHTML = html;
+            document.getElementById('subtotal-amount').innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+            document.getElementById('iva-amount').innerText = `$${iva.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+            document.getElementById('total-amount').innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
+        };
+
+        window.removeFromCart = function(index) {
+            window.cart.splice(index, 1);
+            window.updateCartUI();
+        };
+
+        window.processCheckout = function() {
+            if(window.cart.length === 0) {
+                alert('El carrito está vacío. Añade algunos productos para continuar.');
+                return;
+            }
+            const needsInvoice = document.getElementById('need-invoice').checked ? ' con requerimiento de Factura CFDI' : '';
+            alert('Procesando pago de ' + document.getElementById('total-amount').innerText + ' vía ' + window.selectedPaymentMethod + needsInvoice + '. ¡Redirigiendo a entorno seguro!');
+        };
+    </script>
+</body>
+</html>
