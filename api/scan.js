@@ -1,3 +1,5 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,43 +27,28 @@ export default async function handler(req, res) {
 
         const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
-        // Usamos el modelo correcto y compatible con la API v1beta
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Usamos la librería oficial de Google
+        const genAI = new GoogleGenerativeAI(apiKey);
+        // Pedimos el modelo estándar que la librería reconoce nativamente
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = "Eres un asistente de almacén industrial. Analiza esta imagen y extrae ÚNICAMENTE el número de parte (SKU) del producto REGO-FIX. Ejemplos de formato: '7610.98100', '1725.12700'. No escribas texto adicional, ni explicaciones, solo el número exacto. Si no detectas nada, responde 'NO_DETECTADO'.";
         
-        const payload = {
-            contents: [
-                {
-                    parts: [
-                        { text: "Eres un asistente de almacén industrial. Analiza esta imagen y extrae ÚNICAMENTE el número de parte (SKU) del producto REGO-FIX. Ejemplos de formato: '7610.98100', '1725.12700'. No escribas texto adicional, ni explicaciones, solo el número exacto. Si no detectas nada, responde 'NO_DETECTADO'." },
-                        {
-                            inline_data: {
-                                mime_type: "image/jpeg",
-                                data: base64Data
-                            }
-                        }
-                    ]
-                }
-            ]
+        const imagePart = {
+            inlineData: {
+                data: base64Data,
+                mimeType: "image/jpeg"
+            }
         };
 
-        const apiResponse = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await apiResponse.json();
-
-        if (!apiResponse.ok) {
-            throw new Error(data.error?.message || 'Error en la respuesta de Google Gemini.');
-        }
-
-        const sku = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'NO_DETECTADO';
+        const result = await model.generateContent([prompt, imagePart]);
+        const responseText = await result.response;
+        const sku = responseText.text().trim();
         
         return res.status(200).json({ sku });
     } catch (error) {
         console.error("Error detallado:", error);
-        return res.status(500).json({ error: error.message || 'Error interno al procesar la imagen.' });
+        return res.status(500).json({ error: error.message || 'Error interno al procesar con Gemini.' });
     }
 }
 
