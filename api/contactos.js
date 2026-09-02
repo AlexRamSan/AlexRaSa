@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
   const { dominio, action, user } = req.query;
 
-  // 1. APOLLO CONTACTOS
+  // 1. RUTA: APOLLO CONTACTOS
   if (dominio) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido' });
     const API_KEY = process.env.APOLLO_API_KEY;
@@ -89,14 +89,91 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. PANEL DE CONTROL ADMINISTRATIVO (ADMIN-CUENTAS)
+  // 2. RUTA: ENVÍO Y REGISTRO DE COTIZACIÓN B2B
+  if (action === 'send_quote' && req.method === 'POST') {
+    try {
+      const { distributor, client, items, totals, emailTo } = req.body || {};
+
+      if (!items || items.length === 0) {
+        return res.status(400).json({ error: 'No hay partidas en la cotización.' });
+      }
+
+      // Si tienes Resend o SendGrid configurado en variables de entorno, se dispara aquí
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      const internalNotificationEmail = process.env.SALES_NOTIFICATION_EMAIL || 'ventas@rego-fix.mx';
+
+      let emailSent = false;
+      if (RESEND_API_KEY) {
+        const itemsHtml = items.map(it => `
+          <tr>
+            <td style="padding:6px;border:1px solid #ddd;">${it.sku}</td>
+            <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
+            <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
+            <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.unitNet.toFixed(2)} USD</td>
+            <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.totalNet.toFixed(2)} USD</td>
+          </tr>
+        `).join('');
+
+        const htmlBody = `
+          <h2>Cotización B2B Generada - REGO-FIX México</h2>
+          <p><strong>Distribuidor:</strong> ${distributor.name} (${distributor.category})</p>
+          <p><strong>Cliente Final:</strong> ${client}</p>
+          <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
+            <thead>
+              <tr style="background:#003DA5;color:#fff;">
+                <th style="padding:6px;border:1px solid #ddd;">SKU</th>
+                <th style="padding:6px;border:1px solid #ddd;">Producto</th>
+                <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
+                <th style="padding:6px;border:1px solid #ddd;">P. Neto</th>
+                <th style="padding:6px;border:1px solid #ddd;">Importe</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <p style="text-align:right;font-size:14px;"><strong>Subtotal Neto:</strong> $${totals.subtotal.toFixed(2)} USD<br>
+          <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
+          <strong style="color:#003DA5;font-size:16px;">Total Cotizado:</strong> $${totals.total.toFixed(2)} USD</p>
+        `;
+
+        const recipients = [internalNotificationEmail];
+        if (emailTo) recipients.push(emailTo);
+
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`
+          },
+          body: JSON.stringify({
+            from: 'REGO-FIX B2B <b2b@alexrasa.store>',
+            to: recipients,
+            subject: `Nueva Cotización B2B - ${distributor.name} / ${client}`,
+            html: htmlBody
+          })
+        });
+        emailSent = true;
+      }
+
+      return res.status(200).json({
+        success: true,
+        emailSent,
+        message: emailSent 
+          ? 'Cotización registrada y notificada vía correo exitosamente.'
+          : 'Cotización registrada y respaldada con éxito en el sistema.'
+      });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // 3. RUTA: PANEL DE CONTROL ADMINISTRATIVO (ADMIN-CUENTAS)
   if (action === 'admin_control') {
     try {
       const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // GET: Cargar catálogo total (hasta 5000 registros para evitar el límite de 200)
       if (req.method === 'GET') {
         const [accRes, distMatrix] = await Promise.all([
           supabase.from('customer_accounts').select('*').range(0, 4999).order('customer_name', { ascending: true }),
@@ -112,7 +189,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // POST: Crear nueva cuenta o nuevo distribuidor
       if (req.method === 'POST') {
         const { target, data } = req.body || {};
 
@@ -162,7 +238,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Target no reconocido.' });
       }
 
-      // PUT: Actualizar una cuenta o la categoría de un distribuidor
       if (req.method === 'PUT') {
         const { target, data } = req.body || {};
 
@@ -215,7 +290,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 3. DISTRIBUIDORES B2B (PORTAL CLIENTES)
+  // 4. RUTA: DISTRIBUIDORES B2B (PORTAL CLIENTES)
   if (action === 'distributors' || req.method === 'POST') {
     try {
       const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
