@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
@@ -20,36 +20,43 @@ export default async function handler(req, res) {
 
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // 1. Si es GET, consultamos el inventario completo
+        // 1. GET: Consultar inventario completo
         if (req.method === 'GET') {
-            const { data, error } = await supabase.from('inventory').select('sku, stock');
+            const { data, error } = await supabase.from('inventory').select('sku, stock').order('sku', { ascending: true });
             if (error) throw error;
             return res.status(200).json(data);
         }
 
-        // 2. Si es POST, actualizamos el stock (Ingreso o Salida)
+        // 2. POST: Manejar movimiento o auto-creación
         if (req.method === 'POST') {
-            const { sku, quantityChange } = req.body;
+            const { sku, quantityChange, initialStock } = req.body;
             
-            if (!sku || quantityChange === undefined) {
-                return res.status(400).json({ error: "Faltan datos (SKU o quantityChange)." });
+            if (!sku) {
+                return res.status(400).json({ error: "Falta el SKU." });
             }
 
-            // Buscamos el producto en la base de datos
+            // Buscar si el SKU ya existe
             const { data: item, error: fetchError } = await supabase
                 .from('inventory')
                 .select('stock')
                 .eq('sku', sku)
                 .single();
 
+            // Si NO existe, lo creamos automáticamente
             if (fetchError || !item) {
-                return res.status(404).json({ error: 'SKU no encontrado en la Base de Datos.' });
+                const startingStock = initialStock !== undefined ? initialStock : (quantityChange > 0 ? quantityChange : 0);
+                const { error: insertError } = await supabase
+                    .from('inventory')
+                    .insert([{ sku: sku, stock: startingStock, last_updated: new Date() }]);
+
+                if (insertError) throw insertError;
+                return res.status(200).json({ success: true, sku, newStock: startingStock, created: true });
             }
 
-            // Calculamos el nuevo stock (evitando números negativos)
-            const newStock = Math.max(0, item.stock + quantityChange);
+            // Si YA existe, calculamos el nuevo stock con el cambio recibido
+            const change = quantityChange !== undefined ? quantityChange : 0;
+            const newStock = Math.max(0, item.stock + change);
 
-            // Actualizamos en Supabase
             const { error: updateError } = await supabase
                 .from('inventory')
                 .update({ stock: newStock, last_updated: new Date() })
@@ -57,7 +64,24 @@ export default async function handler(req, res) {
 
             if (updateError) throw updateError;
 
-            return res.status(200).json({ success: true, sku, newStock });
+            return res.status(200).json({ success: true, sku, newStock, created: false });
+        }
+
+        // 3. PUT: Carga masiva o actualización manual directa de stock
+        if (req.method === 'PUT') {
+            const { items } = req.body; // Espera un arreglo de objetos: [{sku: '...', stock: ...}]
+            
+            if (!Array.isArray(items)) {
+                return res.status(400).json({ error: "El formato debe ser un arreglo de elementos." });
+            }
+
+            for (const el of items) {
+                await supabase
+                    .from('inventory')
+                    .upsert({ sku: el.sku, stock: el.stock, last_updated: new Date() }, { onConflict: 'sku' });
+            }
+
+            return res.status(200).json({ success: true, message: "Catálogo actualizado correctamente." });
         }
 
         return res.status(405).json({ error: 'Método no permitido.' });
