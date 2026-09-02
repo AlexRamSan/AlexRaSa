@@ -372,8 +372,24 @@
             document.getElementById('cart-drawer').classList.toggle('hidden');
         };
 
-        window.addToCart = function(name, basePrice) {
-            window.cart.push({ name, basePrice });
+        window.addToCart = function(name, basePrice, buttonElement) {
+            // Buscamos la tarjeta padre del producto para leer su badge de stock
+            const card = event.target.closest('[data-sku]');
+            let isAgotado = false;
+            
+            if (card) {
+                const badge = card.querySelector('.stock-badge');
+                if (badge && badge.innerText.includes('Agotado')) {
+                    isAgotado = true;
+                }
+            }
+
+            // Si está agotado, mostramos el aviso del tiempo de entrega de dos semanas
+            if (isAgotado) {
+                alert(`Aviso: El producto "${name}" se encuentra actualmente agotado en almacén. Al agregarlo a tu pedido, el tiempo de entrega estimado será de dos semanas.`);
+            }
+
+            window.cart.push({ name, basePrice, isAgotado });
             window.updateCartUI();
             
             const drawer = document.getElementById('cart-drawer');
