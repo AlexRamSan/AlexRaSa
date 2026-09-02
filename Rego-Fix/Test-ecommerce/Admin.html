@@ -16,6 +16,7 @@
 
     <main class="max-w-md mx-auto p-4 space-y-6 mt-4">
         
+        <!-- SECCIÓN 1: ESCÁNER -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">1. Escanear Pieza</h2>
             
@@ -39,6 +40,7 @@
             <canvas id="canvas" class="hidden"></canvas>
         </div>
 
+        <!-- SECCIÓN 2: GESTIÓN DE STOCK -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <h2 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">2. Gestión de Stock</h2>
             
@@ -51,13 +53,30 @@
                 <input type="text" id="sku-input" placeholder="Ej. 7610.98100" class="w-full border-2 border-gray-300 px-4 py-3 rounded-lg text-lg font-mono font-bold focus:outline-none focus:border-[#003DA5] transition">
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3 mb-4">
                 <button onclick="updateStock(1)" class="bg-[#D1D811] hover:bg-lime-500 text-black py-4 rounded-lg font-bold text-lg shadow transition flex items-center justify-center">
                     <i class="fa-solid fa-plus mr-2"></i> Ingreso
                 </button>
                 <button onclick="updateStock(-1)" class="bg-red-500 hover:bg-red-600 text-white py-4 rounded-lg font-bold text-lg shadow transition flex items-center justify-center">
                     <i class="fa-solid fa-minus mr-2"></i> Salida
                 </button>
+            </div>
+
+            <button onclick="loadInventoryList()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold text-sm transition border border-gray-300 flex items-center justify-center">
+                <i class="fa-solid fa-list mr-2"></i> Ver Catálogo de SKUs en BD
+            </button>
+        </div>
+
+        <!-- SECCIÓN 3: LISTA DE SKUS (OCULTA HASTA QUE SE SOLICITE) -->
+        <div id="inventory-list-container" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hidden">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wide">SKUs Registrados</h2>
+                <button onclick="document.getElementById('inventory-list-container').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-sm">
+                    <i class="fa-solid fa-xmark"></i> Cerrar
+                </button>
+            </div>
+            <div id="inventory-items" class="space-y-2 max-h-60 overflow-y-auto text-sm font-mono">
+                <!-- Aquí se cargan dinámicamente -->
             </div>
         </div>
 
@@ -89,7 +108,6 @@
         }
 
         async function captureAndScan() {
-            // Comprime la imagen para no superar el límite de Vercel
             const MAX_WIDTH = 800; 
             const scale = MAX_WIDTH / video.videoWidth;
             canvas.width = MAX_WIDTH;
@@ -104,7 +122,6 @@
             skuInput.value = '';
 
             try {
-                // Apunta a tu archivo api/scan.js
                 const response = await fetch('/api/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -113,7 +130,6 @@
 
                 const data = await response.json();
 
-                // Si hay error 500, lanzamos el mensaje exacto que mandó scan.js
                 if (!response.ok) {
                     throw new Error(data.error || `Error HTTP: ${response.status}`);
                 }
@@ -126,7 +142,6 @@
                     alert('Gemini no logró identificar un SKU claro. Intenta enfocar mejor la etiqueta.');
                 }
             } catch (error) {
-                // Aquí te mostrará exactamente qué está fallando (la llave, la imagen, etc)
                 alert(`Error devuelto por el servidor: ${error.message}`);
                 console.error("Detalle del error:", error);
             } finally {
@@ -145,7 +160,6 @@
             if(!confirm(`¿Seguro que deseas registrar el movimiento: ${actionName} 1 pieza de ${sku}?`)) return;
 
             try {
-                // Apunta a tu archivo api/inventory.js
                 const response = await fetch('/api/inventory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -163,6 +177,42 @@
                 alert('Error de conexión al actualizar el inventario.');
                 console.error(error);
             }
+        }
+
+        async function loadInventoryList() {
+            const container = document.getElementById('inventory-list-container');
+            const listDiv = document.getElementById('inventory-items');
+            
+            listDiv.innerHTML = '<div class="text-center text-gray-500 py-2"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Cargando base de datos...</div>';
+            container.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/inventory');
+                const items = await response.json();
+
+                if (!response.ok) throw new Error(items.error || 'Error al obtener inventario');
+
+                if (items.length === 0) {
+                    listDiv.innerHTML = '<div class="text-gray-500 text-center py-2">No hay SKUs registrados en Supabase.</div>';
+                    return;
+                }
+
+                listDiv.innerHTML = items.map(item => `
+                    <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-200 hover:bg-blue-50 cursor-pointer" onclick="selectSku('${item.sku}')">
+                        <span class="font-bold text-[#003DA5]">${item.sku}</span>
+                        <span class="bg-gray-200 text-gray-800 px-2 py-0.5 rounded text-xs">Stock: ${item.stock}</span>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                listDiv.innerHTML = `<div class="text-red-500 text-center py-2">Error: ${error.message}</div>`;
+            }
+        }
+
+        function selectSku(sku) {
+            skuInput.value = sku;
+            document.getElementById('inventory-list-container').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>
