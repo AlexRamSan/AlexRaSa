@@ -25,8 +25,8 @@ export default async function handler(req, res) {
 
         const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
-        // Intentamos primero con gemini-1.5-flash
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // Apuntamos al modelo actual y oficial reportado por tu llave
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
         
         const payload = {
             contents: [
@@ -52,17 +52,8 @@ export default async function handler(req, res) {
 
         const data = await apiResponse.json();
 
-        // Si falla, consultamos automáticamente a Google qué modelos SÍ están disponibles para tu llave
         if (!apiResponse.ok) {
-            const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-            const listRes = await fetch(listUrl);
-            const listData = await listRes.json();
-            
-            const validModels = listData.models 
-                ? listData.models.filter(m => m.supportedGenerationMethods.includes("generateContent")).map(m => m.name.replace("models/", "")).join(", ")
-                : "No se pudieron listar";
-
-            throw new Error(`Modelo falló. Disponibles para tu llave: [ ${validModels} ]`);
+            throw new Error(data.error?.message || 'Error en la respuesta de Google Gemini.');
         }
 
         const sku = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'NO_DETECTADO';
