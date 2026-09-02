@@ -22,38 +22,39 @@ export default async function handler(req, res) {
 
         // 1. GET: Consultar inventario completo
         if (req.method === 'GET') {
-            const { data, error } = await supabase.from('inventory').select('sku, stock').order('sku', { ascending: true });
+            const { data, error } = await supabase.from('inventory').select('*').order('sku', { ascending: true });
             if (error) throw error;
             return res.status(200).json(data);
         }
 
-        // 2. POST: Manejar movimiento o auto-creación
+        // 2. POST: Manejar movimiento o auto-creación asegurando el campo 'name'
         if (req.method === 'POST') {
-            const { sku, quantityChange, initialStock } = req.body;
+            const { sku, quantityChange, initialStock, name } = req.body;
             
             if (!sku) {
                 return res.status(400).json({ error: "Falta el SKU." });
             }
 
-            // Buscar si el SKU ya existe
             const { data: item, error: fetchError } = await supabase
                 .from('inventory')
                 .select('stock')
                 .eq('sku', sku)
                 .single();
 
-            // Si NO existe, lo creamos automáticamente
+            // Si NO existe, lo creamos asignando un nombre por defecto para cumplir con la BD
             if (fetchError || !item) {
                 const startingStock = initialStock !== undefined ? initialStock : (quantityChange > 0 ? quantityChange : 0);
+                const productName = name || `Pieza REGO-FIX ${sku}`;
+
                 const { error: insertError } = await supabase
                     .from('inventory')
-                    .insert([{ sku: sku, stock: startingStock, last_updated: new Date() }]);
+                    .insert([{ sku: sku, name: productName, stock: startingStock, last_updated: new Date() }]);
 
                 if (insertError) throw insertError;
                 return res.status(200).json({ success: true, sku, newStock: startingStock, created: true });
             }
 
-            // Si YA existe, calculamos el nuevo stock con el cambio recibido
+            // Si YA existe, calculamos el nuevo stock
             const change = quantityChange !== undefined ? quantityChange : 0;
             const newStock = Math.max(0, item.stock + change);
 
@@ -67,21 +68,26 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, sku, newStock, created: false });
         }
 
-        // 3. PUT: Carga masiva o actualización manual directa de stock
+        // 3. PUT: Modificación manual completa (Ajustar stock exacto o nombre)
         if (req.method === 'PUT') {
-            const { items } = req.body; // Espera un arreglo de objetos: [{sku: '...', stock: ...}]
+            const { sku, stock, name } = req.body;
             
-            if (!Array.isArray(items)) {
-                return res.status(400).json({ error: "El formato debe ser un arreglo de elementos." });
+            if (!sku) {
+                return res.status(400).json({ error: "Falta el SKU." });
             }
 
-            for (const el of items) {
-                await supabase
-                    .from('inventory')
-                    .upsert({ sku: el.sku, stock: el.stock, last_updated: new Date() }, { onConflict: 'sku' });
-            }
+            const updateFields = { last_updated: new Date() };
+            if (stock !== undefined) updateFields.stock = parseInt(stock);
+            if (name !== undefined) updateFields.name = name;
 
-            return res.status(200).json({ success: true, message: "Catálogo actualizado correctamente." });
+            const { error: updateError } = await supabase
+                .from('inventory')
+                .update(updateFields)
+                .eq('sku', sku);
+
+            if (updateError) throw updateError;
+
+            return res.status(200).json({ success: true, message: "Actualizado correctamente." });
         }
 
         return res.status(405).json({ error: 'Método no permitido.' });
