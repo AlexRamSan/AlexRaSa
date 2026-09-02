@@ -186,10 +186,15 @@
 
         async function loadDistributorSession() {
             try {
-                // Se conecta al endpoint unificado /api/contactos
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-client-selection').classList.remove('hidden');
+
                 const res = await fetch(`/api/contactos?action=distributors&user=${currentUser}`);
-                if (!res.ok) throw new Error('Error al conectar con la política de distribución.');
-                
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Error al conectar con la política de distribución.');
+                }
+
                 const data = await res.json();
                 currentDistData = data.distributor;
 
@@ -198,21 +203,28 @@
 
                 const select = document.getElementById('select-assigned-client');
                 select.innerHTML = '<option value="">-- Seleccionar de la lista --</option>';
-                
-                (data.assignedAccounts || []).forEach(acc => {
+
+                const accounts = data.assignedAccounts || [];
+                if (accounts.length === 0) {
                     const opt = document.createElement('option');
-                    opt.value = acc.customer_name;
-                    opt.innerText = acc.customer_name;
+                    opt.value = "";
+                    opt.innerText = "Sin cuentas asignadas previas (Registre una nueva abajo)";
                     select.appendChild(opt);
-                });
+                } else {
+                    accounts.forEach(acc => {
+                        const opt = document.createElement('option');
+                        opt.value = acc.customer_name;
+                        opt.innerText = acc.customer_name;
+                        select.appendChild(opt);
+                    });
+                }
 
-                await fetchLiveStock();
-
-                document.getElementById('view-login').classList.add('hidden');
-                document.getElementById('view-client-selection').classList.remove('hidden');
+                fetchLiveStock().catch(e => console.warn('Stock warning:', e));
 
             } catch (err) {
                 alert(err.message);
+                document.getElementById('view-client-selection').classList.add('hidden');
+                document.getElementById('view-login').classList.remove('hidden');
             }
         }
 
@@ -235,7 +247,6 @@
             }
 
             try {
-                // Petición POST al endpoint unificado /api/contactos
                 const res = await fetch('/api/contactos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -244,13 +255,14 @@
 
                 const data = await res.json();
 
-                // Detección de Cuenta Protegida / Venta Directa
+                // BLOQUEO INMEDIATO SI ES CUENTA PROTEGIDA (403)
                 if (res.status === 403 && data.penaltyNotice) {
                     document.getElementById('penalty-text').innerText = data.message;
                     document.getElementById('modal-penalty').classList.remove('hidden');
                     return;
                 }
 
+                // SI OCURRE UN CONFLICTO O ERROR (400, 409, 500)
                 if (!res.ok) {
                     alert(data.error || 'No se pudo procesar la cuenta.');
                     return;
