@@ -31,14 +31,14 @@
     <nav class="bg-white shadow-md sticky top-0 z-50 system-border">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-6">
-                <a href="/">
+                <a href="https://rego-fix.mx/" target="_blank">
                     <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="Logotipo REGO-FIX" class="h-8">
                 </a>
                 <div class="hidden md:flex space-x-6 text-sm font-semibold text-gray-700">
-                    <a href="#" class="hover:text-[#003DA5]">Inicio</a>
-                    <a href="#" class="hover:text-[#003DA5]">Sobre nosotros</a>
-                    <a href="#" class="hover:text-[#003DA5]">Industria</a>
-                    <a href="#" class="text-[#003DA5] border-b-2 border-[#003DA5] pb-1">Productos</a>
+                    <a href="https://rego-fix.mx/" target="_blank" class="hover:text-[#003DA5]">Inicio</a>
+                    <a href="https://rego-fix.mx/sobre-rego-fix/" target="_blank" class="hover:text-[#003DA5]">Sobre nosotros</a>
+                    <a href="https://rego-fix.mx/industrias/" target="_blank" class="hover:text-[#003DA5]">Industria</a>
+                    <a href="https://rego-fix.mx/" target="_blank" class="text-[#003DA5] border-b-2 border-[#003DA5] pb-1">Productos</a>
                 </div>
             </div>
             
@@ -98,7 +98,7 @@
                 </div>
             </div>
 
-            <!-- 2. Boquilla PG 25 (SKU: 1725.1000) -->
+            <!-- 2. Boquilla PG 25 (SKU: 1725.10000) -->
             <div class="bg-white border border-gray-200 rounded-lg p-5 flex flex-col justify-between hover:shadow-lg transition group" data-sku="1725.10000">
                 <div>
                     <div class="flex justify-between items-center mb-2">
@@ -372,8 +372,7 @@
             document.getElementById('cart-drawer').classList.toggle('hidden');
         };
 
-        window.addToCart = function(name, basePrice, buttonElement) {
-            // Buscamos la tarjeta padre del producto para leer su badge de stock
+        window.addToCart = function(name, basePrice) {
             const card = event.target.closest('[data-sku]');
             let isAgotado = false;
             
@@ -384,7 +383,6 @@
                 }
             }
 
-            // Si está agotado, mostramos el aviso del tiempo de entrega de dos semanas
             if (isAgotado) {
                 alert(`Aviso: El producto "${name}" se encuentra actualmente agotado en almacén. Al agregarlo a tu pedido, el tiempo de entrega estimado será de dos semanas.`);
             }
@@ -439,10 +437,12 @@
                     priceHtml = `$${discountedPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD`;
                 }
 
+                let badgeAgotado = item.isAgotado ? `<span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold ml-1">Entrega en 2 semanas</span>` : '';
+
                 html += `
                     <div class="flex justify-between items-center bg-white p-3 rounded border border-gray-100 shadow-sm">
                         <div>
-                            <h5 class="font-semibold text-sm text-gray-800">${item.name}</h5>
+                            <h5 class="font-semibold text-sm text-gray-800">${item.name} ${badgeAgotado}</h5>
                             <p class="text-xs font-mono mt-1">${priceHtml}</p>
                         </div>
                         <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500 transition text-sm p-2">
@@ -558,13 +558,11 @@
                 if (!response.ok) return;
                 const items = await response.json();
                 
-                // Mapear los elementos por SKU
                 const stockMap = {};
                 items.forEach(item => {
                     stockMap[item.sku] = item.stock;
                 });
 
-                // Actualizar las tarjetas en el DOM según su data-sku
                 document.querySelectorAll('[data-sku]').forEach(card => {
                     const sku = card.getAttribute('data-sku');
                     const badge = card.querySelector('.stock-badge');
@@ -584,7 +582,6 @@
             }
         }
 
-        // Ejecutar al cargar la página
         fetchLiveStock();
     </script>
 </body>
