@@ -1,63 +1,73 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 async function handler(req, res) {
-    // 1. Permitir conexiones desde cualquier origen (CORS)
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Responder rápido a la petición de chequeo (preflight)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método no permitido. Debe ser POST.' });
+        return res.status(405).json({ error: 'Método no permitido.' });
     }
 
     try {
-        // 2. Verificamos que la llave de Gemini exista en Vercel
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ error: "Falta la llave GEMINI_API_KEY en las variables de Vercel." });
+            return res.status(500).json({ error: "Falta la variable GEMINI_API_KEY en Vercel." });
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        
-        // 3. Verificamos que la imagen haya llegado
         const { imageBase64 } = req.body;
         if (!imageBase64) {
-             return res.status(400).json({ error: "El servidor no recibió ninguna imagen." });
+             return res.status(400).json({ error: "No se recibió ninguna imagen." });
         }
 
-        // 4. Limpiamos la cadena base64 (quitamos el encabezado data:image/jpeg;base64,)
         const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
 
-        // 5. Configurar el modelo y la petición a Gemini
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = "Eres un asistente de almacén industrial. Analiza esta imagen y extrae ÚNICAMENTE el número de parte (SKU) del producto REGO-FIX. Ejemplos de formato: '7610.98100', '1725.12700'. No escribas texto adicional, ni explicaciones, solo el número exacto. Si no detectas nada, responde 'NO_DETECTADO'.";
+        // Llamada directa a la API REST de Google Gemini (Evita conflictos de librerías)
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
-        const imagePart = {
-            inlineData: {
-                data: base64Data,
-                mimeType: "image/jpeg"
-            }
+        const payload = {
+            contents: [
+                {
+                    parts: [
+                        { text: "Eres un asistente de almacén industrial. Analiza esta imagen y extrae ÚNICAMENTE el número de parte (SKU) del producto REGO-FIX. Ejemplos de formato: '7610.98100', '1725.12700'. No escribas texto adicional, ni explicaciones, solo el número exacto. Si no detectas nada, responde 'NO_DETECTADO'." },
+                        {
+                            inline_data: {
+                                mime_type: "image/jpeg",
+                                data: base64Data
+                            }
+                        }
+                    ]
+                }
+            ]
         };
 
-        // 6. Enviar a Gemini y esperar respuesta
-        const result = await model.generateContent([prompt, imagePart]);
-        const sku = result.response.text().trim();
+        const apiResponse = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await apiResponse.json();
+
+        if (!apiResponse.ok) {
+            throw new Error(data.error?.message || 'Error en la respuesta de Google Gemini.');
+        }
+
+        // Extraer el texto de la respuesta de Google
+        const sku = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'NO_DETECTADO';
         
         return res.status(200).json({ sku });
     } catch (error) {
-        console.error("Error interno detallado:", error);
-        // ENVIAMOS EL MENSAJE EXACTO PARA DEPURAR
-        return res.status(500).json({ error: error.message || 'Fallo desconocido al procesar con Gemini.' });
+        console.error("Error detallado:", error);
+        return res.status(500).json({ error: error.message || 'Error interno al procesar la imagen.' });
     }
 }
 
-// Configuración de Vercel para permitir fotos de hasta 4MB
 handler.config = {
     api: { bodyParser: { sizeLimit: '4mb' } }
 };
