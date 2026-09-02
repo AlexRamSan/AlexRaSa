@@ -97,7 +97,7 @@
                 </button>
             </div>
 
-            <!-- Tarjetas de Productos con Precios Calculados -->
+            <!-- Encabezado de Lista de Precios -->
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-bold text-gray-800">Lista de Precios y Disponibilidad 2026</h2>
                 <span id="dist-category-tag" class="text-xs font-bold px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200"></span>
@@ -135,7 +135,7 @@
                 <h3 class="text-lg font-black uppercase tracking-wide">Aviso de Cumplimiento Comercial</h3>
             </div>
             <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-xs text-red-800 leading-relaxed font-medium" id="penalty-text">
-                <!-- Se llena con el texto estricto -->
+                <!-- Texto de penalización devuelto por la API -->
             </div>
             <p class="text-[11px] text-gray-500 mb-6">
                 Este intento de consulta ha sido registrado en el sistema de auditoría de REGO-FIX México para revisión del Gerente de Ventas.
@@ -147,7 +147,6 @@
     </div>
 
     <script>
-        // Catálogo Maestro de los 8 Productos oficiales
         const MASTER_PRODUCTS = [
             { sku: "7610.98100", name: "PGU 9800 Máquina Automática", line: "Maquinas", price: 10000 },
             { sku: "1725.10000", name: "Boquilla / Collet PG 25", line: "PG", price: 145 },
@@ -175,7 +174,6 @@
                 return;
             }
 
-            // Validación de credenciales
             if ((u === 'usuario1' && p === 'usuario1') || (u === 'usuario2' && p === 'usuario2')) {
                 currentUser = u;
                 alertBox.classList.add('hidden');
@@ -188,32 +186,28 @@
 
         async function loadDistributorSession() {
             try {
-                // Consultar backend
-                const res = await fetch(`/api/distributors?user=${currentUser}`);
+                // Se conecta al endpoint unificado /api/contactos
+                const res = await fetch(`/api/contactos?action=distributors&user=${currentUser}`);
                 if (!res.ok) throw new Error('Error al conectar con la política de distribución.');
                 
                 const data = await res.json();
                 currentDistData = data.distributor;
 
-                // Actualizar cabecera
                 document.getElementById('dist-badge-name').innerText = `${currentDistData.name} (${currentDistData.category})`;
                 document.getElementById('user-header-badge').classList.remove('hidden');
 
-                // Llenar selector de cuentas
                 const select = document.getElementById('select-assigned-client');
                 select.innerHTML = '<option value="">-- Seleccionar de la lista --</option>';
                 
-                data.assignedAccounts.forEach(acc => {
+                (data.assignedAccounts || []).forEach(acc => {
                     const opt = document.createElement('option');
                     opt.value = acc.customer_name;
                     opt.innerText = acc.customer_name;
                     select.appendChild(opt);
                 });
 
-                // Cargar stock en vivo
                 await fetchLiveStock();
 
-                // Cambiar vista
                 document.getElementById('view-login').classList.add('hidden');
                 document.getElementById('view-client-selection').classList.remove('hidden');
 
@@ -241,7 +235,8 @@
             }
 
             try {
-                const res = await fetch('/api/distributors', {
+                // Petición POST al endpoint unificado /api/contactos
+                const res = await fetch('/api/contactos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user: currentUser, customerName: name, taxId: rfc })
@@ -249,7 +244,7 @@
 
                 const data = await res.json();
 
-                // DETECCIÓN DE CUENTA PROTEGIDA (SANCIÓN COMERCIAL)
+                // Detección de Cuenta Protegida / Venta Directa
                 if (res.status === 403 && data.penaltyNotice) {
                     document.getElementById('penalty-text').innerText = data.message;
                     document.getElementById('modal-penalty').classList.remove('hidden');
