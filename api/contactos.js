@@ -89,18 +89,18 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. RUTA: ENVÍO Y REGISTRO DE COTIZACIÓN B2B
+  // 2. RUTA: ENVÍO Y REGISTRO DE COTIZACIÓN B2B (CON TIEMPO DE ENTREGA)
   if (action === 'send_quote' && req.method === 'POST') {
     try {
-      const { distributor, client, items, totals, emailTo } = req.body || {};
+      const { distributor, client, items, totals, leadTime, emailTo } = req.body || {};
 
       if (!items || items.length === 0) {
         return res.status(400).json({ error: 'No hay partidas en la cotización.' });
       }
 
-      // Si tienes Resend o SendGrid configurado en variables de entorno, se dispara aquí
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       const internalNotificationEmail = process.env.SALES_NOTIFICATION_EMAIL || 'ventas@rego-fix.mx';
+      const quoteLeadTime = leadTime || 'Entrega inmediata tras recibir orden de compra';
 
       let emailSent = false;
       if (RESEND_API_KEY) {
@@ -119,6 +119,9 @@ export default async function handler(req, res) {
           <p><strong>Distribuidor:</strong> ${distributor.name} (${distributor.category})</p>
           <p><strong>Cliente Final:</strong> ${client}</p>
           <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
+          <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
+            <strong>Tiempo de Entrega Estimado:</strong> ${quoteLeadTime}
+          </div>
           <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
             <thead>
               <tr style="background:#003DA5;color:#fff;">
@@ -131,9 +134,11 @@ export default async function handler(req, res) {
             </thead>
             <tbody>${itemsHtml}</tbody>
           </table>
-          <p style="text-align:right;font-size:14px;"><strong>Subtotal Neto:</strong> $${totals.subtotal.toFixed(2)} USD<br>
-          <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
-          <strong style="color:#003DA5;font-size:16px;">Total Cotizado:</strong> $${totals.total.toFixed(2)} USD</p>
+          <p style="text-align:right;font-size:14px;">
+            <strong>Subtotal Neto:</strong> $${totals.subtotal.toFixed(2)} USD<br>
+            <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
+            <strong style="color:#003DA5;font-size:16px;">Total Cotizado:</strong> $${totals.total.toFixed(2)} USD
+          </p>
         `;
 
         const recipients = [internalNotificationEmail];
@@ -148,7 +153,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'REGO-FIX B2B <b2b@alexrasa.store>',
             to: recipients,
-            subject: `Nueva Cotización B2B - ${distributor.name} / ${client}`,
+            subject: `Cotización B2B [${quoteLeadTime}] - ${distributor.name} / ${client}`,
             html: htmlBody
           })
         });
@@ -158,9 +163,10 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         emailSent,
+        leadTime: quoteLeadTime,
         message: emailSent 
           ? 'Cotización registrada y notificada vía correo exitosamente.'
-          : 'Cotización registrada y respaldada con éxito en el sistema.'
+          : 'Cotización procesada exitosamente.'
       });
     } catch (e) {
       return res.status(500).json({ error: e.message });
