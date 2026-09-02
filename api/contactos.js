@@ -1,6 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
-// Matriz oficial de descuentos REGO-FIX 2026
 const DISTRIBUTOR_RULES = {
   'usuario1': {
     name: 'Distribuidor AHNSA',
@@ -19,7 +18,7 @@ const DISTRIBUTOR_RULES = {
   }
 };
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -28,12 +27,9 @@ module.exports = async function handler(req, res) {
 
   const { dominio, action, user } = req.query;
 
-  // ==========================================
-  // RUTA 1: BÚSQUEDA DE CONTACTOS EN APOLLO
-  // ==========================================
+  // RUTA 1: APOLLO
   if (dominio) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido' });
-
     const API_KEY = process.env.APOLLO_API_KEY;
 
     try {
@@ -42,30 +38,17 @@ module.exports = async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': API_KEY },
         body: JSON.stringify({ domains: [dominio] })
       });
-
       const orgData = await orgRes.json();
       const orgId = orgData[0]?.id;
 
-      if (!orgId) {
-        return res.status(400).json({ error: `No se encontró la empresa con el dominio ${dominio}` });
-      }
+      if (!orgId) return res.status(400).json({ error: `No se encontró la empresa con dominio ${dominio}` });
 
       const peopleRes = await fetch('https://api.apollo.io/v1/mixed_people/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': API_KEY },
-        body: JSON.stringify({
-          organization_ids: [orgId],
-          page: 1,
-          per_page: 12,
-          prospective_hub_user_ids: []
-        })
+        body: JSON.stringify({ organization_ids: [orgId], page: 1, per_page: 12, prospective_hub_user_ids: [] })
       });
-
       const peopleData = await peopleRes.json();
-
-      if (!peopleRes.ok) {
-        return res.status(400).json({ error: 'Apollo limitó la búsqueda de personas. Intenta con otro dominio.' });
-      }
 
       const contactos = (peopleData.people || []).map(p => ({
         nombre: p.first_name || 'Usuario',
@@ -76,23 +59,27 @@ module.exports = async function handler(req, res) {
       }));
 
       return res.status(200).json(contactos);
-
     } catch (error) {
-      return res.status(500).json({ error: `Error en el proceso: ${error.message}` });
+      return res.status(500).json({ error: error.message });
     }
   }
 
-  // ====================================================
-  // RUTA 2: GESTIÓN Y VALIDACIÓN DE DISTRIBUIDORES
-  // ====================================================
+  // RUTA 2: DISTRIBUIDORES
   if (action === 'distributors' || req.method === 'POST') {
     try {
-      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-      // GET: Cargar cuentas autorizadas del distribuidor
+      if (!supabaseUrl || !supabaseKey) {
+        return res.status(500).json({ error: 'Faltan credenciales de Supabase en las variables de entorno.' });
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // GET: Cargar cuentas asignadas
       if (req.method === 'GET') {
         const distInfo = DISTRIBUTOR_RULES[user];
-        if (!distInfo) return res.status(401).json({ error: 'Distribuidor no autorizado.' });
+        if (!distInfo) return res.status(401).json({ error: 'Distribuidor no autorizado en la matriz.' });
 
         const { data: accounts, error } = await supabase
           .from('customer_accounts')
@@ -108,7 +95,7 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // POST: Validar choque con venta directa o dar de alta nuevo prospecto
+      // POST: Validación / Registro de cuentas
       if (req.method === 'POST') {
         const { user: postUser, customerName, taxId } = req.body || {};
         const distInfo = DISTRIBUTOR_RULES[postUser];
@@ -124,9 +111,7 @@ module.exports = async function handler(req, res) {
 
         if (searchError) throw searchError;
 
-        // Regla estricta: Bloqueo de cuentas protegidas / Venta Directa
         const directMatch = (existing || []).find(c => c.account_group === 'Direct sale' || c.status === 'Locked');
-
         if (directMatch) {
           return res.status(403).json({
             blocked: true,
@@ -135,15 +120,11 @@ module.exports = async function handler(req, res) {
           });
         }
 
-        // Si ya pertenece a otra firma de distribución
         const otherDist = (existing || []).find(c => c.account_group === 'Distributor' && !c.salesman.toLowerCase().includes(distInfo.name.toLowerCase()));
         if (otherDist) {
-          return res.status(409).json({
-            error: `La cuenta "${otherDist.customer_name}" ya se encuentra asignada a otra firma de distribución.`
-          });
+          return res.status(409).json({ error: `La cuenta "${otherDist.customer_name}" ya se encuentra asignada a otra firma de distribución.` });
         }
 
-        // Registro de cuenta nueva autorizada
         const { data: newAccount, error: insertError } = await supabase
           .from('customer_accounts')
           .insert([{
@@ -171,5 +152,5 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  return res.status(400).json({ error: 'Parámetros insuficientes o método no permitido.' });
-};
+  return res.status(400).json({ error: 'Parámetros insuficientes.' });
+}
