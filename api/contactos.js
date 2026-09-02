@@ -1,41 +1,45 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Matriz por defecto si aún no se inicializa la tabla en Supabase
-const DEFAULT_DISTRIBUTOR_RULES = {
-  'usuario1': {
-    name: 'Distribuidor AHNSA',
-    category: 'ORO',
-    discounts: { ER: 0.40, PG: 0.30, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.10 }
-  },
-  'usuario2': {
-    name: 'Distribuidor DHM',
-    category: 'DIAMANTE',
-    discounts: { ER: 0.45, PG: 0.35, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.15 }
-  },
-  'usuario_bronce': {
-    name: 'Distribuidor WEM / General',
-    category: 'BRONCE',
-    discounts: { ER: 0.20, PG: 0.20, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.10 }
-  }
+// Matriz oficial REGO-FIX por categoría
+const CATEGORY_DISCOUNTS = {
+  'DIAMANTE': { ER: 0.45, PG: 0.35, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.15 },
+  'ORO':      { ER: 0.40, PG: 0.30, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.10 },
+  'PLATA':    { ER: 0.30, PG: 0.25, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.10 },
+  'BRONCE':   { ER: 0.20, PG: 0.20, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.10 }
+};
+
+const DEFAULT_DISTRIBUTORS = {
+  'usuario1': { name: 'Distribuidor AHNSA', category: 'ORO' },
+  'usuario2': { name: 'Distribuidor DHM', category: 'DIAMANTE' },
+  'usuario_bronce': { name: 'Distribuidor WEM / General', category: 'BRONCE' }
 };
 
 async function getDistributorsData(supabase) {
   try {
     const { data, error } = await supabase.from('distributors').select('*');
     if (error || !data || data.length === 0) {
-      return DEFAULT_DISTRIBUTOR_RULES;
+      const fallback = {};
+      Object.entries(DEFAULT_DISTRIBUTORS).forEach(([key, d]) => {
+        fallback[key] = {
+          name: d.name,
+          category: d.category,
+          discounts: CATEGORY_DISCOUNTS[d.category] || CATEGORY_DISCOUNTS['BRONCE']
+        };
+      });
+      return fallback;
     }
     const mapped = {};
     data.forEach(d => {
+      const cat = (d.category || 'BRONCE').toUpperCase();
       mapped[d.user_key] = {
         name: d.name,
-        category: d.category,
-        discounts: typeof d.discounts === 'string' ? JSON.parse(d.discounts) : d.discounts
+        category: cat,
+        discounts: CATEGORY_DISCOUNTS[cat] || CATEGORY_DISCOUNTS['BRONCE']
       };
     });
     return mapped;
   } catch (e) {
-    return DEFAULT_DISTRIBUTOR_RULES;
+    return DEFAULT_DISTRIBUTORS;
   }
 }
 
@@ -48,9 +52,7 @@ export default async function handler(req, res) {
 
   const { dominio, action, user } = req.query;
 
-  // ====================================================
-  // RUTA 1: BÚSQUEDA DE CONTACTOS APOLLO
-  // ====================================================
+  // 1. APOLLO CONTACTOS
   if (dominio) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Método no permitido' });
     const API_KEY = process.env.APOLLO_API_KEY;
@@ -87,19 +89,17 @@ export default async function handler(req, res) {
     }
   }
 
-  // ====================================================
-  // RUTA 2: PANEL DE CONTROL ADMINISTRATIVO (ADMIN-CUENTAS)
-  // ====================================================
+  // 2. PANEL DE CONTROL ADMINISTRATIVO (ADMIN-CUENTAS)
   if (action === 'admin_control') {
     try {
       const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // GET: Cargar tanto las cuentas como los distribuidores y sus descuentos
+      // GET: Cargar catálogo total (hasta 5000 registros para evitar el límite de 200)
       if (req.method === 'GET') {
         const [accRes, distMatrix] = await Promise.all([
-          supabase.from('customer_accounts').select('*').order('customer_name', { ascending: true }),
+          supabase.from('customer_accounts').select('*').range(0, 4999).order('customer_name', { ascending: true }),
           getDistributorsData(supabase)
         ]);
 
@@ -107,15 +107,65 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           accounts: accRes.data || [],
-          distributors: distMatrix
+          distributors: distMatrix,
+          categoryDiscounts: CATEGORY_DISCOUNTS
         });
       }
 
-      // PUT: Actualizar una cuenta o la matriz de descuento de un distribuidor
+      // POST: Crear nueva cuenta o nuevo distribuidor
+      if (req.method === 'POST') {
+        const { target, data } = req.body || {};
+
+        if (target === 'new_account') {
+          const { tax_id, customer_name, account_group, salesman, status } = data;
+          if (!customer_name) return res.status(400).json({ error: 'El nombre del cliente es obligatorio.' });
+
+          const { data: created, error } = await supabase
+            .from('customer_accounts')
+            .insert([{
+              tax_id: tax_id ? tax_id.trim().toUpperCase() : null,
+              customer_name: customer_name.trim().toUpperCase(),
+              account_group: account_group || 'Distributor',
+              salesman: salesman || 'Distribuidor General',
+              status: status || 'Active',
+              aging: 0
+            }])
+            .select()
+            .single();
+
+          if (error) throw error;
+          return res.status(200).json({ success: true, item: created });
+        }
+
+        if (target === 'new_distributor') {
+          const { user_key, name, category } = data;
+          if (!user_key || !name) return res.status(400).json({ error: 'Faltan campos del distribuidor.' });
+
+          const cleanCat = (category || 'BRONCE').toUpperCase();
+          const discounts = CATEGORY_DISCOUNTS[cleanCat] || CATEGORY_DISCOUNTS['BRONCE'];
+
+          const { data: created, error } = await supabase
+            .from('distributors')
+            .insert([{
+              user_key: user_key.trim().toLowerCase(),
+              name: name.trim(),
+              category: cleanCat,
+              discounts: discounts
+            }])
+            .select()
+            .single();
+
+          if (error) throw error;
+          return res.status(200).json({ success: true, distributor: created });
+        }
+
+        return res.status(400).json({ error: 'Target no reconocido.' });
+      }
+
+      // PUT: Actualizar una cuenta o la categoría de un distribuidor
       if (req.method === 'PUT') {
         const { target, data } = req.body || {};
 
-        // Actualizar datos de una cuenta comercial
         if (target === 'account') {
           const { id, salesman, status, account_group } = data;
           if (!id) return res.status(400).json({ error: 'Falta el ID de la cuenta.' });
@@ -136,19 +186,20 @@ export default async function handler(req, res) {
           return res.status(200).json({ success: true, item: updatedAcc });
         }
 
-        // Actualizar categoría y descuentos de un distribuidor
-        if (target === 'distributor') {
-          const { user_key, name, category, discounts } = data;
-          if (!user_key) return res.status(400).json({ error: 'Falta user_key del distribuidor.' });
+        if (target === 'distributor_category') {
+          const { user_key, category } = data;
+          if (!user_key || !category) return res.status(400).json({ error: 'Faltan datos.' });
+
+          const cleanCat = category.toUpperCase();
+          const discounts = CATEGORY_DISCOUNTS[cleanCat] || CATEGORY_DISCOUNTS['BRONCE'];
 
           const { data: updatedDist, error: distError } = await supabase
             .from('distributors')
-            .upsert({
-              user_key,
-              name,
-              category,
-              discounts
-            }, { onConflict: 'user_key' })
+            .update({
+              category: cleanCat,
+              discounts: discounts
+            })
+            .eq('user_key', user_key)
             .select()
             .single();
 
@@ -164,9 +215,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // ====================================================
-  // RUTA 3: GESTIÓN Y SESIÓN DE DISTRIBUIDORES B2B
-  // ====================================================
+  // 3. DISTRIBUIDORES B2B (PORTAL CLIENTES)
   if (action === 'distributors' || req.method === 'POST') {
     try {
       const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -175,7 +224,6 @@ export default async function handler(req, res) {
 
       const distributorRules = await getDistributorsData(supabase);
 
-      // GET: Cuentas asignadas al distribuidor autenticado
       if (req.method === 'GET') {
         const distInfo = distributorRules[user];
         if (!distInfo) return res.status(401).json({ error: 'Distribuidor no autorizado en la matriz.' });
@@ -194,7 +242,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // POST: Validación / Registro de cuenta nueva por distribuidor
       if (req.method === 'POST') {
         const { user: postUser, customerName, taxId } = req.body || {};
         const distInfo = distributorRules[postUser];
@@ -211,7 +258,6 @@ export default async function handler(req, res) {
         if (searchError) throw searchError;
         const records = existing || [];
 
-        // Regla de Bloqueo de Cuentas Protegidas de Venta Directa
         const directMatch = records.find(c => 
           c.account_group === 'Direct sale' || 
           c.status === 'Locked' ||
