@@ -116,9 +116,9 @@
             </div>
         </div>
 
-        <!-- Rejilla de Productos Dinámica -->
-        <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Inyectado por JS -->
+        <!-- Listado Horizontal de Productos Dinámico -->
+        <div id="catalog-grid" class="space-y-3">
+            <!-- Inyectado por JS en formato listado -->
         </div>
 
         <!-- Paginador -->
@@ -218,13 +218,12 @@
         </div>
     </div>
 
-    <!-- CARGA DE DATOS (sku_images_final.json integrado o cargado localmente) -->
+    <!-- CARGA DE DATOS Y ASIGNACIÓN DE IMÁGENES -->
     <script src="/Rego-Fix/Test-ecommerce/products.js"></script>
     <script src="sku_images_final.js"></script>
 
     <script>
-        // Configuración de paginación y estado
-        const ITEMS_PER_PAGE = 24;
+        const ITEMS_PER_PAGE = 20; // 20 elementos por página para un listado fluido
         let currentPage = 1;
         let filteredProducts = [];
         
@@ -232,30 +231,19 @@
         window.selectedPaymentMethod = 'PayPal';
         window.distributorDiscount = 0;
 
-        // Diccionario y función unificada de imágenes basadas en el mapeo oficial de SKUs
+        // Función para obtener la imagen exacta desde el mapeo oficial o un respaldo acorde
         function getProductImage(sku, cat, name) {
-            // Primero verificamos si existe un mapeo directo en el diccionario integrado desde sku_images_final.json
             if (window.SKU_IMAGES && window.SKU_IMAGES[sku]) {
                 return window.SKU_IMAGES[sku];
             }
-
-            // Respaldos dinámicos basados en categoría o palabras clave si el SKU no está mapeado exacto
-            const n = (name || '').toUpperCase();
-            if (cat === 'Pinzas' || n.includes('DS/ER') || n.includes('SEALING')) {
-                return 'https://regousa.com/wp-content/uploads/2024/04/49_RFAG_ER_DS_ER50_22_rendering_395002200_w-172.jpg';
-            } else if (cat === 'Portaherramientas') {
-                return 'https://regousa.com/wp-content/uploads/2024/04/21_RFAG_ER_BTplus40_ER32_70_rendering_213013226_w-14.jpg';
-            } else if (cat === 'Tuercas') {
-                return 'https://regousa.com/wp-content/uploads/2024/04/03_RFAG_ER32DM_12_rendering_123212000_w-100.jpg';
-            }
-            return 'https://regousa.com/wp-content/uploads/2024/04/21_RFAG_ER_BTplus40_ER32_70_rendering_213013226_w-14.jpg';
+            // Respaldo genérico si el SKU no cuenta con foto directa mapeada
+            return 'https://regousa.com/wp-content/uploads/2024/04/49_RFAG_ER_DS_ER50_22_rendering_395002200_w-172.jpg';
         }
 
-        // Inicialización y Filtrado reactivo
         function initCatalog() {
             if (!window.PRODUCTS_DATA || !Array.isArray(window.PRODUCTS_DATA)) {
                 document.getElementById('catalog-grid').innerHTML = `
-                    <div class="col-span-full bg-red-50 text-red-700 p-6 rounded-lg text-center">
+                    <div class="bg-red-50 text-red-700 p-6 rounded-lg text-center">
                         <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
                         <p class="font-bold">No se encontró el archivo products.js</p>
                         <p class="text-xs mt-1">Asegúrate de colocar products.js en la misma carpeta que el archivo HTML.</p>
@@ -292,7 +280,7 @@
 
             if (filteredProducts.length === 0) {
                 grid.innerHTML = `
-                    <div class="col-span-full py-16 text-center text-gray-500">
+                    <div class="py-16 text-center text-gray-500 bg-white rounded-lg border border-gray-200">
                         <i class="fa-solid fa-box-open text-4xl mb-3 text-gray-300"></i>
                         <p class="font-semibold">No se encontraron productos con esos criterios de búsqueda.</p>
                     </div>`;
@@ -311,44 +299,46 @@
 
                 const priceDisplay = isDiscountActive 
                     ? `<span class="text-xs line-through text-gray-400 mr-1">$${basePrice.toFixed(2)}</span>
-                       <span class="text-xl font-black text-red-600">$${discountedPrice.toFixed(2)}</span>`
-                    : `<span class="text-xl font-black text-[#003DA5]">$${basePrice.toFixed(2)}</span>`;
+                       <span class="text-base font-black text-red-600">$${discountedPrice.toFixed(2)}</span>`
+                    : `<span class="text-base font-black text-[#003DA5]">$${basePrice.toFixed(2)}</span>`;
 
                 const subBadge = item.sub && item.sub !== 'Estándar' 
-                    ? `<span class="text-[9px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded ml-1">${item.sub}</span>` 
+                    ? `<span class="text-[9px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded ml-2">${item.sub}</span>` 
                     : '';
 
                 const productImg = getProductImage(item.sku, item.cat, item.name);
 
+                // Diseño Horizontal estilo listado compacto
                 html += `
-                    <div class="bg-white border border-gray-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition group">
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-[10px] font-mono font-bold bg-sky-50 text-[#003DA5] px-2 py-0.5 rounded border border-sky-200 uppercase">
-                                    ${item.series}
-                                </span>
-                                <span class="text-[10px] font-mono text-gray-500 font-bold">${item.sku}</span>
+                    <div class="bg-white border border-gray-200 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-md transition">
+                        <!-- Imagen pequeña e info principal -->
+                        <div class="flex items-center space-x-4 w-full md:w-auto flex-1">
+                            <div class="w-16 h-16 shrink-0 flex items-center justify-center bg-gray-50 border border-gray-100 rounded p-1">
+                                <img src="${productImg}" alt="${item.name}" class="max-h-full max-w-full object-contain mix-blend-multiply">
                             </div>
-                            
-                            <div class="h-36 flex items-center justify-center my-3 p-2 bg-gray-50 rounded">
-                                <img src="${productImg}" alt="${item.name}" class="max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300">
+                            <div>
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="text-[10px] font-mono font-bold bg-sky-50 text-[#003DA5] px-2 py-0.5 rounded border border-sky-200 uppercase">
+                                        ${item.series}
+                                    </span>
+                                    <span class="text-[10px] font-mono text-gray-500 font-bold">SKU: ${item.sku}</span>
+                                    ${subBadge}
+                                </div>
+                                <h4 class="font-bold text-gray-900 text-sm leading-snug" title="${item.name}">${item.name}</h4>
+                                <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">${item.cat}</span>
                             </div>
-
-                            <div class="mb-2">
-                                <span class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">${item.cat}</span>
-                                ${subBadge}
-                            </div>
-
-                            <h4 class="font-bold text-gray-900 text-sm mb-1 leading-snug line-clamp-2" title="${item.name}">${item.name}</h4>
                         </div>
 
-                        <div class="mt-4 pt-3 border-t border-gray-100">
-                            <div class="mb-3 flex items-baseline">
-                                ${priceDisplay}
-                                <span class="text-[10px] font-normal text-gray-500 ml-1">USD</span>
+                        <!-- Precios y Botón de Acción -->
+                        <div class="flex items-center justify-between md:justify-end w-full md:w-auto space-x-6 border-t md:border-t-0 pt-2 md:pt-0 border-gray-100">
+                            <div class="text-left md:text-right">
+                                <div class="flex items-baseline md:justify-end">
+                                    ${priceDisplay}
+                                    <span class="text-[10px] font-normal text-gray-500 ml-1">USD</span>
+                                </div>
                             </div>
                             <button onclick="addToCart('${item.sku}', '${encodeURIComponent(item.name)}', ${item.price})" 
-                                    class="w-full bg-white border border-[#003DA5] hover:bg-[#003DA5] hover:text-white text-[#003DA5] font-semibold text-xs py-2 rounded transition flex items-center justify-center space-x-2">
+                                    class="bg-white border border-[#003DA5] hover:bg-[#003DA5] hover:text-white text-[#003DA5] font-semibold text-xs px-4 py-2 rounded transition flex items-center space-x-2 shrink-0">
                                 <i class="fa-solid fa-cart-plus"></i> <span>Añadir</span>
                             </button>
                         </div>
