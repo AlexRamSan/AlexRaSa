@@ -1,4 +1,42 @@
 window.SKU_IMAGES = {
+    // --- micRun Nuts ---
+    "3611.00000": "https://regousa.com/wp-content/uploads/2024/04/46_RFAG_MR_MR32_rendering_363200000_w.jpg",
+    "3616.00000": "https://regousa.com/wp-content/uploads/2024/04/46_RFAG_MR_MR32_rendering_363200000_w-1.jpg",
+    "3616.20000": "https://regousa.com/wp-content/uploads/2024/04/135_RFAG_Hi-Q_MRC32_rendering_363220000_w.jpg",
+    "3616.80000": "https://regousa.com/wp-content/uploads/2024/04/136_RFAG_Hi-Q-MRM16_rendering_361680000_w.jpg",
+    "3616.90000": "https://regousa.com/wp-content/uploads/2024/04/137_RFAG_Hi-Q-MRMC16_rendering_361690000_w.jpg",
+    "3625.00000": "https://regousa.com/wp-content/uploads/2024/04/46_RFAG_MR_MR32_rendering_363200000_w-2.jpg",
+    "3625.20000": "https://regousa.com/wp-content/uploads/2024/04/135_RFAG_Hi-Q_MRC32_rendering_363220000_w-1.jpg",
+    "3632.00000": "https://regousa.com/wp-content/uploads/2024/04/46_RFAG_MR_MR32_rendering_363200000_w-3.jpg",
+    "3632.20000": "https://regousa.com/wp-content/uploads/2024/04/135_RFAG_Hi-Q_MRC32_rendering_363220000_w-2.jpg",
+
+    // --- Friction Bearing Nuts ---
+    "3416.30000": "https://regousa.com/wp-content/uploads/2024/04/90_RFAG_Hi-Q_ERB_32_343230000_w.jpg",
+    "3416.40000": "https://regousa.com/wp-content/uploads/2024/04/389_RF_Hi-Q_ER11_341120000_w-11.jpg",
+    "3420.30000": "https://regousa.com/wp-content/uploads/2024/04/90_RFAG_Hi-Q_ERB_32_343230000_w-1.jpg",
+    "3420.40000": "https://regousa.com/wp-content/uploads/2024/04/389_RF_Hi-Q_ER11_341120000_w-13.jpg",
+    "3425.30000": "https://regousa.com/wp-content/uploads/2024/04/90_RFAG_Hi-Q_ERB_32_343230000_w-2.jpg",
+    "3425.40000": "https://regousa.com/wp-content/uploads/2024/04/89_RFAG_Hi-Q_ERC25_342520000_w-1.jpg",
+    "3432.30000": "https://regousa.com/wp-content/uploads/2024/04/90_RFAG_Hi-Q_ERB_32_343230000_w-3.jpg",
+    "3432.40000": "https://regousa.com/wp-content/uploads/2024/04/89_RFAG_Hi-Q_ERC25_342520000_w-3.jpg",
+    "3440.30000": "https://regousa.com/wp-content/uploads/2024/04/90_RFAG_Hi-Q_ERB_32_343230000_w-4.jpg",
+    "3440.40000": "https://regousa.com/wp-content/uploads/2024/04/89_RFAG_Hi-Q_ERC25_342520000_w-5.jpg",
+    "3450.30000": "https://regousa.com/wp-content/uploads/2024/04/90_RFAG_Hi-Q_ERB_32_343230000_w-5.jpg",
+
+    // --- Externally Threaded Nuts ---
+    "3311.60000": "https://regousa.com/wp-content/uploads/2024/04/87_RFAG_HI-Q_ERAX_32_333260000_w.jpg",
+    "3311.70000": "https://regousa.com/wp-content/uploads/2024/05/88_RFAG_ERAXC_32_333260000_w.jpg",
+    "3316.60000": "https://regousa.com/wp-content/uploads/2024/04/87_RFAG_HI-Q_ERAX_32_333260000_w-1.jpg",
+    "3316.70000": "https://regousa.com/wp-content/uploads/2024/04/88_RFAG_ERAXC_32_333260000_w.jpg",
+    "3320.60000": "https://regousa.com/wp-content/uploads/2024/04/87_RFAG_HI-Q_ERAX_32_333260000_w-2.jpg",
+    "3320.70000": "https://regousa.com/wp-content/uploads/2024/04/88_RFAG_ERAXC_32_333260000_w-1.jpg",
+    "3325.60000": "https://regousa.com/wp-content/uploads/2024/04/87_RFAG_HI-Q_ERAX_32_333260000_w-3.jpg",
+    "3325.70000": "https://regousa.com/wp-content/uploads/2024/04/88_RFAG_ERAXC_32_333260000_w-2.jpg",
+    "3332.60000": "https://regousa.com/wp-content/uploads/2024/04/87_RFAG_HI-Q_ERAX_32_333260000_w-4.jpg",
+    "3332.70000": "https://regousa.com/wp-content/uploads/2024/04/88_RFAG_ERAXC_32_333260000_w-3.jpg",
+    "3340.60000": "https://regousa.com/wp-content/uploads/2024/04/87_RFAG_HI-Q_ERAX_32_333260000_w-5.jpg",
+    "3340.70000": "https://regousa.com/wp-content/uploads/2024/04/88_RFAG_ERAXC_32_333260000_w-4.jpg",
+
     // --- Coolant Fitting ---
     "3799.98180": "https://regousa.com/wp-content/uploads/2024/04/350_RFTC_ER_CoolantFitting_picture_A260012000_w.jpg",
     "7239.12181": "https://regousa.com/wp-content/uploads/2024/04/350_RFTC_ER_CoolantFitting_picture_A260012000_w-1.jpg",
