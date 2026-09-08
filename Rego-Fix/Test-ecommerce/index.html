@@ -223,7 +223,7 @@
     <script src="sku_images_final.js"></script>
 
     <script>
-        const ITEMS_PER_PAGE = 20; // 20 elementos por página para un listado fluido
+        const ITEMS_PER_PAGE = 100; // Actualizado a 100 artículos por página
         let currentPage = 1;
         let filteredProducts = [];
         
@@ -231,12 +231,12 @@
         window.selectedPaymentMethod = 'PayPal';
         window.distributorDiscount = 0;
 
-        // Función para obtener la imagen exacta desde el mapeo oficial o un respaldo acorde
-        function getProductImage(sku, cat, name) {
+        // Función para obtener la imagen exacta desde el diccionario del archivo sku_images_final.js por SKU
+        function getProductImage(sku) {
             if (window.SKU_IMAGES && window.SKU_IMAGES[sku]) {
                 return window.SKU_IMAGES[sku];
             }
-            // Respaldo genérico si el SKU no cuenta con foto directa mapeada
+            // Imagen de respaldo predeterminada en caso de que el SKU específico no cuente con registro gráfico
             return 'https://regousa.com/wp-content/uploads/2024/04/49_RFAG_ER_DS_ER50_22_rendering_395002200_w-172.jpg';
         }
 
@@ -306,9 +306,10 @@
                     ? `<span class="text-[9px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded ml-2">${item.sub}</span>` 
                     : '';
 
-                const productImg = getProductImage(item.sku, item.cat, item.name);
+                // Se invoca la función pasando directamente el SKU del producto actual
+                const productImg = getProductImage(item.sku);
 
-                // Diseño Horizontal estilo listado compacto
+                // Diseño Horizontal estilo listado compacto con imagen pequeña a la izquierda
                 html += `
                     <div class="bg-white border border-gray-200 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-md transition">
                         <!-- Imagen pequeña e info principal -->
