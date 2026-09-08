@@ -231,25 +231,26 @@
         window.selectedPaymentMethod = 'PayPal';
         window.distributorDiscount = 0;
 
-        // Función inteligente para buscar por SKU exacto o respaldar por prefijo de familia
+        // Función inteligente: Diccionario manual + Patrón dinámico de regousa.com
         function getProductImage(sku) {
-            // 1. Búsqueda exacta en el diccionario externo sku_images_final.js
+            // 1. Si el SKU exacto está en tu archivo sku_images_final.js, se usa esa foto
             if (window.SKU_IMAGES && window.SKU_IMAGES[sku]) {
                 return window.SKU_IMAGES[sku];
             }
 
-            // 2. Respaldo inteligente por familia de SKU si aún no está mapeado individualmente
+            // 2. Si no está en el diccionario, generamos la URL oficial dinámicamente con el patrón regousa.com
+            const cleanSku = (sku || '').replace('.', ''); // Ej. "7160.32160" -> "716032160"
             const s = (sku || '');
+
             if (s.startsWith('19')) {
-                return 'https://regousa.com/wp-content/uploads/2024/04/21_RFAG_ER_BTplus40_ER32_70_rendering_213013226_w-14.jpg';
-            } else if (s.startsWith('7150') || s.startsWith('7151') || s.startsWith('7152') || s.startsWith('7153') || s.startsWith('7154') || s.startsWith('7157') || s.startsWith('7158')) {
-                return 'https://regousa.com/wp-content/uploads/2024/04/367_RFTC_MA_TorcoFix_715020020_w.jpg';
+                // Patrón para adaptadores y reductores serie 19
+                return `https://regousa.com/wp-content/uploads/2024/04/132_RFAG_HS_CF_${cleanSku}_w.jpg`;
+            } else if (s.startsWith('71')) {
+                // Patrón para accesorios y herramientas serie 71
+                return `https://regousa.com/wp-content/uploads/2024/04/367_RFTC_MA_${cleanSku}_w.jpg`;
             } else if (s.startsWith('39')) {
-                return 'https://regousa.com/wp-content/uploads/2024/04/49_RFAG_ER_DS_ER50_22_rendering_395002200_w.jpg';
-            } else if (s.startsWith('3799')) {
-                return 'https://regousa.com/wp-content/uploads/2024/05/HollowBolt.jpg';
-            } else if (s.startsWith('0712') || s.startsWith('7121')) {
-                return 'https://regousa.com/wp-content/uploads/2024/04/381_RFTC_ER_ZWT20_071212000_w-scaled.jpg';
+                // Patrón para discos de sellado serie 39
+                return `https://regousa.com/wp-content/uploads/2024/04/49_RFAG_ER_DS_${cleanSku}_w.jpg`;
             }
 
             // Respaldo general por defecto
@@ -330,7 +331,7 @@
                         <!-- Imagen miniatura e info principal -->
                         <div class="flex items-center space-x-4 w-full md:w-auto flex-1">
                             <div class="w-16 h-16 shrink-0 flex items-center justify-center bg-gray-50 border border-gray-100 rounded p-1">
-                                <img src="${productImg}" alt="${item.name}" class="max-h-full max-w-full object-contain mix-blend-multiply">
+                                <img src="${productImg}" alt="${item.name}" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.onerror=null; this.src='https://regousa.com/wp-content/uploads/2024/04/21_RFAG_ER_BTplus40_ER32_70_rendering_213013226_w-14.jpg';">
                             </div>
                             <div>
                                 <div class="flex items-center space-x-2 mb-1">
