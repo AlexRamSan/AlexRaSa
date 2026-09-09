@@ -1,21 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import jsforce from 'jsforce';
-import nodemailer from 'nodemailer';
 
 // Configuración de conexión a Salesforce (usa variables de entorno seguras)
 const conn = new jsforce.Connection({
     loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
-});
-
-// Configuración del servicio de correo SMTP
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.rego-fix.com',
-    port: 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    }
 });
 
 // Matriz oficial REGO-FIX por categoría
@@ -36,15 +24,7 @@ async function getDistributorsData(supabase) {
   try {
     const { data, error } = await supabase.from('distributors').select('*');
     if (error || !data || data.length === 0) {
-      const fallback = {};
-      Object.entries(DEFAULT_DISTRIBUTORS).forEach(([key, d]) => {
-        fallback[key] = {
-          name: d.name,
-          category: d.category,
-          discounts: CATEGORY_DISCOUNTS[d.category] || CATEGORY_DISCOUNTS['BRONCE']
-        };
-      });
-      return fallback;
+      throw new Error("Tabla distributors vacía o no encontrada");
     }
     const mapped = {};
     data.forEach(d => {
@@ -57,7 +37,15 @@ async function getDistributorsData(supabase) {
     });
     return mapped;
   } catch (e) {
-    return DEFAULT_DISTRIBUTORS;
+    const fallback = {};
+    Object.entries(DEFAULT_DISTRIBUTORS).forEach(([key, d]) => {
+      fallback[key] = {
+        name: d.name,
+        category: d.category,
+        discounts: CATEGORY_DISCOUNTS[d.category] || CATEGORY_DISCOUNTS['BRONCE']
+      };
+    });
+    return fallback;
   }
 }
 
@@ -107,7 +95,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. RUTA: NOTIFICACIÓN INTERNA Y SALESFORCE (mramirez@rego-fix.com)
+  // 2. RUTA: NOTIFICACIÓN INTERNA, SALESFORCE Y CORREO A mramirez@rego-fix.com
   if (action === 'internal_sales_notification' && req.method === 'POST') {
     try {
       const { action: subAction, distributor, client, items, totals, leadTime } = req.body || {};
@@ -115,7 +103,7 @@ export default async function handler(req, res) {
       let quoteId = null;
       let oppId = null;
 
-      // Intentar sincronización con Salesforce (Protegido por si faltan credenciales)
+      // Sincronización opcional con Salesforce
       try {
         if (process.env.SF_USER && process.env.SF_PASSWORD) {
           await conn.login(process.env.SF_USER, process.env.SF_PASSWORD + (process.env.SF_TOKEN || ''));
@@ -143,7 +131,7 @@ export default async function handler(req, res) {
         console.warn('Advertencia Salesforce (no crítico):', sfErr.message);
       }
 
-      // Envío de correo a mramirez@rego-fix.com vía Resend o SMTP
+      // Envío de correo a mramirez@rego-fix.com mediante Resend
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       const targetEmail = 'mramirez@rego-fix.com';
 
@@ -161,7 +149,7 @@ export default async function handler(req, res) {
         <h2 style="color: #003DA5;">Nueva Cotización B2B Generada</h2>
         <p><strong>Distribuidor:</strong> ${distributor?.name || 'N/A'} (${distributor?.category || 'N/A'})</p>
         <p><strong>Cliente Final:</strong> ${client}</p>
-        <p><strong>Acción Realizada:</strong> ${subAction === 'PDF_DOWNLOAD' ? 'Descarga de PDF' : 'Envío por Correo al Cliente'}</p>
+        <p><strong>Acción Realizada:</strong> ${subAction === 'PDF_DOWNLOAD' ? 'Descarga de PDF' : 'Envío por Correo'}</p>
         <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
         ${oppId ? `<p><strong>Salesforce Oportunidad ID:</strong> ${oppId} (Quote: ${quoteId})</p>` : ''}
         <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
@@ -200,16 +188,9 @@ export default async function handler(req, res) {
             html: htmlBody
           })
         });
-      } else {
-        await transporter.sendMail({
-          from: '"Portal B2B REGO-FIX" <no-reply@rego-fix.com>',
-          to: targetEmail,
-          subject: `[B2B Cotización] Cliente: ${client} - Distribuidor: ${distributor?.name}`,
-          html: htmlBody
-        });
       }
 
-      return res.status(200).json({ success: true, message: 'Notificación enviada a mramirez@rego-fix.com' });
+      return res.status(200).json({ success: true, message: 'Notificación enviada exitosamente a mramirez@rego-fix.com' });
     } catch (e) {
       console.error('Error en internal_sales_notification:', e);
       return res.status(500).json({ error: e.message });
@@ -239,7 +220,7 @@ export default async function handler(req, res) {
       `).join('');
 
       const htmlBody = `
-        <h2>Cotización Comercial - REGO-FIX México</h2>
+        <h2>Cotización Oficial - REGO-FIX México</h2>
         <p><strong>Atención:</strong> ${client}</p>
         <p><strong>Emitido por Distribuidor:</strong> ${distributor.name}</p>
         <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
