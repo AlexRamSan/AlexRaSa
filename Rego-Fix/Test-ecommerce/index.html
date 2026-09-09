@@ -232,15 +232,36 @@
         window.distributorDiscount = 0;
         window.inventoryData = {}; // Objeto que almacenará el stock de Querétaro
 
-        // Cargar inventario desde el JSON local generado
+        // Cargar inventario desde el archivo inventory.json local y separar SKU de descripción
         async function loadInventory() {
             try {
-                const response = await fetch('/Rego-Fix/Test-ecommerce/inventory.json'); // O la ruta a tu archivo JSON de inventario
+                const response = await fetch('/Rego-Fix/Test-ecommerce/inventory.json');
                 if (response.ok) {
-                    window.inventoryData = await response.json();
+                    const rawData = await response.json();
+                    window.inventoryData = {};
+                    
+                    const items = Array.isArray(rawData) ? rawData : Object.values(rawData);
+                    
+                    items.forEach(item => {
+                        const textoOriginal = item.Producto || item.producto || '';
+                        const matchSku = textoOriginal.match(/([0-9]{4}\.[0-9]{5})/);
+                        
+                        if (matchSku && matchSku[1]) {
+                            const sku = matchSku[1];
+                            const descripcion = textoOriginal.replace(sku, '').trim();
+                            const qty = item.Queretaro !== undefined ? item.Queretaro : (item.qty || 0);
+                            
+                            window.inventoryData[sku] = {
+                                descripcionLimpia: descripcion,
+                                qty: qty,
+                                status: qty > 0 ? "instock" : "onbackorder"
+                            };
+                        }
+                    });
+                    console.log("Inventario cargado exitosamente:", Object.keys(window.inventoryData).length, "productos mapeados.");
                 }
             } catch (e) {
-                console.log("Inventario local no detectado, usando valores por defecto.");
+                console.log("No se pudo cargar inventory.json:", e);
             }
         }
 
