@@ -18,6 +18,9 @@ window.SKU_IMAGES = {
     "1150.32001": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-583.jpg",
     "1150.34001": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-585.jpg",
     "1150.36001": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-587.jpg",
+    "1220.06009": "https://regousa.com/wp-content/uploads/2024/04/500_RFAG_ER32CB_12_rendering_123212000_w-8.jpg",
+    "7561.00100": "https://regousa.com/wp-content/uploads/2024/04/base-1.jpg",
+    
 
     // --- ER6 Ultra-Precision ---
     "1606.01000": "https://regousa.com/wp-content/uploads/2024/04/171_MMR6_0022804_T.jpg",
