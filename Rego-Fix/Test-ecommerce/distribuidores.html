@@ -306,13 +306,13 @@
 
         <div class="grid grid-cols-2 gap-4 mb-6 bg-gray-50 p-3 rounded border border-gray-200 text-[11px]">
             <div>
-                <strong class="text-[#003DA5] uppercase block mb-1">Cotizar a:</strong>
-                <span id="print-client" class="font-bold uppercase text-gray-900 text-xs"></span>
-                <p class="text-gray-600 mt-1">Dirección comercial asignada</p>
+                <strong class="text-[#003DA5] uppercase block mb-1">Cotizar a (Distribuidor):</strong>
+                <span id="print-distributor" class="font-bold uppercase text-gray-900 text-xs"></span>
+                <p class="text-gray-600 mt-1">Canal de Distribución Autorizado</p>
             </div>
             <div>
-                <strong class="text-[#003DA5] uppercase block mb-1">Usuario final:</strong>
-                <span class="font-bold text-gray-900">REGO-FIX / Cuenta Autorizada B2B</span>
+                <strong class="text-[#003DA5] uppercase block mb-1">Usuario final (Cliente):</strong>
+                <span id="print-client" class="font-bold uppercase text-gray-900 text-xs"></span>
                 <p class="text-gray-600 mt-1">Precios en USD (No incluyen IVA / VAT)</p>
             </div>
         </div>
@@ -341,6 +341,7 @@
         </div>
 
         <div class="text-[9px] text-gray-600 space-y-1 border-t border-gray-300 pt-3 leading-tight">
+            <p><strong>Tiempo de Entrega Estimado:</strong> <span id="print-leadtime" class="font-bold text-[#003DA5]"></span></p>
             <p><strong>Entrega:</strong> FCA Querétaro</p>
             <p><strong>Válidez:</strong> Presupuesto válido por 30 días naturales a partir de la fecha de emisión.</p>
             <p>Agradeceremos su pedido. Para cualquier duda adicional favor de contactarnos.</p>
@@ -371,7 +372,6 @@
         let quoteCart = [];
         const INTERNAL_SALES_EMAIL = 'mramirez@rego-fix.com';
 
-        // Sistema inteligente de imágenes con herencia de familia
         function getProductImage(sku) {
             const cleanSku = String(sku || '').trim();
             if (!cleanSku) return 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
@@ -399,7 +399,6 @@
             return 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
         }
 
-        // Clasificación automática por categoría
         function getProductCategory(item) {
             const name = (item.name || '').toLowerCase();
             const sku = (item.sku || '').toLowerCase();
@@ -794,7 +793,6 @@
             }
         }
 
-        // DISPARADOR AUTOMÁTICO DE OPORTUNIDAD A SALESFORCE Y ALERTA A mramirez@rego-fix.com
         async function notifyInternalSales(actionType) {
             try {
                 let subtotal = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
@@ -806,7 +804,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: actionType, // 'PDF_DOWNLOAD' o 'EMAIL_SENT'
+                        action: actionType,
                         targetEmail: INTERNAL_SALES_EMAIL,
                         distributor: currentDistData,
                         client: selectedClient,
@@ -828,9 +826,12 @@
             }
 
             const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            const leadTime = calculateLeadTime();
             
             document.getElementById('print-date').innerText = printDate;
+            document.getElementById('print-distributor').innerText = currentDistData ? currentDistData.name : 'DISTRIBUIDOR AUTORIZADO';
             document.getElementById('print-client').innerText = selectedClient || 'CLIENTE GENERAL';
+            document.getElementById('print-leadtime').innerText = leadTime;
             document.getElementById('print-quotenum').innerText = `00000${Math.floor(100 + Math.random() * 900)}`;
 
             let subtotal = 0;
@@ -854,7 +855,6 @@
 
             document.getElementById('print-total').innerText = `USD ${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-            // Disparar sincronización con Salesforce y alerta a mramirez@rego-fix.com
             await notifyInternalSales('PDF_DOWNLOAD');
 
             window.print();
