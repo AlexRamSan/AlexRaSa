@@ -1,5 +1,118 @@
 import { createClient } from '@supabase/supabase-js';
 
+const jsforce = require('jsforce');
+const nodemailer = require('nodemailer');
+
+// Configuración de conexión a Salesforce (usa variables de entorno seguras)
+const conn = new jsforce.Connection({
+    loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
+});
+
+// Configuración del servicio de correo (ej. SMTP o Gmail corporativo)
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.rego-fix.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+    }
+});
+
+async function handleInternalSalesNotification(req, res) {
+    try {
+        const { action, distributor, client, items, totals, leadTime, emailTo } = req.body;
+
+        // 1. Autenticación y sincronización con Salesforce
+        await conn.login(process.env.SF_USER, process.env.SF_PASSWORD + process.env.SF_TOKEN);
+
+        // Crear la Oportunidad en Salesforce para que el vendedor le dé seguimiento
+        const oppResult = await conn.sobject("Opportunity").create({
+            Name: `B2B - ${client} (${distributor.name})`,
+            StageName: 'Prospecting',
+            CloseDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 15 días vigencia
+            Description: `Cotización generada en portal B2B por distribuidor: ${distributor.name}. Tiempo de entrega: ${leadTime}`
+        });
+
+        let quoteId = null;
+        if (oppResult.success) {
+            // Crear el registro de Cotización (Quote) en Salesforce vinculada a la Oportunidad
+            const quoteResult = await conn.sobject("Quote").create({
+                Name: `QT-B2B-${Date.now()}`,
+                OpportunityId: oppResult.id,
+                TotalPrice: totals.subtotal,
+                Status: 'Presented',
+                Description: `Partidas cotizadas: ${items.length} items. Total con IVA: $${totals.total.toFixed(2)} USD`
+            });
+            quoteId = quoteResult.id;
+        }
+
+        // 2. Construir el reporte detallado para tu correo (mramirez@rego-fix.com)
+        const itemsListHtml = items.map(it => `
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace;">${it.sku}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${it.name}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${it.qty}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${it.price.toFixed(2)} USD</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; font-weight: bold;">$${it.totalNet.toFixed(2)} USD</td>
+            </tr>
+        `).join('');
+
+        const emailHtml = `
+            <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #003DA5;">Nueva Cotización B2B Generada</h2>
+                <p>Se ha registrado una nueva cotización en el portal de distribuidores con sincronización automática en Salesforce.</p>
+                
+                <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <p><strong>Distribuidor:</strong> ${distributor.name} (${distributor.category})</p>
+                    <p><strong>Cliente Final:</strong> ${client}</p>
+                    <p><strong>Acción Realizada:</strong> ${action === 'PDF_DOWNLOAD' ? 'Descarga de PDF' : 'Envío por Correo'}</p>
+                    <p><strong>Tiempo de Entrega:</strong> <span style="color: #003DA5; font-weight: bold;">${leadTime}</span></p>
+                    ${quoteId ? `<p><strong>Salesforce Quote ID:</strong> ${quoteId} (Oportunidad ID: ${oppResult.id})</p>` : ''}
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr style="background: #003DA5; color: white;">
+                            <th style="padding: 8px; text-align: left;">SKU</th>
+                            <th style="padding: 8px; text-align: left;">Descripción</th>
+                            <th style="padding: 8px; text-align: center;">Cant.</th>
+                            <th style="padding: 8px; text-align: right;">P. Lista</th>
+                            <th style="padding: 8px; text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsListHtml}
+                    </tbody>
+                </table>
+
+                <div style="text-align: right; margin-top: 15px; font-size: 14px;">
+                    <p>Subtotal: <strong>$${totals.subtotal.toFixed(2)} USD</strong></p>
+                    <p>IVA (16%): <strong>$${totals.iva.toFixed(2)} USD</strong></p>
+                    <p style="color: #003DA5; font-size: 16px;">Total: <strong>$${totals.total.toFixed(2)} USD</strong></p>
+                </div>
+            </div>
+        `;
+
+        // Enviar correo a ti (mramirez@rego-fix.com) y opcionalmente al cliente/distribuidor
+        const recipients = ['mramirez@rego-fix.com'];
+        if (emailTo) recipients.push(emailTo);
+
+        await transporter.sendMail({
+            from: '"Portal B2B REGO-FIX" <no-reply@rego-fix.com>',
+            to: recipients.join(', '),
+            subject: `[B2B Cotización] Cliente: ${client} - Distribuidor: ${distributor.name}`,
+            html: emailHtml
+        });
+
+        res.status(200).json({ success: true, message: 'Oportunidad creada en Salesforce y notificación enviada correctamente.' });
+
+    } catch (error) {
+        console.error('Error en integración Salesforce/Correo:', error);
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // Matriz oficial REGO-FIX por categoría
 const CATEGORY_DISCOUNTS = {
   'DIAMANTE': { ER: 0.45, PG: 0.35, Maquinas: 0.10, Mordazas: 0.05, Otros: 0.15 },
