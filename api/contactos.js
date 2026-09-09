@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-
 import jsforce from 'jsforce';
 import nodemailer from 'nodemailer';
 
@@ -8,7 +7,7 @@ const conn = new jsforce.Connection({
     loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
 });
 
-// Configuración del servicio de correo (ej. SMTP o Gmail corporativo)
+// Configuración del servicio de correo SMTP
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.rego-fix.com',
     port: 587,
@@ -18,100 +17,6 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS
     }
 });
-
-async function handleInternalSalesNotification(req, res) {
-    try {
-        const { action, distributor, client, items, totals, leadTime, emailTo } = req.body;
-
-        // 1. Autenticación y sincronización con Salesforce
-        await conn.login(process.env.SF_USER, process.env.SF_PASSWORD + process.env.SF_TOKEN);
-
-        // Crear la Oportunidad en Salesforce para que el vendedor le dé seguimiento
-        const oppResult = await conn.sobject("Opportunity").create({
-            Name: `B2B - ${client} (${distributor.name})`,
-            StageName: 'Prospecting',
-            CloseDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 15 días vigencia
-            Description: `Cotización generada en portal B2B por distribuidor: ${distributor.name}. Tiempo de entrega: ${leadTime}`
-        });
-
-        let quoteId = null;
-        if (oppResult.success) {
-            // Crear el registro de Cotización (Quote) en Salesforce vinculada a la Oportunidad
-            const quoteResult = await conn.sobject("Quote").create({
-                Name: `QT-B2B-${Date.now()}`,
-                OpportunityId: oppResult.id,
-                TotalPrice: totals.subtotal,
-                Status: 'Presented',
-                Description: `Partidas cotizadas: ${items.length} items. Total con IVA: $${totals.total.toFixed(2)} USD`
-            });
-            quoteId = quoteResult.id;
-        }
-
-        // 2. Construir el reporte detallado para tu correo (mramirez@rego-fix.com)
-        const itemsListHtml = items.map(it => `
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; font-family: monospace;">${it.sku}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${it.name}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${it.qty}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${it.price.toFixed(2)} USD</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; font-weight: bold;">$${it.totalNet.toFixed(2)} USD</td>
-            </tr>
-        `).join('');
-
-        const emailHtml = `
-            <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #003DA5;">Nueva Cotización B2B Generada</h2>
-                <p>Se ha registrado una nueva cotización en el portal de distribuidores con sincronización automática en Salesforce.</p>
-                
-                <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <p><strong>Distribuidor:</strong> ${distributor.name} (${distributor.category})</p>
-                    <p><strong>Cliente Final:</strong> ${client}</p>
-                    <p><strong>Acción Realizada:</strong> ${action === 'PDF_DOWNLOAD' ? 'Descarga de PDF' : 'Envío por Correo'}</p>
-                    <p><strong>Tiempo de Entrega:</strong> <span style="color: #003DA5; font-weight: bold;">${leadTime}</span></p>
-                    ${quoteId ? `<p><strong>Salesforce Quote ID:</strong> ${quoteId} (Oportunidad ID: ${oppResult.id})</p>` : ''}
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <thead>
-                        <tr style="background: #003DA5; color: white;">
-                            <th style="padding: 8px; text-align: left;">SKU</th>
-                            <th style="padding: 8px; text-align: left;">Descripción</th>
-                            <th style="padding: 8px; text-align: center;">Cant.</th>
-                            <th style="padding: 8px; text-align: right;">P. Lista</th>
-                            <th style="padding: 8px; text-align: right;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsListHtml}
-                    </tbody>
-                </table>
-
-                <div style="text-align: right; margin-top: 15px; font-size: 14px;">
-                    <p>Subtotal: <strong>$${totals.subtotal.toFixed(2)} USD</strong></p>
-                    <p>IVA (16%): <strong>$${totals.iva.toFixed(2)} USD</strong></p>
-                    <p style="color: #003DA5; font-size: 16px;">Total: <strong>$${totals.total.toFixed(2)} USD</strong></p>
-                </div>
-            </div>
-        `;
-
-        // Enviar correo a ti (mramirez@rego-fix.com) y opcionalmente al cliente/distribuidor
-        const recipients = ['mramirez@rego-fix.com'];
-        if (emailTo) recipients.push(emailTo);
-
-        await transporter.sendMail({
-            from: '"Portal B2B REGO-FIX" <no-reply@rego-fix.com>',
-            to: recipients.join(', '),
-            subject: `[B2B Cotización] Cliente: ${client} - Distribuidor: ${distributor.name}`,
-            html: emailHtml
-        });
-
-        res.status(200).json({ success: true, message: 'Oportunidad creada en Salesforce y notificación enviada correctamente.' });
-
-    } catch (error) {
-        console.error('Error en integración Salesforce/Correo:', error);
-        res.status(500).json({ error: error.message });
-    }
-}
 
 // Matriz oficial REGO-FIX por categoría
 const CATEGORY_DISCOUNTS = {
@@ -202,61 +107,168 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. RUTA: ENVÍO Y REGISTRO DE COTIZACIÓN B2B (CON TIEMPO DE ENTREGA)
+  // 2. RUTA: NOTIFICACIÓN INTERNA Y SALESFORCE (mramirez@rego-fix.com)
+  if (action === 'internal_sales_notification' && req.method === 'POST') {
+    try {
+      const { action: subAction, distributor, client, items, totals, leadTime } = req.body || {};
+
+      let quoteId = null;
+      let oppId = null;
+
+      // Intentar sincronización con Salesforce (Protegido por si faltan credenciales)
+      try {
+        if (process.env.SF_USER && process.env.SF_PASSWORD) {
+          await conn.login(process.env.SF_USER, process.env.SF_PASSWORD + (process.env.SF_TOKEN || ''));
+          
+          const oppResult = await conn.sobject("Opportunity").create({
+            Name: `B2B - ${client} (${distributor?.name || 'Distribuidor'})`,
+            StageName: 'Prospecting',
+            CloseDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            Description: `Cotización generada en portal B2B. Acción: ${subAction}. Tiempo de entrega: ${leadTime}`
+          });
+
+          if (oppResult.success) {
+            oppId = oppResult.id;
+            const quoteResult = await conn.sobject("Quote").create({
+              Name: `QT-B2B-${Date.now()}`,
+              OpportunityId: oppId,
+              TotalPrice: totals.subtotal,
+              Status: 'Presented',
+              Description: `Total con IVA: $${totals.total.toFixed(2)} USD`
+            });
+            quoteId = quoteResult.id;
+          }
+        }
+      } catch (sfErr) {
+        console.warn('Advertencia Salesforce (no crítico):', sfErr.message);
+      }
+
+      // Envío de correo a mramirez@rego-fix.com vía Resend o SMTP
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      const targetEmail = 'mramirez@rego-fix.com';
+
+      const itemsHtml = items.map(it => `
+        <tr>
+          <td style="padding:6px;border:1px solid #ddd;font-family:monospace;">${it.sku}</td>
+          <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.price.toFixed(2)} USD</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.totalNet.toFixed(2)} USD</td>
+        </tr>
+      `).join('');
+
+      const htmlBody = `
+        <h2 style="color: #003DA5;">Nueva Cotización B2B Generada</h2>
+        <p><strong>Distribuidor:</strong> ${distributor?.name || 'N/A'} (${distributor?.category || 'N/A'})</p>
+        <p><strong>Cliente Final:</strong> ${client}</p>
+        <p><strong>Acción Realizada:</strong> ${subAction === 'PDF_DOWNLOAD' ? 'Descarga de PDF' : 'Envío por Correo al Cliente'}</p>
+        <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
+        ${oppId ? `<p><strong>Salesforce Oportunidad ID:</strong> ${oppId} (Quote: ${quoteId})</p>` : ''}
+        <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
+          <strong>Tiempo de Entrega Estimado:</strong> ${leadTime}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
+          <thead>
+            <tr style="background:#003DA5;color:#fff;">
+              <th style="padding:6px;border:1px solid #ddd;">SKU</th>
+              <th style="padding:6px;border:1px solid #ddd;">Producto</th>
+              <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
+              <th style="padding:6px;border:1px solid #ddd;">P. Lista</th>
+              <th style="padding:6px;border:1px solid #ddd;">Importe</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <p style="text-align:right;font-size:14px;">
+          <strong>Subtotal:</strong> $${totals.subtotal.toFixed(2)} USD<br>
+          <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
+          <strong style="color:#003DA5;font-size:16px;">Total Cotizado:</strong> $${totals.total.toFixed(2)} USD
+        </p>
+      `;
+
+      if (RESEND_API_KEY) {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`
+          },
+          body: JSON.stringify({
+            from: 'REGO-FIX B2B <b2b@alexrasa.store>',
+            to: [targetEmail],
+            subject: `[B2B Cotización] Cliente: ${client} - Distribuidor: ${distributor?.name}`,
+            html: htmlBody
+          })
+        });
+      } else {
+        await transporter.sendMail({
+          from: '"Portal B2B REGO-FIX" <no-reply@rego-fix.com>',
+          to: targetEmail,
+          subject: `[B2B Cotización] Cliente: ${client} - Distribuidor: ${distributor?.name}`,
+          html: htmlBody
+        });
+      }
+
+      return res.status(200).json({ success: true, message: 'Notificación enviada a mramirez@rego-fix.com' });
+    } catch (e) {
+      console.error('Error en internal_sales_notification:', e);
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // 3. RUTA: ENVÍO Y REGISTRO DE COTIZACIÓN B2B (CLIENTE)
   if (action === 'send_quote' && req.method === 'POST') {
     try {
-      const { distributor, client, items, totals, leadTime, emailTo } = req.body || {};
+      const { distributor, client, items, totals, leadTime, emailTo, internalCopyEmail } = req.body || {};
 
       if (!items || items.length === 0) {
         return res.status(400).json({ error: 'No hay partidas en la cotización.' });
       }
 
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
-      const internalNotificationEmail = process.env.SALES_NOTIFICATION_EMAIL || 'ventas@rego-fix.mx';
       const quoteLeadTime = leadTime || 'Entrega inmediata tras recibir orden de compra';
 
-      let emailSent = false;
-      if (RESEND_API_KEY) {
-        const itemsHtml = items.map(it => `
-          <tr>
-            <td style="padding:6px;border:1px solid #ddd;">${it.sku}</td>
-            <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
-            <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
-            <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.unitNet.toFixed(2)} USD</td>
-            <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.totalNet.toFixed(2)} USD</td>
-          </tr>
-        `).join('');
+      const itemsHtml = items.map(it => `
+        <tr>
+          <td style="padding:6px;border:1px solid #ddd;">${it.sku}</td>
+          <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.price.toFixed(2)} USD</td>
+          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.totalNet.toFixed(2)} USD</td>
+        </tr>
+      `).join('');
 
-        const htmlBody = `
-          <h2>Cotización B2B Generada - REGO-FIX México</h2>
-          <p><strong>Distribuidor:</strong> ${distributor.name} (${distributor.category})</p>
-          <p><strong>Cliente Final:</strong> ${client}</p>
-          <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
-          <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
-            <strong>Tiempo de Entrega Estimado:</strong> ${quoteLeadTime}
-          </div>
-          <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
-            <thead>
-              <tr style="background:#003DA5;color:#fff;">
-                <th style="padding:6px;border:1px solid #ddd;">SKU</th>
-                <th style="padding:6px;border:1px solid #ddd;">Producto</th>
-                <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
-                <th style="padding:6px;border:1px solid #ddd;">P. Neto</th>
-                <th style="padding:6px;border:1px solid #ddd;">Importe</th>
-              </tr>
-            </thead>
-            <tbody>${itemsHtml}</tbody>
-          </table>
-          <p style="text-align:right;font-size:14px;">
-            <strong>Subtotal Neto:</strong> $${totals.subtotal.toFixed(2)} USD<br>
-            <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
-            <strong style="color:#003DA5;font-size:16px;">Total Cotizado:</strong> $${totals.total.toFixed(2)} USD
-          </p>
-        `;
+      const htmlBody = `
+        <h2>Cotización Comercial - REGO-FIX México</h2>
+        <p><strong>Atención:</strong> ${client}</p>
+        <p><strong>Emitido por Distribuidor:</strong> ${distributor.name}</p>
+        <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
+          <strong>Tiempo de Entrega Estimado:</strong> ${quoteLeadTime}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
+          <thead>
+            <tr style="background:#003DA5;color:#fff;">
+              <th style="padding:6px;border:1px solid #ddd;">SKU</th>
+              <th style="padding:6px;border:1px solid #ddd;">Producto</th>
+              <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
+              <th style="padding:6px;border:1px solid #ddd;">Precio Lista</th>
+              <th style="padding:6px;border:1px solid #ddd;">Importe</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <p style="text-align:right;font-size:14px;">
+          <strong>Subtotal:</strong> $${totals.subtotal.toFixed(2)} USD<br>
+          <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
+          <strong style="color:#003DA5;font-size:16px;">Total Cotización:</strong> $${totals.total.toFixed(2)} USD
+        </p>
+      `;
 
-        const recipients = [internalNotificationEmail];
-        if (emailTo) recipients.push(emailTo);
+      const recipients = [];
+      if (emailTo) recipients.push(emailTo);
+      if (internalCopyEmail) recipients.push(internalCopyEmail);
 
+      if (recipients.length > 0 && RESEND_API_KEY) {
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -266,146 +278,19 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'REGO-FIX B2B <b2b@alexrasa.store>',
             to: recipients,
-            subject: `Cotización B2B [${quoteLeadTime}] - ${distributor.name} / ${client}`,
+            subject: `Cotización Oficial REGO-FIX - Cliente: ${client}`,
             html: htmlBody
           })
         });
-        emailSent = true;
       }
 
       return res.status(200).json({
         success: true,
-        emailSent,
         leadTime: quoteLeadTime,
-        message: emailSent 
-          ? 'Cotización registrada y notificada vía correo exitosamente.'
-          : 'Cotización procesada exitosamente.'
+        message: 'Cotización enviada por correo exitosamente.'
       });
     } catch (e) {
       return res.status(500).json({ error: e.message });
-    }
-  }
-
-  // 3. RUTA: PANEL DE CONTROL ADMINISTRATIVO (ADMIN-CUENTAS)
-  if (action === 'admin_control') {
-    try {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      if (req.method === 'GET') {
-        const [accRes, distMatrix] = await Promise.all([
-          supabase.from('customer_accounts').select('*').range(0, 4999).order('customer_name', { ascending: true }),
-          getDistributorsData(supabase)
-        ]);
-
-        if (accRes.error) throw accRes.error;
-
-        return res.status(200).json({
-          accounts: accRes.data || [],
-          distributors: distMatrix,
-          categoryDiscounts: CATEGORY_DISCOUNTS
-        });
-      }
-
-      if (req.method === 'POST') {
-        const { target, data } = req.body || {};
-
-        if (target === 'new_account') {
-          const { tax_id, customer_name, account_group, salesman, status } = data;
-          if (!customer_name) return res.status(400).json({ error: 'El nombre del cliente es obligatorio.' });
-
-          const { data: created, error } = await supabase
-            .from('customer_accounts')
-            .insert([{
-              tax_id: tax_id ? tax_id.trim().toUpperCase() : null,
-              customer_name: customer_name.trim().toUpperCase(),
-              account_group: account_group || 'Distributor',
-              salesman: salesman || 'Distribuidor General',
-              status: status || 'Active',
-              aging: 0
-            }])
-            .select()
-            .single();
-
-          if (error) throw error;
-          return res.status(200).json({ success: true, item: created });
-        }
-
-        if (target === 'new_distributor') {
-          const { user_key, name, category } = data;
-          if (!user_key || !name) return res.status(400).json({ error: 'Faltan campos del distribuidor.' });
-
-          const cleanCat = (category || 'BRONCE').toUpperCase();
-          const discounts = CATEGORY_DISCOUNTS[cleanCat] || CATEGORY_DISCOUNTS['BRONCE'];
-
-          const { data: created, error } = await supabase
-            .from('distributors')
-            .insert([{
-              user_key: user_key.trim().toLowerCase(),
-              name: name.trim(),
-              category: cleanCat,
-              discounts: discounts
-            }])
-            .select()
-            .single();
-
-          if (error) throw error;
-          return res.status(200).json({ success: true, distributor: created });
-        }
-
-        return res.status(400).json({ error: 'Target no reconocido.' });
-      }
-
-      if (req.method === 'PUT') {
-        const { target, data } = req.body || {};
-
-        if (target === 'account') {
-          const { id, salesman, status, account_group } = data;
-          if (!id) return res.status(400).json({ error: 'Falta el ID de la cuenta.' });
-
-          const updateFields = {};
-          if (salesman !== undefined) updateFields.salesman = salesman;
-          if (status !== undefined) updateFields.status = status;
-          if (account_group !== undefined) updateFields.account_group = account_group;
-
-          const { data: updatedAcc, error: accError } = await supabase
-            .from('customer_accounts')
-            .update(updateFields)
-            .eq('id', id)
-            .select()
-            .single();
-
-          if (accError) throw accError;
-          return res.status(200).json({ success: true, item: updatedAcc });
-        }
-
-        if (target === 'distributor_category') {
-          const { user_key, category } = data;
-          if (!user_key || !category) return res.status(400).json({ error: 'Faltan datos.' });
-
-          const cleanCat = category.toUpperCase();
-          const discounts = CATEGORY_DISCOUNTS[cleanCat] || CATEGORY_DISCOUNTS['BRONCE'];
-
-          const { data: updatedDist, error: distError } = await supabase
-            .from('distributors')
-            .update({
-              category: cleanCat,
-              discounts: discounts
-            })
-            .eq('user_key', user_key)
-            .select()
-            .single();
-
-          if (distError) throw distError;
-          return res.status(200).json({ success: true, distributor: updatedDist });
-        }
-
-        return res.status(400).json({ error: 'Destino no especificado.' });
-      }
-
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
     }
   }
 
@@ -462,7 +347,7 @@ export default async function handler(req, res) {
           return res.status(403).json({
             blocked: true,
             penaltyNotice: true,
-            message: `AVISO DE CUMPLIMIENTO COMERCIAL: La empresa "${directMatch.customer_name}" está clasificada como CUENTA PROTEGIDA DE VENTA DIRECTA por REGO-FIX México. Queda estrictamente prohibido cotizar, promover o suministrar producto a esta entidad. La detección de actividad comercial no autorizada conllevará la reclasificación inmediata de su categoría con pérdida de descuento comercial, o bien la rescisión definitiva de su contrato de distribución.`
+            message: `AVISO DE CUMPLIMIENTO COMERCIAL: La empresa "${directMatch.customer_name}" está clasificada como CUENTA PROTEGIDA DE VENTA DIRECTA por REGO-FIX México. Queda estrictamente prohibido cotizar, promover o suministrar producto a esta entidad.`
           });
         }
 
