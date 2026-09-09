@@ -55,7 +55,7 @@
         <!-- VISTA 1: LOGIN -->
         <div id="view-login" class="max-w-md mx-auto mt-12 bg-white p-8 rounded-2xl shadow-md border border-gray-200">
             <h2 class="text-xl font-bold text-[#003DA5] mb-2">Acceso a Distribuidores Autorizados</h2>
-            <p class="text-xs text-gray-500 mb-6">Consulte listas de precios netas, existencias actuales y condiciones comerciales 2026.</p>
+            <p class="text-xs text-gray-500 mb-6">Consulte listas de precios netas, existencias actuales en Querétaro y condiciones comerciales 2026.</p>
 
             <div class="space-y-4">
                 <div>
@@ -133,22 +133,26 @@
                 <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-1">
                     <div class="relative flex-1">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-xs"></i>
-                        <input type="text" id="catalog-search" onkeyup="filterCatalog()" placeholder="Buscar SKU (ej. 1725.10000) o Descripción..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
+                        <input type="text" id="catalog-search" onkeyup="filterCatalog()" placeholder="Buscar por SKU (ej. 1725.10000) o descripción..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
                     </div>
                     
                     <select id="catalog-tech-filter" onchange="filterCatalog()" class="border border-gray-300 p-2 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#003DA5]">
-                        <option value="">-- Todas las Tecnologías --</option>
-                        <option value="PG">powRgrip (PG)</option>
-                        <option value="ER">Pinzas / Portaherramientas ER</option>
-                        <option value="Maquinas">Unidades de Sujeción (Máquinas)</option>
-                        <option value="Otros">Accesorios y Otros</option>
+                        <option value="">-- Todas las Series ER --</option>
+                        <option value="ER 8">ER 8</option>
+                        <option value="ER 11">ER 11</option>
+                        <option value="ER 16">ER 16</option>
+                        <option value="ER 20">ER 20</option>
+                        <option value="ER 25">ER 25</option>
+                        <option value="ER 32">ER 32</option>
+                        <option value="ER 40">ER 40</option>
+                        <option value="ER 50">ER 50</option>
                     </select>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <button onclick="refreshLiveStock()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-lg font-bold border transition flex items-center gap-1" title="Actualizar Existencias">
                         <i class="fa-solid fa-boxes-stacked text-[#003DA5]"></i>
-                        <span>Actualizar Stock</span>
+                        <span>Actualizar Stock Qro</span>
                     </button>
                     <span id="dist-category-tag" class="text-xs font-bold px-3 py-2 rounded-lg bg-yellow-100 text-yellow-800 border border-yellow-200 whitespace-nowrap"></span>
                 </div>
@@ -160,9 +164,10 @@
                     <table class="w-full text-left text-xs">
                         <thead class="bg-gray-50 border-b text-gray-500 uppercase font-bold tracking-wider">
                             <tr>
+                                <th class="p-3 text-center w-16">Imagen</th>
                                 <th class="p-4">SKU / Descripción</th>
-                                <th class="p-4">Tecnología</th>
-                                <th class="p-4 text-center bg-blue-50/50 text-[#003DA5]">Stock Almacén</th>
+                                <th class="p-4">Serie</th>
+                                <th class="p-4 text-center bg-blue-50/50 text-[#003DA5]">Stock Qro</th>
                                 <th class="p-4 text-right">PVP Lista</th>
                                 <th class="p-4 text-center">Descto.</th>
                                 <th class="p-4 text-right">Su Precio Neto</th>
@@ -216,7 +221,6 @@
 
             <!-- BANNER DE TIEMPO DE ENTREGA ESTIMADO EN EL MODAL -->
             <div id="cart-leadtime-banner" class="mb-4 p-3 rounded-xl border flex items-center gap-3 text-xs">
-                <!-- Se llena dinámicamente -->
             </div>
 
             <!-- Tabla de partidas en carrito -->
@@ -227,7 +231,7 @@
                             <th class="p-2">SKU</th>
                             <th class="p-2">Producto</th>
                             <th class="p-2 text-center">Cant.</th>
-                            <th class="p-2 text-center">Disponibilidad</th>
+                            <th class="p-2 text-center">Disponibilidad Qro</th>
                             <th class="p-2 text-right">P. Neto</th>
                             <th class="p-2 text-right">Total</th>
                             <th class="p-2 text-center">Quitar</th>
@@ -303,7 +307,7 @@
                     <th class="p-2 border-r border-gray-300">SKU</th>
                     <th class="p-2 border-r border-gray-300">Descripción</th>
                     <th class="p-2 border-r border-gray-300 text-center">Cant.</th>
-                    <th class="p-2 border-r border-gray-300 text-center">Estado Stock</th>
+                    <th class="p-2 border-r border-gray-300 text-center">Stock Qro</th>
                     <th class="p-2 border-r border-gray-300 text-right">PVP Lista</th>
                     <th class="p-2 border-r border-gray-300 text-center">Descto.</th>
                     <th class="p-2 border-r border-gray-300 text-right">P. Neto</th>
@@ -322,24 +326,48 @@
         </div>
 
         <div class="text-[10px] text-gray-500 border-t pt-3">
-            <p><strong>Condiciones Comerciales:</strong> Precios expresados en Dólares Americanos (USD) más IVA. Precios sujetos a cambios sin previo aviso según la matriz comercial 2026 de REGO-FIX México. Vigencia: 15 días naturales.</p>
+            <p><strong>Condiciones Comerciales:</strong> Precios expresados en Dólares Americanos (USD) más IVA. Existencias validadas en almacén Querétaro. Vigencia: 15 días naturales.</p>
         </div>
     </div>
 
-    <script>
-        const MASTER_PRODUCTS = [
-            { sku: "4140.12536", name: "Portaherramientas ER BT40+", line: "ER", price: 185 },
-            { sku: "1132.05000", name: "Boquilla / Collet ER 32", line: "ER", price: 45 },
-            { sku: "7500.00000", name: "Forcemaster Spindle Gauge", line: "Otros", price: 1850 },
-            { sku: "7510.00005", name: "3D Edge Finder (Metric)", line: "Otros", price: 450 },
-            { sku: "7831.63200", name: "Spindle Taper Cleaner (STC)", line: "Otros", price: 65 }
-        ];
+    <!-- CARGA DE ARCHIVOS EXTERNOS DE DATOS E IMÁGENES -->
+    <script src="/Rego-Fix/Test-ecommerce/products.js"></script>
+    <script src="/Rego-Fix/Test-ecommerce/sku_images_final.js"></script>
 
+    <script>
         let currentUser = null;
         let currentDistData = null;
         let selectedClient = null;
         let liveStockMap = {};
         let quoteCart = [];
+
+        // Sistema inteligente de imágenes con herencia de familia
+        function getProductImage(sku) {
+            const cleanSku = String(sku || '').trim();
+            if (!cleanSku) return 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
+
+            if (window.SKU_IMAGES && window.SKU_IMAGES[cleanSku]) {
+                return window.SKU_IMAGES[cleanSku];
+            }
+
+            if (cleanSku.length >= 4 && window.SKU_IMAGES) {
+                const familyPrefix = cleanSku.substring(0, 4);
+                const skuSimilarKey = Object.keys(window.SKU_IMAGES).find(key => {
+                    const strKey = String(key).trim();
+                    if (!strKey.startsWith(familyPrefix)) return false;
+                    
+                    const isTargetCollet = cleanSku.startsWith('11') || cleanSku.startsWith('12') || cleanSku.startsWith('17');
+                    const isCandidateCollet = strKey.startsWith('11') || strKey.startsWith('12') || strKey.startsWith('17');
+                    return isTargetCollet === isCandidateCollet;
+                });
+                
+                if (skuSimilarKey && window.SKU_IMAGES[skuSimilarKey]) {
+                    return window.SKU_IMAGES[skuSimilarKey];
+                }
+            }
+
+            return 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
+        }
 
         async function login() {
             const u = document.getElementById('dist-user').value.trim();
@@ -406,17 +434,27 @@
             }
         }
 
+        // Cargar stock desde el inventory.json ubicado en la ruta absoluta
         async function fetchLiveStock() {
             try {
-                const res = await fetch('/api/inventory');
-                if (!res.ok) return;
-                const items = await res.json();
+                const response = await fetch('/Rego-Fix/Test-ecommerce/inventory.json');
+                if (!response.ok) return;
+                const rawData = await response.json();
                 liveStockMap = {};
+                
+                const items = Array.isArray(rawData) ? rawData : Object.values(rawData);
                 items.forEach(item => {
-                    liveStockMap[item.sku] = item.stock;
+                    const textoOriginal = item.Producto || item.producto || '';
+                    const matchSku = textoOriginal.match(/([0-9]{4}\.[0-9]{5})/);
+                    
+                    if (matchSku && matchSku[1]) {
+                        const sku = matchSku[1].trim();
+                        const qty = item.Queretaro !== undefined ? Number(item.Queretaro) : 0;
+                        liveStockMap[sku] = qty;
+                    }
                 });
             } catch (e) {
-                console.warn('No se pudo sincronizar inventario:', e);
+                console.warn('No se pudo sincronizar inventario de Querétaro:', e);
             }
         }
 
@@ -483,7 +521,12 @@
             document.getElementById('dist-category-tag').innerText = `Nivel: ${currentDistData.category}`;
 
             await fetchLiveStock();
-            renderPricingTable(MASTER_PRODUCTS);
+            
+            if (window.PRODUCTS_DATA && Array.isArray(window.PRODUCTS_DATA)) {
+                renderPricingTable(window.PRODUCTS_DATA);
+            } else {
+                alert('No se cargó products.js correctamente.');
+            }
 
             document.getElementById('view-client-selection').classList.add('hidden');
             document.getElementById('view-catalog').classList.remove('hidden');
@@ -498,11 +541,12 @@
             const tbody = document.getElementById('pricing-rows');
 
             if (!products || products.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-400">No se encontraron productos coincidentes.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-400">No se encontraron productos coincidentes.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = products.map(prod => {
+                // Cálculo de descuento por línea de producto o defecto
                 const discountRate = (currentDistData.discounts && currentDistData.discounts[prod.line]) !== undefined 
                     ? currentDistData.discounts[prod.line] 
                     : 0.10;
@@ -513,15 +557,22 @@
                 const stock = liveStockMap[prod.sku] !== undefined ? liveStockMap[prod.sku] : 0;
                 const stockBadge = stock > 0 
                     ? `<span class="bg-green-100 text-green-800 font-bold px-2.5 py-1 rounded-full text-xs shadow-xs"><i class="fa-solid fa-check mr-1"></i>${stock} pzas</span>`
-                    : `<span class="bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full text-xs shadow-xs"><i class="fa-solid fa-ban mr-1"></i>0 pzas</span>`;
+                    : `<span class="bg-orange-100 text-orange-800 font-bold px-2.5 py-1 rounded-full text-xs shadow-xs"><i class="fa-solid fa-clock mr-1"></i>0 pzas</span>`;
+
+                const productImg = getProductImage(prod.sku);
 
                 return `
                     <tr class="hover:bg-gray-50 transition">
+                        <td class="p-3 text-center">
+                            <div class="w-12 h-12 flex items-center justify-center bg-gray-50 border rounded p-1 mx-auto">
+                                <img src="${productImg}" alt="${prod.sku}" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.onerror=null; this.src='https://regousa.com/wp-content/uploads/2022/04/favicon.png';">
+                            </div>
+                        </td>
                         <td class="p-4">
                             <div class="font-bold text-gray-900">${prod.name}</div>
-                            <div class="font-mono text-[#003DA5] font-bold text-[11px]">${prod.sku}</div>
+                            <div class="font-mono text-[#003DA5] font-bold text-[11px]">SKU: ${prod.sku}</div>
                         </td>
-                        <td class="p-4 font-semibold text-gray-600">${prod.line}</td>
+                        <td class="p-4 font-semibold text-gray-600">${prod.series || prod.line || 'ER'}</td>
                         <td class="p-4 text-center bg-blue-50/30">
                             ${stockBadge}
                         </td>
@@ -546,27 +597,25 @@
         }
 
         function filterCatalog() {
+            if (!window.PRODUCTS_DATA) return;
             const query = document.getElementById('catalog-search').value.toLowerCase().trim();
-            const tech = document.getElementById('catalog-tech-filter').value;
+            const seriesFilter = document.getElementById('catalog-tech-filter').value;
 
-            const filtered = MASTER_PRODUCTS.filter(p => {
+            const filtered = window.PRODUCTS_DATA.filter(p => {
                 const matchSearch = (!query) || 
                     p.sku.toLowerCase().includes(query) || 
                     p.name.toLowerCase().includes(query);
 
-                const matchTech = (!tech) || p.line === tech;
+                const matchSeries = (!seriesFilter) || (p.series && p.series.includes(seriesFilter));
 
-                return matchSearch && matchTech;
+                return matchSearch && matchSeries;
             });
 
             renderPricingTable(filtered);
         }
 
-        // LÓGICA DE TIEMPO DE ENTREGA
         function calculateLeadTime() {
-            // Revisa si todo lo cotizado cuenta con inventario suficiente
             let allAvailableInStock = true;
-
             for (const item of quoteCart) {
                 const available = liveStockMap[item.sku] !== undefined ? liveStockMap[item.sku] : 0;
                 if (item.qty > available || available <= 0) {
@@ -574,14 +623,13 @@
                     break;
                 }
             }
-
             return allAvailableInStock 
                 ? 'Entrega inmediata tras recibir orden de compra' 
                 : '2 a 3 semanas';
         }
 
         function addToQuote(sku) {
-            const prod = MASTER_PRODUCTS.find(p => p.sku === sku);
+            const prod = window.PRODUCTS_DATA.find(p => p.sku === sku);
             if (!prod) return;
 
             const qtyInput = document.getElementById(`qty-${sku}`);
@@ -600,7 +648,7 @@
                 quoteCart.push({
                     sku: prod.sku,
                     name: prod.name,
-                    line: prod.line,
+                    line: prod.line || prod.series || 'ER',
                     price: prod.price,
                     discountRate: discountRate,
                     unitNet: unitNet,
@@ -639,7 +687,6 @@
 
             const leadTime = calculateLeadTime();
 
-            // Configuración visual del banner según el resultado
             if (leadTime === 'Entrega inmediata tras recibir orden de compra') {
                 leadTimeBanner.className = "mb-4 p-3 rounded-xl border border-green-200 bg-green-50 text-green-900 flex items-center justify-between text-xs";
                 leadTimeBanner.innerHTML = `
@@ -712,7 +759,6 @@
             }
         }
 
-        // DESCARGA EN PDF (MEMBRETE CORPORATIVO CON TIEMPO DE ENTREGA)
         function downloadQuotePDF() {
             if (quoteCart.length === 0) {
                 alert('No hay partidas en la cotización.');
@@ -759,7 +805,6 @@
             window.print();
         }
 
-        // ENVÍO DE COTIZACIÓN POR CORREO (INCLUYENDO TIEMPO DE ENTREGA)
         async function sendQuoteEmail() {
             const emailTo = document.getElementById('quote-email').value.trim();
             const btn = document.getElementById('btn-send-quote');
