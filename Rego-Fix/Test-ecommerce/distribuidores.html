@@ -282,51 +282,80 @@
         </div>
     </div>
 
-    <!-- VISTA IMPRIMIBLE PARA PDF -->
-    <div id="printable-quote" class="p-8 bg-white max-w-4xl mx-auto">
-        <div class="flex justify-between items-center border-b pb-4 mb-4">
+    <!-- VISTA IMPRIMIBLE PARA PDF (Formato Oficial Salesforce / REGO-FIX) -->
+    <div id="printable-quote" class="p-8 bg-white max-w-4xl mx-auto text-gray-900 font-sans" style="font-size: 11px;">
+        <div class="flex justify-between items-start border-b-2 border-[#003DA5] pb-4 mb-4">
             <div>
                 <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="REGO-FIX" class="h-10 mb-2">
-                <h1 class="text-lg font-black text-[#003DA5]">REGO-FIX México - Cotización Comercial B2B</h1>
-                <p class="text-xs text-gray-500">Documento Oficial de Precios y Disponibilidad</p>
+                <h1 class="text-sm font-black text-[#003DA5]">REGO-FIX MÉXICO S.A. DE C.V.</h1>
+                <p class="text-[9px] text-gray-600 leading-tight">
+                    Boulevard Universitario Primer Retorno, Numero 1,<br>
+                    interno 82 B, Terra Business Park, Colonia La Pradera,<br>
+                    El Marques, Estado de Querétaro C.P. 76269, México.<br>
+                    <strong>R.F.C.:</strong> RME2201132L5
+                </p>
             </div>
-            <div class="text-right text-xs">
+            <div class="text-right text-[11px] space-y-1">
+                <p><strong>Número de cotización:</strong> <span id="print-quotenum" class="font-mono font-bold text-[#003DA5]">00000508</span></p>
                 <p><strong>Fecha:</strong> <span id="print-date"></span></p>
-                <p><strong>Distribuidor:</strong> <span id="print-distributor"></span></p>
-                <p><strong>Cliente Final:</strong> <span id="print-client"></span></p>
+                <p><strong>Contacto:</strong> Miguel Ramirez</p>
+                <p><strong>Email:</strong> mramirez@rego-fix.com</p>
+                <p><strong>Celular:</strong> (52) 614 337 8481</p>
             </div>
         </div>
 
-        <!-- RECUADRO DE TIEMPO DE ENTREGA OFICIAL EN PDF -->
-        <div class="border border-blue-200 bg-blue-50/50 rounded-lg p-3 mb-4 text-xs flex justify-between items-center">
-            <span><strong>Tiempo de Entrega Estimado:</strong></span>
-            <span id="print-leadtime" class="font-black text-[#003DA5] text-sm"></span>
+        <div class="grid grid-cols-2 gap-4 mb-6 bg-gray-50 p-3 rounded border border-gray-200 text-[11px]">
+            <div>
+                <strong class="text-[#003DA5] uppercase block mb-1">Cotizar a:</strong>
+                <span id="print-client" class="font-bold uppercase text-gray-900 text-xs"></span>
+                <p class="text-gray-600 mt-1">Dirección comercial asignada</p>
+            </div>
+            <div>
+                <strong class="text-[#003DA5] uppercase block mb-1">Usuario final:</strong>
+                <span class="font-bold text-gray-900">REGO-FIX / Cuenta Autorizada B2B</span>
+                <p class="text-gray-600 mt-1">Precios en USD (No incluyen IVA / VAT)</p>
+            </div>
         </div>
 
-        <table class="w-full text-left text-xs mb-6 border border-gray-300">
-            <thead class="bg-gray-100 border-b border-gray-300">
-                <tr>
-                    <th class="p-2 border-r border-gray-300">SKU</th>
-                    <th class="p-2 border-r border-gray-300">Descripción</th>
-                    <th class="p-2 border-r border-gray-300 text-center">Cant.</th>
-                    <th class="p-2 border-r border-gray-300 text-center">Stock Qro</th>
-                    <th class="p-2 border-r border-gray-300 text-right">Precio de Lista</th>
-                    <th class="p-2 text-right">Importe Total</th>
+        <table class="w-full text-left text-[11px] mb-6 border-collapse border border-gray-300">
+            <thead>
+                <tr class="bg-[#003DA5] text-white">
+                    <th class="p-2 border border-gray-300 text-center w-12">Qty</th>
+                    <th class="p-2 border border-gray-300 w-28">Articulo</th>
+                    <th class="p-2 border border-gray-300">Descripción</th>
+                    <th class="p-2 border border-gray-300 text-right">Precio de lista</th>
+                    <th class="p-2 border border-gray-300 text-right">Precio/UN</th>
+                    <th class="p-2 border border-gray-300 text-right">Importe</th>
                 </tr>
             </thead>
             <tbody id="print-items-tbody"></tbody>
         </table>
 
-        <div class="flex justify-end text-xs mb-8">
-            <div class="w-64 space-y-1">
-                <div class="flex justify-between"><span>Subtotal:</span> <strong id="print-subtotal"></strong></div>
-                <div class="flex justify-between"><span>IVA (16%):</span> <strong id="print-iva"></strong></div>
-                <div class="flex justify-between text-sm font-black border-t pt-1 text-[#003DA5]"><span>Total USD:</span> <strong id="print-total"></strong></div>
+        <div class="flex justify-end mb-6 text-xs">
+            <div class="w-64 space-y-1 bg-gray-50 p-3 rounded border border-gray-200">
+                <div class="flex justify-between font-bold text-sm text-[#003DA5] border-t border-gray-300 pt-1">
+                    <span>Total:</span> 
+                    <span id="print-total" class="font-mono"></span>
+                </div>
             </div>
         </div>
 
-        <div class="text-[10px] text-gray-500 border-t pt-3">
-            <p><strong>Condiciones Comerciales:</strong> Precios de lista expresados en Dólares Americanos (USD) más IVA. Existencias validadas en almacén Querétaro. Vigencia: 15 días naturales.</p>
+        <div class="text-[9px] text-gray-600 space-y-1 border-t border-gray-300 pt-3 leading-tight">
+            <p><strong>Entrega:</strong> FCA Querétaro</p>
+            <p><strong>Válidez:</strong> Presupuesto válido por 30 días naturales a partir de la fecha de emisión.</p>
+            <p>Agradeceremos su pedido. Para cualquier duda adicional favor de contactarnos.</p>
+            <p>Todos los pedidos especiales están sujetos a una diferencia de cantidad de +/- 10% y no son retornables después de la venta.</p>
+            <p>* Tiempo de entrega no incluye dias festivos, ni fines de semana.</p>
+            <p>* Material sujeto a disponibilidad al momento de recibir la orden de compra oficial, salvo previa venta.</p>
+            <p>* Los tiempos de entrega son estimados, Rego-Fix México S.A. de C.V. no acepta responsabilidad alguna derivadas por las demoras en la entrega del material sin importar las causas del mismo.</p>
+            <p>* Las ventas son FCA en el almacén de Rego-Fix México ubicado en la ciudad de Querétaro, Qro, en el entendido de que el comprador pagara siempre por su cuenta exclusiva los gastos de envió y seguros.</p>
+            <p>En caso de pedido, favor de referenciar nuestro número de cotización y registro de número de parte.</p>
+            <p>* La vigencia de la presente cotización es de un mes a partir de la fecha de la misma.</p>
+            <p>* No se aceptan devoluciones en herramienta de fabricación especial, usado o modificado.</p>
+            <p>* En producto estándar, la devolución será con autorización de Rego-Fix México S.A. de C.V. y bajo nuestras condiciones.</p>
+            <div class="text-center font-bold text-[#003DA5] mt-4 pt-2 border-t border-gray-200">
+                SWISS MADE // REGO-FIX MEXICO S.A. DE C.V. // T: +(52) 442 888 0796 // INTERNET: https://rego-fix.mx/
+            </div>
         </div>
     </div>
 
@@ -456,7 +485,6 @@
             }
         }
 
-        // Cargar stock en automático desde el inventory.json ubicado en la ruta absoluta
         async function fetchLiveStock() {
             try {
                 const response = await fetch('/Rego-Fix/Test-ecommerce/inventory.json');
@@ -799,39 +827,32 @@
                 return;
             }
 
-            const leadTime = calculateLeadTime();
-            const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+            const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
             
             document.getElementById('print-date').innerText = printDate;
-            document.getElementById('print-distributor').innerText = `${currentDistData.name}`;
-            document.getElementById('print-client').innerText = selectedClient || 'Cliente General';
-            document.getElementById('print-leadtime').innerText = leadTime;
+            document.getElementById('print-client').innerText = selectedClient || 'CLIENTE GENERAL';
+            document.getElementById('print-quotenum').innerText = `00000${Math.floor(100 + Math.random() * 900)}`;
 
             let subtotal = 0;
             const printTbody = document.getElementById('print-items-tbody');
+            
             printTbody.innerHTML = quoteCart.map(it => {
                 subtotal += it.totalNet;
-                const stockAvail = liveStockMap[it.sku] !== undefined ? liveStockMap[it.sku] : 0;
-                const statusStr = (it.qty <= stockAvail && stockAvail > 0) ? 'En Stock' : '2-3 semanas';
+                const unitPrice = it.price;
 
                 return `
-                    <tr class="border-b border-gray-300">
-                        <td class="p-2 border-r border-gray-300 font-mono">${it.sku}</td>
-                        <td class="p-2 border-r border-gray-300 font-bold">${it.name}</td>
-                        <td class="p-2 border-r border-gray-300 text-center">${it.qty}</td>
-                        <td class="p-2 border-r border-gray-300 text-center font-semibold text-[11px]">${statusStr}</td>
-                        <td class="p-2 border-r border-gray-300 text-right">$${it.price.toFixed(2)} USD</td>
-                        <td class="p-2 text-right font-mono font-bold">$${it.totalNet.toFixed(2)} USD</td>
+                    <tr class="border-b border-gray-200">
+                        <td class="p-2 border border-gray-300 text-center font-bold">${it.qty}</td>
+                        <td class="p-2 border border-gray-300 font-mono font-bold">${it.sku}</td>
+                        <td class="p-2 border border-gray-300 font-semibold">${it.name}</td>
+                        <td class="p-2 border border-gray-300 text-right font-mono">USD ${unitPrice.toFixed(2)}</td>
+                        <td class="p-2 border border-gray-300 text-right font-mono">USD ${unitPrice.toFixed(2)}</td>
+                        <td class="p-2 border border-gray-300 text-right font-mono font-bold">USD ${it.totalNet.toFixed(2)}</td>
                     </tr>
                 `;
             }).join('');
 
-            const iva = subtotal * 0.16;
-            const total = subtotal + iva;
-
-            document.getElementById('print-subtotal').innerText = `$${subtotal.toFixed(2)} USD`;
-            document.getElementById('print-iva').innerText = `$${iva.toFixed(2)} USD`;
-            document.getElementById('print-total').innerText = `$${total.toFixed(2)} USD`;
+            document.getElementById('print-total').innerText = `USD ${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             // Disparar sincronización con Salesforce y alerta a mramirez@rego-fix.com
             await notifyInternalSales('PDF_DOWNLOAD');
@@ -869,7 +890,6 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error al procesar la cotización.');
 
-                // Disparar sincronización con Salesforce y alerta a mramirez@rego-fix.com
                 await notifyInternalSales('EMAIL_SENT');
 
                 alert(`${data.message}\nTiempo de entrega asignado: ${leadTime}\n(Oportunidad generada en Salesforce y copia enviada a ${INTERNAL_SALES_EMAIL}).`);
