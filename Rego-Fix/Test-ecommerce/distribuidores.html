@@ -128,7 +128,7 @@
                 </div>
             </div>
 
-            <!-- Filtros -->
+            <!-- Filtros Avanzados -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-3 items-center justify-between">
                 <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto flex-1">
                     <div class="relative flex-1">
@@ -136,7 +136,19 @@
                         <input type="text" id="catalog-search" onkeyup="filterCatalog()" placeholder="Buscar por SKU (ej. 1725.10000) o descripción..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
                     </div>
                     
-                    <select id="catalog-tech-filter" onchange="filterCatalog()" class="border border-gray-300 p-2 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#003DA5]">
+                    <!-- Filtro por Categoría Principal -->
+                    <select id="catalog-cat-filter" onchange="filterCatalog()" class="border border-gray-300 p-2 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#003DA5]">
+                        <option value="">-- Todas las Categorías --</option>
+                        <option value="Boquillas">Boquillas / Collets (ER, PG, HS)</option>
+                        <option value="Holders">Portaherramientas / Holders (BT, CAT, HSK, SK, C)</option>
+                        <option value="Tuercas">Tuercas (Hi-Q, reCool, secures)</option>
+                        <option value="Llaves">Llaves de apriete (Wrenches / Spanners)</option>
+                        <option value="Sellos">Sellos y Discos de refrigeración (DS / KS)</option>
+                        <option value="Accesorios">Accesorios y refacciones</option>
+                    </select>
+
+                    <!-- Filtro por Serie ER -->
+                    <select id="catalog-series-filter" onchange="filterCatalog()" class="border border-gray-300 p-2 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#003DA5]">
                         <option value="">-- Todas las Series ER --</option>
                         <option value="ER 8">ER 8</option>
                         <option value="ER 11">ER 11</option>
@@ -158,7 +170,7 @@
                             <tr>
                                 <th class="p-3 text-center w-16">Imagen</th>
                                 <th class="p-4">SKU / Descripción</th>
-                                <th class="p-4">Serie</th>
+                                <th class="p-4">Categoría / Serie</th>
                                 <th class="p-4 text-center bg-blue-50/50 text-[#003DA5]">Stock Qro</th>
                                 <th class="p-4 text-right">Precio de Lista</th>
                                 <th class="p-4 text-center">Cantidad</th>
@@ -251,7 +263,7 @@
             <!-- Opciones -->
             <div class="space-y-3">
                 <div class="flex gap-2">
-                    <input type="email" id="quote-email" placeholder="Correo para recibir copia formal (Opcional)" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
+                    <input type="email" id="quote-email" placeholder="Correo adicional para recibir copia (Opcional)" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
                     <button onclick="sendQuoteEmail()" id="btn-send-quote" class="bg-[#003DA5] hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
                         <i class="fa-solid fa-paper-plane"></i> Enviar por Correo
                     </button>
@@ -328,6 +340,7 @@
         let selectedClient = null;
         let liveStockMap = {};
         let quoteCart = [];
+        const INTERNAL_SALES_EMAIL = 'mramirez@rego-fix.com';
 
         // Sistema inteligente de imágenes con herencia de familia
         function getProductImage(sku) {
@@ -355,6 +368,27 @@
             }
 
             return 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
+        }
+
+        // Función auxiliar para clasificar automáticamente la categoría de cada producto según su SKU o nombre
+        function getProductCategory(item) {
+            const name = (item.name || '').toLowerCase();
+            const sku = (item.sku || '').toLowerCase();
+            const catField = (item.cat || '').toLowerCase();
+
+            if (sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17') || name.includes('boquilla') || name.includes('collet') || catField.includes('pinza')) {
+                return 'Boquillas';
+            } else if (name.includes('tuerca') || name.includes('nut') || sku.startsWith('33') || sku.startsWith('34') || sku.startsWith('35') || catField.includes('tuerca')) {
+                return 'Tuercas';
+            } else if (name.includes('llave') || name.includes('wrench') || name.includes('spanner') || sku.startsWith('711') || sku.startsWith('715') || sku.startsWith('785')) {
+                return 'Llaves';
+            } else if (name.includes('sello') || name.includes('disco') || name.includes('ds/') || name.includes('ks/') || sku.startsWith('39')) {
+                return 'Sellos';
+            } else if (name.includes('porta') || name.includes('cono') || name.includes('holder') || name.includes('bt') || name.includes('cat') || name.includes('hsk') || name.includes('sk')) {
+                return 'Holders';
+            } else {
+                return 'Accesorios';
+            }
         }
 
         async function login() {
@@ -529,6 +563,7 @@
 
             tbody.innerHTML = products.map(prod => {
                 const listPrice = prod.price;
+                const categoryLabel = getProductCategory(prod);
 
                 const stock = liveStockMap[prod.sku] !== undefined ? liveStockMap[prod.sku] : 0;
                 const stockBadge = stock > 0 
@@ -548,7 +583,9 @@
                             <div class="font-bold text-gray-900">${prod.name}</div>
                             <div class="font-mono text-[#003DA5] font-bold text-[11px]">SKU: ${prod.sku}</div>
                         </td>
-                        <td class="p-4 font-semibold text-gray-600">${prod.series || prod.line || 'ER'}</td>
+                        <td class="p-4 font-semibold text-gray-600">
+                            <span class="bg-gray-100 px-2 py-0.5 rounded text-[10px]">${categoryLabel}</span> / ${prod.series || prod.line || 'ER'}
+                        </td>
                         <td class="p-4 text-center bg-blue-50/30">
                             ${stockBadge}
                         </td>
@@ -571,16 +608,20 @@
         function filterCatalog() {
             if (!window.PRODUCTS_DATA) return;
             const query = document.getElementById('catalog-search').value.toLowerCase().trim();
-            const seriesFilter = document.getElementById('catalog-tech-filter').value;
+            const catFilter = document.getElementById('catalog-cat-filter').value;
+            const seriesFilter = document.getElementById('catalog-series-filter').value;
 
             const filtered = window.PRODUCTS_DATA.filter(p => {
                 const matchSearch = (!query) || 
                     p.sku.toLowerCase().includes(query) || 
                     p.name.toLowerCase().includes(query);
 
+                const productCat = getProductCategory(p);
+                const matchCat = (!catFilter) || productCat === catFilter;
+
                 const matchSeries = (!seriesFilter) || (p.series && p.series.includes(seriesFilter));
 
-                return matchSearch && matchSeries;
+                return matchSearch && matchCat && matchSeries;
             });
 
             renderPricingTable(filtered);
@@ -725,7 +766,7 @@
             }
         }
 
-        // DISPARADOR AUTOMÁTICO DE COPIA A VENTAS INTERNAS
+        // DISPARADOR AUTOMÁTICO DE COPIA A mramirez@rego-fix.com
         async function notifyInternalSales(actionType) {
             try {
                 let subtotal = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
@@ -738,6 +779,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: actionType, // 'PDF_DOWNLOAD' o 'EMAIL_SENT'
+                        targetEmail: INTERNAL_SALES_EMAIL,
                         distributor: currentDistData,
                         client: selectedClient,
                         items: quoteCart,
@@ -791,14 +833,14 @@
             document.getElementById('print-iva').innerText = `$${iva.toFixed(2)} USD`;
             document.getElementById('print-total').innerText = `$${total.toFixed(2)} USD`;
 
-            // Notificar de forma automática a ventas internas en segundo plano
+            // Notificar de forma automática a mramirez@rego-fix.com en segundo plano
             await notifyInternalSales('PDF_DOWNLOAD');
 
             window.print();
         }
 
         async function sendQuoteEmail() {
-            const emailTo = document.getElementById('quote-email').value.trim();
+            const clientEmailInput = document.getElementById('quote-email').value.trim();
             const btn = document.getElementById('btn-send-quote');
 
             let subtotal = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
@@ -810,6 +852,7 @@
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando...`;
 
             try {
+                // Se envía tanto al correo opcional del cliente como copia automática a mramirez@rego-fix.com
                 const res = await fetch('/api/contactos?action=send_quote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -819,17 +862,18 @@
                         items: quoteCart,
                         totals: { subtotal, iva, total },
                         leadTime: leadTime,
-                        emailTo: emailTo || undefined
+                        emailTo: clientEmailInput || undefined,
+                        internalCopyEmail: INTERNAL_SALES_EMAIL
                     })
                 });
 
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error al procesar la cotización.');
 
-                // Notificar en automático a ventas internas tras el envío exitoso
+                // Notificación automática de respaldo
                 await notifyInternalSales('EMAIL_SENT');
 
-                alert(`${data.message}\nTiempo de entrega asignado: ${leadTime}\n(Copia enviada a ventas internas en automático).`);
+                alert(`${data.message}\nTiempo de entrega asignado: ${leadTime}\n(Copia enviada en automático a ${INTERNAL_SALES_EMAIL}).`);
             } catch (err) {
                 alert(`Error al enviar cotización: ${err.message}`);
             } finally {
