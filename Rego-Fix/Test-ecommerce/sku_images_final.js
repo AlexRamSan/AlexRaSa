@@ -2409,3 +2409,37 @@ window.SKU_IMAGES = {
     "1132.19056": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg",
     "1132.20006": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg",
 };
+// --- SCRIPT DE CORRECCIÓN AUTOMÁTICA DE IMÁGENES ---
+(function corregirImagenesErroneas() {
+    // Estas URLs corresponden a imágenes correctas verificadas de collets reales
+    const imagenesCorrectas = {
+        "ER 8": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-5.jpg",
+        "ER 11": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-36.jpg",
+        "ER 16": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-94.jpg",
+        "ER 20": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-163.jpg",
+        "ER 25": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-231.jpg",
+        "ER 32": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-385.jpg", // ER32 UP validado de tu captura
+        "ER 40": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-429.jpg",
+        "ER 50": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-553.jpg",
+        "MR": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg" // Collet MR (micRun) validado
+    };
+
+    if (window.PRODUCTS_DATA && window.SKU_IMAGES) {
+        window.PRODUCTS_DATA.forEach(producto => {
+            // Filtramos para afectar únicamente a las pinzas en subcategoría estándar
+            if (producto.cat === "Pinzas" && producto.sub === "Estándar") {
+                let serie = producto.series;
+                
+                // Si el nombre comienza con MR, lo forzamos a la familia MR (micRun)
+                if (producto.name.startsWith("MR ")) {
+                    serie = "MR";
+                }
+
+                // Asignamos la imagen genérica correcta reemplazando al portaherramientas
+                if (imagenesCorrectas[serie]) {
+                    window.SKU_IMAGES[producto.sku] = imagenesCorrectas[serie];
+                }
+            }
+        });
+    }
+})();
