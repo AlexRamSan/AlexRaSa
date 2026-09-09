@@ -2861,6 +2861,9 @@ window.SKU_IMAGES = {
   "1160.10000": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-590.jpg",
   "1160.11112": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-592.jpg",
   "1160.12000": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-594.jpg",
+    "1132.07500": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-344.jpg",
+    "1132.07942": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-346.jpg",
+    
 
     // --- Coolant Tube Wrench ---
     "7212.00000": "https://regousa.com/wp-content/uploads/2024/04/385_RF_SKR_721263000_w.jpg"
