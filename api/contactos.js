@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const jsforce = require('jsforce');
-const nodemailer = require('nodemailer');
+import jsforce from 'jsforce';
+import nodemailer from 'nodemailer';
 
 // Configuración de conexión a Salesforce (usa variables de entorno seguras)
 const conn = new jsforce.Connection({
