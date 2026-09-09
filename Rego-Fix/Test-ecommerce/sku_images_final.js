@@ -2500,65 +2500,29 @@ window.SKU_IMAGES = {
     "3725.29000": "https://regousa.com/wp-content/uploads/2024/04/158_RCRAX32_0022268.png",
     
 };
-// --- SCRIPT DE CORRECCIÓN AUTOMÁTICA DE IMÁGENES PARA TODAS LAS PINZAS ---
-(function corregirTodasLasPinzas() {
-    // Imágenes maestras verificadas para cada tipo de collet
-    const imagenesMaestras = {
-        // Pinzas Estándar / UP
-        "ER 8": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-5.jpg",
-        "ER 11": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-36.jpg",
-        "ER 16": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-94.jpg",
-        "ER 20": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-163.jpg",
-        "ER 25": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-231.jpg",
-        "ER 32": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-385.jpg",
-        "ER 40": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-429.jpg",
-        "ER 50": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-553.jpg",
-        
-        // Pinzas micRun (MR)
-        "MR": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg",
-        
-        // Pinzas Selladas / Refrigeración (DM / CB)
-        // (Tomada de la pinza sellada que sí se ve bien en tu captura)
-        "SELLADA": "https://regousa.com/wp-content/uploads/2024/04/03_RFAG_ER32DM_12_rendering_123212000_w-46.jpg",
+// --- SCRIPT DE CORRECCIÓN Y RESPALDO AUTOMÁTICO DE IMÁGENES (GLOBAL POR FAMILIA) ---
+(function corregirImagenesGlobal() {
+    if (!window.PRODUCTS_DATA || !window.SKU_IMAGES) return;
 
-        // Pinzas de Machuelo (GB / Tap)
-        "MACHUELO": "https://regousa.com/wp-content/uploads/2024/04/06_RFAG_ER32GB_12_rendering_143212000_w-1.jpg"
-    };
+    window.PRODUCTS_DATA.forEach(producto => {
+        const sku = producto.sku;
+        if (!sku) return;
 
-    // Verificamos que ambos catálogos estén cargados en memoria
-    if (window.PRODUCTS_DATA && window.SKU_IMAGES) {
-        window.PRODUCTS_DATA.forEach(producto => {
-            // Aplicamos la corrección SOLAMENTE si la categoría principal es "Pinzas"
-            if (producto.cat === "Pinzas") {
-                let serie = producto.series;
-                let sub = producto.sub;
-                let nombre = producto.name;
-                
-                // 1. Corregir Pinzas de Refrigeración / Selladas (DM o CB)
-                if (sub === "Refrigeración / Sellado" || nombre.includes(" DM ") || nombre.includes("-CB")) {
-                    window.SKU_IMAGES[producto.sku] = imagenesMaestras["SELLADA"];
-                    return; // Terminamos con este producto
-                }
+        // 1. Si ya tiene una imagen definida y válida en el diccionario, la respetamos
+        if (window.SKU_IMAGES[sku]) return;
 
-                // 2. Corregir Pinzas de Machuelo (Tap / GB)
-                if (sub === "Machuelo (Tap)" || nombre.includes(" GB ")) {
-                    window.SKU_IMAGES[producto.sku] = imagenesMaestras["MACHUELO"];
-                    return;
-                }
+        // 2. Extraer los primeros 4 dígitos (la familia, ej: "3520")
+        const familyPrefix = sku.substring(0, 4);
 
-                // 3. Corregir Pinzas MR (micRun)
-                if (nombre.startsWith("MR ")) {
-                    window.SKU_IMAGES[producto.sku] = imagenesMaestras["MR"];
-                    return;
-                }
+        // 3. Buscar en todo el catálogo de SKU_IMAGES si existe otro producto de la misma familia
+        const skuSimilarKey = Object.keys(window.SKU_IMAGES).find(key => key.startsWith(familyPrefix));
 
-                // 4. Corregir Pinzas Estándar y Ultra-Precisión (UP)
-                if (sub === "Estándar" || sub === "Ultra-Precisión (UP)") {
-                    if (imagenesMaestras[serie]) {
-                        window.SKU_IMAGES[producto.sku] = imagenesMaestras[serie];
-                    }
-                }
-            }
-        });
-    }
+        if (skuSimilarKey && window.SKU_IMAGES[skuSimilarKey]) {
+            // Asignamos la imagen del hermano de familia más cercano
+            window.SKU_IMAGES[sku] = window.SKU_IMAGES[skuSimilarKey];
+        } else {
+            // 4. Fallback final por si no existe ningún otro producto en esa misma familia
+            window.SKU_IMAGES[sku] = "https://regousa.com/wp-content/uploads/2022/04/favicon.png";
+        }
+    });
 })();
