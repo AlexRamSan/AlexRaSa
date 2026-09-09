@@ -2409,35 +2409,63 @@ window.SKU_IMAGES = {
     "1132.19056": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg",
     "1132.20006": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg",
 };
-// --- SCRIPT DE CORRECCIÓN AUTOMÁTICA DE IMÁGENES ---
-(function corregirImagenesErroneas() {
-    // Estas URLs corresponden a imágenes correctas verificadas de collets reales
-    const imagenesCorrectas = {
+// --- SCRIPT DE CORRECCIÓN AUTOMÁTICA DE IMÁGENES PARA TODAS LAS PINZAS ---
+(function corregirTodasLasPinzas() {
+    // Imágenes maestras verificadas para cada tipo de collet
+    const imagenesMaestras = {
+        // Pinzas Estándar / UP
         "ER 8": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-5.jpg",
         "ER 11": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-36.jpg",
         "ER 16": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-94.jpg",
         "ER 20": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-163.jpg",
         "ER 25": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-231.jpg",
-        "ER 32": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-385.jpg", // ER32 UP validado de tu captura
+        "ER 32": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-385.jpg",
         "ER 40": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-429.jpg",
         "ER 50": "https://regousa.com/wp-content/uploads/2024/04/01_RFAG_ER32_12_rendering_1113212000_w-553.jpg",
-        "MR": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg" // Collet MR (micRun) validado
+        
+        // Pinzas micRun (MR)
+        "MR": "https://regousa.com/wp-content/uploads/2024/04/02_RFAG_MR32_12_rendering_113212006_w-1.jpg",
+        
+        // Pinzas Selladas / Refrigeración (DM / CB)
+        // (Tomada de la pinza sellada que sí se ve bien en tu captura)
+        "SELLADA": "https://regousa.com/wp-content/uploads/2024/04/03_RFAG_ER32DM_12_rendering_123212000_w-46.jpg",
+
+        // Pinzas de Machuelo (GB / Tap)
+        "MACHUELO": "https://regousa.com/wp-content/uploads/2024/04/06_RFAG_ER32GB_12_rendering_143212000_w-1.jpg"
     };
 
+    // Verificamos que ambos catálogos estén cargados en memoria
     if (window.PRODUCTS_DATA && window.SKU_IMAGES) {
         window.PRODUCTS_DATA.forEach(producto => {
-            // Filtramos para afectar únicamente a las pinzas en subcategoría estándar
-            if (producto.cat === "Pinzas" && producto.sub === "Estándar") {
+            // Aplicamos la corrección SOLAMENTE si la categoría principal es "Pinzas"
+            if (producto.cat === "Pinzas") {
                 let serie = producto.series;
+                let sub = producto.sub;
+                let nombre = producto.name;
                 
-                // Si el nombre comienza con MR, lo forzamos a la familia MR (micRun)
-                if (producto.name.startsWith("MR ")) {
-                    serie = "MR";
+                // 1. Corregir Pinzas de Refrigeración / Selladas (DM o CB)
+                if (sub === "Refrigeración / Sellado" || nombre.includes(" DM ") || nombre.includes("-CB")) {
+                    window.SKU_IMAGES[producto.sku] = imagenesMaestras["SELLADA"];
+                    return; // Terminamos con este producto
                 }
 
-                // Asignamos la imagen genérica correcta reemplazando al portaherramientas
-                if (imagenesCorrectas[serie]) {
-                    window.SKU_IMAGES[producto.sku] = imagenesCorrectas[serie];
+                // 2. Corregir Pinzas de Machuelo (Tap / GB)
+                if (sub === "Machuelo (Tap)" || nombre.includes(" GB ")) {
+                    window.SKU_IMAGES[producto.sku] = imagenesMaestras["MACHUELO"];
+                    return;
+                }
+
+                // 3. Corregir Pinzas MR (micRun)
+                if (nombre.startsWith("MR ")) {
+                    window.SKU_IMAGES[producto.sku] = imagenesMaestras["MR"];
+                    return;
+                }
+
+                // 4. Corregir Pinzas Estándar y Ultra-Precisión (UP)
+                if (sub === "Estándar" || sub === "Ultra-Precisión (UP)") {
+                    if (imagenesMaestras[serie]) {
+                        window.SKU_IMAGES[producto.sku] = imagenesMaestras[serie];
+                    }
                 }
             }
         });
