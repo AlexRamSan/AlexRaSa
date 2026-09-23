@@ -34,13 +34,14 @@
 <body class="bg-gray-100 font-sans text-gray-800">
 
     <header class="bg-[#003DA5] text-white p-4 shadow-md sticky top-0 z-40">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="REGO-FIX" class="h-7 filter brightness-0 invert">
                 <span class="text-xs font-bold uppercase tracking-widest bg-blue-900 px-2.5 py-1 rounded">B2B Distribuidores</span>
             </div>
             <div id="user-header-badge" class="hidden text-xs flex items-center gap-3">
                 <span id="dist-badge-name" class="font-bold bg-white text-[#003DA5] px-3 py-1 rounded-full shadow-sm"></span>
+                <span id="dist-badge-discount" class="font-bold bg-blue-800 text-yellow-300 px-2 py-1 rounded-full border border-blue-700"></span>
                 <button onclick="openCartModal()" id="cart-header-btn" class="bg-[#D1D811] hover:bg-lime-500 text-black px-3 py-1 rounded-full font-bold shadow-sm flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>Cotización (<span id="cart-count">0</span>)</span>
@@ -50,7 +51,7 @@
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto p-4 md:p-6">
+    <main class="max-w-7xl mx-auto p-4 md:p-6">
 
         <!-- VISTA 1: LOGIN -->
         <div id="view-login" class="max-w-md mx-auto mt-12 bg-white p-8 rounded-2xl shadow-md border border-gray-200">
@@ -160,19 +161,23 @@
                         <option value="ER 50">ER 50</option>
                     </select>
                 </div>
+                <div class="text-[11px] font-semibold text-gray-500 whitespace-nowrap">
+                    Mostrando: <span id="rendered-count" class="font-bold text-[#003DA5]">0</span> de <span id="total-count" class="font-bold text-gray-800">0</span> artículos
+                </div>
             </div>
 
-            <!-- Tabla de Precios -->
+            <!-- Tabla de Precios Dual -->
             <div id="products-table-container" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
-                        <thead class="bg-gray-50 border-b text-gray-500 uppercase font-bold tracking-wider">
+                        <thead class="bg-gray-50 border-b text-gray-500 uppercase font-bold tracking-wider text-[11px]">
                             <tr>
                                 <th class="p-3 text-center w-16">Imagen</th>
                                 <th class="p-4">SKU / Descripción</th>
                                 <th class="p-4">Categoría / Serie</th>
                                 <th class="p-4 text-center bg-blue-50/50 text-[#003DA5]">Stock Qro</th>
-                                <th class="p-4 text-right">Precio de Lista</th>
+                                <th class="p-4 text-right">P. Lista</th>
+                                <th class="p-4 text-right bg-blue-50/30 text-[#003DA5]">P. Distribuidor</th>
                                 <th class="p-4 text-center">Cantidad</th>
                                 <th class="p-4 text-center">Acción</th>
                             </tr>
@@ -180,6 +185,11 @@
                         <tbody id="pricing-rows" class="divide-y divide-gray-100">
                         </tbody>
                     </table>
+                </div>
+                <div id="load-more-container" class="p-4 text-center border-t border-gray-100 hidden">
+                    <button onclick="renderNextBatch()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-5 py-2 rounded-lg text-xs transition">
+                        <i class="fa-solid fa-arrow-down mr-1"></i> Cargar más productos...
+                    </button>
                 </div>
             </div>
 
@@ -207,7 +217,7 @@
 
     <!-- MODAL 2: RESUMEN Y ACCIONES DE COTIZACIÓN -->
     <div id="modal-cart" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-gray-200 flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-gray-200 flex flex-col max-h-[90vh]">
             
             <div class="flex justify-between items-start border-b pb-3 mb-4">
                 <div>
@@ -235,6 +245,7 @@
                             <th class="p-2 text-center">Cant.</th>
                             <th class="p-2 text-center">Disponibilidad Qro</th>
                             <th class="p-2 text-right">P. Lista</th>
+                            <th class="p-2 text-right text-[#003DA5]">P. Dist.</th>
                             <th class="p-2 text-right">Total</th>
                             <th class="p-2 text-center">Quitar</th>
                         </tr>
@@ -244,10 +255,18 @@
                 </table>
             </div>
 
-            <!-- Totales -->
+            <!-- Totales con desglose de ahorro -->
             <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-1.5 text-xs mb-4">
-                <div class="flex justify-between text-gray-600">
-                    <span>Subtotal (USD):</span>
+                <div class="flex justify-between text-gray-500">
+                    <span>Total a Precio de Lista:</span>
+                    <span id="cart-list-subtotal" class="font-mono">$0.00</span>
+                </div>
+                <div class="flex justify-between text-emerald-700 font-semibold">
+                    <span>Descuento de Distribuidor Aplicado:</span>
+                    <span id="cart-discount-total" class="font-mono">-$0.00</span>
+                </div>
+                <div class="flex justify-between text-gray-700 border-t pt-1">
+                    <span>Subtotal Neto (USD):</span>
                     <span id="cart-subtotal" class="font-bold font-mono">$0.00</span>
                 </div>
                 <div class="flex justify-between text-gray-600">
@@ -282,7 +301,7 @@
         </div>
     </div>
 
-    <!-- VISTA IMPRIMIBLE PARA PDF (Formato Oficial Salesforce / REGO-FIX) -->
+    <!-- VISTA IMPRIMIBLE PARA PDF (Formato Oficial Salesforce / REGO-FIX con ambas listas) -->
     <div id="printable-quote" class="p-8 bg-white max-w-4xl mx-auto text-gray-900 font-sans" style="font-size: 11px;">
         <div class="flex justify-between items-start border-b-2 border-[#003DA5] pb-4 mb-4">
             <div>
@@ -308,7 +327,7 @@
             <div>
                 <strong class="text-[#003DA5] uppercase block mb-1">Cotizar a (Distribuidor):</strong>
                 <span id="print-distributor" class="font-bold uppercase text-gray-900 text-xs"></span>
-                <p class="text-gray-600 mt-1">Canal de Distribución Autorizado</p>
+                <p id="print-dist-level" class="text-gray-600 mt-1">Canal de Distribución Autorizado</p>
             </div>
             <div>
                 <strong class="text-[#003DA5] uppercase block mb-1">Usuario final (Cliente):</strong>
@@ -320,21 +339,29 @@
         <table class="w-full text-left text-[11px] mb-6 border-collapse border border-gray-300">
             <thead>
                 <tr class="bg-[#003DA5] text-white">
-                    <th class="p-2 border border-gray-300 text-center w-12">Qty</th>
-                    <th class="p-2 border border-gray-300 w-28">Articulo</th>
+                    <th class="p-2 border border-gray-300 text-center w-10">Qty</th>
+                    <th class="p-2 border border-gray-300 w-24">Artículo</th>
                     <th class="p-2 border border-gray-300">Descripción</th>
-                    <th class="p-2 border border-gray-300 text-right">Precio de lista</th>
-                    <th class="p-2 border border-gray-300 text-right">Precio/UN</th>
-                    <th class="p-2 border border-gray-300 text-right">Importe</th>
+                    <th class="p-2 border border-gray-300 text-right w-24">P. Lista</th>
+                    <th class="p-2 border border-gray-300 text-right w-24">P. Dist.</th>
+                    <th class="p-2 border border-gray-300 text-right w-24">Importe</th>
                 </tr>
             </thead>
             <tbody id="print-items-tbody"></tbody>
         </table>
 
         <div class="flex justify-end mb-6 text-xs">
-            <div class="w-64 space-y-1 bg-gray-50 p-3 rounded border border-gray-200">
+            <div class="w-72 space-y-1 bg-gray-50 p-3 rounded border border-gray-200">
+                <div class="flex justify-between text-gray-500">
+                    <span>Total Lista:</span> 
+                    <span id="print-list-total" class="font-mono"></span>
+                </div>
+                <div class="flex justify-between text-emerald-700 font-semibold">
+                    <span>Ahorro Distribuidor:</span> 
+                    <span id="print-discount-total" class="font-mono"></span>
+                </div>
                 <div class="flex justify-between font-bold text-sm text-[#003DA5] border-t border-gray-300 pt-1">
-                    <span>Total:</span> 
+                    <span>Subtotal Neto:</span> 
                     <span id="print-total" class="font-mono"></span>
                 </div>
             </div>
@@ -372,31 +399,63 @@
         let quoteCart = [];
         const INTERNAL_SALES_EMAIL = 'mramirez@rego-fix.com';
 
+        // Variables para renderizado optimizado por lotes (evita lag con miles de fotos)
+        let filteredProducts = [];
+        let currentlyRenderedCount = 0;
+        const BATCH_SIZE = 30;
+        const imageLookupCache = {};
+
+        // Imagen placeholder liviana de 1px mientras cargan las fotos reales
+        const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E";
+        const FALLBACK_IMG = 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
+
+        function getDistributorDiscountRate() {
+            if (currentDistData && currentDistData.discount !== undefined) {
+                return Number(currentDistData.discount) > 1 
+                    ? Number(currentDistData.discount) / 100 
+                    : Number(currentDistData.discount);
+            }
+            // Descuento por defecto a distribuidores (25%) si no viene definido en su registro
+            return 0.25; 
+        }
+
+        function getDistributorPrice(listPrice) {
+            const discountRate = getDistributorDiscountRate();
+            return listPrice * (1 - discountRate);
+        }
+
         function getProductImage(sku) {
             const cleanSku = String(sku || '').trim();
-            if (!cleanSku) return 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
+            if (!cleanSku) return FALLBACK_IMG;
+
+            if (imageLookupCache[cleanSku]) {
+                return imageLookupCache[cleanSku];
+            }
 
             if (window.SKU_IMAGES && window.SKU_IMAGES[cleanSku]) {
+                imageLookupCache[cleanSku] = window.SKU_IMAGES[cleanSku];
                 return window.SKU_IMAGES[cleanSku];
             }
 
             if (cleanSku.length >= 4 && window.SKU_IMAGES) {
                 const familyPrefix = cleanSku.substring(0, 4);
+                const isTargetCollet = cleanSku.startsWith('11') || cleanSku.startsWith('12') || cleanSku.startsWith('17');
+                
                 const skuSimilarKey = Object.keys(window.SKU_IMAGES).find(key => {
                     const strKey = String(key).trim();
                     if (!strKey.startsWith(familyPrefix)) return false;
-                    
-                    const isTargetCollet = cleanSku.startsWith('11') || cleanSku.startsWith('12') || cleanSku.startsWith('17');
                     const isCandidateCollet = strKey.startsWith('11') || strKey.startsWith('12') || strKey.startsWith('17');
                     return isTargetCollet === isCandidateCollet;
                 });
                 
                 if (skuSimilarKey && window.SKU_IMAGES[skuSimilarKey]) {
+                    imageLookupCache[cleanSku] = window.SKU_IMAGES[skuSimilarKey];
                     return window.SKU_IMAGES[skuSimilarKey];
                 }
             }
 
-            return 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
+            imageLookupCache[cleanSku] = FALLBACK_IMG;
+            return FALLBACK_IMG;
         }
 
         function getProductCategory(item) {
@@ -452,9 +511,11 @@
                 }
 
                 const data = await res.json();
-                currentDistData = data.distributor;
+                currentDistData = data.distributor || { name: currentUser, discount: 0.25 };
 
+                const discPct = Math.round(getDistributorDiscountRate() * 100);
                 document.getElementById('dist-badge-name').innerText = `${currentDistData.name}`;
+                document.getElementById('dist-badge-discount').innerText = `Descuento: ${discPct}%`;
                 document.getElementById('user-header-badge').classList.remove('hidden');
 
                 const select = document.getElementById('select-assigned-client');
@@ -566,7 +627,8 @@
             await fetchLiveStock();
             
             if (window.PRODUCTS_DATA && Array.isArray(window.PRODUCTS_DATA)) {
-                renderPricingTable(window.PRODUCTS_DATA);
+                filteredProducts = window.PRODUCTS_DATA;
+                initCatalogRender();
             } else {
                 alert('No se cargó products.js correctamente.');
             }
@@ -580,30 +642,45 @@
             document.getElementById('view-client-selection').classList.remove('hidden');
         }
 
-        function renderPricingTable(products) {
-            const tbody = document.getElementById('pricing-rows');
+        function initCatalogRender() {
+            currentlyRenderedCount = 0;
+            document.getElementById('pricing-rows').innerHTML = '';
+            document.getElementById('total-count').innerText = filteredProducts.length;
+            renderNextBatch();
+        }
 
-            if (!products || products.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-400">No se encontraron productos coincidentes.</td></tr>`;
+        function renderNextBatch() {
+            const tbody = document.getElementById('pricing-rows');
+            const total = filteredProducts.length;
+
+            if (total === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-400">No se encontraron productos coincidentes.</td></tr>`;
+                document.getElementById('rendered-count').innerText = 0;
+                document.getElementById('load-more-container').classList.add('hidden');
                 return;
             }
 
-            tbody.innerHTML = products.map(prod => {
-                const listPrice = prod.price;
+            const nextIndex = Math.min(currentlyRenderedCount + BATCH_SIZE, total);
+            const batch = filteredProducts.slice(currentlyRenderedCount, nextIndex);
+            const discRate = getDistributorDiscountRate();
+
+            const rowsHtml = batch.map(prod => {
+                const listPrice = Number(prod.price) || 0;
+                const distPrice = listPrice * (1 - discRate);
                 const categoryLabel = getProductCategory(prod);
 
                 const stock = liveStockMap[prod.sku] !== undefined ? liveStockMap[prod.sku] : 0;
                 const stockBadge = stock > 0 
-                    ? `<span class="bg-green-100 text-green-800 font-bold px-2.5 py-1 rounded-full text-xs shadow-xs"><i class="fa-solid fa-check mr-1"></i>${stock} pzas</span>`
-                    : `<span class="bg-orange-100 text-orange-800 font-bold px-2.5 py-1 rounded-full text-xs shadow-xs"><i class="fa-solid fa-clock mr-1"></i>0 pzas</span>`;
+                    ? `<span class="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full text-xs shadow-xs"><i class="fa-solid fa-check mr-1"></i>${stock} pzas</span>`
+                    : `<span class="bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded-full text-xs shadow-xs"><i class="fa-solid fa-clock mr-1"></i>0 pzas</span>`;
 
                 const productImg = getProductImage(prod.sku);
 
                 return `
                     <tr class="hover:bg-gray-50 transition">
                         <td class="p-3 text-center">
-                            <div class="w-12 h-12 flex items-center justify-center bg-gray-50 border rounded p-1 mx-auto">
-                                <img src="${productImg}" alt="${prod.sku}" loading="lazy" width="48" height="48" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.onerror=null; this.src='https://regousa.com/wp-content/uploads/2022/04/favicon.png';">
+                            <div class="w-12 h-12 flex items-center justify-center bg-gray-50 border rounded p-1 mx-auto overflow-hidden">
+                                <img src="${productImg}" alt="${prod.sku}" loading="lazy" decoding="async" width="48" height="48" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.onerror=null; this.src='${FALLBACK_IMG}';">
                             </div>
                         </td>
                         <td class="p-4">
@@ -613,11 +690,15 @@
                         <td class="p-4 font-semibold text-gray-600">
                             <span class="bg-gray-100 px-2 py-0.5 rounded text-[10px]">${categoryLabel}</span> / ${prod.series || prod.line || 'ER'}
                         </td>
-                        <td class="p-4 text-center bg-blue-50/30">
+                        <td class="p-4 text-center bg-blue-50/20">
                             ${stockBadge}
                         </td>
-                        <td class="p-4 text-right font-black text-sm text-[#003DA5]">
-                            $${listPrice.toLocaleString('en-US', {minimumFractionDigits: 2})} USD
+                        <td class="p-4 text-right text-gray-400 line-through text-xs font-semibold">
+                            $${listPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD
+                        </td>
+                        <td class="p-4 text-right bg-blue-50/30">
+                            <span class="font-black text-sm text-[#003DA5] block">$${distPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</span>
+                            <span class="text-[10px] text-green-700 font-bold">(${Math.round(discRate * 100)}% Desc.)</span>
                         </td>
                         <td class="p-4 text-center">
                             <input type="number" id="qty-${prod.sku}" min="1" value="1" class="w-14 border border-gray-300 rounded p-1 text-center font-bold text-xs bg-white">
@@ -630,7 +711,31 @@
                     </tr>
                 `;
             }).join('');
+
+            tbody.insertAdjacentHTML('beforeend', rowsHtml);
+            currentlyRenderedCount = nextIndex;
+            document.getElementById('rendered-count').innerText = currentlyRenderedCount;
+
+            const loadMoreContainer = document.getElementById('load-more-container');
+            if (currentlyRenderedCount < total) {
+                loadMoreContainer.classList.remove('hidden');
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
         }
+
+        // Carga automática progresiva conforme se hace scroll
+        window.addEventListener('scroll', () => {
+            if (document.getElementById('view-catalog').classList.contains('hidden')) return;
+            if (currentlyRenderedCount >= filteredProducts.length) return;
+
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const threshold = document.body.offsetHeight - 400;
+
+            if (scrollPosition >= threshold) {
+                renderNextBatch();
+            }
+        });
 
         function filterCatalog() {
             if (!window.PRODUCTS_DATA) return;
@@ -638,10 +743,10 @@
             const catFilter = document.getElementById('catalog-cat-filter').value;
             const seriesFilter = document.getElementById('catalog-series-filter').value;
 
-            const filtered = window.PRODUCTS_DATA.filter(p => {
+            filteredProducts = window.PRODUCTS_DATA.filter(p => {
                 const matchSearch = (!query) || 
-                    p.sku.toLowerCase().includes(query) || 
-                    p.name.toLowerCase().includes(query);
+                    (p.sku && p.sku.toLowerCase().includes(query)) || 
+                    (p.name && p.name.toLowerCase().includes(query));
 
                 const productCat = getProductCategory(p);
                 const matchCat = (!catFilter) || productCat === catFilter;
@@ -651,7 +756,7 @@
                 return matchSearch && matchCat && matchSeries;
             });
 
-            renderPricingTable(filtered);
+            initCatalogRender();
         }
 
         function calculateLeadTime() {
@@ -674,20 +779,24 @@
 
             const qtyInput = document.getElementById(`qty-${sku}`);
             const qty = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
-            const listPrice = prod.price;
+            const listPrice = Number(prod.price) || 0;
+            const distPrice = getDistributorPrice(listPrice);
 
             const existing = quoteCart.find(it => it.sku === sku);
             if (existing) {
                 existing.qty += qty;
-                existing.totalNet = existing.qty * listPrice;
+                existing.totalList = existing.qty * listPrice;
+                existing.totalNet = existing.qty * distPrice;
             } else {
                 quoteCart.push({
                     sku: prod.sku,
                     name: prod.name,
                     line: prod.line || prod.series || 'ER',
-                    price: listPrice,
+                    listPrice: listPrice,
+                    distPrice: distPrice,
                     qty: qty,
-                    totalNet: qty * listPrice
+                    totalList: qty * listPrice,
+                    totalNet: qty * distPrice
                 });
             }
 
@@ -717,7 +826,8 @@
         function renderCartModal() {
             const tbody = document.getElementById('cart-items-tbody');
             const leadTimeBanner = document.getElementById('cart-leadtime-banner');
-            let subtotal = 0;
+            let subtotalNet = 0;
+            let subtotalList = 0;
 
             const leadTime = calculateLeadTime();
 
@@ -742,7 +852,8 @@
             }
 
             tbody.innerHTML = quoteCart.map((it, idx) => {
-                subtotal += it.totalNet;
+                subtotalNet += it.totalNet;
+                subtotalList += it.totalList;
                 const stockAvail = liveStockMap[it.sku] !== undefined ? liveStockMap[it.sku] : 0;
                 const hasEnoughStock = it.qty <= stockAvail && stockAvail > 0;
 
@@ -756,7 +867,8 @@
                         <td class="p-2 font-semibold text-gray-800">${it.name}</td>
                         <td class="p-2 text-center font-bold">${it.qty}</td>
                         <td class="p-2 text-center">${stockItemBadge}</td>
-                        <td class="p-2 text-right font-mono">$${it.price.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono text-gray-400 line-through">$${it.listPrice.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono font-bold text-[#003DA5]">$${it.distPrice.toFixed(2)}</td>
                         <td class="p-2 text-right font-mono font-bold text-gray-900">$${it.totalNet.toFixed(2)}</td>
                         <td class="p-2 text-center">
                             <button onclick="removeCartItem(${idx})" class="text-red-500 hover:text-red-700">
@@ -767,10 +879,13 @@
                 `;
             }).join('');
 
-            const iva = subtotal * 0.16;
-            const total = subtotal + iva;
+            const discountSavings = subtotalList - subtotalNet;
+            const iva = subtotalNet * 0.16;
+            const total = subtotalNet + iva;
 
-            document.getElementById('cart-subtotal').innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
+            document.getElementById('cart-list-subtotal').innerText = `$${subtotalList.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
+            document.getElementById('cart-discount-total').innerText = `-$${discountSavings.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
+            document.getElementById('cart-subtotal').innerText = `$${subtotalNet.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
             document.getElementById('cart-iva').innerText = `$${iva.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
             document.getElementById('cart-total').innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
         }
@@ -795,9 +910,10 @@
 
         async function notifyInternalSales(actionType) {
             try {
-                let subtotal = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
-                let iva = subtotal * 0.16;
-                let total = subtotal + iva;
+                let subtotalNet = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
+                let subtotalList = quoteCart.reduce((sum, it) => sum + it.totalList, 0);
+                let iva = subtotalNet * 0.16;
+                let total = subtotalNet + iva;
                 const leadTime = calculateLeadTime();
 
                 await fetch('/api/contactos?action=internal_sales_notification', {
@@ -809,7 +925,7 @@
                         distributor: currentDistData,
                         client: selectedClient,
                         items: quoteCart,
-                        totals: { subtotal, iva, total },
+                        totals: { subtotalList, subtotalNet, iva, total },
                         leadTime: leadTime,
                         timestamp: new Date().toISOString()
                     })
@@ -827,33 +943,39 @@
 
             const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
             const leadTime = calculateLeadTime();
+            const discRate = getDistributorDiscountRate();
             
             document.getElementById('print-date').innerText = printDate;
             document.getElementById('print-distributor').innerText = currentDistData ? currentDistData.name : 'DISTRIBUIDOR AUTORIZADO';
+            document.getElementById('print-dist-level').innerText = `Canal de Distribución Autorizado (${Math.round(discRate * 100)}% de Descuento Oficial)`;
             document.getElementById('print-client').innerText = selectedClient || 'CLIENTE GENERAL';
             document.getElementById('print-leadtime').innerText = leadTime;
             document.getElementById('print-quotenum').innerText = `00000${Math.floor(100 + Math.random() * 900)}`;
 
-            let subtotal = 0;
+            let subtotalList = 0;
+            let subtotalNet = 0;
             const printTbody = document.getElementById('print-items-tbody');
             
             printTbody.innerHTML = quoteCart.map(it => {
-                subtotal += it.totalNet;
-                const unitPrice = it.price;
+                subtotalList += it.totalList;
+                subtotalNet += it.totalNet;
 
                 return `
                     <tr class="border-b border-gray-200">
                         <td class="p-2 border border-gray-300 text-center font-bold">${it.qty}</td>
-                        <td class="p-2 border border-gray-300 font-mono font-bold">${it.sku}</td>
+                        <td class="p-2 border border-gray-300 font-mono font-bold text-[#003DA5]">${it.sku}</td>
                         <td class="p-2 border border-gray-300 font-semibold">${it.name}</td>
-                        <td class="p-2 border border-gray-300 text-right font-mono">USD ${unitPrice.toFixed(2)}</td>
-                        <td class="p-2 border border-gray-300 text-right font-mono">USD ${unitPrice.toFixed(2)}</td>
+                        <td class="p-2 border border-gray-300 text-right font-mono text-gray-500">USD ${it.listPrice.toFixed(2)}</td>
+                        <td class="p-2 border border-gray-300 text-right font-mono font-bold text-[#003DA5]">USD ${it.distPrice.toFixed(2)}</td>
                         <td class="p-2 border border-gray-300 text-right font-mono font-bold">USD ${it.totalNet.toFixed(2)}</td>
                     </tr>
                 `;
             }).join('');
 
-            document.getElementById('print-total').innerText = `USD ${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const savings = subtotalList - subtotalNet;
+            document.getElementById('print-list-total').innerText = `USD ${subtotalList.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('print-discount-total').innerText = `- USD ${savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('print-total').innerText = `USD ${subtotalNet.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
             await notifyInternalSales('PDF_DOWNLOAD');
 
@@ -864,9 +986,10 @@
             const clientEmailInput = document.getElementById('quote-email').value.trim();
             const btn = document.getElementById('btn-send-quote');
 
-            let subtotal = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
-            let iva = subtotal * 0.16;
-            let total = subtotal + iva;
+            let subtotalNet = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
+            let subtotalList = quoteCart.reduce((sum, it) => sum + it.totalList, 0);
+            let iva = subtotalNet * 0.16;
+            let total = subtotalNet + iva;
             const leadTime = calculateLeadTime();
 
             btn.disabled = true;
@@ -880,7 +1003,7 @@
                         distributor: currentDistData,
                         client: selectedClient,
                         items: quoteCart,
-                        totals: { subtotal, iva, total },
+                        totals: { subtotalList, subtotalNet, iva, total },
                         leadTime: leadTime,
                         emailTo: clientEmailInput || undefined,
                         internalCopyEmail: INTERNAL_SALES_EMAIL
