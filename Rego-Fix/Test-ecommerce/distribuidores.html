@@ -286,7 +286,7 @@
 
             <div class="space-y-3">
                 <div class="flex gap-2">
-                    <input type="email" id="quote-email" placeholder="Correo de contacto para copia de cotización" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
+                    <input type="email" id="quote-email" placeholder="Correo opcional adicional para cliente" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
                     <button onclick="sendQuoteEmail()" id="btn-send-quote" class="bg-[#003DA5] hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
                         <i class="fa-solid fa-paper-plane"></i> Enviar por Correo
                     </button>
@@ -402,7 +402,9 @@
         let selectedClient = null;
         let liveStockMap = {};
         let quoteCart = [];
-        const INTERNAL_SALES_EMAIL = 'mramirez@rego-fix.com';
+
+        // Correo fijo donde se recibirá la cotización o notificación de descarga
+        const CORREO_NOTIFICACIONES_FIJO = 'mramirez@rego-fix.com';
 
         let filteredProducts = [];
         let currentlyRenderedCount = 0;
@@ -831,7 +833,6 @@
                 existing.qty += qty;
                 existing.totalList = existing.qty * listPrice;
                 existing.totalNet = existing.qty * distPrice;
-                // Propiedades retrocompatibles requeridas por el backend para evitar error toFixed
                 existing.price = distPrice;
                 existing.unitPrice = distPrice;
                 existing.total = existing.qty * distPrice;
@@ -848,7 +849,6 @@
                     qty: qty,
                     totalList: qty * listPrice,
                     totalNet: qty * distPrice,
-                    // Propiedades retrocompatibles para el backend
                     price: distPrice,
                     unitPrice: distPrice,
                     total: qty * distPrice,
@@ -969,7 +969,6 @@
             }
         }
 
-        // Normaliza las partidas para evitar fallos de toFixed() en cualquier versión de backend
         function getSafePayloadItems() {
             return quoteCart.map(it => {
                 const listPrice = Number(it.listPrice !== undefined ? it.listPrice : it.price) || 0;
@@ -984,19 +983,20 @@
                     name: it.name || '',
                     line: it.line || 'ER',
                     qty: qty,
-                    price: distPrice,        // Campo estándar esperado por backend legacy
-                    unitPrice: distPrice,    // Campo alternativo
-                    total: totalNet,         // Campo estándar esperado por backend legacy
-                    discount: discRate,      // Número seguro
-                    listPrice: listPrice,    // Campo con lista oficial
-                    distPrice: distPrice,    // Campo con precio distribuidor
-                    totalNet: totalNet,      // Campo total neto
-                    totalList: totalList,    // Campo total lista
+                    price: distPrice,
+                    unitPrice: distPrice,
+                    total: totalNet,
+                    discount: discRate,
+                    listPrice: listPrice,
+                    distPrice: distPrice,
+                    totalNet: totalNet,
+                    totalList: totalList,
                     discRate: discRate
                 };
             });
         }
 
+        // Aviso interno cuando se DESCARGA PDF
         async function notifyInternalSales(actionType) {
             try {
                 let subtotalNet = quoteCart.reduce((sum, it) => sum + (Number(it.totalNet || it.total) || 0), 0);
@@ -1010,7 +1010,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: actionType,
-                        targetEmail: INTERNAL_SALES_EMAIL,
+                        targetEmail: CORREO_NOTIFICACIONES_FIJO,
+                        internalCopyEmail: CORREO_NOTIFICACIONES_FIJO,
+                        emailTo: CORREO_NOTIFICACIONES_FIJO,
                         distributor: currentDistData,
                         client: selectedClient,
                         items: getSafePayloadItems(),
@@ -1078,32 +1080,10 @@
             document.getElementById('print-discount-total').innerText = `- USD ${savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('print-total').innerText = `USD ${subtotalNet.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-            await notifyInternalSales('PDF_DOWNLOAD');
+            // Disparo del aviso por descarga de PDF
+            await notifyInternalSales('DESCARGA_PDF');
 
             window.print();
-        }
-
-        function sendViaMailtoFallback(recipientEmail, leadTime, totalFormatted) {
-            const subject = encodeURIComponent(`Cotización REGO-FIX B2B - ${selectedClient}`);
-            let bodyText = `Hola,\n\nAdjunto el resumen de la cotización generada en el portal REGO-FIX México:\n\n`;
-            bodyText += `Distribuidor: ${currentDistData.name}\n`;
-            bodyText += `Cliente Final: ${selectedClient}\n`;
-            bodyText += `Tiempo Estimado de Entrega: ${leadTime}\n\n`;
-            bodyText += `PARTIDAS:\n`;
-
-            quoteCart.forEach(it => {
-                const dPrice = Number(it.distPrice || it.price) || 0;
-                const tNet = Number(it.totalNet || (it.qty * dPrice)) || 0;
-                bodyText += `- SKU: ${it.sku} | Cant: ${it.qty} | P. Unit Dist: $${dPrice.toFixed(2)} USD | Total: $${tNet.toFixed(2)} USD\n`;
-            });
-
-            bodyText += `\nTOTAL COTIZACIÓN: ${totalFormatted}\n\n`;
-            bodyText += `Saludos cordiales,\n${currentDistData.name}`;
-
-            const to = recipientEmail || INTERNAL_SALES_EMAIL;
-            const mailtoUrl = `mailto:${to}?cc=${INTERNAL_SALES_EMAIL}&subject=${subject}&body=${encodeURIComponent(bodyText)}`;
-            
-            window.location.href = mailtoUrl;
         }
 
         async function sendQuoteEmail() {
@@ -1120,7 +1100,6 @@
             let iva = subtotalNet * 0.16;
             let total = subtotalNet + iva;
             const leadTime = calculateLeadTime();
-            const totalFormatted = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
 
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando...`;
@@ -1128,6 +1107,7 @@
             try {
                 const safeItems = getSafePayloadItems();
 
+                // Envío de correo único: llega al destinatario solicitado y al buzón de control
                 const res = await fetch('/api/contactos?action=send_quote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1143,8 +1123,8 @@
                             total: total 
                         },
                         leadTime: leadTime,
-                        emailTo: clientEmailInput || undefined,
-                        internalCopyEmail: INTERNAL_SALES_EMAIL
+                        emailTo: clientEmailInput || CORREO_NOTIFICACIONES_FIJO,
+                        internalCopyEmail: CORREO_NOTIFICACIONES_FIJO
                     })
                 });
 
@@ -1154,17 +1134,10 @@
                     throw new Error(data.error || `Error del servidor (${res.status})`);
                 }
 
-                await notifyInternalSales('EMAIL_SENT');
-                alert(`${data.message || 'Cotización enviada con éxito.'}\nTiempo de entrega asignado: ${leadTime}.`);
+                alert(`Cotización enviada con éxito.\nCopia automática remitida a: ${CORREO_NOTIFICACIONES_FIJO}\nTiempo de entrega asignado: ${leadTime}.`);
 
             } catch (err) {
-                console.warn('Error al enviar correo vía API:', err);
-                const useLocalClient = confirm(
-                    `El servidor de correo reportó un inconveniente (${err.message}).\n\n¿Deseas abrir tu cliente de correo (Outlook / Gmail) para despachar de inmediato la cotización a ${clientEmailInput || INTERNAL_SALES_EMAIL}?`
-                );
-                if (useLocalClient) {
-                    sendViaMailtoFallback(clientEmailInput, leadTime, totalFormatted);
-                }
+                alert(`Error al enviar cotización: ${err.message}`);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar por Correo`;
