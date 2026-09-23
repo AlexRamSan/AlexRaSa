@@ -3,7 +3,7 @@ import jsforce from 'jsforce';
 
 // Configuración de conexión a Salesforce (usa variables de entorno seguras)
 const conn = new jsforce.Connection({
-    loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
+  loginUrl: process.env.SF_LOGIN_URL || 'https://login.salesforce.com'
 });
 
 // Matriz oficial REGO-FIX por categoría
@@ -95,13 +95,17 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2. RUTA: NOTIFICACIÓN INTERNA, SALESFORCE Y CORREO A mramirez@rego-fix.com
+  // 2. RUTA: NOTIFICACIÓN INTERNA POR DESCARGA DE PDF O EVENTO INTERNO
   if (action === 'internal_sales_notification' && req.method === 'POST') {
     try {
-      const { action: subAction, distributor, client, items, totals, leadTime } = req.body || {};
+      const { action: subAction, distributor, client, items = [], totals = {}, leadTime, htmlDocument } = req.body || {};
 
       let quoteId = null;
       let oppId = null;
+
+      const subtotalVal = Number(totals.subtotalNet !== undefined ? totals.subtotalNet : totals.subtotal) || 0;
+      const totalVal = Number(totals.total) || 0;
+      const ivaVal = Number(totals.iva) || (subtotalVal * 0.16);
 
       // Sincronización opcional con Salesforce
       try {
@@ -120,9 +124,9 @@ export default async function handler(req, res) {
             const quoteResult = await conn.sobject("Quote").create({
               Name: `QT-B2B-${Date.now()}`,
               OpportunityId: oppId,
-              TotalPrice: totals.subtotal,
+              TotalPrice: subtotalVal,
               Status: 'Presented',
-              Description: `Total con IVA: $${totals.total.toFixed(2)} USD`
+              Description: `Total con IVA: $${totalVal.toFixed(2)} USD`
             });
             quoteId = quoteResult.id;
           }
@@ -131,48 +135,57 @@ export default async function handler(req, res) {
         console.warn('Advertencia Salesforce (no crítico):', sfErr.message);
       }
 
-      // Envío de correo a mramirez@rego-fix.com mediante Resend
+      // Si el frontend envió el formato oficial membretado completo, se usa como cuerpo principal
+      let bodyHtml = htmlDocument;
+
+      if (!bodyHtml) {
+        const itemsHtml = items.map(it => {
+          const lPrice = Number(it.listPrice !== undefined ? it.listPrice : it.price) || 0;
+          const tNet = Number(it.totalNet !== undefined ? it.totalNet : it.total) || 0;
+          return `
+            <tr>
+              <td style="padding:6px;border:1px solid #ddd;font-family:monospace;">${it.sku}</td>
+              <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${lPrice.toFixed(2)} USD</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${tNet.toFixed(2)} USD</td>
+            </tr>
+          `;
+        }).join('');
+
+        bodyHtml = `
+          <h2 style="color: #003DA5;">Notificación de Cotización B2B REGO-FIX</h2>
+          <p><strong>Distribuidor:</strong> ${distributor?.name || 'N/A'} (${distributor?.tier || distributor?.category || 'N/A'})</p>
+          <p><strong>Cliente Final:</strong> ${client}</p>
+          <p><strong>Acción Realizada:</strong> ${subAction === 'DESCARGA_PDF' || subAction === 'PDF_DOWNLOAD' ? 'Descarga de Cotización (PDF)' : 'Notificación de Cotización'}</p>
+          <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
+          ${oppId ? `<p><strong>Salesforce Oportunidad ID:</strong> ${oppId} (Quote:${quoteId})</p>` : ''}
+          <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
+            <strong>Tiempo de Entrega Estimado:</strong> ${leadTime}
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
+            <thead>
+              <tr style="background:#003DA5;color:#fff;">
+                <th style="padding:6px;border:1px solid #ddd;">SKU</th>
+                <th style="padding:6px;border:1px solid #ddd;">Producto</th>
+                <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
+                <th style="padding:6px;border:1px solid #ddd;">P. Lista</th>
+                <th style="padding:6px;border:1px solid #ddd;">Importe</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <p style="text-align:right;font-size:14px;">
+            <strong>Subtotal:</strong> $${subtotalVal.toFixed(2)} USD<br>
+            <strong>IVA (16%):</strong> $${ivaVal.toFixed(2)} USD<br>
+            <strong style="color:#003DA5;font-size:16px;">Total Cotizado:</strong> $${totalVal.toFixed(2)} USD
+          </p>
+        `;
+      }
+
+      // Envío mediante Resend
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       const targetEmail = 'mramirez@rego-fix.com';
-
-      const itemsHtml = items.map(it => `
-        <tr>
-          <td style="padding:6px;border:1px solid #ddd;font-family:monospace;">${it.sku}</td>
-          <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
-          <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
-          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.price.toFixed(2)} USD</td>
-          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.totalNet.toFixed(2)} USD</td>
-        </tr>
-      `).join('');
-
-      const htmlBody = `
-        <h2 style="color: #003DA5;">Nueva Cotización B2B Generada</h2>
-        <p><strong>Distribuidor:</strong> ${distributor?.name || 'N/A'} (${distributor?.category || 'N/A'})</p>
-        <p><strong>Cliente Final:</strong> ${client}</p>
-        <p><strong>Acción Realizada:</strong> ${subAction === 'PDF_DOWNLOAD' ? 'Descarga de PDF' : 'Envío por Correo'}</p>
-        <p><strong>Fecha:</strong> ${new Date().toLocaleString()}</p>
-        ${oppId ? `<p><strong>Salesforce Oportunidad ID:</strong> ${oppId} (Quote: ${quoteId})</p>` : ''}
-        <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
-          <strong>Tiempo de Entrega Estimado:</strong> ${leadTime}
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
-          <thead>
-            <tr style="background:#003DA5;color:#fff;">
-              <th style="padding:6px;border:1px solid #ddd;">SKU</th>
-              <th style="padding:6px;border:1px solid #ddd;">Producto</th>
-              <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
-              <th style="padding:6px;border:1px solid #ddd;">P. Lista</th>
-              <th style="padding:6px;border:1px solid #ddd;">Importe</th>
-            </tr>
-          </thead>
-          <tbody>${itemsHtml}</tbody>
-        </table>
-        <p style="text-align:right;font-size:14px;">
-          <strong>Subtotal:</strong> $${totals.subtotal.toFixed(2)} USD<br>
-          <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
-          <strong style="color:#003DA5;font-size:16px;">Total Cotizado:</strong> $${totals.total.toFixed(2)} USD
-        </p>
-      `;
 
       if (RESEND_API_KEY) {
         await fetch('https://api.resend.com/emails', {
@@ -184,23 +197,23 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'REGO-FIX B2B <b2b@alexrasa.store>',
             to: [targetEmail],
-            subject: `[B2B Cotización] Cliente: ${client} - Distribuidor: ${distributor?.name}`,
-            html: htmlBody
+            subject: `[PDF DESCARGADO] Cotización B2B: ${client} - ${distributor?.name}`,
+            html: bodyHtml
           })
         });
       }
 
-      return res.status(200).json({ success: true, message: 'Notificación enviada exitosamente a mramirez@rego-fix.com' });
+      return res.status(200).json({ success: true, message: 'Notificación registrada y enviada.' });
     } catch (e) {
       console.error('Error en internal_sales_notification:', e);
       return res.status(500).json({ error: e.message });
     }
   }
 
-  // 3. RUTA: ENVÍO Y REGISTRO DE COTIZACIÓN B2B (CLIENTE)
+  // 3. RUTA: ENVÍO DE COTIZACIÓN CON EL FORMATO OFICIAL IMPRIMIBLE
   if (action === 'send_quote' && req.method === 'POST') {
     try {
-      const { distributor, client, items, totals, leadTime, emailTo, internalCopyEmail } = req.body || {};
+      const { distributor, client, items = [], totals = {}, leadTime, emailTo, internalCopyEmail, htmlDocument } = req.body || {};
 
       if (!items || items.length === 0) {
         return res.status(400).json({ error: 'No hay partidas en la cotización.' });
@@ -209,45 +222,67 @@ export default async function handler(req, res) {
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
       const quoteLeadTime = leadTime || 'Entrega inmediata tras recibir orden de compra';
 
-      const itemsHtml = items.map(it => `
-        <tr>
-          <td style="padding:6px;border:1px solid #ddd;">${it.sku}</td>
-          <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
-          <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
-          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.price.toFixed(2)} USD</td>
-          <td style="padding:6px;border:1px solid #ddd;text-align:right;">$${it.totalNet.toFixed(2)} USD</td>
-        </tr>
-      `).join('');
+      const subtotalVal = Number(totals.subtotalNet !== undefined ? totals.subtotalNet : totals.subtotal) || 0;
+      const totalVal = Number(totals.total) || 0;
+      const ivaVal = Number(totals.iva) || (subtotalVal * 0.16);
 
-      const htmlBody = `
-        <h2>Cotización Oficial - REGO-FIX México</h2>
-        <p><strong>Atención:</strong> ${client}</p>
-        <p><strong>Emitido por Distribuidor:</strong> ${distributor.name}</p>
-        <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
-          <strong>Tiempo de Entrega Estimado:</strong> ${quoteLeadTime}
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin:15px 0;">
-          <thead>
-            <tr style="background:#003DA5;color:#fff;">
-              <th style="padding:6px;border:1px solid #ddd;">SKU</th>
-              <th style="padding:6px;border:1px solid #ddd;">Producto</th>
-              <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
-              <th style="padding:6px;border:1px solid #ddd;">Precio Lista</th>
-              <th style="padding:6px;border:1px solid #ddd;">Importe</th>
+      // Si el frontend pasó el HTML oficial membretado completo (#printable-quote), se utiliza directamente
+      let bodyHtml = htmlDocument;
+
+      if (!bodyHtml) {
+        const itemsHtml = items.map(it => {
+          const lPrice = Number(it.listPrice !== undefined ? it.listPrice : it.price) || 0;
+          const dPrice = Number(it.distPrice !== undefined ? it.distPrice : it.price) || 0;
+          const tNet = Number(it.totalNet !== undefined ? it.totalNet : it.total) || 0;
+          return `
+            <tr>
+              <td style="padding:6px;border:1px solid #ddd;font-family:monospace;font-weight:bold;">${it.sku}</td>
+              <td style="padding:6px;border:1px solid #ddd;">${it.name}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:center;">${it.qty}</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:right;color:#666;text-decoration:line-through;">$${lPrice.toFixed(2)} USD</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:right;font-weight:bold;color:#003DA5;">$${dPrice.toFixed(2)} USD</td>
+              <td style="padding:6px;border:1px solid #ddd;text-align:right;font-weight:bold;">$${tNet.toFixed(2)} USD</td>
             </tr>
-          </thead>
-          <tbody>${itemsHtml}</tbody>
-        </table>
-        <p style="text-align:right;font-size:14px;">
-          <strong>Subtotal:</strong> $${totals.subtotal.toFixed(2)} USD<br>
-          <strong>IVA (16%):</strong> $${totals.iva.toFixed(2)} USD<br>
-          <strong style="color:#003DA5;font-size:16px;">Total Cotización:</strong> $${totals.total.toFixed(2)} USD
-        </p>
-      `;
+          `;
+        }).join('');
 
-      const recipients = [];
-      if (emailTo) recipients.push(emailTo);
-      if (internalCopyEmail) recipients.push(internalCopyEmail);
+        bodyHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: auto; padding: 20px; border: 1px solid #eee;">
+            <h2 style="color: #003DA5; margin-bottom: 5px;">Cotización Oficial - REGO-FIX México</h2>
+            <p style="margin: 2px 0;"><strong>Cliente Final:</strong> ${client}</p>
+            <p style="margin: 2px 0;"><strong>Emitido por Distribuidor:</strong> ${distributor?.name} (${distributor?.tier || 'Estándar'})</p>
+            <div style="background:#f0f7ff;border-left:4px solid #003DA5;padding:10px;margin:15px 0;font-size:14px;">
+              <strong>Tiempo de Entrega Estimado:</strong> ${quoteLeadTime}
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;margin:15px 0;">
+              <thead>
+                <tr style="background:#003DA5;color:#fff;">
+                  <th style="padding:6px;border:1px solid #ddd;">SKU</th>
+                  <th style="padding:6px;border:1px solid #ddd;">Producto</th>
+                  <th style="padding:6px;border:1px solid #ddd;">Cant.</th>
+                  <th style="padding:6px;border:1px solid #ddd;">Precio Lista</th>
+                  <th style="padding:6px;border:1px solid #ddd;">Precio Dist.</th>
+                  <th style="padding:6px;border:1px solid #ddd;">Importe</th>
+                </tr>
+              </thead>
+              <tbody>${itemsHtml}</tbody>
+            </table>
+            <p style="text-align:right;font-size:14px;line-height:1.6;">
+              <strong>Subtotal:</strong> $${subtotalVal.toFixed(2)} USD<br>
+              <strong>IVA (16%):</strong> $${ivaVal.toFixed(2)} USD<br>
+              <strong style="color:#003DA5;font-size:16px;">Total Cotización:</strong> $${totalVal.toFixed(2)} USD
+            </p>
+          </div>
+        `;
+      }
+
+      // Lista única de destinatarios (sin duplicados)
+      const recipientsSet = new Set();
+      if (emailTo) recipientsSet.add(emailTo);
+      if (internalCopyEmail) recipientsSet.add(internalCopyEmail);
+      recipientsSet.add('mramirez@rego-fix.com');
+
+      const recipients = Array.from(recipientsSet);
 
       if (recipients.length > 0 && RESEND_API_KEY) {
         await fetch('https://api.resend.com/emails', {
@@ -259,8 +294,8 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: 'REGO-FIX B2B <b2b@alexrasa.store>',
             to: recipients,
-            subject: `Cotización Oficial REGO-FIX - Cliente: ${client}`,
-            html: htmlBody
+            subject: `Cotización Oficial REGO-FIX - Cliente: ${client} (${distributor?.name})`,
+            html: bodyHtml
           })
         });
       }
@@ -268,9 +303,10 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         leadTime: quoteLeadTime,
-        message: 'Cotización enviada por correo exitosamente.'
+        message: 'Cotización oficial enviada por correo exitosamente.'
       });
     } catch (e) {
+      console.error('Error en send_quote:', e);
       return res.status(500).json({ error: e.message });
     }
   }
