@@ -74,16 +74,29 @@
             </div>
         </div>
 
-        <!-- VISTA 2: SELECCIÓN DE CLIENTE FINAL -->
-        <div id="view-client-selection" class="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-2xl shadow-md border border-gray-200 hidden">
-            <div class="border-b pb-4 mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-[#003DA5] bg-blue-50 px-2 py-1 rounded">Paso 1 de 2 Obligatorio</span>
-                <h2 class="text-xl font-bold text-gray-900 mt-2">Selección de Cliente Final para Cotización</h2>
-                <p class="text-xs text-gray-500 mt-1">Por política comercial, seleccione la cuenta a la cual se destinará esta cotización antes de visualizar existencias y precios oficiales.</p>
+        <!-- VISTA 2: SELECCIÓN DE ASESOR TÉCNICO Y CLIENTE FINAL -->
+        <div id="view-client-selection" class="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-2xl shadow-md border border-gray-200 hidden space-y-6">
+            <div class="border-b pb-4">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[#003DA5] bg-blue-50 px-2 py-1 rounded">Configuración de Cotización</span>
+                <h2 class="text-xl font-bold text-gray-900 mt-2">Zona, Soporte Técnico y Cuenta Destino</h2>
+                <p class="text-xs text-gray-500 mt-1">Seleccione su asesor asignado de REGO-FIX y el cliente al que va dirigida esta propuesta.</p>
             </div>
 
-            <!-- Cuentas asignadas con filtro rápido -->
-            <div class="space-y-4 mb-8">
+            <!-- PASO A: Asesor Técnico REGO-FIX / Zona -->
+            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-200 space-y-2">
+                <label class="block text-xs font-bold text-[#003DA5] uppercase tracking-wide">
+                    <i class="fa-solid fa-user-tie mr-1"></i> Asesor Técnico Comercial / Zona Asignada:
+                </label>
+                <select id="select-sales-rep" onchange="onSalesRepChange()" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs bg-white font-semibold focus:outline-none focus:border-[#003DA5]">
+                    <option value="miguel">Miguel Ramírez — Zona Sur (CDMX, Toluca, Puebla, Veracruz, Yucatán)</option>
+                    <option value="ivan">Iván González Flores — Noroeste (Tijuana, Mexicali, Chihuahua, etc.)</option>
+                    <option value="ernesto">Ernesto Obregón — Noreste (Monterrey, Saltillo, etc.)</option>
+                    <option value="edgar">Edgar Mendoza Morales — Bajío y Occidente (Querétaro, Gto, Jalisco, SLP, etc.)</option>
+                </select>
+            </div>
+
+            <!-- PASO B: Cuentas asignadas -->
+            <div class="space-y-4">
                 <div class="flex justify-between items-center">
                     <label class="block text-xs font-bold text-gray-700">Seleccionar entre sus Cuentas Asignadas:</label>
                     <span id="assigned-count-label" class="text-[11px] text-gray-500 font-medium"></span>
@@ -91,27 +104,27 @@
 
                 <div class="relative">
                     <i class="fa-solid fa-filter absolute left-3 top-3 text-gray-400 text-xs"></i>
-                    <input type="text" id="client-search-filter" onkeyup="filterAssignedClients()" placeholder="Escriba para filtrar sus clientes asignados..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs mb-2 focus:outline-none focus:border-[#003DA5]">
+                    <input type="text" id="client-search-filter" onkeyup="filterAssignedClients()" placeholder="Escriba para filtrar sus clientes asignados..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
                 </div>
 
                 <div class="flex gap-2">
-                    <select id="select-assigned-client" size="6" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
+                    <select id="select-assigned-client" size="5" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
                     </select>
                 </div>
                 <button onclick="confirmExistingClient()" class="w-full bg-[#003DA5] hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow">
-                    <span>Continuar con Cliente Seleccionado</span>
+                    <span>Continuar al Catálogo con Cliente Seleccionado</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
 
-            <!-- Prospecto nuevo -->
+            <!-- PASO C: Prospecto nuevo -->
             <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
                 <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2"><i class="fa-solid fa-user-plus mr-1"></i> ¿Cotizar a un Nuevo Cliente?</h3>
-                <p class="text-xs text-gray-500 mb-4">El sistema validará en tiempo real que la empresa no pertenezca a la cartera de Venta Directa de REGO-FIX.</p>
-                <div class="space-y-3">
-                    <input type="text" id="new-client-name" placeholder="Razón Social o Nombre Comercial de la Empresa" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs">
-                    <input type="text" id="new-client-rfc" placeholder="RFC (Opcional)" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs">
-                    <button onclick="registerAndCheckClient()" class="w-full bg-gray-800 hover:bg-black text-white font-bold py-2.5 rounded-lg text-xs transition">
+                <p class="text-xs text-gray-500 mb-3">El sistema validará en tiempo real que la empresa no pertenezca a la cartera de Venta Directa de REGO-FIX.</p>
+                <div class="space-y-2.5">
+                    <input type="text" id="new-client-name" placeholder="Razón Social o Nombre Comercial de la Empresa" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs bg-white">
+                    <input type="text" id="new-client-rfc" placeholder="RFC (Opcional)" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs bg-white">
+                    <button onclick="registerAndCheckClient()" class="w-full bg-gray-800 hover:bg-black text-white font-bold py-2 rounded-lg text-xs transition">
                         Validar y Asignar Nuevo Cliente
                     </button>
                 </div>
@@ -121,11 +134,15 @@
         <!-- VISTA 3: CATÁLOGO, EXISTENCIAS Y COTIZADOR -->
         <div id="view-catalog" class="mt-4 hidden space-y-6">
             
-            <!-- Contexto del Cliente -->
+            <!-- Contexto del Cliente y Asesor -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between md:items-center gap-3">
                 <div>
-                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Cotización Activa Para:</span>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Cotización Activa:</span>
                     <h3 id="current-client-display" class="text-lg font-black text-[#003DA5]"></h3>
+                    <p class="text-[11px] text-gray-500 font-medium">
+                        Folio: <strong id="catalog-folio-display" class="font-mono text-gray-800"></strong> | 
+                        Asesor: <span id="current-salesman-display" class="font-bold text-[#003DA5]"></span>
+                    </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="openCartModal()" class="text-xs font-bold bg-[#003DA5] hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
@@ -133,7 +150,7 @@
                         <span>Ver Cotización (<span id="cart-inline-count">0</span>)</span>
                     </button>
                     <button onclick="changeClient()" class="text-xs font-bold text-gray-600 hover:text-black border border-gray-300 px-3 py-2 rounded-lg bg-gray-50 transition">
-                        <i class="fa-solid fa-arrows-rotate mr-1"></i> Cambiar Cliente
+                        <i class="fa-solid fa-arrows-rotate mr-1"></i> Cambiar Cliente / Zona
                     </button>
                 </div>
             </div>
@@ -232,7 +249,10 @@
                     <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
                         <i class="fa-solid fa-file-invoice text-[#003DA5]"></i> Resumen de Cotización B2B
                     </h3>
-                    <p class="text-xs text-gray-500">Cliente: <strong id="cart-client-name" class="text-gray-800"></strong></p>
+                    <p class="text-xs text-gray-500">
+                        Cliente: <strong id="cart-client-name" class="text-gray-800"></strong> | 
+                        Folio: <strong id="cart-folio-display" class="font-mono text-[#003DA5]"></strong>
+                    </p>
                 </div>
                 <button onclick="closeCartModal()" class="text-gray-400 hover:text-gray-600 text-lg">
                     <i class="fa-solid fa-xmark"></i>
@@ -305,7 +325,7 @@
         </div>
     </div>
 
-    <!-- VISTA IMPRIMIBLE PARA PDF (Formato Oficial con estilos compatibles para exportar por correo) -->
+    <!-- VISTA IMPRIMIBLE PARA PDF (Formato Oficial) -->
     <div id="printable-quote" class="p-8 bg-white max-w-4xl mx-auto text-gray-900 font-sans" style="font-size: 11px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #003DA5; padding-bottom: 16px; margin-bottom: 16px;">
             <div>
@@ -319,11 +339,12 @@
                 </p>
             </div>
             <div style="text-align: right; font-size: 11px; line-height: 1.4;">
-                <p style="margin: 2px 0;"><strong>Número de cotización:</strong> <span id="print-quotenum" style="font-family: monospace; font-weight: bold; color: #003DA5;">00000508</span></p>
+                <p style="margin: 2px 0;"><strong>Número de cotización:</strong> <span id="print-quotenum" style="font-family: monospace; font-weight: bold; color: #003DA5;"></span></p>
                 <p style="margin: 2px 0;"><strong>Fecha:</strong> <span id="print-date"></span></p>
-                <p style="margin: 2px 0;"><strong>Contacto:</strong> Miguel Ramirez</p>
-                <p style="margin: 2px 0;"><strong>Email:</strong> mramirez@rego-fix.com</p>
-                <p style="margin: 2px 0;"><strong>Celular:</strong> (52) 614 337 8481</p>
+                <p style="margin: 2px 0;"><strong>Contacto REGO-FIX:</strong> <span id="print-rep-name"></span></p>
+                <p style="margin: 2px 0;"><strong>Email:</strong> <span id="print-rep-email"></span></p>
+                <p style="margin: 2px 0;"><strong>Celular:</strong> <span id="print-rep-phone"></span></p>
+                <p style="margin: 2px 0;"><strong>Zona:</strong> <span id="print-rep-zone"></span></p>
             </div>
         </div>
 
@@ -400,11 +421,54 @@
         let currentUser = null;
         let currentDistData = null;
         let selectedClient = null;
+        let currentQuoteFolio = null;
         let liveStockMap = {};
         let quoteCart = [];
 
-        // Correo fijo donde se recibirá la cotización o notificación de descarga
+        // Tu correo y teléfono fijos para centralizar todo el contacto por ahora
         const CORREO_NOTIFICACIONES_FIJO = 'mramirez@rego-fix.com';
+        const TELEFONO_FIJO = '(52) 614 337 8481';
+
+        // Estructura de Zonas y Asesores Oficiales (Contacto fijado a Miguel Ramírez)
+        const SALES_REPRESENTATIVES = {
+            'miguel': {
+                name: 'Miguel Ramírez',
+                email: CORREO_NOTIFICACIONES_FIJO,
+                phone: TELEFONO_FIJO,
+                zone: 'Zona Sur (CDMX, Toluca, Puebla, Veracruz, Yucatán)'
+            },
+            'ivan': {
+                name: 'Iván González Flores',
+                email: CORREO_NOTIFICACIONES_FIJO,
+                phone: TELEFONO_FIJO,
+                zone: 'Noroeste (Tijuana, Mexicali, Chihuahua, etc.)'
+            },
+            'ernesto': {
+                name: 'Ernesto Obregón',
+                email: CORREO_NOTIFICACIONES_FIJO,
+                phone: TELEFONO_FIJO,
+                zone: 'Noreste (Monterrey, Saltillo, etc.)'
+            },
+            'edgar': {
+                name: 'Edgar Mendoza Morales',
+                email: CORREO_NOTIFICACIONES_FIJO,
+                phone: TELEFONO_FIJO,
+                zone: 'Bajío y Occidente (Querétaro, Gto, Jalisco, SLP, etc.)'
+            }
+        };
+
+        let currentSalesRep = SALES_REPRESENTATIVES['miguel'];
+
+        // Genera Folio Único para búsqueda exacta en el correo
+        function generateSearchableFolio() {
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(-2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const distTag = (currentUser || 'B2B').toUpperCase().slice(0, 4);
+            const randomCode = Math.floor(1000 + Math.random() * 9000);
+            return `RFX-${yy}${mm}${dd}-${distTag}-${randomCode}`;
+        }
 
         let filteredProducts = [];
         let currentlyRenderedCount = 0;
@@ -420,15 +484,17 @@
         };
 
         const FALLBACK_DISTRIBUTORS = {
-            "actramex": { "name": "ACTRAMEX", "tier": "ORO", "accounts": [{ "customer_name": "ACEROS TRANSFORMADOS DE QUERETARO", "rfc": "ATQ990115KC5" }, { "customer_name": "BOSCH REXROTH", "rfc": "BRE820903BN4" }] },
-            "ahnsa": { "name": "AHNSA", "tier": "ORO", "accounts": [{ "customer_name": "ACCESORIOS Y HERRAMIENTAS DEL NORTE", "rfc": "AHN8105068U5" }, { "customer_name": "AHRESTY", "rfc": "AME060606CV8" }] },
-            "dhm": { "name": "DHM", "tier": "DIAMANTE", "accounts": [{ "customer_name": "ACEROS PRIME", "rfc": "APR971217C72" }, { "customer_name": "BENDIX CD ACUÑA", "rfc": "BCM990812MM9" }] },
-            "hertool": { "name": "HERTOOL", "tier": "DIAMANTE", "accounts": [{ "customer_name": "ASAHI ALUMINIUM MEXICO", "rfc": "AAM120301JS7" }, { "customer_name": "HERTOOL", "rfc": "HER030513AP4" }] },
-            "wem": { "name": "WEM", "tier": "ORO", "accounts": [{ "customer_name": "AAM MAQUILADORA MEXICO", "rfc": "AAM9712016M2" }, { "customer_name": "WORKHOLDING ENGINEERING DE MEXICO", "rfc": "WEM140428BI3" }] },
-            "equimec": { "name": "EQUIMEC", "tier": "ORO", "accounts": [{ "customer_name": "AERNNOVA COMPONENTES MEXICO", "rfc": "ACM0708165MA" }, { "customer_name": "EQUIMEC", "rfc": "EQU150410FC5" }] },
-            "dynamo": { "name": "DYNAMO", "tier": "ORO", "accounts": [{ "customer_name": "DYNAMO TOOLS", "rfc": "DTO2111045V2" }, { "customer_name": "ETTS BLINDAJE", "rfc": "EBL231207JN5" }] },
-            "usuario1": { "name": "HERRAMIENTAS INDUSTRIALES DEL NORTE", "tier": "DIAMANTE", "accounts": [{ "customer_name": "BOCAR QUERETARO S.A. DE C.V.", "rfc": "BOC820315XX1" }] }
+            "actramex": { "name": "ACTRAMEX", "tier": "ORO", "accounts": [{ "customer_name": "ACEROS TRANSFORMADOS DE QUERETARO", "rfc": "ATQ990115KC5" }] },
+            "ahnsa": { "name": "AHNSA", "tier": "ORO", "accounts": [{ "customer_name": "ACCESORIOS Y HERRAMIENTAS DEL NORTE", "rfc": "AHN8105068U5" }] },
+            "dhm": { "name": "DHM", "tier": "DIAMANTE", "accounts": [{ "customer_name": "ACEROS PRIME", "rfc": "APR971217C72" }] },
+            "hertool": { "name": "HERTOOL", "tier": "DIAMANTE", "accounts": [{ "customer_name": "HERTOOL", "rfc": "HER030513AP4" }] },
+            "wem": { "name": "WEM", "tier": "ORO", "accounts": [{ "customer_name": "WORKHOLDING ENGINEERING DE MEXICO", "rfc": "WEM140428BI3" }] }
         };
+
+        function onSalesRepChange() {
+            const key = document.getElementById('select-sales-rep').value;
+            currentSalesRep = SALES_REPRESENTATIVES[key] || SALES_REPRESENTATIVES['miguel'];
+        }
 
         function getDiscountCategoryKey(item) {
             const name = (item.name || '').toLowerCase();
@@ -665,8 +731,15 @@
 
         async function proceedToPricing(clientName) {
             selectedClient = clientName;
+            onSalesRepChange();
+
+            currentQuoteFolio = generateSearchableFolio();
+
             document.getElementById('current-client-display').innerText = selectedClient;
+            document.getElementById('catalog-folio-display').innerText = currentQuoteFolio;
+            document.getElementById('current-salesman-display').innerText = `${currentSalesRep.name} — ${currentSalesRep.zone}`;
             document.getElementById('cart-client-name').innerText = selectedClient;
+            document.getElementById('cart-folio-display').innerText = currentQuoteFolio;
 
             await fetchLiveStock();
             
@@ -996,18 +1069,24 @@
             });
         }
 
-        // Prepara y actualiza la vista imprimible con los datos del momento
         function updatePrintableQuoteDOM() {
             const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
             const leadTime = calculateLeadTime();
             const tier = (currentDistData.tier || 'BRONCE').toUpperCase();
 
             document.getElementById('print-date').innerText = printDate;
+            document.getElementById('print-quotenum').innerText = currentQuoteFolio || generateSearchableFolio();
+            
+            // Asesor asignado con tus datos de contacto directos
+            document.getElementById('print-rep-name').innerText = currentSalesRep.name;
+            document.getElementById('print-rep-email').innerText = CORREO_NOTIFICACIONES_FIJO;
+            document.getElementById('print-rep-phone').innerText = TELEFONO_FIJO;
+            document.getElementById('print-rep-zone').innerText = currentSalesRep.zone;
+
             document.getElementById('print-distributor').innerText = currentDistData ? currentDistData.name : 'DISTRIBUIDOR AUTORIZADO';
             document.getElementById('print-dist-level').innerText = `Distribuidor Categoría ${tier} - Matriz Oficial REGO-FIX 2026`;
             document.getElementById('print-client').innerText = selectedClient || 'CLIENTE GENERAL';
             document.getElementById('print-leadtime').innerText = leadTime;
-            document.getElementById('print-quotenum').innerText = `00000${Math.floor(100 + Math.random() * 900)}`;
 
             let subtotalList = 0;
             let subtotalNet = 0;
@@ -1040,15 +1119,9 @@
             document.getElementById('print-discount-total').innerText = `- USD ${savings.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             document.getElementById('print-total').innerText = `USD ${subtotalNet.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-            return {
-                leadTime,
-                subtotalNet,
-                subtotalList,
-                savings
-            };
+            return { leadTime, subtotalNet, subtotalList, savings };
         }
 
-        // Obtiene el documento oficial completo con estilos para envío por correo
         function getOfficialQuoteHTML() {
             updatePrintableQuoteDOM();
             const printableElement = document.getElementById('printable-quote');
@@ -1061,7 +1134,6 @@
             `;
         }
 
-        // Aviso interno cuando se DESCARGA PDF
         async function notifyInternalSales(actionType) {
             try {
                 let subtotalNet = quoteCart.reduce((sum, it) => sum + (Number(it.totalNet || it.total) || 0), 0);
@@ -1075,13 +1147,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: actionType,
+                        folio: currentQuoteFolio,
+                        salesRep: currentSalesRep,
                         targetEmail: CORREO_NOTIFICACIONES_FIJO,
                         internalCopyEmail: CORREO_NOTIFICACIONES_FIJO,
                         emailTo: CORREO_NOTIFICACIONES_FIJO,
                         distributor: currentDistData,
                         client: selectedClient,
                         items: getSafePayloadItems(),
-                        htmlDocument: getOfficialQuoteHTML(), // Se anexa el formato oficial
+                        htmlDocument: getOfficialQuoteHTML(),
                         totals: { 
                             subtotal: subtotalNet,
                             subtotalList: subtotalList, 
@@ -1105,10 +1179,7 @@
             }
 
             updatePrintableQuoteDOM();
-
-            // Disparo del aviso por descarga de PDF
             await notifyInternalSales('DESCARGA_PDF');
-
             window.print();
         }
 
@@ -1127,7 +1198,6 @@
             let total = subtotalNet + iva;
             const leadTime = calculateLeadTime();
 
-            // Generamos el documento oficial exactamente igual al imprimible
             const officialHtml = getOfficialQuoteHTML();
 
             btn.disabled = true;
@@ -1136,15 +1206,16 @@
             try {
                 const safeItems = getSafePayloadItems();
 
-                // Envío de correo único con el formato oficial
                 const res = await fetch('/api/contactos?action=send_quote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        folio: currentQuoteFolio,
+                        salesRep: currentSalesRep,
                         distributor: currentDistData,
                         client: selectedClient,
                         items: safeItems,
-                        htmlDocument: officialHtml, // Formato oficial de la cotización
+                        htmlDocument: officialHtml,
                         totals: { 
                             subtotal: subtotalNet,
                             subtotalList: subtotalList, 
@@ -1164,7 +1235,7 @@
                     throw new Error(data.error || `Error del servidor (${res.status})`);
                 }
 
-                alert(`Cotización enviada con éxito con el formato oficial.\nCopia automática remitida a: ${CORREO_NOTIFICACIONES_FIJO}\nTiempo de entrega asignado: ${leadTime}.`);
+                alert(`Cotización enviada con éxito.\nFolio: ${currentQuoteFolio}\nCopia remitida a: ${CORREO_NOTIFICACIONES_FIJO}\nTiempo de entrega: ${leadTime}.`);
 
             } catch (err) {
                 alert(`Error al enviar cotización: ${err.message}`);
@@ -1178,6 +1249,7 @@
             currentUser = null;
             currentDistData = null;
             selectedClient = null;
+            currentQuoteFolio = null;
             quoteCart = [];
             updateCartBadges();
             document.getElementById('user-header-badge').classList.add('hidden');
