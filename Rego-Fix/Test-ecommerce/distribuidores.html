@@ -61,7 +61,7 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">Usuario de Distribución:</label>
-                    <input type="text" id="dist-user" placeholder="Ej. dhm, hertool, wem, etc." class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
+                    <input type="text" id="dist-user" placeholder="Ej. dhm, hertool, wem, actramex, etc." class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">Contraseña:</label>
@@ -74,7 +74,7 @@
             </div>
         </div>
 
-        <!-- VISTA 2: SELECCIÓN DE CLIENTE FINAL (Optimizado para distribuidores con decenas de clientes) -->
+        <!-- VISTA 2: SELECCIÓN DE CLIENTE FINAL -->
         <div id="view-client-selection" class="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-2xl shadow-md border border-gray-200 hidden">
             <div class="border-b pb-4 mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-[#003DA5] bg-blue-50 px-2 py-1 rounded">Paso 1 de 2 Obligatorio</span>
@@ -104,7 +104,7 @@
                 </button>
             </div>
 
-            <!-- Prospecto nuevo con validación contra lista de Venta Directa -->
+            <!-- Prospecto nuevo -->
             <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
                 <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2"><i class="fa-solid fa-user-plus mr-1"></i> ¿Cotizar a un Nuevo Cliente?</h3>
                 <p class="text-xs text-gray-500 mb-4">El sistema validará en tiempo real que la empresa no pertenezca a la cartera de Venta Directa de REGO-FIX.</p>
@@ -146,7 +146,6 @@
                         <input type="text" id="catalog-search" onkeyup="filterCatalog()" placeholder="Buscar por SKU (ej. 1725.10000) o descripción..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
                     </div>
                     
-                    <!-- Filtro por Categoría Principal -->
                     <select id="catalog-cat-filter" onchange="filterCatalog()" class="border border-gray-300 p-2 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#003DA5]">
                         <option value="">-- Todas las Categorías --</option>
                         <option value="Boquillas">Boquillas / Collets (ER, PG, HS)</option>
@@ -158,7 +157,6 @@
                         <option value="Máquinas">Unidades de Sujeción / Clamping Units</option>
                     </select>
 
-                    <!-- Filtro por Serie ER -->
                     <select id="catalog-series-filter" onchange="filterCatalog()" class="border border-gray-300 p-2 rounded-lg text-xs font-semibold focus:outline-none focus:border-[#003DA5]">
                         <option value="">-- Todas las Series ER --</option>
                         <option value="ER 8">ER 8</option>
@@ -241,11 +239,9 @@
                 </button>
             </div>
 
-            <!-- BANNER DE TIEMPO DE ENTREGA ESTIMADO EN EL MODAL -->
             <div id="cart-leadtime-banner" class="mb-4 p-3 rounded-xl border flex items-center gap-3 text-xs">
             </div>
 
-            <!-- Tabla de partidas en carrito -->
             <div class="overflow-y-auto flex-1 mb-4">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-gray-50 text-gray-500 uppercase font-bold text-[10px]">
@@ -265,7 +261,6 @@
                 </table>
             </div>
 
-            <!-- Totales con desglose de ahorro -->
             <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-1.5 text-xs mb-4">
                 <div class="flex justify-between text-gray-500">
                     <span>Total a Precio de Lista:</span>
@@ -289,10 +284,9 @@
                 </div>
             </div>
 
-            <!-- Opciones -->
             <div class="space-y-3">
                 <div class="flex gap-2">
-                    <input type="email" id="quote-email" placeholder="Correo opcional para copia adicional" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
+                    <input type="email" id="quote-email" placeholder="Correo de contacto para copia de cotización" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
                     <button onclick="sendQuoteEmail()" id="btn-send-quote" class="bg-[#003DA5] hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
                         <i class="fa-solid fa-paper-plane"></i> Enviar por Correo
                     </button>
@@ -397,9 +391,8 @@
         </div>
     </div>
 
-    <!-- CARGA DE ARCHIVOS EXTERNOS DE DATOS, IMÁGENES Y DISTRIBUIDORES -->
-    <script src="distribuidores.js"></script>
-    <script src="/Rego-Fix/Test-ecommerce/distribuidores.js"></script>
+    <!-- CARGA DE ARCHIVOS EXTERNOS DE DATOS, DISTRIBUIDORES E IMÁGENES -->
+    <script src="distribuidores.js" onerror="console.log('distribuidores.js no detectado, usando respaldo embebido.')"></script>
     <script src="/Rego-Fix/Test-ecommerce/products.js"></script>
     <script src="/Rego-Fix/Test-ecommerce/sku_images_final.js"></script>
 
@@ -417,14 +410,22 @@
         const imageLookupCache = {};
         const FALLBACK_IMG = 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
 
-        // ==========================================
-        // MATRIZ OFICIAL DE DESCUENTOS REGO-FIX 2026
-        // ==========================================
         const DISCOUNT_MATRIX = {
             'DIAMANTE': { ER: 0.45, PG: 0.35, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.15 },
             'ORO':      { ER: 0.40, PG: 0.30, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.10 },
             'PLATA':    { ER: 0.30, PG: 0.25, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.10 },
             'BRONCE':   { ER: 0.20, PG: 0.20, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.10 }
+        };
+
+        const FALLBACK_DISTRIBUTORS = {
+            "actramex": { "name": "ACTRAMEX", "tier": "ORO", "accounts": [{ "customer_name": "ACEROS TRANSFORMADOS DE QUERETARO", "rfc": "ATQ990115KC5" }, { "customer_name": "BOSCH REXROTH", "rfc": "BRE820903BN4" }] },
+            "ahnsa": { "name": "AHNSA", "tier": "ORO", "accounts": [{ "customer_name": "ACCESORIOS Y HERRAMIENTAS DEL NORTE", "rfc": "AHN8105068U5" }, { "customer_name": "AHRESTY", "rfc": "AME060606CV8" }] },
+            "dhm": { "name": "DHM", "tier": "DIAMANTE", "accounts": [{ "customer_name": "ACEROS PRIME", "rfc": "APR971217C72" }, { "customer_name": "BENDIX CD ACUÑA", "rfc": "BCM990812MM9" }] },
+            "hertool": { "name": "HERTOOL", "tier": "DIAMANTE", "accounts": [{ "customer_name": "ASAHI ALUMINIUM MEXICO", "rfc": "AAM120301JS7" }, { "customer_name": "HERTOOL", "rfc": "HER030513AP4" }] },
+            "wem": { "name": "WEM", "tier": "ORO", "accounts": [{ "customer_name": "AAM MAQUILADORA MEXICO", "rfc": "AAM9712016M2" }, { "customer_name": "WORKHOLDING ENGINEERING DE MEXICO", "rfc": "WEM140428BI3" }] },
+            "equimec": { "name": "EQUIMEC", "tier": "ORO", "accounts": [{ "customer_name": "AERNNOVA COMPONENTES MEXICO", "rfc": "ACM0708165MA" }, { "customer_name": "EQUIMEC", "rfc": "EQU150410FC5" }] },
+            "dynamo": { "name": "DYNAMO", "tier": "ORO", "accounts": [{ "customer_name": "DYNAMO TOOLS", "rfc": "DTO2111045V2" }, { "customer_name": "ETTS BLINDAJE", "rfc": "EBL231207JN5" }] },
+            "usuario1": { "name": "HERRAMIENTAS INDUSTRIALES DEL NORTE", "tier": "DIAMANTE", "accounts": [{ "customer_name": "BOCAR QUERETARO S.A. DE C.V.", "rfc": "BOC820315XX1" }] }
         };
 
         function getDiscountCategoryKey(item) {
@@ -433,18 +434,10 @@
             const catField = (item.cat || '').toLowerCase();
             const series = (item.series || item.line || '').toLowerCase();
 
-            if (series.includes('pg') || series.includes('powrgrip') || name.includes('powrgrip') || sku.startsWith('0125') || sku.startsWith('0126') || catField.includes('pg')) {
-                return 'PG';
-            }
-            if (name.includes('clamping unit') || name.includes('unidad de sujeción') || name.includes('pgu') || name.includes('pgcu') || catField.includes('máquina') || catField.includes('maquina')) {
-                return 'MAQUINAS';
-            }
-            if (name.includes('mordaza') || name.includes('insert') || name.includes('jaw') || catField.includes('mordaza')) {
-                return 'MORDAZAS';
-            }
-            if (series.includes('er') || name.includes('er ') || name.includes('boquilla') || name.includes('collet') || sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17')) {
-                return 'ER';
-            }
+            if (series.includes('pg') || series.includes('powrgrip') || name.includes('powrgrip') || sku.startsWith('0125') || sku.startsWith('0126') || catField.includes('pg')) return 'PG';
+            if (name.includes('clamping unit') || name.includes('unidad de sujeción') || name.includes('pgu') || name.includes('pgcu') || catField.includes('máquina') || catField.includes('maquina')) return 'MAQUINAS';
+            if (name.includes('mordaza') || name.includes('insert') || name.includes('jaw') || catField.includes('mordaza')) return 'MORDAZAS';
+            if (series.includes('er') || name.includes('er ') || name.includes('boquilla') || name.includes('collet') || sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17')) return 'ER';
             return 'OTROS';
         }
 
@@ -464,9 +457,7 @@
             const cleanSku = String(sku || '').trim();
             if (!cleanSku) return FALLBACK_IMG;
 
-            if (imageLookupCache[cleanSku]) {
-                return imageLookupCache[cleanSku];
-            }
+            if (imageLookupCache[cleanSku]) return imageLookupCache[cleanSku];
 
             if (window.SKU_IMAGES && window.SKU_IMAGES[cleanSku]) {
                 imageLookupCache[cleanSku] = window.SKU_IMAGES[cleanSku];
@@ -499,21 +490,13 @@
             const sku = (item.sku || '').toLowerCase();
             const catField = (item.cat || '').toLowerCase();
 
-            if (name.includes('clamping') || catField.includes('maquina')) {
-                return 'Máquinas';
-            } else if (sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17') || name.includes('boquilla') || name.includes('collet') || catField.includes('pinza')) {
-                return 'Boquillas';
-            } else if (name.includes('tuerca') || name.includes('nut') || sku.startsWith('33') || sku.startsWith('34') || sku.startsWith('35') || catField.includes('tuerca')) {
-                return 'Tuercas';
-            } else if (name.includes('llave') || name.includes('wrench') || name.includes('spanner') || sku.startsWith('711') || sku.startsWith('715') || sku.startsWith('785')) {
-                return 'Llaves';
-            } else if (name.includes('sello') || name.includes('disco') || name.includes('ds/') || name.includes('ks/') || sku.startsWith('39')) {
-                return 'Sellos';
-            } else if (name.includes('porta') || name.includes('cono') || name.includes('holder') || name.includes('bt') || name.includes('cat') || name.includes('hsk') || name.includes('sk')) {
-                return 'Holders';
-            } else {
-                return 'Accesorios';
-            }
+            if (name.includes('clamping') || catField.includes('maquina')) return 'Máquinas';
+            if (sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17') || name.includes('boquilla') || name.includes('collet') || catField.includes('pinza')) return 'Boquillas';
+            if (name.includes('tuerca') || name.includes('nut') || sku.startsWith('33') || sku.startsWith('34') || sku.startsWith('35') || catField.includes('tuerca')) return 'Tuercas';
+            if (name.includes('llave') || name.includes('wrench') || name.includes('spanner') || sku.startsWith('711') || sku.startsWith('715') || sku.startsWith('785')) return 'Llaves';
+            if (name.includes('sello') || name.includes('disco') || name.includes('ds/') || name.includes('ks/') || sku.startsWith('39')) return 'Sellos';
+            if (name.includes('porta') || name.includes('cono') || name.includes('holder') || name.includes('bt') || name.includes('cat') || name.includes('hsk') || name.includes('sk')) return 'Holders';
+            return 'Accesorios';
         }
 
         async function login() {
@@ -527,8 +510,12 @@
                 return;
             }
 
-            if (window.DISTRIBUTORS_DATA && window.DISTRIBUTORS_DATA[u]) {
-                const distInfo = window.DISTRIBUTORS_DATA[u];
+            const registry = (window.DISTRIBUTORS_DATA && Object.keys(window.DISTRIBUTORS_DATA).length > 0)
+                ? window.DISTRIBUTORS_DATA
+                : FALLBACK_DISTRIBUTORS;
+
+            if (registry[u]) {
+                const distInfo = registry[u];
                 if (distInfo.pass && distInfo.pass !== p) {
                     alertBox.innerText = 'Contraseña incorrecta.';
                     alertBox.classList.remove('hidden');
@@ -545,22 +532,15 @@
             document.getElementById('view-login').classList.add('hidden');
             document.getElementById('view-client-selection').classList.remove('hidden');
 
-            let distData = null;
-            let accounts = [];
+            const registry = (window.DISTRIBUTORS_DATA && Object.keys(window.DISTRIBUTORS_DATA).length > 0)
+                ? window.DISTRIBUTORS_DATA
+                : FALLBACK_DISTRIBUTORS;
 
-            if (window.DISTRIBUTORS_DATA && window.DISTRIBUTORS_DATA[currentUser]) {
-                distData = window.DISTRIBUTORS_DATA[currentUser];
-                accounts = distData.accounts || [];
-            }
-
-            if (!distData) {
-                distData = {
-                    name: `DISTRIBUIDOR ${currentUser.toUpperCase()}`,
-                    tier: 'ORO',
-                    accounts: []
-                };
-                accounts = [];
-            }
+            let distData = registry[currentUser] || {
+                name: `DISTRIBUIDOR ${currentUser.toUpperCase()}`,
+                tier: 'ORO',
+                accounts: []
+            };
 
             currentDistData = distData;
             const tier = (currentDistData.tier || 'BRONCE').toUpperCase();
@@ -578,6 +558,7 @@
             badgeTier.innerText = `Nivel: ${tier}`;
             document.getElementById('user-header-badge').classList.remove('hidden');
 
+            const accounts = currentDistData.accounts || [];
             document.getElementById('assigned-count-label').innerText = `(${accounts.length} empresas autorizadas)`;
             renderAssignedClientsList(accounts);
 
@@ -649,8 +630,6 @@
 
         function registerAndCheckClient() {
             const name = document.getElementById('new-client-name').value.trim();
-            const rfc = document.getElementById('new-client-rfc').value.trim();
-
             if (!name) {
                 alert('Ingrese el nombre o razón social de la empresa.');
                 return;
@@ -658,7 +637,6 @@
 
             const cleanInputName = name.toUpperCase();
 
-            // Validación inmediata contra clientes de Venta Directa extraídos del Excel
             if (window.DIRECT_SALE_CLIENTS && Array.isArray(window.DIRECT_SALE_CLIENTS)) {
                 const isDirectSale = window.DIRECT_SALE_CLIENTS.some(dsName => 
                     dsName.includes(cleanInputName) || cleanInputName.includes(dsName)
@@ -853,6 +831,11 @@
                 existing.qty += qty;
                 existing.totalList = existing.qty * listPrice;
                 existing.totalNet = existing.qty * distPrice;
+                // Propiedades retrocompatibles requeridas por el backend para evitar error toFixed
+                existing.price = distPrice;
+                existing.unitPrice = distPrice;
+                existing.total = existing.qty * distPrice;
+                existing.discount = discRate;
             } else {
                 quoteCart.push({
                     sku: prod.sku,
@@ -864,7 +847,12 @@
                     distPrice: distPrice,
                     qty: qty,
                     totalList: qty * listPrice,
-                    totalNet: qty * distPrice
+                    totalNet: qty * distPrice,
+                    // Propiedades retrocompatibles para el backend
+                    price: distPrice,
+                    unitPrice: distPrice,
+                    total: qty * distPrice,
+                    discount: discRate
                 });
             }
 
@@ -929,15 +917,20 @@
                     ? `<span class="text-green-700 font-bold text-[10px] bg-green-100 px-2 py-0.5 rounded">Inmediata (${stockAvail} pzas)</span>`
                     : `<span class="text-amber-700 font-bold text-[10px] bg-amber-100 px-2 py-0.5 rounded">2-3 sem (${stockAvail} en almacén)</span>`;
 
+                const lPrice = Number(it.listPrice || it.price) || 0;
+                const dPrice = Number(it.distPrice || it.price) || 0;
+                const tNet = Number(it.totalNet || it.total) || 0;
+                const dRate = Number(it.discRate || it.discount) || 0;
+
                 return `
                     <tr class="hover:bg-gray-50">
                         <td class="p-2 font-mono text-[11px] font-bold text-[#003DA5]">${it.sku}</td>
-                        <td class="p-2 font-semibold text-gray-800">${it.name} <span class="text-[10px] text-gray-400 font-mono">(${Math.round(it.discRate * 100)}% desc.)</span></td>
+                        <td class="p-2 font-semibold text-gray-800">${it.name} <span class="text-[10px] text-gray-400 font-mono">(${Math.round(dRate * 100)}% desc.)</span></td>
                         <td class="p-2 text-center font-bold">${it.qty}</td>
                         <td class="p-2 text-center">${stockItemBadge}</td>
-                        <td class="p-2 text-right font-mono text-gray-400 line-through">$${it.listPrice.toFixed(2)}</td>
-                        <td class="p-2 text-right font-mono font-bold text-[#003DA5]">$${it.distPrice.toFixed(2)}</td>
-                        <td class="p-2 text-right font-mono font-bold text-gray-900">$${it.totalNet.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono text-gray-400 line-through">$${lPrice.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono font-bold text-[#003DA5]">$${dPrice.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono font-bold text-gray-900">$${tNet.toFixed(2)}</td>
                         <td class="p-2 text-center">
                             <button onclick="removeCartItem(${idx})" class="text-red-500 hover:text-red-700">
                                 <i class="fa-solid fa-trash-can text-xs"></i>
@@ -976,10 +969,38 @@
             }
         }
 
+        // Normaliza las partidas para evitar fallos de toFixed() en cualquier versión de backend
+        function getSafePayloadItems() {
+            return quoteCart.map(it => {
+                const listPrice = Number(it.listPrice !== undefined ? it.listPrice : it.price) || 0;
+                const distPrice = Number(it.distPrice !== undefined ? it.distPrice : it.price) || 0;
+                const qty = Number(it.qty) || 1;
+                const totalNet = Number(it.totalNet !== undefined ? it.totalNet : (qty * distPrice)) || 0;
+                const totalList = Number(it.totalList !== undefined ? it.totalList : (qty * listPrice)) || 0;
+                const discRate = Number(it.discRate !== undefined ? it.discRate : it.discount) || 0;
+
+                return {
+                    sku: it.sku || '',
+                    name: it.name || '',
+                    line: it.line || 'ER',
+                    qty: qty,
+                    price: distPrice,        // Campo estándar esperado por backend legacy
+                    unitPrice: distPrice,    // Campo alternativo
+                    total: totalNet,         // Campo estándar esperado por backend legacy
+                    discount: discRate,      // Número seguro
+                    listPrice: listPrice,    // Campo con lista oficial
+                    distPrice: distPrice,    // Campo con precio distribuidor
+                    totalNet: totalNet,      // Campo total neto
+                    totalList: totalList,    // Campo total lista
+                    discRate: discRate
+                };
+            });
+        }
+
         async function notifyInternalSales(actionType) {
             try {
-                let subtotalNet = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
-                let subtotalList = quoteCart.reduce((sum, it) => sum + it.totalList, 0);
+                let subtotalNet = quoteCart.reduce((sum, it) => sum + (Number(it.totalNet || it.total) || 0), 0);
+                let subtotalList = quoteCart.reduce((sum, it) => sum + (Number(it.totalList || it.total) || 0), 0);
                 let iva = subtotalNet * 0.16;
                 let total = subtotalNet + iva;
                 const leadTime = calculateLeadTime();
@@ -992,14 +1013,20 @@
                         targetEmail: INTERNAL_SALES_EMAIL,
                         distributor: currentDistData,
                         client: selectedClient,
-                        items: quoteCart,
-                        totals: { subtotalList, subtotalNet, iva, total },
+                        items: getSafePayloadItems(),
+                        totals: { 
+                            subtotal: subtotalNet,
+                            subtotalList: subtotalList, 
+                            subtotalNet: subtotalNet, 
+                            iva: iva, 
+                            total: total 
+                        },
                         leadTime: leadTime,
                         timestamp: new Date().toISOString()
                     })
                 });
             } catch (e) {
-                console.warn('Aviso local:', e);
+                console.warn('Aviso interno registrado localmente:', e);
             }
         }
 
@@ -1025,17 +1052,23 @@
             const printTbody = document.getElementById('print-items-tbody');
             
             printTbody.innerHTML = quoteCart.map(it => {
-                subtotalList += it.totalList;
-                subtotalNet += it.totalNet;
+                const lPrice = Number(it.listPrice || it.price) || 0;
+                const dPrice = Number(it.distPrice || it.price) || 0;
+                const tNet = Number(it.totalNet || (it.qty * dPrice)) || 0;
+                const tList = Number(it.totalList || (it.qty * lPrice)) || 0;
+                const dRate = Number(it.discRate || it.discount) || 0;
+
+                subtotalList += tList;
+                subtotalNet += tNet;
 
                 return `
                     <tr class="border-b border-gray-200">
                         <td class="p-2 border border-gray-300 text-center font-bold">${it.qty}</td>
                         <td class="p-2 border border-gray-300 font-mono font-bold text-[#003DA5]">${it.sku}</td>
-                        <td class="p-2 border border-gray-300 font-semibold">${it.name} <span class="text-[10px] text-gray-500 font-normal">(${Math.round(it.discRate * 100)}% desc.)</span></td>
-                        <td class="p-2 border border-gray-300 text-right font-mono text-gray-500">USD ${it.listPrice.toFixed(2)}</td>
-                        <td class="p-2 border border-gray-300 text-right font-mono font-bold text-[#003DA5]">USD ${it.distPrice.toFixed(2)}</td>
-                        <td class="p-2 border border-gray-300 text-right font-mono font-bold">USD ${it.totalNet.toFixed(2)}</td>
+                        <td class="p-2 border border-gray-300 font-semibold">${it.name} <span class="text-[10px] text-gray-500 font-normal">(${Math.round(dRate * 100)}% desc.)</span></td>
+                        <td class="p-2 border border-gray-300 text-right font-mono text-gray-500">USD ${lPrice.toFixed(2)}</td>
+                        <td class="p-2 border border-gray-300 text-right font-mono font-bold text-[#003DA5]">USD ${dPrice.toFixed(2)}</td>
+                        <td class="p-2 border border-gray-300 text-right font-mono font-bold">USD ${tNet.toFixed(2)}</td>
                     </tr>
                 `;
             }).join('');
@@ -1050,42 +1083,88 @@
             window.print();
         }
 
+        function sendViaMailtoFallback(recipientEmail, leadTime, totalFormatted) {
+            const subject = encodeURIComponent(`Cotización REGO-FIX B2B - ${selectedClient}`);
+            let bodyText = `Hola,\n\nAdjunto el resumen de la cotización generada en el portal REGO-FIX México:\n\n`;
+            bodyText += `Distribuidor: ${currentDistData.name}\n`;
+            bodyText += `Cliente Final: ${selectedClient}\n`;
+            bodyText += `Tiempo Estimado de Entrega: ${leadTime}\n\n`;
+            bodyText += `PARTIDAS:\n`;
+
+            quoteCart.forEach(it => {
+                const dPrice = Number(it.distPrice || it.price) || 0;
+                const tNet = Number(it.totalNet || (it.qty * dPrice)) || 0;
+                bodyText += `- SKU: ${it.sku} | Cant: ${it.qty} | P. Unit Dist: $${dPrice.toFixed(2)} USD | Total: $${tNet.toFixed(2)} USD\n`;
+            });
+
+            bodyText += `\nTOTAL COTIZACIÓN: ${totalFormatted}\n\n`;
+            bodyText += `Saludos cordiales,\n${currentDistData.name}`;
+
+            const to = recipientEmail || INTERNAL_SALES_EMAIL;
+            const mailtoUrl = `mailto:${to}?cc=${INTERNAL_SALES_EMAIL}&subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+            
+            window.location.href = mailtoUrl;
+        }
+
         async function sendQuoteEmail() {
+            if (quoteCart.length === 0) {
+                alert('No hay partidas en la cotización.');
+                return;
+            }
+
             const clientEmailInput = document.getElementById('quote-email').value.trim();
             const btn = document.getElementById('btn-send-quote');
 
-            let subtotalNet = quoteCart.reduce((sum, it) => sum + it.totalNet, 0);
-            let subtotalList = quoteCart.reduce((sum, it) => sum + it.totalList, 0);
+            let subtotalNet = quoteCart.reduce((sum, it) => sum + (Number(it.totalNet || it.total) || 0), 0);
+            let subtotalList = quoteCart.reduce((sum, it) => sum + (Number(it.totalList || it.total) || 0), 0);
             let iva = subtotalNet * 0.16;
             let total = subtotalNet + iva;
             const leadTime = calculateLeadTime();
+            const totalFormatted = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
 
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando...`;
 
             try {
+                const safeItems = getSafePayloadItems();
+
                 const res = await fetch('/api/contactos?action=send_quote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         distributor: currentDistData,
                         client: selectedClient,
-                        items: quoteCart,
-                        totals: { subtotalList, subtotalNet, iva, total },
+                        items: safeItems,
+                        totals: { 
+                            subtotal: subtotalNet,
+                            subtotalList: subtotalList, 
+                            subtotalNet: subtotalNet, 
+                            iva: iva, 
+                            total: total 
+                        },
                         leadTime: leadTime,
                         emailTo: clientEmailInput || undefined,
                         internalCopyEmail: INTERNAL_SALES_EMAIL
                     })
                 });
 
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Error al procesar la cotización.');
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    throw new Error(data.error || `Error del servidor (${res.status})`);
+                }
 
                 await notifyInternalSales('EMAIL_SENT');
+                alert(`${data.message || 'Cotización enviada con éxito.'}\nTiempo de entrega asignado: ${leadTime}.`);
 
-                alert(`${data.message}\nTiempo de entrega asignado: ${leadTime}\n(Oportunidad generada en Salesforce y copia enviada a ${INTERNAL_SALES_EMAIL}).`);
             } catch (err) {
-                alert(`Error al enviar cotización: ${err.message}`);
+                console.warn('Error al enviar correo vía API:', err);
+                const useLocalClient = confirm(
+                    `El servidor de correo reportó un inconveniente (${err.message}).\n\n¿Deseas abrir tu cliente de correo (Outlook / Gmail) para despachar de inmediato la cotización a ${clientEmailInput || INTERNAL_SALES_EMAIL}?`
+                );
+                if (useLocalClient) {
+                    sendViaMailtoFallback(clientEmailInput, leadTime, totalFormatted);
+                }
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar por Correo`;
