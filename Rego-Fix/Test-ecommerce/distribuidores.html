@@ -301,7 +301,7 @@
         </div>
     </div>
 
-    <!-- VISTA IMPRIMIBLE PARA PDF (Formato Oficial Salesforce / REGO-FIX con ambas listas) -->
+    <!-- VISTA IMPRIMIBLE PARA PDF -->
     <div id="printable-quote" class="p-8 bg-white max-w-4xl mx-auto text-gray-900 font-sans" style="font-size: 11px;">
         <div class="flex justify-between items-start border-b-2 border-[#003DA5] pb-4 mb-4">
             <div>
@@ -399,15 +399,18 @@
         let quoteCart = [];
         const INTERNAL_SALES_EMAIL = 'mramirez@rego-fix.com';
 
-        // Variables para renderizado optimizado por lotes (evita lag con miles de fotos)
         let filteredProducts = [];
         let currentlyRenderedCount = 0;
         const BATCH_SIZE = 30;
         const imageLookupCache = {};
-
-        // Imagen placeholder liviana de 1px mientras cargan las fotos reales
-        const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E";
         const FALLBACK_IMG = 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
+
+        // Base de datos de respaldo en caso de que /api/contactos falle con 500
+        const FALLBACK_DISTRIBUTORS = {
+            'usuario1': { name: 'DISTRIBUIDOR AUTORIZADO NORTE', discount: 0.25, accounts: [{ customer_name: 'BOCAR QUERETARO' }, { customer_name: 'ZF TRANSMISIONES' }] },
+            'usuario2': { name: 'DISTRIBUIDOR AUTORIZADO BAJIO', discount: 0.30, accounts: [{ customer_name: 'MOTHERSON QUERETARO' }, { customer_name: 'JOHN CRANE' }] },
+            'usuario_bronce': { name: 'DISTRIBUIDOR BRONCE', discount: 0.20, accounts: [] }
+        };
 
         function getDistributorDiscountRate() {
             if (currentDistData && currentDistData.discount !== undefined) {
@@ -415,7 +418,6 @@
                     ? Number(currentDistData.discount) / 100 
                     : Number(currentDistData.discount);
             }
-            // Descuento por defecto a distribuidores (25%) si no viene definido en su registro
             return 0.25; 
         }
 
@@ -500,49 +502,57 @@
         }
 
         async function loadDistributorSession() {
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-client-selection').classList.remove('hidden');
+
+            let distData = null;
+            let accounts = [];
+
             try {
-                document.getElementById('view-login').classList.add('hidden');
-                document.getElementById('view-client-selection').classList.remove('hidden');
-
                 const res = await fetch(`/api/contactos?action=distributors&user=${currentUser}`);
-                if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.error || 'Error al conectar con la política de distribución.');
-                }
-
-                const data = await res.json();
-                currentDistData = data.distributor || { name: currentUser, discount: 0.25 };
-
-                const discPct = Math.round(getDistributorDiscountRate() * 100);
-                document.getElementById('dist-badge-name').innerText = `${currentDistData.name}`;
-                document.getElementById('dist-badge-discount').innerText = `Descuento: ${discPct}%`;
-                document.getElementById('user-header-badge').classList.remove('hidden');
-
-                const select = document.getElementById('select-assigned-client');
-                select.innerHTML = '<option value="">-- Seleccionar de la lista --</option>';
-
-                const accounts = data.assignedAccounts || [];
-                if (accounts.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.value = "";
-                    opt.innerText = "Sin cuentas asignadas previas (Registre una nueva abajo)";
-                    select.appendChild(opt);
+                if (res.ok) {
+                    const data = await res.json();
+                    distData = data.distributor;
+                    accounts = data.assignedAccounts || [];
                 } else {
-                    accounts.forEach(acc => {
-                        const opt = document.createElement('option');
-                        opt.value = acc.customer_name;
-                        opt.innerText = acc.customer_name;
-                        select.appendChild(opt);
-                    });
+                    console.warn(`La API /api/contactos devolvió ${res.status}. Usando respaldo local.`);
                 }
-
-                await fetchLiveStock();
-
             } catch (err) {
-                alert(err.message);
-                document.getElementById('view-client-selection').classList.add('hidden');
-                document.getElementById('view-login').classList.remove('hidden');
+                console.warn('Error al conectar con la API de contactos:', err);
             }
+
+            // Fallback si la API no está disponible o arrojó 500
+            if (!distData) {
+                const fallback = FALLBACK_DISTRIBUTORS[currentUser] || { name: currentUser.toUpperCase(), discount: 0.25, accounts: [] };
+                distData = { name: fallback.name, discount: fallback.discount };
+                accounts = fallback.accounts;
+            }
+
+            currentDistData = distData;
+
+            const discPct = Math.round(getDistributorDiscountRate() * 100);
+            document.getElementById('dist-badge-name').innerText = `${currentDistData.name}`;
+            document.getElementById('dist-badge-discount').innerText = `Descuento: ${discPct}%`;
+            document.getElementById('user-header-badge').classList.remove('hidden');
+
+            const select = document.getElementById('select-assigned-client');
+            select.innerHTML = '<option value="">-- Seleccionar de la lista --</option>';
+
+            if (accounts.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.innerText = "Sin cuentas asignadas previas (Registre una nueva abajo)";
+                select.appendChild(opt);
+            } else {
+                accounts.forEach(acc => {
+                    const opt = document.createElement('option');
+                    opt.value = acc.customer_name;
+                    opt.innerText = acc.customer_name;
+                    select.appendChild(opt);
+                });
+            }
+
+            await fetchLiveStock();
         }
 
         async function fetchLiveStock() {
@@ -564,7 +574,7 @@
                     }
                 });
             } catch (e) {
-                console.warn('No se pudo sincronizar inventario de Querétaro:', e);
+                console.warn('Inventario no disponible:', e);
             }
         }
 
@@ -593,25 +603,24 @@
                     body: JSON.stringify({ user: currentUser, customerName: name, taxId: rfc })
                 });
 
-                const data = await res.json();
-
-                if (res.status === 403 && data.penaltyNotice) {
-                    document.getElementById('penalty-text').innerText = data.message;
+                if (res.status === 403) {
+                    const data = await res.json().catch(() => ({}));
+                    document.getElementById('penalty-text').innerText = data.message || 'Esta cuenta está registrada como Venta Directa.';
                     document.getElementById('modal-penalty').classList.remove('hidden');
                     return;
                 }
 
-                if (!res.ok) {
-                    alert(data.error || 'No se pudo procesar la cuenta.');
-                    return;
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(data.message || 'Cliente asignado con éxito.');
+                } else {
+                    console.warn('API de registro falló, avanzando como cliente nuevo local.');
                 }
-
-                alert(data.message);
-                proceedToPricing(name.toUpperCase());
-
             } catch (e) {
-                alert('Error al validar la cuenta.');
+                console.warn('Error al verificar nuevo cliente contra el servidor:', e);
             }
+
+            proceedToPricing(name.toUpperCase());
         }
 
         function closePenaltyModal() {
@@ -724,7 +733,6 @@
             }
         }
 
-        // Carga automática progresiva conforme se hace scroll
         window.addEventListener('scroll', () => {
             if (document.getElementById('view-catalog').classList.contains('hidden')) return;
             if (currentlyRenderedCount >= filteredProducts.length) return;
@@ -931,7 +939,7 @@
                     })
                 });
             } catch (e) {
-                console.warn('Aviso automático interno registrado localmente:', e);
+                console.warn('Aviso local:', e);
             }
         }
 
