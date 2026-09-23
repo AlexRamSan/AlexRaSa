@@ -41,7 +41,7 @@
             </div>
             <div id="user-header-badge" class="hidden text-xs flex items-center gap-3">
                 <span id="dist-badge-name" class="font-bold bg-white text-[#003DA5] px-3 py-1 rounded-full shadow-sm"></span>
-                <span id="dist-badge-discount" class="font-bold bg-blue-800 text-yellow-300 px-2 py-1 rounded-full border border-blue-700"></span>
+                <span id="dist-badge-tier" class="font-bold px-2.5 py-1 rounded-full uppercase tracking-wider text-[11px] shadow-sm"></span>
                 <button onclick="openCartModal()" id="cart-header-btn" class="bg-[#D1D811] hover:bg-lime-500 text-black px-3 py-1 rounded-full font-bold shadow-sm flex items-center gap-1.5 transition">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
                     <span>Cotización (<span id="cart-count">0</span>)</span>
@@ -61,7 +61,7 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">Usuario de Distribución:</label>
-                    <input type="text" id="dist-user" placeholder="Ej. usuario1" class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
+                    <input type="text" id="dist-user" placeholder="Ej. dhm, hertool, wem, etc." class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">Contraseña:</label>
@@ -74,7 +74,7 @@
             </div>
         </div>
 
-        <!-- VISTA 2: SELECCIÓN DE CLIENTE FINAL -->
+        <!-- VISTA 2: SELECCIÓN DE CLIENTE FINAL (Optimizado para distribuidores con decenas de clientes) -->
         <div id="view-client-selection" class="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-2xl shadow-md border border-gray-200 hidden">
             <div class="border-b pb-4 mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-[#003DA5] bg-blue-50 px-2 py-1 rounded">Paso 1 de 2 Obligatorio</span>
@@ -82,20 +82,29 @@
                 <p class="text-xs text-gray-500 mt-1">Por política comercial, seleccione la cuenta a la cual se destinará esta cotización antes de visualizar existencias y precios oficiales.</p>
             </div>
 
-            <!-- Cuentas asignadas -->
+            <!-- Cuentas asignadas con filtro rápido -->
             <div class="space-y-4 mb-8">
-                <label class="block text-xs font-bold text-gray-700">Seleccionar entre sus Cuentas Asignadas:</label>
-                <div class="flex gap-2">
-                    <select id="select-assigned-client" class="flex-1 border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
-                        <option value="">-- Cargando sus cuentas autorizadas... --</option>
-                    </select>
-                    <button onclick="confirmExistingClient()" class="bg-[#003DA5] hover:bg-blue-800 text-white px-5 py-3 rounded-lg text-sm font-bold transition">
-                        Continuar
-                    </button>
+                <div class="flex justify-between items-center">
+                    <label class="block text-xs font-bold text-gray-700">Seleccionar entre sus Cuentas Asignadas:</label>
+                    <span id="assigned-count-label" class="text-[11px] text-gray-500 font-medium"></span>
                 </div>
+
+                <div class="relative">
+                    <i class="fa-solid fa-filter absolute left-3 top-3 text-gray-400 text-xs"></i>
+                    <input type="text" id="client-search-filter" onkeyup="filterAssignedClients()" placeholder="Escriba para filtrar sus clientes asignados..." class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-xs mb-2 focus:outline-none focus:border-[#003DA5]">
+                </div>
+
+                <div class="flex gap-2">
+                    <select id="select-assigned-client" size="6" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
+                    </select>
+                </div>
+                <button onclick="confirmExistingClient()" class="w-full bg-[#003DA5] hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow">
+                    <span>Continuar con Cliente Seleccionado</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </div>
 
-            <!-- Prospecto nuevo -->
+            <!-- Prospecto nuevo con validación contra lista de Venta Directa -->
             <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
                 <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2"><i class="fa-solid fa-user-plus mr-1"></i> ¿Cotizar a un Nuevo Cliente?</h3>
                 <p class="text-xs text-gray-500 mb-4">El sistema validará en tiempo real que la empresa no pertenezca a la cartera de Venta Directa de REGO-FIX.</p>
@@ -146,6 +155,7 @@
                         <option value="Llaves">Llaves de apriete (Wrenches / Spanners)</option>
                         <option value="Sellos">Sellos y Discos de refrigeración (DS / KS)</option>
                         <option value="Accesorios">Accesorios y refacciones</option>
+                        <option value="Máquinas">Unidades de Sujeción / Clamping Units</option>
                     </select>
 
                     <!-- Filtro por Serie ER -->
@@ -174,7 +184,7 @@
                             <tr>
                                 <th class="p-3 text-center w-16">Imagen</th>
                                 <th class="p-4">SKU / Descripción</th>
-                                <th class="p-4">Categoría / Serie</th>
+                                <th class="p-4">Categoría / Línea</th>
                                 <th class="p-4 text-center bg-blue-50/50 text-[#003DA5]">Stock Qro</th>
                                 <th class="p-4 text-right">P. Lista</th>
                                 <th class="p-4 text-right bg-blue-50/30 text-[#003DA5]">P. Distribuidor</th>
@@ -387,7 +397,9 @@
         </div>
     </div>
 
-    <!-- CARGA DE ARCHIVOS EXTERNOS DE DATOS E IMÁGENES -->
+    <!-- CARGA DE ARCHIVOS EXTERNOS DE DATOS, IMÁGENES Y DISTRIBUIDORES -->
+    <script src="distribuidores.js"></script>
+    <script src="/Rego-Fix/Test-ecommerce/distribuidores.js"></script>
     <script src="/Rego-Fix/Test-ecommerce/products.js"></script>
     <script src="/Rego-Fix/Test-ecommerce/sku_images_final.js"></script>
 
@@ -405,24 +417,46 @@
         const imageLookupCache = {};
         const FALLBACK_IMG = 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
 
-        // Base de datos de respaldo en caso de que /api/contactos falle con 500
-        const FALLBACK_DISTRIBUTORS = {
-            'usuario1': { name: 'DISTRIBUIDOR AUTORIZADO NORTE', discount: 0.25, accounts: [{ customer_name: 'BOCAR QUERETARO' }, { customer_name: 'ZF TRANSMISIONES' }] },
-            'usuario2': { name: 'DISTRIBUIDOR AUTORIZADO BAJIO', discount: 0.30, accounts: [{ customer_name: 'MOTHERSON QUERETARO' }, { customer_name: 'JOHN CRANE' }] },
-            'usuario_bronce': { name: 'DISTRIBUIDOR BRONCE', discount: 0.20, accounts: [] }
+        // ==========================================
+        // MATRIZ OFICIAL DE DESCUENTOS REGO-FIX 2026
+        // ==========================================
+        const DISCOUNT_MATRIX = {
+            'DIAMANTE': { ER: 0.45, PG: 0.35, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.15 },
+            'ORO':      { ER: 0.40, PG: 0.30, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.10 },
+            'PLATA':    { ER: 0.30, PG: 0.25, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.10 },
+            'BRONCE':   { ER: 0.20, PG: 0.20, MAQUINAS: 0.10, MORDAZAS: 0.05, OTROS: 0.10 }
         };
 
-        function getDistributorDiscountRate() {
-            if (currentDistData && currentDistData.discount !== undefined) {
-                return Number(currentDistData.discount) > 1 
-                    ? Number(currentDistData.discount) / 100 
-                    : Number(currentDistData.discount);
+        function getDiscountCategoryKey(item) {
+            const name = (item.name || '').toLowerCase();
+            const sku = (item.sku || '').toLowerCase();
+            const catField = (item.cat || '').toLowerCase();
+            const series = (item.series || item.line || '').toLowerCase();
+
+            if (series.includes('pg') || series.includes('powrgrip') || name.includes('powrgrip') || sku.startsWith('0125') || sku.startsWith('0126') || catField.includes('pg')) {
+                return 'PG';
             }
-            return 0.25; 
+            if (name.includes('clamping unit') || name.includes('unidad de sujeción') || name.includes('pgu') || name.includes('pgcu') || catField.includes('máquina') || catField.includes('maquina')) {
+                return 'MAQUINAS';
+            }
+            if (name.includes('mordaza') || name.includes('insert') || name.includes('jaw') || catField.includes('mordaza')) {
+                return 'MORDAZAS';
+            }
+            if (series.includes('er') || name.includes('er ') || name.includes('boquilla') || name.includes('collet') || sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17')) {
+                return 'ER';
+            }
+            return 'OTROS';
         }
 
-        function getDistributorPrice(listPrice) {
-            const discountRate = getDistributorDiscountRate();
+        function getDiscountRateForItem(item) {
+            const tier = (currentDistData && currentDistData.tier) ? currentDistData.tier.toUpperCase() : 'BRONCE';
+            const tierRates = DISCOUNT_MATRIX[tier] || DISCOUNT_MATRIX['BRONCE'];
+            const catKey = getDiscountCategoryKey(item);
+            return tierRates[catKey] !== undefined ? tierRates[catKey] : 0.10;
+        }
+
+        function getDistributorPrice(item, listPrice) {
+            const discountRate = getDiscountRateForItem(item);
             return listPrice * (1 - discountRate);
         }
 
@@ -465,7 +499,9 @@
             const sku = (item.sku || '').toLowerCase();
             const catField = (item.cat || '').toLowerCase();
 
-            if (sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17') || name.includes('boquilla') || name.includes('collet') || catField.includes('pinza')) {
+            if (name.includes('clamping') || catField.includes('maquina')) {
+                return 'Máquinas';
+            } else if (sku.startsWith('11') || sku.startsWith('12') || sku.startsWith('17') || name.includes('boquilla') || name.includes('collet') || catField.includes('pinza')) {
                 return 'Boquillas';
             } else if (name.includes('tuerca') || name.includes('nut') || sku.startsWith('33') || sku.startsWith('34') || sku.startsWith('35') || catField.includes('tuerca')) {
                 return 'Tuercas';
@@ -481,7 +517,7 @@
         }
 
         async function login() {
-            const u = document.getElementById('dist-user').value.trim();
+            const u = document.getElementById('dist-user').value.trim().toLowerCase();
             const p = document.getElementById('dist-pass').value.trim();
             const alertBox = document.getElementById('login-alert');
 
@@ -491,14 +527,18 @@
                 return;
             }
 
-            if ((u === 'usuario1' && p === 'usuario1') || (u === 'usuario2' && p === 'usuario2') || (u === 'usuario_bronce')) {
-                currentUser = u;
-                alertBox.classList.add('hidden');
-                await loadDistributorSession();
-            } else {
-                alertBox.innerText = 'Credenciales no autorizadas.';
-                alertBox.classList.remove('hidden');
+            if (window.DISTRIBUTORS_DATA && window.DISTRIBUTORS_DATA[u]) {
+                const distInfo = window.DISTRIBUTORS_DATA[u];
+                if (distInfo.pass && distInfo.pass !== p) {
+                    alertBox.innerText = 'Contraseña incorrecta.';
+                    alertBox.classList.remove('hidden');
+                    return;
+                }
             }
+
+            currentUser = u;
+            alertBox.classList.add('hidden');
+            await loadDistributorSession();
         }
 
         async function loadDistributorSession() {
@@ -508,51 +548,71 @@
             let distData = null;
             let accounts = [];
 
-            try {
-                const res = await fetch(`/api/contactos?action=distributors&user=${currentUser}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    distData = data.distributor;
-                    accounts = data.assignedAccounts || [];
-                } else {
-                    console.warn(`La API /api/contactos devolvió ${res.status}. Usando respaldo local.`);
-                }
-            } catch (err) {
-                console.warn('Error al conectar con la API de contactos:', err);
+            if (window.DISTRIBUTORS_DATA && window.DISTRIBUTORS_DATA[currentUser]) {
+                distData = window.DISTRIBUTORS_DATA[currentUser];
+                accounts = distData.accounts || [];
             }
 
-            // Fallback si la API no está disponible o arrojó 500
             if (!distData) {
-                const fallback = FALLBACK_DISTRIBUTORS[currentUser] || { name: currentUser.toUpperCase(), discount: 0.25, accounts: [] };
-                distData = { name: fallback.name, discount: fallback.discount };
-                accounts = fallback.accounts;
+                distData = {
+                    name: `DISTRIBUIDOR ${currentUser.toUpperCase()}`,
+                    tier: 'ORO',
+                    accounts: []
+                };
+                accounts = [];
             }
 
             currentDistData = distData;
+            const tier = (currentDistData.tier || 'BRONCE').toUpperCase();
 
-            const discPct = Math.round(getDistributorDiscountRate() * 100);
+            const tierColors = {
+                'DIAMANTE': 'bg-cyan-100 text-cyan-900 border border-cyan-300',
+                'ORO':      'bg-yellow-100 text-yellow-900 border border-yellow-300',
+                'PLATA':    'bg-gray-200 text-gray-800 border border-gray-400',
+                'BRONCE':   'bg-amber-100 text-amber-900 border border-amber-300'
+            };
+
             document.getElementById('dist-badge-name').innerText = `${currentDistData.name}`;
-            document.getElementById('dist-badge-discount').innerText = `Descuento: ${discPct}%`;
+            const badgeTier = document.getElementById('dist-badge-tier');
+            badgeTier.className = `font-bold px-2.5 py-1 rounded-full uppercase tracking-wider text-[11px] shadow-sm ${tierColors[tier] || tierColors['BRONCE']}`;
+            badgeTier.innerText = `Nivel: ${tier}`;
             document.getElementById('user-header-badge').classList.remove('hidden');
 
-            const select = document.getElementById('select-assigned-client');
-            select.innerHTML = '<option value="">-- Seleccionar de la lista --</option>';
+            document.getElementById('assigned-count-label').innerText = `(${accounts.length} empresas autorizadas)`;
+            renderAssignedClientsList(accounts);
 
-            if (accounts.length === 0) {
+            await fetchLiveStock();
+        }
+
+        function renderAssignedClientsList(accountsList) {
+            const select = document.getElementById('select-assigned-client');
+            select.innerHTML = '';
+
+            if (!accountsList || accountsList.length === 0) {
                 const opt = document.createElement('option');
                 opt.value = "";
                 opt.innerText = "Sin cuentas asignadas previas (Registre una nueva abajo)";
                 select.appendChild(opt);
-            } else {
-                accounts.forEach(acc => {
-                    const opt = document.createElement('option');
-                    opt.value = acc.customer_name;
-                    opt.innerText = acc.customer_name;
-                    select.appendChild(opt);
-                });
+                return;
             }
 
-            await fetchLiveStock();
+            accountsList.forEach((acc, i) => {
+                const opt = document.createElement('option');
+                opt.value = acc.customer_name;
+                opt.className = "p-1.5 hover:bg-blue-50 border-b border-gray-100 text-xs";
+                opt.innerText = `${acc.customer_name} ${acc.rfc ? `(${acc.rfc})` : ''}`;
+                if (i === 0) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function filterAssignedClients() {
+            if (!currentDistData || !currentDistData.accounts) return;
+            const term = document.getElementById('client-search-filter').value.toLowerCase().trim();
+            const filtered = currentDistData.accounts.filter(a => 
+                a.customer_name.toLowerCase().includes(term) || (a.rfc && a.rfc.toLowerCase().includes(term))
+            );
+            renderAssignedClientsList(filtered);
         }
 
         async function fetchLiveStock() {
@@ -587,7 +647,7 @@
             proceedToPricing(clientName);
         }
 
-        async function registerAndCheckClient() {
+        function registerAndCheckClient() {
             const name = document.getElementById('new-client-name').value.trim();
             const rfc = document.getElementById('new-client-rfc').value.trim();
 
@@ -596,31 +656,26 @@
                 return;
             }
 
-            try {
-                const res = await fetch('/api/contactos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user: currentUser, customerName: name, taxId: rfc })
-                });
+            const cleanInputName = name.toUpperCase();
 
-                if (res.status === 403) {
-                    const data = await res.json().catch(() => ({}));
-                    document.getElementById('penalty-text').innerText = data.message || 'Esta cuenta está registrada como Venta Directa.';
+            // Validación inmediata contra clientes de Venta Directa extraídos del Excel
+            if (window.DIRECT_SALE_CLIENTS && Array.isArray(window.DIRECT_SALE_CLIENTS)) {
+                const isDirectSale = window.DIRECT_SALE_CLIENTS.some(dsName => 
+                    dsName.includes(cleanInputName) || cleanInputName.includes(dsName)
+                );
+
+                if (isDirectSale) {
+                    document.getElementById('penalty-text').innerHTML = `
+                        <strong>CUENTA RESTRINGIDA:</strong> La empresa <strong>"${cleanInputName}"</strong> pertenece a la cartera de Venta Directa de REGO-FIX México.<br><br>
+                        Por política comercial, esta cuenta no puede ser cotizada a través del canal de distribución sin autorización previa de la Dirección Comercial.
+                    `;
                     document.getElementById('modal-penalty').classList.remove('hidden');
                     return;
                 }
-
-                if (res.ok) {
-                    const data = await res.json();
-                    alert(data.message || 'Cliente asignado con éxito.');
-                } else {
-                    console.warn('API de registro falló, avanzando como cliente nuevo local.');
-                }
-            } catch (e) {
-                console.warn('Error al verificar nuevo cliente contra el servidor:', e);
             }
 
-            proceedToPricing(name.toUpperCase());
+            alert(`Cliente "${cleanInputName}" verificado y autorizado.`);
+            proceedToPricing(cleanInputName);
         }
 
         function closePenaltyModal() {
@@ -671,12 +726,13 @@
 
             const nextIndex = Math.min(currentlyRenderedCount + BATCH_SIZE, total);
             const batch = filteredProducts.slice(currentlyRenderedCount, nextIndex);
-            const discRate = getDistributorDiscountRate();
 
             const rowsHtml = batch.map(prod => {
                 const listPrice = Number(prod.price) || 0;
+                const discRate = getDiscountRateForItem(prod);
                 const distPrice = listPrice * (1 - discRate);
                 const categoryLabel = getProductCategory(prod);
+                const discCatKey = getDiscountCategoryKey(prod);
 
                 const stock = liveStockMap[prod.sku] !== undefined ? liveStockMap[prod.sku] : 0;
                 const stockBadge = stock > 0 
@@ -697,7 +753,7 @@
                             <div class="font-mono text-[#003DA5] font-bold text-[11px]">SKU: ${prod.sku}</div>
                         </td>
                         <td class="p-4 font-semibold text-gray-600">
-                            <span class="bg-gray-100 px-2 py-0.5 rounded text-[10px]">${categoryLabel}</span> / ${prod.series || prod.line || 'ER'}
+                            <span class="bg-gray-100 px-2 py-0.5 rounded text-[10px]">${categoryLabel}</span> / ${prod.series || prod.line || discCatKey}
                         </td>
                         <td class="p-4 text-center bg-blue-50/20">
                             ${stockBadge}
@@ -707,7 +763,7 @@
                         </td>
                         <td class="p-4 text-right bg-blue-50/30">
                             <span class="font-black text-sm text-[#003DA5] block">$${distPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</span>
-                            <span class="text-[10px] text-green-700 font-bold">(${Math.round(discRate * 100)}% Desc.)</span>
+                            <span class="text-[10px] text-green-700 font-bold">(${Math.round(discRate * 100)}% Desc. ${discCatKey})</span>
                         </td>
                         <td class="p-4 text-center">
                             <input type="number" id="qty-${prod.sku}" min="1" value="1" class="w-14 border border-gray-300 rounded p-1 text-center font-bold text-xs bg-white">
@@ -788,7 +844,9 @@
             const qtyInput = document.getElementById(`qty-${sku}`);
             const qty = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
             const listPrice = Number(prod.price) || 0;
-            const distPrice = getDistributorPrice(listPrice);
+            const discRate = getDiscountRateForItem(prod);
+            const distPrice = listPrice * (1 - discRate);
+            const discKey = getDiscountCategoryKey(prod);
 
             const existing = quoteCart.find(it => it.sku === sku);
             if (existing) {
@@ -799,7 +857,9 @@
                 quoteCart.push({
                     sku: prod.sku,
                     name: prod.name,
-                    line: prod.line || prod.series || 'ER',
+                    line: prod.line || prod.series || discKey,
+                    discKey: discKey,
+                    discRate: discRate,
                     listPrice: listPrice,
                     distPrice: distPrice,
                     qty: qty,
@@ -872,7 +932,7 @@
                 return `
                     <tr class="hover:bg-gray-50">
                         <td class="p-2 font-mono text-[11px] font-bold text-[#003DA5]">${it.sku}</td>
-                        <td class="p-2 font-semibold text-gray-800">${it.name}</td>
+                        <td class="p-2 font-semibold text-gray-800">${it.name} <span class="text-[10px] text-gray-400 font-mono">(${Math.round(it.discRate * 100)}% desc.)</span></td>
                         <td class="p-2 text-center font-bold">${it.qty}</td>
                         <td class="p-2 text-center">${stockItemBadge}</td>
                         <td class="p-2 text-right font-mono text-gray-400 line-through">$${it.listPrice.toFixed(2)}</td>
@@ -951,11 +1011,11 @@
 
             const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
             const leadTime = calculateLeadTime();
-            const discRate = getDistributorDiscountRate();
+            const tier = (currentDistData.tier || 'BRONCE').toUpperCase();
             
             document.getElementById('print-date').innerText = printDate;
             document.getElementById('print-distributor').innerText = currentDistData ? currentDistData.name : 'DISTRIBUIDOR AUTORIZADO';
-            document.getElementById('print-dist-level').innerText = `Canal de Distribución Autorizado (${Math.round(discRate * 100)}% de Descuento Oficial)`;
+            document.getElementById('print-dist-level').innerText = `Distribuidor Categoría ${tier} - Matriz Oficial REGO-FIX 2026`;
             document.getElementById('print-client').innerText = selectedClient || 'CLIENTE GENERAL';
             document.getElementById('print-leadtime').innerText = leadTime;
             document.getElementById('print-quotenum').innerText = `00000${Math.floor(100 + Math.random() * 900)}`;
@@ -972,7 +1032,7 @@
                     <tr class="border-b border-gray-200">
                         <td class="p-2 border border-gray-300 text-center font-bold">${it.qty}</td>
                         <td class="p-2 border border-gray-300 font-mono font-bold text-[#003DA5]">${it.sku}</td>
-                        <td class="p-2 border border-gray-300 font-semibold">${it.name}</td>
+                        <td class="p-2 border border-gray-300 font-semibold">${it.name} <span class="text-[10px] text-gray-500 font-normal">(${Math.round(it.discRate * 100)}% desc.)</span></td>
                         <td class="p-2 border border-gray-300 text-right font-mono text-gray-500">USD ${it.listPrice.toFixed(2)}</td>
                         <td class="p-2 border border-gray-300 text-right font-mono font-bold text-[#003DA5]">USD ${it.distPrice.toFixed(2)}</td>
                         <td class="p-2 border border-gray-300 text-right font-mono font-bold">USD ${it.totalNet.toFixed(2)}</td>
