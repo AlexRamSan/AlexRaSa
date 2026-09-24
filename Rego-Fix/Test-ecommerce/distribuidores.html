@@ -11,12 +11,18 @@
             display: none;
         }
 
-        /* OPCIÓN 2: Prohibir selección de texto en tabla de precios y elementos protegidos */
+        /* Prohibir selección de texto en tabla de precios */
         #products-table-container, .protected-data {
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+        }
+
+        /* Forzar siempre orientación vertical (Portrait) */
+        @page {
+            size: portrait;
+            margin: 12mm 10mm;
         }
 
         @media print {
@@ -34,8 +40,9 @@
                 display: block !important;
                 position: static !important;
                 width: 100% !important;
-                margin: 0 !important;
-                padding: 15px 25px !important;
+                max-width: 210mm !important;
+                margin: 0 auto !important;
+                padding: 10mm !important;
             }
         }
     </style>
@@ -254,7 +261,7 @@
 
     </main>
 
-    <!-- MODAL: RESUMEN Y ACCIONES DE COTIZACIÓN -->
+    <!-- MODAL: RESUMEN Y ACCIONES DE COTIZACIÓN (SOLO ENVÍO POR CORREO) -->
     <div id="modal-cart" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
         <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-gray-200 flex flex-col max-h-[90vh]">
             
@@ -326,15 +333,10 @@
 
             <div class="space-y-3 mt-4">
                 <div class="flex gap-2">
-                    <input type="email" id="quote-email" placeholder="Correo opcional adicional para cliente" class="flex-1 border border-gray-300 p-2 rounded-lg text-xs">
-                    <button onclick="sendQuoteEmail()" id="btn-send-quote" class="bg-[#003DA5] hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-paper-plane"></i> Enviar por Correo
-                    </button>
-                </div>
-
-                <div class="flex gap-2">
-                    <button onclick="downloadQuotePDF()" class="flex-1 bg-[#D1D811] hover:bg-lime-500 text-black font-bold py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-download"></i> Descargar Cotización (PDF)
+                    <input type="email" id="quote-email" placeholder="Correo de destino para la cotización" class="flex-1 border border-gray-300 p-2.5 rounded-lg text-xs focus:outline-none focus:border-[#003DA5]">
+                    <button onclick="sendQuoteEmail()" id="btn-send-quote" class="bg-[#003DA5] hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 shadow">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Enviar Cotización por Correo</span>
                     </button>
                     <button onclick="clearQuote()" class="text-xs text-red-600 hover:text-red-800 px-3 py-2 font-semibold">
                         Vaciar
@@ -345,26 +347,26 @@
         </div>
     </div>
 
-    <!-- VISTA IMPRIMIBLE PARA PDF (IDÉNTICO AL FORMATO CORPORATIVO REGO-FIX MÉXICO) -->
-    <div id="printable-quote" style="background-color: #ffffff; color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; line-height: 1.3;">
+    <!-- VISTA OFICIAL REGO-FIX MÉXICO (VERTICAL FORZADO / PORTRAIT)[cite: 1] -->
+    <div id="printable-quote" style="background-color: #ffffff; color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; line-height: 1.25; width: 100%; max-width: 780px; margin: 0 auto;">
         
         <!-- ENCABEZADO OFICIAL[cite: 1] -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
             <tr>
                 <td style="width: 58%; vertical-align: top; padding-right: 15px;">
-                    <div style="margin-bottom: 8px;">
-                        <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="REGO-FIX" style="height: 38px; display: block;">
+                    <div style="margin-bottom: 6px;">
+                        <img src="https://rego-fix.mx/wp-content/uploads/2024/09/logo-regofix.svg" alt="REGO-FIX" style="height: 36px; display: block;">
                     </div>
-                    <div style="font-size: 8.5pt; color: #000000; line-height: 1.35;">
-                        <strong style="font-size: 9pt;">REGO-FIX MÉXICO S.A. DE C.V.</strong><br>
+                    <div style="font-size: 8pt; color: #000000; line-height: 1.3;">
+                        <strong style="font-size: 8.5pt;">REGO-FIX MÉXICO S.A. DE C.V.</strong><br>
                         Boulevard Universitario Primer Retorno, Numero 1,<br>
                         interno 82 B, Terra Business Park, Colonia La Pradera,<br>
                         El Marques, Estado de Querétaro C.P. 76269, México.<br>
-                        <strong>RME2201132L5</strong>
+                        <strong>RME2201132L5</strong>[cite: 1]
                     </div>
                 </td>
                 <td style="width: 42%; vertical-align: top;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
                         <tr>
                             <td style="padding: 2px 4px; font-weight: bold; width: 45%;">Número de cotización:</td>
                             <td style="padding: 2px 4px; font-family: monospace; font-weight: bold;" id="print-quotenum"></td>
@@ -391,7 +393,7 @@
         </table>
 
         <!-- DATOS DE DESTINATARIO[cite: 1] -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8pt;">
             <tr>
                 <td style="width: 50%; vertical-align: top; padding-right: 10px;">
                     <strong style="display: block; margin-bottom: 2px;">Cotizar a:</strong>
@@ -408,20 +410,20 @@
         </table>
 
         <!-- LEYENDA FISCAL[cite: 1] -->
-        <div style="font-size: 8.5pt; margin-bottom: 10px;">
+        <div style="font-size: 8pt; margin-bottom: 8px;">
             <p style="margin: 0;">Los precios en esta cotización no incluyen impuestos: VAT o IVA</p>
             <p style="margin: 0; font-weight: bold;">Precios en USD</p>
         </div>
 
         <!-- TABLA DE ARTÍCULOS EXACTA A FORMATO OFICIAL[cite: 1] -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 8pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 7.8pt;">
             <thead>
                 <tr style="border-top: 1.5px solid #000000; border-bottom: 1.5px solid #000000;">
-                    <th style="padding: 5px 4px; text-align: center; width: 35px;">Qty</th>
-                    <th style="padding: 5px 6px; text-align: left; width: 100px;">Articulo</th>
-                    <th style="padding: 5px 6px; text-align: left;">Descripción</th>
-                    <th style="padding: 5px 6px; text-align: right; width: 110px;">Precio/UN<br><span style="font-weight: normal; font-size: 7.5pt;">Precio de lista</span></th>
-                    <th style="padding: 5px 6px; text-align: right; width: 85px;">Importe</th>
+                    <th style="padding: 4px 2px; text-align: center; width: 30px;">Qty</th>
+                    <th style="padding: 4px 6px; text-align: left; width: 95px;">Articulo</th>
+                    <th style="padding: 4px 6px; text-align: left;">Descripción</th>
+                    <th style="padding: 4px 6px; text-align: right; width: 105px;">Precio/UN<br><span style="font-weight: normal; font-size: 7pt;">Precio de lista</span></th>
+                    <th style="padding: 4px 6px; text-align: right; width: 80px;">Importe</th>
                 </tr>
             </thead>
             <tbody id="print-items-tbody">
@@ -429,44 +431,44 @@
         </table>
 
         <!-- ENTREGA Y TOTAL[cite: 1] -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt;">
             <tr>
-                <td style="vertical-align: top; width: 60%; font-size: 8.5pt;">
-                    <strong>Entrega:</strong> FCA Querétaro / EXW Querétaro<br>
+                <td style="vertical-align: top; width: 60%; font-size: 8pt;">
+                    <strong>Entrega:</strong> FCA Querétaro / EXW Querétaro[cite: 1]<br>
                     <strong>Tiempo de Entrega Estimado:</strong> <span id="print-leadtime" style="font-weight: bold;"></span><br>
-                    <strong>Válidez:</strong> Presupuesto válido por 30 días.
+                    <strong>Válidez:</strong> Presupuesto válido por 30 días.[cite: 1]
                 </td>
                 <td style="vertical-align: top; width: 40%; text-align: right;">
-                    <span style="font-size: 10pt; font-weight: bold; margin-right: 15px;">Total</span>
-                    <span id="print-total" style="font-size: 11pt; font-weight: bold; font-family: monospace;"></span>
+                    <span style="font-size: 9.5pt; font-weight: bold; margin-right: 12px;">Total</span>
+                    <span id="print-total" style="font-size: 10.5pt; font-weight: bold; font-family: monospace;"></span>
                 </td>
             </tr>
         </table>
 
         <!-- NOTA OBLIGATORIA DE RFLQ Y CONSECUTIVO -->
-        <div style="border: 1.5px solid #b45309; background-color: #fffbeb; padding: 8px 12px; margin-bottom: 15px; border-radius: 4px; font-size: 8pt; line-height: 1.35;">
+        <div style="border: 1.5px solid #b45309; background-color: #fffbeb; padding: 7px 10px; margin-bottom: 12px; border-radius: 4px; font-size: 7.5pt; line-height: 1.3;">
             <strong style="color: #b45309; text-transform: uppercase;">AVISO DE VALIDACIÓN DE COMPRA:</strong><br>
             La presente cotización corresponde a un cálculo informativo preliminar con consecutivo interno de operación <strong id="print-note-folio" style="font-family: monospace;"></strong>. Para hacerla válida y proceder a la emisión de una orden de compra oficial, es indispensable solicitar su número oficial de <strong>RFLQ</strong> con su asesor técnico asignado: <strong id="print-note-rep"></strong>.
         </div>
 
         <!-- CONDICIONES GENERALES OFICIALES[cite: 1] -->
-        <div style="font-size: 7.2pt; color: #333333; line-height: 1.25; border-top: 1px solid #cccccc; padding-top: 8px;">
-            <p style="margin: 2px 0;">Agradeceremos su pedido. Para cualquier duda adicional favor de contactarnos.</p>
-            <p style="margin: 2px 0;">* Todos los pedidos especiales están sujetos a una diferencia de cantidad de +/- 10% y no son retornables después de la venta.</p>
-            <p style="margin: 2px 0;">* Tiempo de entrega no incluye días festivos, ni fines de semana.</p>
-            <p style="margin: 2px 0;">* Material sujeto a disponibilidad al momento de recibir la orden de compra oficial, salvo previa venta.</p>
-            <p style="margin: 2px 0;">* Los tiempos de entrega son estimados, Rego-Fix México S.A. de C.V. no acepta responsabilidad alguna derivadas por las demoras en la entrega del material sin importar las causas del mismo.</p>
-            <p style="margin: 2px 0;">* Las ventas son FCA / EXW en el almacén de Rego-Fix México ubicado en la ciudad de Querétaro, en el entendido de que el comprador pagará siempre por su cuenta exclusiva los gastos de envío y seguros.</p>
-            <p style="margin: 2px 0;">* Al seleccionar el proceso de exportación por RF, el cliente debe considerar +9% adicional en el total de su factura.</p>
-            <p style="margin: 2px 0;">* En caso de pedido, favor de referenciar nuestro número de cotización RFLQ oficial y registro de número de parte.</p>
-            <p style="margin: 2px 0;">* La vigencia de la presente cotización es de un mes a partir de la fecha de la misma.</p>
-            <p style="margin: 2px 0;">* No se aceptan devoluciones en herramienta de fabricación especial, usado o modificado.</p>
-            <p style="margin: 2px 0;">* En producto estándar, la devolución será con autorización de Rego-Fix México S.A. de C.V. y bajo nuestras condiciones.</p>
+        <div style="font-size: 6.8pt; color: #333333; line-height: 1.2; border-top: 1px solid #cccccc; padding-top: 6px;">
+            <p style="margin: 1px 0;">Agradeceremos su pedido. Para cualquier duda adicional favor de contactarnos.[cite: 1]</p>
+            <p style="margin: 1px 0;">* Todos los pedidos especiales están sujetos a una diferencia de cantidad de +/- 10% y no son retornables después de la venta.[cite: 1]</p>
+            <p style="margin: 1px 0;">* Tiempo de entrega no incluye días festivos, ni fines de semana.[cite: 1]</p>
+            <p style="margin: 1px 0;">* Material sujeto a disponibilidad al momento de recibir la orden de compra oficial, salvo previa venta.[cite: 1]</p>
+            <p style="margin: 1px 0;">* Los tiempos de entrega son estimados, Rego-Fix México S.A. de C.V. no acepta responsabilidad alguna derivadas por las demoras en la entrega del material sin importar las causas del mismo.[cite: 1]</p>
+            <p style="margin: 1px 0;">* Las ventas son FCA / EXW en el almacén de Rego-Fix México ubicado en la ciudad de Querétaro, en el entendido de que el comprador pagará siempre por su cuenta exclusiva los gastos de envío y seguros.[cite: 1]</p>
+            <p style="margin: 1px 0;">* Al seleccionar el proceso de exportación por RF, el cliente debe considerar +9% adicional en el total de su factura.[cite: 1]</p>
+            <p style="margin: 1px 0;">* En caso de pedido, favor de referenciar nuestro número de cotización RFLQ oficial y registro de número de parte.[cite: 1]</p>
+            <p style="margin: 1px 0;">* La vigencia de la presente cotización es de un mes a partir de la fecha de la misma.[cite: 1]</p>
+            <p style="margin: 1px 0;">* No se aceptan devoluciones en herramienta de fabricación especial, usado o modificado.[cite: 1]</p>
+            <p style="margin: 1px 0;">* En producto estándar, la devolución será con autorización de Rego-Fix México S.A. de C.V. y bajo nuestras condiciones.[cite: 1]</p>
         </div>
 
         <!-- PIE DE PÁGINA CORPORATIVO[cite: 1] -->
-        <div style="margin-top: 15px; padding-top: 6px; border-top: 1px solid #003DA5; text-align: center; font-size: 7.5pt; font-weight: bold; color: #003DA5;">
-            SWISS MADE // REGO-FIX MEXICO S.A. DE C.V. // T: +(52) 442 888 0796 // INTERNET: https://rego-fix.mx/
+        <div style="margin-top: 10px; padding-top: 5px; border-top: 1px solid #003DA5; text-align: center; font-size: 7pt; font-weight: bold; color: #003DA5;">
+            SWISS MADE // REGO-FIX MEXICO S.A. DE C.V. // T: +(52) 442 888 0796 // INTERNET: https://rego-fix.mx/[cite: 1]
         </div>
 
     </div>
@@ -490,7 +492,6 @@
         let liveStockMap = {};
         let quoteCart = [];
 
-        // OPCIÓN 3: Contadores de auditoría y monitoreo forense
         let sessionAuditStats = {
             searchCount: 0,
             renderedItemsCount: 0,
@@ -577,7 +578,6 @@
             }
         }
 
-        // OPCIÓN 3: Alerta interna silenciosa por actividad inusual / scraping sospechoso
         async function reportSecurityAnomaly(reason) {
             if (sessionAuditStats.alertTriggered) return;
             sessionAuditStats.alertTriggered = true;
@@ -1077,21 +1077,18 @@
             }
         });
 
-        // OPCIÓN 3: Monitoreo continuo de búsquedas y filtros
         function filterCatalog() {
             if (!window.PRODUCTS_DATA) return;
             const query = document.getElementById('catalog-search').value.toLowerCase().trim();
             const catFilter = document.getElementById('catalog-cat-filter').value;
             const seriesFilter = document.getElementById('catalog-series-filter').value;
 
-            // Registro de auditoría
             if (query.length >= 2) {
                 sessionAuditStats.searchCount++;
                 if (!sessionAuditStats.queriesLog.includes(query)) {
                     sessionAuditStats.queriesLog.push(query);
                 }
 
-                // Si excede 60 consultas por sesión, alertar
                 if (sessionAuditStats.searchCount > 60) {
                     reportSecurityAnomaly('ALTO_VOLUMEN_CONSULTAS_CATALOGO');
                 }
@@ -1305,7 +1302,7 @@
             });
         }
 
-        // FORMATO IDÉNTICO AL OFICIAL DE REGO-FIX MÉXICO[cite: 1]
+        // FORMATO IDÉNTICO AL OFICIAL DE REGO-FIX MÉXICO (ESTRUCTURA PORTRAIT VERTICAL)[cite: 1]
         function updatePrintableQuoteDOM() {
             const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
             const leadTime = calculateLeadTime();
@@ -1345,14 +1342,14 @@
 
                 return `
                     <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td style="padding: 6px 4px; text-align: center; font-weight: bold; vertical-align: top;">${it.qty}</td>
-                        <td style="padding: 6px 6px; font-family: monospace; font-weight: bold; vertical-align: top;">${it.sku}</td>
-                        <td style="padding: 6px 6px; vertical-align: top;">${it.name}</td>
-                        <td style="padding: 6px 6px; text-align: right; vertical-align: top; font-family: monospace; white-space: nowrap;">
+                        <td style="padding: 5px 2px; text-align: center; font-weight: bold; vertical-align: top;">${it.qty}</td>
+                        <td style="padding: 5px 6px; font-family: monospace; font-weight: bold; vertical-align: top;">${it.sku}</td>
+                        <td style="padding: 5px 6px; vertical-align: top;">${it.name}</td>
+                        <td style="padding: 5px 6px; text-align: right; vertical-align: top; font-family: monospace; white-space: nowrap;">
                             <div style="font-weight: bold;">USD ${dPrice.toFixed(2)}</div>
-                            <div style="color: #666; font-size: 7.5pt; text-decoration: line-through;">USD ${lPrice.toFixed(2)}</div>
+                            <div style="color: #666; font-size: 7pt; text-decoration: line-through;">USD ${lPrice.toFixed(2)}</div>
                         </td>
-                        <td style="padding: 6px 6px; text-align: right; vertical-align: top; font-family: monospace; font-weight: bold; white-space: nowrap;">USD ${tNet.toFixed(2)}</td>
+                        <td style="padding: 5px 6px; text-align: right; vertical-align: top; font-family: monospace; font-weight: bold; white-space: nowrap;">USD ${tNet.toFixed(2)}</td>
                     </tr>
                 `;
             }).join('');
@@ -1367,80 +1364,14 @@
             const printableElement = document.getElementById('printable-quote');
             return `
                 <div style="background-color: #f3f4f6; padding: 20px; font-family: Arial, Helvetica, sans-serif;">
-                    <div style="background-color: #ffffff; max-width: 820px; margin: 0 auto; border: 1px solid #d1d5db; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <div style="background-color: #ffffff; width: 100%; max-width: 780px; margin: 0 auto; border: 1px solid #d1d5db; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
                         ${printableElement.innerHTML}
                     </div>
                 </div>
             `;
         }
 
-        async function notifyInternalSales(actionType) {
-            try {
-                let subtotalNet = quoteCart.reduce((sum, it) => sum + (Number(it.totalNet || it.total) || 0), 0);
-                let subtotalList = quoteCart.reduce((sum, it) => sum + (Number(it.totalList || it.total) || 0), 0);
-                let iva = subtotalNet * 0.16;
-                let total = subtotalNet + iva;
-                const leadTime = calculateLeadTime();
-                const pMeta = getPriorityMeta(selectedClientCloseDate);
-
-                await fetch('/api/contactos?action=internal_sales_notification', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: actionType,
-                        folio: currentQuoteFolio,
-                        salesRep: currentSalesRep,
-                        adminEmail: CORREO_ADMIN_FIJO,
-                        salesRepEmail: currentSalesRep.email,
-                        distributor: currentDistData,
-                        client: selectedClient,
-                        clientRFC: selectedClientRFC,
-                        clientAddress: selectedClientAddress,
-                        clientContact: selectedClientContact,
-                        clientPhone: selectedClientPhone,
-                        clientEmail: selectedClientEmail,
-                        clientCloseDate: selectedClientCloseDate,
-                        priority: pMeta.priorityLabel,
-                        isUrgent: pMeta.isUrgent,
-                        xPriority: pMeta.xPriority,
-                        emailSubjectPrefix: pMeta.emailPrefix,
-                        userAudit: {
-                            ip: userLocationData.ip,
-                            city: userLocationData.city,
-                            region: userLocationData.region,
-                            country: userLocationData.country,
-                            fullLocation: `${userLocationData.city}, ${userLocationData.region}, ${userLocationData.country}`,
-                            sessionSearches: sessionAuditStats.searchCount
-                        },
-                        items: getSafePayloadItems(),
-                        htmlDocument: getOfficialQuoteHTML(),
-                        totals: { 
-                            subtotal: subtotalNet,
-                            subtotalList: subtotalList, 
-                            subtotalNet: subtotalNet, 
-                            iva: iva, 
-                            total: total 
-                        },
-                        leadTime: leadTime,
-                        timestamp: new Date().toISOString()
-                    })
-                });
-            } catch (e) {
-                console.warn('Aviso interno registrado localmente:', e);
-            }
-        }
-
-        async function downloadQuotePDF() {
-            if (quoteCart.length === 0) {
-                alert('No hay partidas en la cotización.');
-                return;
-            }
-
-            updatePrintableQuoteDOM();
-            await notifyInternalSales('DESCARGA_PDF');
-            window.print();
-        }
-
+        // ÚNICO MÉTODO DE EMISIÓN: ENVÍO POR CORREO
         async function sendQuoteEmail() {
             if (quoteCart.length === 0) {
                 alert('No hay partidas en la cotización.');
@@ -1448,6 +1379,14 @@
             }
 
             const clientEmailInput = document.getElementById('quote-email').value.trim();
+            const destinationEmail = clientEmailInput || selectedClientEmail;
+
+            if (!destinationEmail) {
+                alert('Por favor ingrese o confirme un correo electrónico para enviar la cotización.');
+                document.getElementById('quote-email').focus();
+                return;
+            }
+
             const btn = document.getElementById('btn-send-quote');
 
             let subtotalNet = quoteCart.reduce((sum, it) => sum + (Number(it.totalNet || it.total) || 0), 0);
@@ -1479,7 +1418,7 @@
                         clientAddress: selectedClientAddress,
                         clientContact: selectedClientContact,
                         clientPhone: selectedClientPhone,
-                        clientEmail: selectedClientEmail,
+                        clientEmail: destinationEmail,
                         clientCloseDate: selectedClientCloseDate,
                         priority: pMeta.priorityLabel,
                         isUrgent: pMeta.isUrgent,
@@ -1503,7 +1442,7 @@
                             total: total 
                         },
                         leadTime: leadTime,
-                        emailTo: clientEmailInput || selectedClientEmail || undefined,
+                        emailTo: destinationEmail,
                         internalCopyEmail: CORREO_ADMIN_FIJO
                     })
                 });
@@ -1515,13 +1454,15 @@
                 }
 
                 const alertUrgencyMsg = pMeta.isUrgent ? ' [NOTIFICACIÓN MARCADA COMO URGENTE]' : '';
-                alert(`Cotización enviada con éxito.${alertUrgencyMsg}\nFolio: ${currentQuoteFolio}\nPrioridad: ${pMeta.priorityLabel}\nTiempo de entrega: ${leadTime}\nNotificados: Administrador y Asesor Técnico (${currentSalesRep.name})\nIP / Región: ${userLocationData.ip} (${userLocationData.region}).`);
+                alert(`Cotización enviada con éxito por correo a: ${destinationEmail}.${alertUrgencyMsg}\nFolio: ${currentQuoteFolio}\nPrioridad: ${pMeta.priorityLabel}\nTiempo de entrega: ${leadTime}\nNotificados: Administrador y Asesor Técnico (${currentSalesRep.name}).`);
+
+                closeCartModal();
 
             } catch (err) {
                 alert(`Error al enviar cotización: ${err.message}`);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar por Correo`;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Enviar Cotización por Correo</span>`;
             }
         }
 
@@ -1547,11 +1488,10 @@
             document.getElementById('dist-pass').value = '';
         }
 
-        // OPCIÓN 2: BLOQUEO DE EVENTOS DE COPIA, INSPECCIÓN Y CLIC DERECHO
+        // BLOQUEO DE EVENTOS DE COPIA, INSPECCIÓN, DESCARGA Y PRINT NATIVO
         document.addEventListener('DOMContentLoaded', () => {
             const tableContainer = document.getElementById('products-table-container');
 
-            // Deshabilitar menú contextual (clic derecho) dentro de la tabla de catálogo
             if (tableContainer) {
                 tableContainer.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
@@ -1559,10 +1499,16 @@
                 });
             }
 
-            // Bloquear atajos comunes de copia / inspección cuando no se esté en un campo editable
             document.addEventListener('keydown', (e) => {
                 const targetTag = e.target.tagName.toLowerCase();
                 const isInputField = targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select';
+
+                // Bloqueo de Ctrl+P / Cmd+P (Prevenir impresión o guardado PDF directo)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+                    e.preventDefault();
+                    alert('La descarga o impresión directa está deshabilitada. Utilice el botón oficial para enviar la cotización por correo.');
+                    return false;
+                }
 
                 // F12 (Herramientas de desarrollo)
                 if (e.key === 'F12') {
@@ -1571,7 +1517,7 @@
                     return false;
                 }
 
-                // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+                // DevTools shortcuts
                 if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) {
                     e.preventDefault();
                     reportSecurityAnomaly('INTENTO_DEVTOOLS_SHORTCUT');
