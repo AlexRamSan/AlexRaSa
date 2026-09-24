@@ -11,6 +11,14 @@
             display: none;
         }
 
+        /* OPCIÓN 2: Prohibir selección de texto en tabla de precios y elementos protegidos */
+        #products-table-container, .protected-data {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
         @media print {
             body {
                 background: #ffffff !important;
@@ -215,7 +223,7 @@
                 </div>
             </div>
 
-            <!-- Tabla de Precios -->
+            <!-- Tabla de Precios Protegida -->
             <div id="products-table-container" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
@@ -340,7 +348,7 @@
     <!-- VISTA IMPRIMIBLE PARA PDF (IDÉNTICO AL FORMATO CORPORATIVO REGO-FIX MÉXICO) -->
     <div id="printable-quote" style="background-color: #ffffff; color: #000000; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; line-height: 1.3;">
         
-        <!-- ENCABEZADO OFICIAL -->
+        <!-- ENCABEZADO OFICIAL[cite: 1] -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
             <tr>
                 <td style="width: 58%; vertical-align: top; padding-right: 15px;">
@@ -382,7 +390,7 @@
             </tr>
         </table>
 
-        <!-- DATOS DE DESTINATARIO -->
+        <!-- DATOS DE DESTINATARIO[cite: 1] -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt;">
             <tr>
                 <td style="width: 50%; vertical-align: top; padding-right: 10px;">
@@ -399,13 +407,13 @@
             </tr>
         </table>
 
-        <!-- LEYENDA FISCAL -->
+        <!-- LEYENDA FISCAL[cite: 1] -->
         <div style="font-size: 8.5pt; margin-bottom: 10px;">
             <p style="margin: 0;">Los precios en esta cotización no incluyen impuestos: VAT o IVA</p>
             <p style="margin: 0; font-weight: bold;">Precios en USD</p>
         </div>
 
-        <!-- TABLA DE ARTÍCULOS EXACTA A FORMATO OFICIAL -->
+        <!-- TABLA DE ARTÍCULOS EXACTA A FORMATO OFICIAL[cite: 1] -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 8pt;">
             <thead>
                 <tr style="border-top: 1.5px solid #000000; border-bottom: 1.5px solid #000000;">
@@ -420,7 +428,7 @@
             </tbody>
         </table>
 
-        <!-- ENTREGA Y TOTAL -->
+        <!-- ENTREGA Y TOTAL[cite: 1] -->
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt;">
             <tr>
                 <td style="vertical-align: top; width: 60%; font-size: 8.5pt;">
@@ -441,7 +449,7 @@
             La presente cotización corresponde a un cálculo informativo preliminar con consecutivo interno de operación <strong id="print-note-folio" style="font-family: monospace;"></strong>. Para hacerla válida y proceder a la emisión de una orden de compra oficial, es indispensable solicitar su número oficial de <strong>RFLQ</strong> con su asesor técnico asignado: <strong id="print-note-rep"></strong>.
         </div>
 
-        <!-- CONDICIONES GENERALES OFICIALES -->
+        <!-- CONDICIONES GENERALES OFICIALES[cite: 1] -->
         <div style="font-size: 7.2pt; color: #333333; line-height: 1.25; border-top: 1px solid #cccccc; padding-top: 8px;">
             <p style="margin: 2px 0;">Agradeceremos su pedido. Para cualquier duda adicional favor de contactarnos.</p>
             <p style="margin: 2px 0;">* Todos los pedidos especiales están sujetos a una diferencia de cantidad de +/- 10% y no son retornables después de la venta.</p>
@@ -456,7 +464,7 @@
             <p style="margin: 2px 0;">* En producto estándar, la devolución será con autorización de Rego-Fix México S.A. de C.V. y bajo nuestras condiciones.</p>
         </div>
 
-        <!-- PIE DE PÁGINA CORPORATIVO -->
+        <!-- PIE DE PÁGINA CORPORATIVO[cite: 1] -->
         <div style="margin-top: 15px; padding-top: 6px; border-top: 1px solid #003DA5; text-align: center; font-size: 7.5pt; font-weight: bold; color: #003DA5;">
             SWISS MADE // REGO-FIX MEXICO S.A. DE C.V. // T: +(52) 442 888 0796 // INTERNET: https://rego-fix.mx/
         </div>
@@ -482,6 +490,14 @@
         let liveStockMap = {};
         let quoteCart = [];
 
+        // OPCIÓN 3: Contadores de auditoría y monitoreo forense
+        let sessionAuditStats = {
+            searchCount: 0,
+            renderedItemsCount: 0,
+            queriesLog: [],
+            alertTriggered: false
+        };
+
         let userLocationData = {
             ip: 'Desconocida',
             city: 'Desconocida',
@@ -492,7 +508,6 @@
         const CORREO_ADMIN_FIJO = 'mramirez@rego-fix.com';
         const TELEFONO_FIJO = '(52) 614 337 8481';
 
-        // Directorio de Asesores por Zona comercial
         const SALES_REPRESENTATIVES = {
             'miguel': {
                 id: 'miguel',
@@ -558,7 +573,35 @@
                     }
                 }
             } catch (err) {
-                console.log('Auditoría IP interna disponible localmente:', err);
+                console.log('Auditoría IP interna continuará con respaldo:', err);
+            }
+        }
+
+        // OPCIÓN 3: Alerta interna silenciosa por actividad inusual / scraping sospechoso
+        async function reportSecurityAnomaly(reason) {
+            if (sessionAuditStats.alertTriggered) return;
+            sessionAuditStats.alertTriggered = true;
+
+            try {
+                await fetch('/api/contactos?action=security_audit_alert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        event: 'SCRAPING_OR_BULK_QUERY_DETECTED',
+                        distributor: currentDistData ? currentDistData.name : currentUser,
+                        user: currentUser,
+                        reason: reason,
+                        totalSearches: sessionAuditStats.searchCount,
+                        searchLog: sessionAuditStats.queriesLog.slice(-15),
+                        ip: userLocationData.ip,
+                        city: userLocationData.city,
+                        region: userLocationData.region,
+                        country: userLocationData.country,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (e) {
+                console.warn('Auditoría reportada localmente:', e);
             }
         }
 
@@ -1034,11 +1077,25 @@
             }
         });
 
+        // OPCIÓN 3: Monitoreo continuo de búsquedas y filtros
         function filterCatalog() {
             if (!window.PRODUCTS_DATA) return;
             const query = document.getElementById('catalog-search').value.toLowerCase().trim();
             const catFilter = document.getElementById('catalog-cat-filter').value;
             const seriesFilter = document.getElementById('catalog-series-filter').value;
+
+            // Registro de auditoría
+            if (query.length >= 2) {
+                sessionAuditStats.searchCount++;
+                if (!sessionAuditStats.queriesLog.includes(query)) {
+                    sessionAuditStats.queriesLog.push(query);
+                }
+
+                // Si excede 60 consultas por sesión, alertar
+                if (sessionAuditStats.searchCount > 60) {
+                    reportSecurityAnomaly('ALTO_VOLUMEN_CONSULTAS_CATALOGO');
+                }
+            }
 
             filteredProducts = window.PRODUCTS_DATA.filter(p => {
                 const matchSearch = (!query) || 
@@ -1248,7 +1305,7 @@
             });
         }
 
-        // FORMATO IDÉNTICO AL OFICIAL DE REGO-FIX MÉXICO
+        // FORMATO IDÉNTICO AL OFICIAL DE REGO-FIX MÉXICO[cite: 1]
         function updatePrintableQuoteDOM() {
             const printDate = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
             const leadTime = calculateLeadTime();
@@ -1352,7 +1409,8 @@
                             city: userLocationData.city,
                             region: userLocationData.region,
                             country: userLocationData.country,
-                            fullLocation: `${userLocationData.city}, ${userLocationData.region}, ${userLocationData.country}`
+                            fullLocation: `${userLocationData.city}, ${userLocationData.region}, ${userLocationData.country}`,
+                            sessionSearches: sessionAuditStats.searchCount
                         },
                         items: getSafePayloadItems(),
                         htmlDocument: getOfficialQuoteHTML(),
@@ -1432,7 +1490,8 @@
                             city: userLocationData.city,
                             region: userLocationData.region,
                             country: userLocationData.country,
-                            fullLocation: `${userLocationData.city}, ${userLocationData.region}, ${userLocationData.country}`
+                            fullLocation: `${userLocationData.city}, ${userLocationData.region}, ${userLocationData.country}`,
+                            sessionSearches: sessionAuditStats.searchCount
                         },
                         items: safeItems,
                         htmlDocument: officialHtml,
@@ -1478,6 +1537,7 @@
             selectedClientCloseDate = null;
             currentQuoteFolio = null;
             quoteCart = [];
+            sessionAuditStats = { searchCount: 0, renderedItemsCount: 0, queriesLog: [], alertTriggered: false };
             updateCartBadges();
             document.getElementById('user-header-badge').classList.add('hidden');
             document.getElementById('view-catalog').classList.add('hidden');
@@ -1486,6 +1546,57 @@
             document.getElementById('dist-user').value = '';
             document.getElementById('dist-pass').value = '';
         }
+
+        // OPCIÓN 2: BLOQUEO DE EVENTOS DE COPIA, INSPECCIÓN Y CLIC DERECHO
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableContainer = document.getElementById('products-table-container');
+
+            // Deshabilitar menú contextual (clic derecho) dentro de la tabla de catálogo
+            if (tableContainer) {
+                tableContainer.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+            }
+
+            // Bloquear atajos comunes de copia / inspección cuando no se esté en un campo editable
+            document.addEventListener('keydown', (e) => {
+                const targetTag = e.target.tagName.toLowerCase();
+                const isInputField = targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select';
+
+                // F12 (Herramientas de desarrollo)
+                if (e.key === 'F12') {
+                    e.preventDefault();
+                    reportSecurityAnomaly('INTENTO_APERTURA_DEVTOOLS_F12');
+                    return false;
+                }
+
+                // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) {
+                    e.preventDefault();
+                    reportSecurityAnomaly('INTENTO_DEVTOOLS_SHORTCUT');
+                    return false;
+                }
+
+                // Ctrl+U (Ver código fuente)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Ctrl+S (Guardar página completa)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Ctrl+C (Copiar contenido fuera de inputs)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C') && !isInputField) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
     </script>
 </body>
 </html>
