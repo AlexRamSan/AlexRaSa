@@ -55,12 +55,12 @@
         <!-- VISTA 1: LOGIN -->
         <div id="view-login" class="max-w-md mx-auto mt-12 bg-white p-8 rounded-2xl shadow-md border border-gray-200">
             <h2 class="text-xl font-bold text-[#003DA5] mb-2">Acceso a Distribuidores Autorizados</h2>
-            <p class="text-xs text-gray-500 mb-6">Consulte listas de precios oficiales, existencias actuales y condiciones comerciales 2026.</p>
+            <p class="text-xs text-gray-500 mb-6">Consulte listas de precios oficiales, existencias actuales en Querétaro y condiciones comerciales 2026.</p>
 
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">Usuario de Distribución:</label>
-                    <input type="text" id="dist-user" placeholder=" " class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
+                    <input type="text" id="dist-user" placeholder="Ej. dhm, hertool, wem, actramex, etc." class="w-full border border-gray-300 p-3 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">Contraseña:</label>
@@ -133,12 +133,15 @@
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Fecha Estimada de Cierre: <span class="text-red-600">*</span></label>
+                        <label class="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
+                            <span>Fecha Estimada de Cierre: <span class="text-red-600">*</span></span>
+                            <span class="text-[10px] text-gray-400 font-normal">Define la prioridad de atención comercial</span>
+                        </label>
                         <select id="new-client-close-date" class="w-full border border-gray-300 p-2.5 rounded-lg text-xs bg-white focus:outline-none focus:border-[#003DA5] font-semibold">
                             <option value="">-- Seleccione una ventana de tiempo estimada --</option>
-                            <option value="1-2 dias">1-2 dias</option>
-                            <option value="4-5 dias">4-5 dias</option>
-                            <option value="6-30 dias">6-30 dias</option>
+                            <option value="1-2 dias">1-2 dias (Alta Urgencia)</option>
+                            <option value="4-5 dias">4-5 dias (Prioridad Media)</option>
+                            <option value="6-30 dias">6-30 dias (Normal)</option>
                         </select>
                     </div>
 
@@ -163,7 +166,7 @@
                     <p class="text-[11px] text-gray-600 font-medium mt-0.5">
                         Folio: <strong id="catalog-folio-display" class="font-mono text-gray-800"></strong> | 
                         Asesor: <span id="current-salesman-display" class="font-bold text-[#003DA5]"></span> | 
-                        Cierre Estimado: <span id="current-close-display" class="font-bold text-emerald-700"></span>
+                        Cierre Estimado: <span id="current-close-display" class="font-bold"></span>
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -534,6 +537,36 @@
             }
         }
 
+        // Evalúa el nivel de urgencia según la ventana de cierre
+        function getPriorityMeta(closeDateStr) {
+            const val = (closeDateStr || '').toLowerCase();
+            if (val.includes('1-2')) {
+                return {
+                    priorityLabel: 'URGENTE',
+                    xPriority: '1',
+                    isUrgent: true,
+                    colorClass: 'text-red-600 bg-red-50 border-red-300',
+                    emailPrefix: '🚨 [URGENTE - CIERRE 1-2 DÍAS]'
+                };
+            }
+            if (val.includes('4-5')) {
+                return {
+                    priorityLabel: 'PRIORIDAD MEDIA',
+                    xPriority: '2',
+                    isUrgent: false,
+                    colorClass: 'text-amber-600 bg-amber-50 border-amber-300',
+                    emailPrefix: '⚡ [PRIORIDAD MEDIA - CIERRE 4-5 DÍAS]'
+                };
+            }
+            return {
+                priorityLabel: 'NORMAL',
+                xPriority: '3',
+                isUrgent: false,
+                colorClass: 'text-blue-600 bg-blue-50 border-blue-300',
+                emailPrefix: '[COTIZACIÓN NUEVA]'
+            };
+        }
+
         // Algoritmo matemático del SAT (Módulo 11 + Fecha)
         function validateStrictRFC(rfc) {
             if (!rfc || typeof rfc !== 'string') return false;
@@ -630,7 +663,6 @@
         const imageLookupCache = {};
         const FALLBACK_IMG = 'https://regousa.com/wp-content/uploads/2022/04/favicon.png';
 
-        // Todos los distribuidores tienen descuento estándar Oro (sin etiquetas de categoría)
         const UNIFIED_DISCOUNT_RATES = {
             ER: 0.40,
             PG: 0.30,
@@ -857,10 +889,15 @@
             selectedClient = clientName;
             currentQuoteFolio = generateSearchableFolio();
 
+            const pMeta = getPriorityMeta(selectedClientCloseDate);
+
             document.getElementById('current-client-display').innerText = selectedClient;
             document.getElementById('catalog-folio-display').innerText = currentQuoteFolio;
             document.getElementById('current-salesman-display').innerText = `${currentSalesRep.name} (${currentSalesRep.zone})`;
-            document.getElementById('current-close-display').innerText = selectedClientCloseDate;
+            
+            const closeDisp = document.getElementById('current-close-display');
+            closeDisp.innerText = `${selectedClientCloseDate} (${pMeta.priorityLabel})`;
+            closeDisp.className = `font-bold ${pMeta.isUrgent ? 'text-red-600' : 'text-emerald-700'}`;
 
             document.getElementById('cart-client-name').innerText = selectedClient;
             document.getElementById('cart-folio-display').innerText = currentQuoteFolio;
@@ -998,6 +1035,7 @@
             initCatalogRender();
         }
 
+        // TIEMPO DE ENTREGA: 4 A 5 SEMANAS PARA SOBRE PEDIDO
         function calculateLeadTime() {
             let allAvailableInStock = true;
             for (const item of quoteCart) {
@@ -1009,7 +1047,7 @@
             }
             return allAvailableInStock 
                 ? 'Entrega inmediata tras recibir orden de compra' 
-                : '2 a 3 semanas';
+                : '4 a 5 semanas';
         }
 
         function addToQuote(sku) {
@@ -1096,7 +1134,7 @@
                 leadTimeBanner.innerHTML = `
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-clock text-amber-600 text-base"></i>
-                        <span><strong>Tiempo de Entrega:</strong> 2 a 3 semanas</span>
+                        <span><strong>Tiempo de Entrega:</strong> 4 a 5 semanas</span>
                     </div>
                     <span class="bg-amber-200/80 font-bold px-2 py-0.5 rounded text-[11px]">Partidas sobre pedido</span>
                 `;
@@ -1110,7 +1148,7 @@
 
                 const stockItemBadge = hasEnoughStock
                     ? `<span class="text-green-700 font-bold text-[10px] bg-green-100 px-2 py-0.5 rounded">Inmediata (${stockAvail} pzas)</span>`
-                    : `<span class="text-amber-700 font-bold text-[10px] bg-amber-100 px-2 py-0.5 rounded">2-3 sem (${stockAvail} en almacén)</span>`;
+                    : `<span class="text-amber-700 font-bold text-[10px] bg-amber-100 px-2 py-0.5 rounded">4-5 sem (${stockAvail} en almacén)</span>`;
 
                 const lPrice = Number(it.listPrice || it.price) || 0;
                 const dPrice = Number(it.distPrice || it.price) || 0;
@@ -1256,9 +1294,21 @@
         function getOfficialQuoteHTML() {
             updatePrintableQuoteDOM();
             const printableElement = document.getElementById('printable-quote');
+            const pMeta = getPriorityMeta(selectedClientCloseDate);
+
+            const urgentAlertHtml = pMeta.isUrgent ? `
+                <div style="background-color: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-family: sans-serif;">
+                    <strong style="color: #b91c1c; font-size: 13px; text-transform: uppercase;">⚠️ ATENCIÓN: SOLICITUD DE ALTA PRIORIDAD / URGENCIA COMERCIAL</strong>
+                    <p style="margin: 4px 0 0 0; color: #7f1d1d; font-size: 11px;">
+                        El distribuidor ha especificado una ventana de cierre urgente de <strong>1 a 2 días</strong>. Favor de priorizar la emisión del RFLQ y contacto inmediato con el cliente.
+                    </p>
+                </div>
+            ` : '';
+
             return `
                 <div style="background-color: #f3f4f6; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
                     <div style="background-color: #ffffff; max-width: 780px; margin: 0 auto; border-radius: 8px; border: 1px solid #d1d5db; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 32px;">
+                        ${urgentAlertHtml}
                         ${printableElement.innerHTML}
                     </div>
                 </div>
@@ -1272,6 +1322,7 @@
                 let iva = subtotalNet * 0.16;
                 let total = subtotalNet + iva;
                 const leadTime = calculateLeadTime();
+                const pMeta = getPriorityMeta(selectedClientCloseDate);
 
                 await fetch('/api/contactos?action=internal_sales_notification', {
                     method: 'POST',
@@ -1290,6 +1341,10 @@
                         clientPhone: selectedClientPhone,
                         clientEmail: selectedClientEmail,
                         clientCloseDate: selectedClientCloseDate,
+                        priority: pMeta.priorityLabel,
+                        isUrgent: pMeta.isUrgent,
+                        xPriority: pMeta.xPriority,
+                        emailSubjectPrefix: pMeta.emailPrefix,
                         userAudit: {
                             ip: userLocationData.ip,
                             city: userLocationData.city,
@@ -1340,6 +1395,7 @@
             let iva = subtotalNet * 0.16;
             let total = subtotalNet + iva;
             const leadTime = calculateLeadTime();
+            const pMeta = getPriorityMeta(selectedClientCloseDate);
 
             const officialHtml = getOfficialQuoteHTML();
 
@@ -1365,6 +1421,10 @@
                         clientPhone: selectedClientPhone,
                         clientEmail: selectedClientEmail,
                         clientCloseDate: selectedClientCloseDate,
+                        priority: pMeta.priorityLabel,
+                        isUrgent: pMeta.isUrgent,
+                        xPriority: pMeta.xPriority,
+                        emailSubjectPrefix: pMeta.emailPrefix,
                         userAudit: {
                             ip: userLocationData.ip,
                             city: userLocationData.city,
@@ -1393,7 +1453,8 @@
                     throw new Error(data.error || `Error del servidor (${res.status})`);
                 }
 
-                alert(`Cotización enviada con éxito.\nFolio: ${currentQuoteFolio}\nNotificados: Administrador y Asesor Técnico (${currentSalesRep.name})\nIP / Región: ${userLocationData.ip} (${userLocationData.region})\nTiempo de entrega: ${leadTime}.`);
+                const alertUrgencyMsg = pMeta.isUrgent ? ' [NOTIFICACIÓN MARCADA COMO URGENTE]' : '';
+                alert(`Cotización enviada con éxito.${alertUrgencyMsg}\nFolio: ${currentQuoteFolio}\nPrioridad: ${pMeta.priorityLabel}\nTiempo de entrega: ${leadTime}\nNotificados: Administrador y Asesor Técnico (${currentSalesRep.name})\nIP / Región: ${userLocationData.ip} (${userLocationData.region}).`);
 
             } catch (err) {
                 alert(`Error al enviar cotización: ${err.message}`);
