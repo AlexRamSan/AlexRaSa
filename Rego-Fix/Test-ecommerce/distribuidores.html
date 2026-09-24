@@ -18,7 +18,7 @@
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            header, main, #modal-cart, #modal-penalty {
+            header, main, #modal-cart {
                 display: none !important;
             }
             #printable-quote {
@@ -98,7 +98,7 @@
                     <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wide flex items-center gap-1.5">
                         <i class="fa-solid fa-building text-[#003DA5]"></i> Datos del Cliente Final (Obligatorios)
                     </h3>
-                    <p class="text-[11px] text-gray-500 mt-0.5">Para acceder a las listas de precios y cotizador, debe registrar el nombre, RFC y dirección del cliente final.</p>
+                    <p class="text-[11px] text-gray-500 mt-0.5">Para acceder a las listas de precios y cotizador, debe registrar el nombre, RFC verificado y dirección del cliente final.</p>
                 </div>
                 <div class="space-y-3 pt-1">
                     <div>
@@ -216,25 +216,7 @@
 
     </main>
 
-    <!-- MODAL 1: ADVERTENCIA SANCIÓN -->
-    <div id="modal-penalty" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border-t-8 border-red-600">
-            <div class="flex items-center space-x-3 text-red-600 mb-4">
-                <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
-                <h3 class="text-lg font-black uppercase tracking-wide">Aviso de Cumplimiento Comercial</h3>
-            </div>
-            <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-xs text-red-800 leading-relaxed font-medium" id="penalty-text">
-            </div>
-            <p class="text-[11px] text-gray-500 mb-6">
-                Este intento de consulta ha sido registrado en el sistema de auditoría de REGO-FIX México para revisión del Gerente de Ventas.
-            </p>
-            <button onclick="closePenaltyModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition">
-                Entendido y de Acuerdo
-            </button>
-        </div>
-    </div>
-
-    <!-- MODAL 2: RESUMEN Y ACCIONES DE COTIZACIÓN -->
+    <!-- MODAL: RESUMEN Y ACCIONES DE COTIZACIÓN -->
     <div id="modal-cart" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
         <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-gray-200 flex flex-col max-h-[90vh]">
             
@@ -491,6 +473,59 @@
 
         let currentSalesRep = SALES_REPRESENTATIVES['miguel'];
 
+        // Algoritmo matemático del SAT: Validador de estructura, fecha y dígito verificador
+        function validateStrictRFC(rfc) {
+            if (!rfc || typeof rfc !== 'string') return false;
+            const clean = rfc.trim().toUpperCase();
+
+            // Bloquear RFCs genéricos
+            if (clean === 'XAXX010101000' || clean === 'XEXX010101000') return false;
+
+            // Formato: 3 letras (Moral) o 4 letras (Física) + AAMMDD + 3 caracteres de homoclave
+            const regex = /^([A-ZÑ&]{3,4})(\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([A-Z\d]{3})$/;
+            const match = clean.match(regex);
+            if (!match) return false;
+
+            const [, , yy, mm, dd, homoclave] = match;
+
+            // Validar que la fecha sea válida en calendario
+            const yearNum = parseInt(yy, 10);
+            const monthNum = parseInt(mm, 10);
+            const dayNum = parseInt(dd, 10);
+            const fullYear = yearNum <= 30 ? 2000 + yearNum : 1900 + yearNum;
+            const dateObj = new Date(fullYear, monthNum - 1, dayNum);
+
+            if (dateObj.getFullYear() !== fullYear || (dateObj.getMonth() + 1) !== monthNum || dateObj.getDate() !== dayNum) {
+                return false;
+            }
+
+            // Cálculo oficial del Dígito Verificador del SAT (Módulo 11)
+            const dic = "0123456789ABCDEFGHIJKLMN&OPQRSTUVWXYZ ";
+            const rfcToTest = clean.length === 12 ? " " + clean : clean;
+            let sum = 0;
+
+            for (let i = 0; i < 12; i++) {
+                const char = rfcToTest.charAt(i);
+                const pos = dic.indexOf(char);
+                if (pos === -1) return false;
+                sum += pos * (13 - i);
+            }
+
+            const remainder = sum % 11;
+            let expectedDigit = '';
+            if (remainder === 0) {
+                expectedDigit = '0';
+            } else if (remainder === 1) {
+                expectedDigit = '1';
+            } else {
+                const diff = 11 - remainder;
+                expectedDigit = diff === 10 ? 'A' : String(diff);
+            }
+
+            const actualDigit = clean.slice(-1);
+            return expectedDigit === actualDigit;
+        }
+
         // Renderiza las tarjetas con foto de los vendedores mostrando únicamente su Zona Comercial
         function renderSalesRepsGrid() {
             const container = document.getElementById('reps-grid-container');
@@ -729,6 +764,13 @@
                 return;
             }
 
+            const cleanRFC = rfc.toUpperCase().replace(/\s+/g, '');
+            if (!validateStrictRFC(cleanRFC)) {
+                alert('El RFC ingresado no es válido ante el SAT. Verifique el formato, fecha y homoclave con dígito verificador oficial.');
+                document.getElementById('new-client-rfc').focus();
+                return;
+            }
+
             if (!address) {
                 alert('La dirección del cliente final es obligatoria para acceder a las listas de precios.');
                 document.getElementById('new-client-address').focus();
@@ -736,37 +778,13 @@
             }
 
             const cleanInputName = name.toUpperCase();
-            const cleanRFC = rfc.toUpperCase();
             const cleanAddress = address;
-
-            if (window.DIRECT_SALE_CLIENTS && Array.isArray(window.DIRECT_SALE_CLIENTS)) {
-                const isDirectSale = window.DIRECT_SALE_CLIENTS.some(dsName => 
-                    dsName.includes(cleanInputName) || cleanInputName.includes(dsName)
-                );
-
-                if (isDirectSale) {
-                    document.getElementById('penalty-text').innerHTML = `
-                        <strong>CUENTA RESTRINGIDA:</strong> La empresa <strong>"${cleanInputName}"</strong> pertenece a la cartera de Venta Directa de REGO-FIX México.<br><br>
-                        Por política comercial, esta cuenta no puede ser cotizada a través del canal de distribución sin autorización previa de la Dirección Comercial.
-                    `;
-                    document.getElementById('modal-penalty').classList.remove('hidden');
-                    return;
-                }
-            }
 
             selectedClient = cleanInputName;
             selectedClientRFC = cleanRFC;
             selectedClientAddress = cleanAddress;
 
-            alert(`Cliente "${cleanInputName}" validado correctamente. Accediendo a listas de precios.`);
             proceedToPricing(cleanInputName);
-        }
-
-        function closePenaltyModal() {
-            document.getElementById('modal-penalty').classList.add('hidden');
-            document.getElementById('new-client-name').value = '';
-            document.getElementById('new-client-rfc').value = '';
-            document.getElementById('new-client-address').value = '';
         }
 
         async function proceedToPricing(clientName) {
