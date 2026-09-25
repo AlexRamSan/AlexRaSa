@@ -879,7 +879,7 @@ function load(){
 }
 
 /* ========================================================
-PROCESAMIENTO Y COMPRESIÓN DE IMÁGENES
+PROCESAMIENTO Y ULTRA-COMPRESIÓN DE IMÁGENES
 ======================================================== */
 function compressImage(file, callback) {
   if (!file) return;
@@ -888,29 +888,30 @@ function compressImage(file, callback) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 750;
-      const MAX_HEIGHT = 750;
+      // Limitar a máximo 600px para que pese menos de 70KB y no trabe la memoria
+      const MAX_SIZE = 600;
       let width = img.width;
       let height = img.height;
 
       if (width > height) {
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
+        if (width > MAX_SIZE) {
+          height = Math.round(height * (MAX_SIZE / width));
+          width = MAX_SIZE;
         }
       } else {
-        if (height > MAX_HEIGHT) {
-          width *= MAX_HEIGHT / height;
-          height = MAX_HEIGHT;
+        if (height > MAX_SIZE) {
+          width = Math.round(width * (MAX_SIZE / height));
+          height = MAX_SIZE;
         }
       }
 
-      canvas.width = Math.round(width);
-      canvas.height = Math.round(height);
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, width, height);
 
-      const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+      // Calidad 0.55 genera un base64 ultra ligero y visualmente nítido
+      const compressedBase64 = canvas.toDataURL("image/jpeg", 0.55);
       callback(compressedBase64);
     };
     img.src = event.target.result;
@@ -919,6 +920,9 @@ function compressImage(file, callback) {
 }
 
 function handlePhotoUpload(file, toolId) {
+  const statusEl = document.getElementById("photo_status_" + toolId);
+  if (statusEl) statusEl.innerHTML = `<span class="text-[11px] text-amber-600 font-bold animate-pulse">⏳ Procesando...</span>`;
+
   compressImage(file, (compressedBase64) => {
     const tool = state.study.tools.find(tData => String(tData.id) === String(toolId));
     if (tool) {
@@ -960,21 +964,24 @@ function renderTools() {
           <textarea id="reco_${tData.id}" name="reco_${tData.id}" autocomplete="off" class="input bg-green-50 tool-reco border-green-200 text-green-900 font-medium" data-id="${tData.id}" placeholder="${t("phToolReco")}" rows="2">${tData.reco || ''}</textarea>
         </div>
 
-        <!-- Módulo de Foto Robusto -->
+        <!-- Módulo de Foto de Caso Mejorado y Conectado -->
         <div class="sm:col-span-2 mt-1 border-t border-slate-100 pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <input type="file" id="file_photo_${tData.id}" name="photo_${tData.id}" accept="image/*" class="tool-photo-input hidden" data-id="${tData.id}">
+            <input type="file" id="file_photo_${tData.id}" accept="image/*" class="tool-photo-input hidden" data-id="${tData.id}">
             <button type="button" class="btn btn-outline text-xs py-1 px-3 btn-trigger-photo" data-id="${tData.id}">
               <span>${t("btnUploadPhoto")}</span>
             </button>
             ${tData.photo ? `<button type="button" class="text-red-500 text-xs font-bold btn-remove-photo" data-id="${tData.id}">${t("btnRemovePhoto")}</button>` : ''}
           </div>
-          ${tData.photo ? `
-            <div class="flex items-center gap-2">
-              <img src="${tData.photo}" class="h-10 w-10 object-cover rounded-lg border border-slate-200 shadow-sm" />
-              <span class="text-[11px] text-green-700 font-bold">✓ Foto adjunta</span>
-            </div>
-          ` : '<span class="text-[11px] text-gray-400 italic">Sin foto adjunta (opcional)</span>'}
+          
+          <div id="photo_status_${tData.id}">
+            ${tData.photo ? `
+              <div class="flex items-center gap-2">
+                <img src="${tData.photo}" class="h-10 w-10 object-cover rounded-lg border border-slate-200 shadow-sm" />
+                <span class="text-[11px] text-green-700 font-bold">✓ Foto adjunta</span>
+              </div>
+            ` : '<span class="text-[11px] text-gray-400 italic">Sin foto adjunta (opcional)</span>'}
+          </div>
         </div>
       </div>
     `;
@@ -986,6 +993,7 @@ function renderTools() {
   document.querySelectorAll(".tool-problem").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "problem")));
   document.querySelectorAll(".tool-reco").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "reco")));
 
+  // Manejo directo del botón para abrir selector de fotos
   document.querySelectorAll(".btn-trigger-photo").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
@@ -1034,7 +1042,6 @@ MANEJO DE FOTOS ANTES Y DESPUÉS (SECCIÓN 4)
 ======================================================== */
 function renderBeforeAfterUI() {
   const bContainer = $("beforePreviewContainer");
-  const bPlaceholder = $("beforePlaceholder");
   const bRemoveBtn = $("btnRemoveBefore");
   if (bContainer) {
     if (state.study.beforePhoto) {
@@ -1047,7 +1054,6 @@ function renderBeforeAfterUI() {
   }
 
   const aContainer = $("afterPreviewContainer");
-  const aPlaceholder = $("afterPlaceholder");
   const aRemoveBtn = $("btnRemoveAfter");
   if (aContainer) {
     if (state.study.afterPhoto) {
@@ -1788,7 +1794,7 @@ function buildReportHTML(chartImageBase64){
   }
   .tool-grid-layout.has-photo {
     display: grid;
-    grid-template-columns: 1fr 150px;
+    grid-template-columns: 1fr 140px;
     gap: 12px;
     align-items: center;
   }
