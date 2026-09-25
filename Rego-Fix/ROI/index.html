@@ -879,19 +879,22 @@ function load(){
 }
 
 /* ========================================================
-PROCESAMIENTO Y ULTRA-COMPRESIÓN DE IMÁGENES
+PROCESAMIENTO Y ULTRA-COMPRESIÓN DE IMÁGENES (0 MS OVERHEAD)
 ======================================================== */
-function compressImage(file, callback) {
+function compressImage(file, callback, errorCallback) {
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    const img = new Image();
-    img.onload = () => {
+
+  // Usar URL.createObjectURL para no saturar memoria RAM con FileReader en imágenes grandes
+  const blobUrl = URL.createObjectURL(file);
+  const img = new Image();
+
+  img.onload = () => {
+    try {
+      URL.revokeObjectURL(blobUrl);
       const canvas = document.createElement("canvas");
-      // Limitar a máximo 600px para que pese menos de 70KB y no trabe la memoria
-      const MAX_SIZE = 600;
-      let width = img.width;
-      let height = img.height;
+      const MAX_SIZE = 500;
+      let width = img.naturalWidth || img.width || MAX_SIZE;
+      let height = img.naturalHeight || img.height || MAX_SIZE;
 
       if (width > height) {
         if (width > MAX_SIZE) {
@@ -910,25 +913,53 @@ function compressImage(file, callback) {
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Calidad 0.55 genera un base64 ultra ligero y visualmente nítido
+      // Calidad 0.55 produce un JPEG de 30-40 KB nítido y súper veloz
       const compressedBase64 = canvas.toDataURL("image/jpeg", 0.55);
       callback(compressedBase64);
-    };
-    img.src = event.target.result;
+    } catch (err) {
+      console.error("Error procesando canvas:", err);
+      if (errorCallback) errorCallback();
+    }
   };
-  reader.readAsDataURL(file);
+
+  img.onerror = () => {
+    URL.revokeObjectURL(blobUrl);
+    alert("Formato de imagen no compatible. Usa JPG o PNG.");
+    if (errorCallback) errorCallback();
+  };
+
+  img.src = blobUrl;
 }
 
-function handlePhotoUpload(file, toolId) {
+function handleToolPhotoUpload(file, toolId) {
   const statusEl = document.getElementById("photo_status_" + toolId);
-  if (statusEl) statusEl.innerHTML = `<span class="text-[11px] text-amber-600 font-bold animate-pulse">⏳ Procesando...</span>`;
+  const rmBtn = document.getElementById("btn_rm_photo_" + toolId);
+
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="text-[11px] text-amber-600 font-bold animate-pulse">⏳ Comprimiendo...</span>`;
+  }
 
   compressImage(file, (compressedBase64) => {
     const tool = state.study.tools.find(tData => String(tData.id) === String(toolId));
     if (tool) {
       tool.photo = compressedBase64;
       persist();
-      renderTools();
+
+      // Actualizar el DOM específico inmediatamente sin reiniciar los campos de texto
+      if (statusEl) {
+        statusEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <img src="${compressedBase64}" class="h-10 w-10 object-cover rounded-lg border border-slate-200 shadow-sm" />
+            <span class="text-[11px] text-green-700 font-bold">✓ Foto adjunta</span>
+          </div>`;
+      }
+      if (rmBtn) {
+        rmBtn.classList.remove("hidden");
+      }
+    }
+  }, () => {
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="text-[11px] text-gray-400 italic">Sin foto adjunta (opcional)</span>`;
     }
   });
 }
@@ -964,14 +995,16 @@ function renderTools() {
           <textarea id="reco_${tData.id}" name="reco_${tData.id}" autocomplete="off" class="input bg-green-50 tool-reco border-green-200 text-green-900 font-medium" data-id="${tData.id}" placeholder="${t("phToolReco")}" rows="2">${tData.reco || ''}</textarea>
         </div>
 
-        <!-- Módulo de Foto de Caso Mejorado y Conectado -->
+        <!-- Módulo de Foto del Caso Directo -->
         <div class="sm:col-span-2 mt-1 border-t border-slate-100 pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <input type="file" id="file_photo_${tData.id}" accept="image/*" class="tool-photo-input hidden" data-id="${tData.id}">
             <button type="button" class="btn btn-outline text-xs py-1 px-3 btn-trigger-photo" data-id="${tData.id}">
               <span>${t("btnUploadPhoto")}</span>
             </button>
-            ${tData.photo ? `<button type="button" class="text-red-500 text-xs font-bold btn-remove-photo" data-id="${tData.id}">${t("btnRemovePhoto")}</button>` : ''}
+            <button type="button" id="btn_rm_photo_${tData.id}" class="text-red-500 text-xs font-bold btn-remove-photo ${tData.photo ? '' : 'hidden'}" data-id="${tData.id}">
+              ${t("btnRemovePhoto")}
+            </button>
           </div>
           
           <div id="photo_status_${tData.id}">
@@ -993,7 +1026,7 @@ function renderTools() {
   document.querySelectorAll(".tool-problem").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "problem")));
   document.querySelectorAll(".tool-reco").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "reco")));
 
-  // Manejo directo del botón para abrir selector de fotos
+  // Manejo directo del botón para abrir el selector de fotos
   document.querySelectorAll(".btn-trigger-photo").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
@@ -1006,7 +1039,7 @@ function renderTools() {
     input.addEventListener("change", (e) => {
       const id = input.getAttribute("data-id");
       const file = e.target.files && e.target.files[0];
-      if (file) handlePhotoUpload(file, id);
+      if (file) handleToolPhotoUpload(file, id);
       input.value = "";
     });
   });
@@ -1018,7 +1051,9 @@ function renderTools() {
       if (tool) {
         tool.photo = "";
         persist();
-        renderTools();
+        const statusEl = document.getElementById("photo_status_" + id);
+        if (statusEl) statusEl.innerHTML = `<span class="text-[11px] text-gray-400 italic">Sin foto adjunta (opcional)</span>`;
+        el.classList.add("hidden");
       }
     });
   });
@@ -1183,7 +1218,7 @@ function calc(){
   let roiAnnual = (invest > 0) ? (net * 12) / invest : null;
 
   const costoTotalActualMensual = costoOperativoMensualActual + spendActTools + (clamp0($("scrapAct")?.value) * clamp0($("scrapCost")?.value));
-  const costoTotalNuevoMensual = costoTotalActualMensual - net;
+  const costoTotalNuevoMensual = costoTotalActualNuevoMensual = costoTotalActualMensual - net;
 
   return { invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual, costoTotalActualMensual, costoTotalNuevoMensual };
 }
