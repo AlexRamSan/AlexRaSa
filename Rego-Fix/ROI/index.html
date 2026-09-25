@@ -639,7 +639,7 @@ const I18N = {
     aiComplete: "Revisión completa.", monthSuffix: " mes(es)", yearSuffix: " / año",
     pdfTitle: "Estudio de Ingeniería de Sujeción", pdfSubtitle: "Análisis de ROI y Optimización Técnica",
     pdfClient: "Empresa Cliente:", pdfAttention: "Responsable / Asesor:", pdfDate: "Fecha de Emisión:", pdfSec1: "1. Contexto Global del Maquinado",
-    pdfSec2: "2. Análisis Detallado de Operaciones y Propuestas", pdfSec3: "3. Retorno de Inversión y Análisis Financiero",
+    pdfSec2: "2. Análisis Detallado de Operaciones y Propuestas", pdfSec3: "3. Retorno de Inversión y Comparativa Numérica",
     pdfSec4: "4. Comparativa Visual del Proceso (Antes vs Después)",
     pdfBefore: "Situación Actual (Antes)", pdfAfter: "Solución Optimizada REGO-FIX (Después)",
     pdfSpindle: "Interfaz Husillo", pdfCoolant: "Refrigeración", pdfMaterial: "Material Procesado", pdfGoal: "Objetivo Principal",
@@ -692,7 +692,7 @@ const I18N = {
     aiComplete: "Revisão completa.", monthSuffix: " mês(es)", yearSuffix: " / ano",
     pdfTitle: "Estudo de Engenharia de Fixação", pdfSubtitle: "Análise de ROI e Otimização Técnica",
     pdfClient: "Empresa Cliente:", pdfAttention: "Responsável / Consultor:", pdfDate: "Data de Emissão:", pdfSec1: "1. Contexto Global da Usinagem",
-    pdfSec2: "2. Análise Detalhada de Operações e Propostas", pdfSec3: "3. Retorno sobre Investimento e Análise Financeira",
+    pdfSec2: "2. Análise Detalhada de Operações e Propostas", pdfSec3: "3. Retorno sobre Investimento e Comparativo Numérico",
     pdfSec4: "4. Comparativo Visual do Processo (Antes vs Depois)",
     pdfBefore: "Situação Atual (Antes)", pdfAfter: "Solução Optimizada REGO-FIX (Depois)",
     pdfSpindle: "Interface do Fuso", pdfCoolant: "Refrigeração", pdfMaterial: "Material Principal", pdfGoal: "Objetivo Principal",
@@ -745,7 +745,7 @@ const I18N = {
     aiComplete: "Review complete.", monthSuffix: " month(s)", yearSuffix: " / year",
     pdfTitle: "Toolholding Engineering Study", pdfSubtitle: "Technical Optimization & ROI Analysis",
     pdfClient: "Client Company:", pdfAttention: "Responsible / Consultant:", pdfDate: "Issue Date:", pdfSec1: "1. Global Machining Context",
-    pdfSec2: "2. Detailed Tooling Operations & Solutions", pdfSec3: "3. Financial Analysis & Return on Investment",
+    pdfSec2: "2. Detailed Tooling Operations & Solutions", pdfSec3: "3. Financial Analysis & Numeric Comparison",
     pdfSec4: "4. Visual Process Comparison (Before vs After)",
     pdfBefore: "Current Situation (Before)", pdfAfter: "Optimized REGO-FIX Solution (After)",
     pdfSpindle: "Spindle Interface", pdfCoolant: "Coolant Type", pdfMaterial: "Primary Material", pdfGoal: "Main Objective",
@@ -884,7 +884,6 @@ PROCESAMIENTO Y ULTRA-COMPRESIÓN DE IMÁGENES (0 MS OVERHEAD)
 function compressImage(file, callback, errorCallback) {
   if (!file) return;
 
-  // Usar URL.createObjectURL para no saturar memoria RAM con FileReader en imágenes grandes
   const blobUrl = URL.createObjectURL(file);
   const img = new Image();
 
@@ -913,7 +912,6 @@ function compressImage(file, callback, errorCallback) {
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Calidad 0.55 produce un JPEG de 30-40 KB nítido y súper veloz
       const compressedBase64 = canvas.toDataURL("image/jpeg", 0.55);
       callback(compressedBase64);
     } catch (err) {
@@ -945,7 +943,6 @@ function handleToolPhotoUpload(file, toolId) {
       tool.photo = compressedBase64;
       persist();
 
-      // Actualizar el DOM específico inmediatamente sin reiniciar los campos de texto
       if (statusEl) {
         statusEl.innerHTML = `
           <div class="flex items-center gap-2">
@@ -1026,7 +1023,6 @@ function renderTools() {
   document.querySelectorAll(".tool-problem").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "problem")));
   document.querySelectorAll(".tool-reco").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "reco")));
 
-  // Manejo directo del botón para abrir el selector de fotos
   document.querySelectorAll(".btn-trigger-photo").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
@@ -1186,30 +1182,47 @@ function calc(){
   const invest = clamp0($("invest")?.value);
   const consMonth = clamp0($("consMonth")?.value);
 
+  // Variables específicas para el reporte numérico
+  const chgAct = clamp0($("chgAct")?.value);
+  const chgNew = clamp0($("chgNew")?.value);
+  const chgMinAct = clamp0($("chgMinAct")?.value);
+  const chgMinNew = clamp0($("chgMinNew")?.value);
+
+  const lifeAct = Math.max(1, clamp0($("lifeAct")?.value));
+  const lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
+  const tcAct = clamp0($("toolCost")?.value);
+  const tcNew = clamp0($("toolCostNew")?.value);
+  const toolCount = Math.max(1, clamp0($("toolCount")?.value));
+
+  const cycAct = clamp0($("cycAct")?.value);
+  const cycNew = clamp0($("cycNew")?.value);
+
+  const scrapAct = clamp0($("scrapAct")?.value);
+  const scrapNew = clamp0($("scrapNew")?.value);
+  const scrapCost = clamp0($("scrapCost")?.value);
+
   let saveTime = 0, saveLife = 0, saveProc = 0, saveScrap = 0;
-  const cycActBase = clamp0($("cycAct")?.value);
-  const costoOperativoMensualActual = (partsMonth * cycActBase) * costMin;
+  const costoOperativoMensualActual = (partsMonth * cycAct) * costMin;
 
   if(state.switches.time){
-    let minSaved = Math.max(0, (clamp0($("chgAct")?.value)*clamp0($("chgMinAct")?.value)) - (clamp0($("chgNew")?.value)*clamp0($("chgMinNew")?.value)));
+    let minSaved = Math.max(0, (chgAct * chgMinAct) - (chgNew * chgMinNew));
     saveTime = minSaved * costMin;
   }
 
-  let spendActTools = 0;
+  let spendActTools = 0, spendNewTools = 0;
   if(state.switches.life){
-    const lifeAct = Math.max(1, clamp0($("lifeAct")?.value)), lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
-    const tcAct = clamp0($("toolCost")?.value), tcNew = clamp0($("toolCostNew")?.value), cnt = Math.max(1, clamp0($("toolCount")?.value));
-    spendActTools = (partsMonth / lifeAct) * cnt * tcAct;
-    const spendNewTools = (partsMonth / lifeNew) * cnt * tcNew;
+    spendActTools = (partsMonth / lifeAct) * toolCount * tcAct;
+    spendNewTools = (partsMonth / lifeNew) * toolCount * tcNew;
     saveLife = Math.max(0, spendActTools - spendNewTools);
   }
 
-  if(state.switches.proc) saveProc = Math.max(0, clamp0($("cycAct")?.value) - clamp0($("cycNew")?.value)) * partsMonth * costMin;
+  if(state.switches.proc) {
+    saveProc = Math.max(0, cycAct - cycNew) * partsMonth * costMin;
+  }
 
   if(state.switches.scrap){
-    const sc = clamp0($("scrapCost")?.value);
-    const costScrapAct = clamp0($("scrapAct")?.value) * sc;
-    saveScrap = Math.max(0, costScrapAct - (clamp0($("scrapNew")?.value) * sc));
+    const costScrapAct = scrapAct * scrapCost;
+    saveScrap = Math.max(0, costScrapAct - (scrapNew * scrapCost));
   }
 
   const gross = saveTime + saveLife + saveProc + saveScrap;
@@ -1217,10 +1230,18 @@ function calc(){
   let payback = (invest > 0 && net > 0) ? invest / net : null;
   let roiAnnual = (invest > 0) ? (net * 12) / invest : null;
 
-  const costoTotalActualMensual = costoOperativoMensualActual + spendActTools + (clamp0($("scrapAct")?.value) * clamp0($("scrapCost")?.value));
-  const costoTotalNuevoMensual = costoTotalActualNuevoMensual = costoTotalActualMensual - net;
+  const costoTotalActualMensual = costoOperativoMensualActual + spendActTools + (scrapAct * scrapCost);
+  const costoTotalNuevoMensual = costoTotalActualMensual - net;
 
-  return { invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual, costoTotalActualMensual, costoTotalNuevoMensual };
+  return {
+    invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual,
+    costoTotalActualMensual, costoTotalNuevoMensual,
+    // Métricas numéricas detalladas para el reporte:
+    chgAct, chgNew, chgMinAct, chgMinNew,
+    lifeAct, lifeNew, tcAct, tcNew, toolCount, spendActTools, spendNewTools,
+    cycAct, cycNew, partsMonth, costMin,
+    scrapAct, scrapNew, scrapCost
+  };
 }
 
 /* ========================================================
@@ -1569,7 +1590,7 @@ function renderAll(){
 }
 
 /* ========================================================
-REPORTE PDF CON CASOS + FOTOS Y COMPARATIVA ANTES/DESPUÉS
+REPORTE PDF CON COMPARATIVA NUMÉRICA COMPLETA DE INGENIERÍA
 ======================================================== */
 function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
@@ -1634,6 +1655,12 @@ function buildReportHTML(chartImageBase64){
     </div>
   </div>` : '';
 
+  // Cálculos comparativos adicionales para tabla de ingeniería
+  const minCicloAhorrados = Math.max(0, (r.cycAct - r.cycNew) * r.partsMonth);
+  const hrsAhorradasMes = (minCicloAhorrados / 60).toFixed(1);
+  const mejoraCicloPct = r.cycAct > 0 ? (((r.cycAct - r.cycNew) / r.cycAct) * 100).toFixed(0) : 0;
+  const vidaMejoraPct = r.lifeAct > 0 ? (((r.lifeNew - r.lifeAct) / r.lifeAct) * 100).toFixed(0) : 0;
+
   return `<!doctype html>
 <html lang="${currentLang}">
 <head>
@@ -1653,7 +1680,7 @@ function buildReportHTML(chartImageBase64){
   
   @page {
     size: letter portrait;
-    margin: 16mm 14mm 16mm 14mm;
+    margin: 14mm 12mm 14mm 12mm;
   }
 
   body {
@@ -1663,31 +1690,31 @@ function buildReportHTML(chartImageBase64){
     padding: 0;
     background: #FFFFFF;
     font-size: 11.5px;
-    line-height: 1.4;
+    line-height: 1.35;
   }
 
   .wrap {
     max-width: 820px;
     margin: 0 auto;
-    padding: 4px;
+    padding: 2px;
   }
 
   .brand-bar {
     height: 5px;
     background: linear-gradient(90deg, var(--rego-blue) 0%, var(--rego-green) 100%);
     border-radius: 4px 4px 0 0;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding-bottom: 12px;
+    padding-bottom: 10px;
     border-bottom: 1.5px solid var(--border);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .h-left h1 {
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 900;
     margin: 0 0 2px 0;
     color: var(--rego-blue);
@@ -1695,17 +1722,17 @@ function buildReportHTML(chartImageBase64){
   }
   .h-subtitle {
     color: var(--rego-green);
-    font-size: 10.5px;
+    font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.6px;
   }
   .client-card {
-    margin-top: 8px;
+    margin-top: 6px;
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 2px 10px;
-    font-size: 11px;
+    gap: 2px 8px;
+    font-size: 10.5px;
     color: #475569;
   }
   .client-card strong { color: var(--rego-blue); }
@@ -1716,13 +1743,13 @@ function buildReportHTML(chartImageBase64){
     align-items: flex-end;
   }
   .logo {
-    height: 32px;
+    height: 30px;
     width: auto;
     object-fit: contain;
     display: block;
   }
   .brand-sub {
-    font-size: 9px;
+    font-size: 8.5px;
     color: var(--muted);
     margin-top: 4px;
     text-align: right;
@@ -1730,13 +1757,13 @@ function buildReportHTML(chartImageBase64){
   }
 
   h2.sec-heading {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.8px;
     color: var(--rego-blue);
-    margin: 16px 0 8px 0;
-    padding-bottom: 4px;
+    margin: 14px 0 6px 0;
+    padding-bottom: 3px;
     border-bottom: 1.5px solid var(--border);
     page-break-after: avoid;
   }
@@ -1745,20 +1772,20 @@ function buildReportHTML(chartImageBase64){
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 10px;
+    padding: 9px 11px;
+    margin-bottom: 8px;
     page-break-inside: avoid;
   }
 
   .grid-context {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px 12px;
+    gap: 6px 10px;
   }
 
   .k {
     display: block;
-    font-size: 9px;
+    font-size: 8.5px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.4px;
@@ -1766,7 +1793,7 @@ function buildReportHTML(chartImageBase64){
     margin-bottom: 2px;
   }
   .v {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--dark);
     word-break: break-word;
@@ -1798,39 +1825,38 @@ function buildReportHTML(chartImageBase64){
     background: #FFFFFF;
     border: 1px solid var(--border);
     border-radius: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     overflow: hidden;
     page-break-inside: avoid;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   }
   .tool-card-header {
     background: #F1F5F9;
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-bottom: 1px solid var(--border);
   }
   .tool-card-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11.5px;
+    gap: 6px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--rego-blue);
   }
   .tool-badge {
     background: var(--rego-blue);
     color: #fff;
-    padding: 2px 6px;
+    padding: 1px 5px;
     border-radius: 4px;
-    font-size: 9px;
+    font-size: 8.5px;
     font-weight: 800;
   }
   .tool-body {
-    padding: 8px 10px;
+    padding: 8px;
   }
   .tool-grid-layout.has-photo {
     display: grid;
-    grid-template-columns: 1fr 140px;
-    gap: 12px;
+    grid-template-columns: 1fr 130px;
+    gap: 10px;
     align-items: center;
   }
   .tool-photo-col {
@@ -1840,31 +1866,73 @@ function buildReportHTML(chartImageBase64){
     justify-content: center;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 4px;
+    padding: 3px;
     background: #F8FAFC;
   }
   .tool-inline-img {
-    max-height: 110px;
+    max-height: 95px;
     max-width: 100%;
     object-fit: contain;
     border-radius: 4px;
   }
   .v-problem {
-    font-size: 11px;
+    font-size: 10.5px;
     color: #475569;
     background: #FEF2F2;
-    padding: 5px 8px;
+    padding: 4px 7px;
     border-radius: 4px;
     border: 1px solid #FEE2E2;
     margin-top: 2px;
   }
   .solution-box {
-    margin-top: 6px;
+    margin-top: 5px;
     background: #F7FCEB;
     border: 1px solid #E3F2B6;
     border-left: 3px solid var(--rego-green);
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-radius: 4px;
+  }
+
+  /* Tabla de Comparativa Numérica */
+  .table-compare {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    font-size: 10.5px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .table-compare th {
+    background: #F1F5F9;
+    color: var(--rego-blue);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 9px;
+    padding: 6px 8px;
+    border-bottom: 1.5px solid var(--border);
+    text-align: left;
+  }
+  .table-compare td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .table-compare tr:last-child td {
+    border-bottom: none;
+  }
+  .table-compare .val-act {
+    color: #475569;
+    font-weight: 600;
+  }
+  .table-compare .val-new {
+    color: var(--rego-blue);
+    font-weight: 800;
+  }
+  .table-compare .val-diff {
+    color: var(--rego-green);
+    font-weight: 800;
   }
 
   /* Desglose y KPI */
@@ -1878,42 +1946,42 @@ function buildReportHTML(chartImageBase64){
     background: #FFFFFF;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 6px 4px;
+    padding: 5px 4px;
   }
   .saving-item .v {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 900;
     color: var(--rego-green);
     margin-top: 2px;
   }
 
   .kpi-board {
-    margin-top: 10px;
+    margin-top: 8px;
     background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
     border: 1.5px solid var(--rego-blue);
-    border-radius: 10px;
-    padding: 10px 12px;
+    border-radius: 8px;
+    padding: 8px 10px;
     page-break-inside: avoid;
   }
   .grid-main-kpis {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 8px;
     text-align: center;
   }
   .kpi-main-val {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 900;
     margin-top: 2px;
   }
   .annual-roi-banner {
-    margin-top: 8px;
-    padding-top: 6px;
+    margin-top: 6px;
+    padding-top: 5px;
     border-top: 1px dashed var(--border);
     text-align: center;
   }
   .roi-tag-large {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 900;
     color: var(--rego-green);
   }
@@ -1922,7 +1990,7 @@ function buildReportHTML(chartImageBase64){
   .grid-before-after {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
     text-align: center;
   }
   .ba-col {
@@ -1930,14 +1998,14 @@ function buildReportHTML(chartImageBase64){
     flex-direction: column;
   }
   .ba-img-container {
-    height: 150px;
+    height: 140px;
     background: #FFFFFF;
     border: 1px solid var(--border);
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
+    padding: 3px;
     overflow: hidden;
   }
   .ba-img {
@@ -1948,16 +2016,16 @@ function buildReportHTML(chartImageBase64){
   }
 
   .chart-box {
-    margin-top: 10px;
+    margin-top: 8px;
     text-align: center;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 6px;
+    padding: 6px;
     background: #FFFFFF;
     page-break-inside: avoid;
   }
   .chart-img {
-    max-height: 160px;
+    max-height: 140px;
     width: auto;
     max-width: 95%;
   }
@@ -2016,11 +2084,68 @@ function buildReportHTML(chartImageBase64){
   <h2 class="sec-heading">${t("pdfSec2")}</h2>
   ${toolsRender}
 
-  <!-- 3. ROI -->
+  <!-- 3. Comparativa Numérica y Financiera -->
   <h2 class="sec-heading">${t("pdfSec3")}</h2>
+
+  <!-- TABLA TÉCNICA COMPARATIVA DE PARÁMETROS -->
+  <table class="table-compare">
+    <thead>
+      <tr>
+        <th style="width: 32%;">Concepto / Variable de Proceso</th>
+        <th style="width: 22%;">Situación Actual</th>
+        <th style="width: 24%;">Con REGO-FIX</th>
+        <th style="width: 22%;">Impacto / Beneficio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Costo Unitario de Herramienta</strong></td>
+        <td class="val-act">${esc(money(r.tcAct))}</td>
+        <td class="val-new">${esc(money(r.tcNew))}</td>
+        <td class="val-diff">${r.tcNew < r.tcAct ? '▼ ' + esc(money(r.tcAct - r.tcNew)) + ' menor costo' : (r.tcNew === r.tcAct ? 'Mismo costo unitario' : 'Herramienta de mayor gama')}</td>
+      </tr>
+      <tr>
+        <td><strong>Duración de Herramienta (Vida Útil)</strong></td>
+        <td class="val-act">${r.lifeAct} ciclos/pzas</td>
+        <td class="val-new">${r.lifeNew} ciclos/pzas</td>
+        <td class="val-diff">▲ +${mejoraCicloPct > 0 ? vidaMejoraPct : '0'}% más piezas/afilado</td>
+      </tr>
+      <tr>
+        <td><strong>Gasto Mensual en Herramientas</strong></td>
+        <td class="val-act">${esc(money(r.spendActTools))} /mes</td>
+        <td class="val-new">${esc(money(r.spendNewTools))} /mes</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveLife))}</td>
+      </tr>
+      <tr>
+        <td><strong>Tiempo de Ciclo por Pieza</strong></td>
+        <td class="val-act">${r.cycAct.toFixed(2)} min/pza</td>
+        <td class="val-new">${r.cycNew.toFixed(2)} min/pza</td>
+        <td class="val-diff">Reducción: ${(r.cycAct - r.cycNew).toFixed(2)} min (-${mejoraCicloPct}%)</td>
+      </tr>
+      <tr>
+        <td><strong>Horas de Máquina Liberadas</strong></td>
+        <td class="val-act">—</td>
+        <td class="val-new">${hrsAhorradasMes} hrs/mes libres</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveProc))}</td>
+      </tr>
+      <tr>
+        <td><strong>Tiempo y Frecuencia de Setup</strong></td>
+        <td class="val-act">${r.chgAct} cambios (${r.chgMinAct} min c/u)</td>
+        <td class="val-new">${r.chgNew} cambios (${r.chgMinNew} min c/u)</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveTime))}</td>
+      </tr>
+      <tr>
+        <td><strong>Piezas Scrap / Rechazos Mensuales</strong></td>
+        <td class="val-act">${r.scrapAct} pzas (${esc(money(r.scrapCost))} c/u)</td>
+        <td class="val-new">${r.scrapNew} pzas (${esc(money(r.scrapCost))} c/u)</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveScrap))}</td>
+      </tr>
+    </tbody>
+  </table>
   
+  <!-- DESGLOSE DE AHORROS MENSUALES -->
   <div class="panel" style="background:#F1F5F9; border-color:#CBD5E1;">
-    <div class="k" style="text-align: center; margin-bottom: 6px;">${t("pdfBreakdown")}</div>
+    <div class="k" style="text-align: center; margin-bottom: 5px;">${t("pdfBreakdown")}</div>
     <div class="grid-savings">
       <div class="saving-item"><span class="k">${t("pdfTimeSetup")}</span><div class="v">${esc(money(r.saveTime))}</div></div>
       <div class="saving-item"><span class="k">${t("pdfToolLife")}</span><div class="v">${esc(money(r.saveLife))}</div></div>
@@ -2029,6 +2154,7 @@ function buildReportHTML(chartImageBase64){
     </div>
   </div>
 
+  <!-- RETORNO DE INVERSIÓN (KPIs) -->
   <div class="kpi-board">
     <div class="grid-main-kpis">
       <div>
@@ -2051,14 +2177,14 @@ function buildReportHTML(chartImageBase64){
       <span class="k">${t("pdfRoiEst")}</span>
       <div class="roi-tag-large">
         ${esc(r.roiAnnual === null ? "—" : ((r.roiAnnual * 100).toFixed(0) + "%"))}
-        <span style="font-size: 12px; font-weight: 700; color: var(--rego-blue); margin-left: 6px;">(${esc(money(r.net * 12))} ${curr}${t("yearSuffix")})</span>
+        <span style="font-size: 11.5px; font-weight: 700; color: var(--rego-blue); margin-left: 6px;">(${esc(money(r.net * 12))} ${curr}${t("yearSuffix")})</span>
       </div>
     </div>
   </div>
 
   ${chartImageBase64 ? `
   <div class="chart-box">
-    <span class="k" style="margin-bottom: 6px;">${t("pdfChartComp")}</span>
+    <span class="k" style="margin-bottom: 5px;">${t("pdfChartComp")}</span>
     <img src="${chartImageBase64}" class="chart-img" />
   </div>` : ''}
 
