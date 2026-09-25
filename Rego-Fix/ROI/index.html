@@ -1182,7 +1182,7 @@ function calc(){
   const invest = clamp0($("invest")?.value);
   const consMonth = clamp0($("consMonth")?.value);
 
-  // Variables específicas para el reporte numérico
+  // Variables numéricas
   const chgAct = clamp0($("chgAct")?.value);
   const chgNew = clamp0($("chgNew")?.value);
   const chgMinAct = clamp0($("chgMinAct")?.value);
@@ -1236,7 +1236,6 @@ function calc(){
   return {
     invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual,
     costoTotalActualMensual, costoTotalNuevoMensual,
-    // Métricas numéricas detalladas para el reporte:
     chgAct, chgNew, chgMinAct, chgMinNew,
     lifeAct, lifeNew, tcAct, tcNew, toolCount, spendActTools, spendNewTools,
     cycAct, cycNew, partsMonth, costMin,
@@ -1590,12 +1589,13 @@ function renderAll(){
 }
 
 /* ========================================================
-REPORTE PDF CON COMPARATIVA NUMÉRICA COMPLETA DE INGENIERÍA
+REPORTE PDF MODULAR — SOLO MÓDULOS ACTIVOS
 ======================================================== */
 function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
 function buildReportHTML(chartImageBase64){
   const r = calc(), s = state.study;
+  const sw = state.switches;
   const LOGO_URL = "/assets/regofixlogo.png";
   const curr = I18N[currentLang].currencyCode;
 
@@ -1634,7 +1634,7 @@ function buildReportHTML(chartImageBase64){
     </div>
   </div>`).join("");
 
-  // Sección de Evidencia Antes vs Después
+  // Sección de Evidencia Antes vs Después (solo si al menos una existe)
   const hasBeforeAfter = s.beforePhoto || s.afterPhoto;
   const beforeAfterRender = hasBeforeAfter ? `
   <h2 class="sec-heading">${t("pdfSec4")}</h2>
@@ -1655,11 +1655,97 @@ function buildReportHTML(chartImageBase64){
     </div>
   </div>` : '';
 
-  // Cálculos comparativos adicionales para tabla de ingeniería
+  // Cálculos dinámicos
   const minCicloAhorrados = Math.max(0, (r.cycAct - r.cycNew) * r.partsMonth);
   const hrsAhorradasMes = (minCicloAhorrados / 60).toFixed(1);
   const mejoraCicloPct = r.cycAct > 0 ? (((r.cycAct - r.cycNew) / r.cycAct) * 100).toFixed(0) : 0;
   const vidaMejoraPct = r.lifeAct > 0 ? (((r.lifeNew - r.lifeAct) / r.lifeAct) * 100).toFixed(0) : 0;
+
+  // FILAS DINÁMICAS DE LA TABLA SEGÚN SWITCHES ACTIVOS
+  let tableRowsHTML = "";
+
+  if (sw.life) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Costo Unitario de Herramienta</strong></td>
+        <td class="val-act">${esc(money(r.tcAct))}</td>
+        <td class="val-new">${esc(money(r.tcNew))}</td>
+        <td class="val-diff">${r.tcNew < r.tcAct ? '▼ ' + esc(money(r.tcAct - r.tcNew)) + ' menor costo' : (r.tcNew === r.tcAct ? 'Mismo costo unitario' : 'Herramienta de mayor gama')}</td>
+      </tr>
+      <tr>
+        <td><strong>Duración de Herramienta (Vida Útil)</strong></td>
+        <td class="val-act">${r.lifeAct} ciclos/pzas</td>
+        <td class="val-new">${r.lifeNew} ciclos/pzas</td>
+        <td class="val-diff">▲ +${vidaMejoraPct}% más piezas/afilado</td>
+      </tr>
+      <tr>
+        <td><strong>Gasto Mensual en Herramientas</strong></td>
+        <td class="val-act">${esc(money(r.spendActTools))} /mes</td>
+        <td class="val-new">${esc(money(r.spendNewTools))} /mes</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveLife))}</td>
+      </tr>
+    `;
+  }
+
+  if (sw.proc) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Tiempo de Ciclo por Pieza</strong></td>
+        <td class="val-act">${r.cycAct.toFixed(2)} min/pza</td>
+        <td class="val-new">${r.cycNew.toFixed(2)} min/pza</td>
+        <td class="val-diff">Reducción: ${(r.cycAct - r.cycNew).toFixed(2)} min (-${mejoraCicloPct}%)</td>
+      </tr>
+      <tr>
+        <td><strong>Horas de Máquina Liberadas</strong></td>
+        <td class="val-act">—</td>
+        <td class="val-new">${hrsAhorradasMes} hrs/mes libres</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveProc))}</td>
+      </tr>
+    `;
+  }
+
+  if (sw.time) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Tiempo y Frecuencia de Setup</strong></td>
+        <td class="val-act">${r.chgAct} cambios (${r.chgMinAct} min c/u)</td>
+        <td class="val-new">${r.chgNew} cambios (${r.chgMinNew} min c/u)</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveTime))}</td>
+      </tr>
+    `;
+  }
+
+  if (sw.scrap) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Piezas Scrap / Rechazos Mensuales</strong></td>
+        <td class="val-act">${r.scrapAct} pzas (${esc(money(r.scrapCost))} c/u)</td>
+        <td class="val-new">${r.scrapNew} pzas (${esc(money(r.scrapCost))} c/u)</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveScrap))}</td>
+      </tr>
+    `;
+  }
+
+  // DESGLOSE MODULAR DE TARJETAS
+  let savingsCardsHTML = "";
+  let activeSavingsCount = 0;
+
+  if (sw.time) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfTimeSetup")}</span><div class="v">${esc(money(r.saveTime))}</div></div>`;
+    activeSavingsCount++;
+  }
+  if (sw.life) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfToolLife")}</span><div class="v">${esc(money(r.saveLife))}</div></div>`;
+    activeSavingsCount++;
+  }
+  if (sw.proc) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfProcImprove")}</span><div class="v">${esc(money(r.saveProc))}</div></div>`;
+    activeSavingsCount++;
+  }
+  if (sw.scrap) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfScrapRed")}</span><div class="v">${esc(money(r.saveScrap))}</div></div>`;
+    activeSavingsCount++;
+  }
 
   return `<!doctype html>
 <html lang="${currentLang}">
@@ -1938,7 +2024,7 @@ function buildReportHTML(chartImageBase64){
   /* Desglose y KPI */
   .grid-savings {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(${Math.max(1, activeSavingsCount)}, 1fr);
     gap: 6px;
     text-align: center;
   }
@@ -2087,6 +2173,7 @@ function buildReportHTML(chartImageBase64){
   <!-- 3. Comparativa Numérica y Financiera -->
   <h2 class="sec-heading">${t("pdfSec3")}</h2>
 
+  ${tableRowsHTML ? `
   <!-- TABLA TÉCNICA COMPARATIVA DE PARÁMETROS -->
   <table class="table-compare">
     <thead>
@@ -2098,61 +2185,18 @@ function buildReportHTML(chartImageBase64){
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td><strong>Costo Unitario de Herramienta</strong></td>
-        <td class="val-act">${esc(money(r.tcAct))}</td>
-        <td class="val-new">${esc(money(r.tcNew))}</td>
-        <td class="val-diff">${r.tcNew < r.tcAct ? '▼ ' + esc(money(r.tcAct - r.tcNew)) + ' menor costo' : (r.tcNew === r.tcAct ? 'Mismo costo unitario' : 'Herramienta de mayor gama')}</td>
-      </tr>
-      <tr>
-        <td><strong>Duración de Herramienta (Vida Útil)</strong></td>
-        <td class="val-act">${r.lifeAct} ciclos/pzas</td>
-        <td class="val-new">${r.lifeNew} ciclos/pzas</td>
-        <td class="val-diff">▲ +${mejoraCicloPct > 0 ? vidaMejoraPct : '0'}% más piezas/afilado</td>
-      </tr>
-      <tr>
-        <td><strong>Gasto Mensual en Herramientas</strong></td>
-        <td class="val-act">${esc(money(r.spendActTools))} /mes</td>
-        <td class="val-new">${esc(money(r.spendNewTools))} /mes</td>
-        <td class="val-diff">Ahorro: ${esc(money(r.saveLife))}</td>
-      </tr>
-      <tr>
-        <td><strong>Tiempo de Ciclo por Pieza</strong></td>
-        <td class="val-act">${r.cycAct.toFixed(2)} min/pza</td>
-        <td class="val-new">${r.cycNew.toFixed(2)} min/pza</td>
-        <td class="val-diff">Reducción: ${(r.cycAct - r.cycNew).toFixed(2)} min (-${mejoraCicloPct}%)</td>
-      </tr>
-      <tr>
-        <td><strong>Horas de Máquina Liberadas</strong></td>
-        <td class="val-act">—</td>
-        <td class="val-new">${hrsAhorradasMes} hrs/mes libres</td>
-        <td class="val-diff">Ahorro: ${esc(money(r.saveProc))}</td>
-      </tr>
-      <tr>
-        <td><strong>Tiempo y Frecuencia de Setup</strong></td>
-        <td class="val-act">${r.chgAct} cambios (${r.chgMinAct} min c/u)</td>
-        <td class="val-new">${r.chgNew} cambios (${r.chgMinNew} min c/u)</td>
-        <td class="val-diff">Ahorro: ${esc(money(r.saveTime))}</td>
-      </tr>
-      <tr>
-        <td><strong>Piezas Scrap / Rechazos Mensuales</strong></td>
-        <td class="val-act">${r.scrapAct} pzas (${esc(money(r.scrapCost))} c/u)</td>
-        <td class="val-new">${r.scrapNew} pzas (${esc(money(r.scrapCost))} c/u)</td>
-        <td class="val-diff">Ahorro: ${esc(money(r.saveScrap))}</td>
-      </tr>
+      ${tableRowsHTML}
     </tbody>
-  </table>
+  </table>` : ''}
   
-  <!-- DESGLOSE DE AHORROS MENSUALES -->
+  ${savingsCardsHTML ? `
+  <!-- DESGLOSE DE AHORROS MENSUALES ACTIVOS -->
   <div class="panel" style="background:#F1F5F9; border-color:#CBD5E1;">
     <div class="k" style="text-align: center; margin-bottom: 5px;">${t("pdfBreakdown")}</div>
     <div class="grid-savings">
-      <div class="saving-item"><span class="k">${t("pdfTimeSetup")}</span><div class="v">${esc(money(r.saveTime))}</div></div>
-      <div class="saving-item"><span class="k">${t("pdfToolLife")}</span><div class="v">${esc(money(r.saveLife))}</div></div>
-      <div class="saving-item"><span class="k">${t("pdfProcImprove")}</span><div class="v">${esc(money(r.saveProc))}</div></div>
-      <div class="saving-item"><span class="k">${t("pdfScrapRed")}</span><div class="v">${esc(money(r.saveScrap))}</div></div>
+      ${savingsCardsHTML}
     </div>
-  </div>
+  </div>` : ''}
 
   <!-- RETORNO DE INVERSIÓN (KPIs) -->
   <div class="kpi-board">
