@@ -1,536 +1,2452 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>REGO-FIX - Calculadora de ROI & Optimización v3</title>
-  
-  <!-- PWA & Mobile Meta Tags -->
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#dc2626">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ROI REGO-FIX">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ROI Holders REGO-FIX — Análisis Multi-Herramienta (Test Lab) | AlexRaSa</title>
+<meta name="description" content="Calculadora modular de ROI enfocada en holders REGO-FIX. Entorno de pruebas y desarrollo." />
 
-  <!-- Estilos Locales -->
-  <link rel="stylesheet" href="./lib/tailwindcss.css">
-  <script src="./lib/tailwindcss.js"></script>
-  <script src="./lib/chart.js"></script>
+<!-- Carga local CSS puro de Tailwind y Chart.js en /Rego-Fix/ROI3/ -->
+<link rel="stylesheet" href="/Rego-Fix/ROI3/lib/tailwindcss.css">
+<script src="/Rego-Fix/ROI3/lib/chart.js"></script>
+
+<style>
+:root{
+--rego-green: #B7C91F;
+--rego-green-2:#AAC82D;
+--rego-turq: #58D5D3;
+--rego-blue: #28556C;
+--rego-red: #D31B23;
+--rego-black: #121314;
+--rego-gd: #44474A;
+--rego-gm: #677071;
+--rego-gl: #E5E6E4;
+--card: #ffffff;
+--bg: #F8FAFC;
+--border: rgba(40,85,108,.18);
+--shadow: 0 10px 30px rgba(18,19,20,.08);
+}
+html,body{ background: var(--bg) !important; color: var(--rego-black); font-family: system-ui, -apple-system, sans-serif; }
+
+header img, img[alt="REGO-FIX"] {
+  max-height: 32px !important;
+  height: 32px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+.card{ background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 20px; }
+.btn{ border-radius: 14px; padding: .6rem .85rem; font-weight: 700; border: 1px solid transparent; transition: .15s ease; user-select:none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; }
+.btn:active{ transform: scale(0.98); }
+.btn:disabled{ opacity: 0.6; cursor: not-allowed; }
+.btn-outline{ background:#fff; border-color: var(--border); color: var(--rego-black); }
+.btn-outline:hover:not(:disabled){ background: rgba(183,201,31,.10); }
+.btn-danger{ background: #FEE2E2; color: var(--rego-red); border-color: #FECACA; }
+.btn-danger:hover:not(:disabled){ background: var(--rego-red); color:#fff; }
+.btn-primary{ background: var(--rego-green); color:#121314; }
+.btn-primary:hover:not(:disabled){ filter: brightness(.95); }
+
+.kpi{ border: 1px solid var(--border); border-radius: 18px; padding: .9rem 1rem; background: #fff; }
+.muted{ color: var(--rego-gm); }
+.label{ color: var(--rego-gd); font-weight: 700; font-size:.85rem; }
+
+.lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  background: transparent;
+  cursor: pointer;
+  color: var(--rego-gd);
+}
+.lang-btn svg {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+.lang-btn.active {
+  background: #FFFFFF;
+  border-color: var(--border);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+  color: var(--rego-blue);
+  font-weight: 900;
+}
+
+.input{ width:100%; border:1px solid #CBD5E1; border-radius: 12px; padding: .6rem .8rem; outline: none; background:#fff; font-size:.9rem; transition: border-color 0.2s; }
+.input:focus{ border-color: var(--rego-blue); box-shadow: 0 0 0 3px rgba(40,85,108,.15); }
+.input.pl-8{ padding-left: 2.2rem !important; }
+textarea.input{ min-height: 80px; resize: vertical; }
+
+.switch{ position:relative; width: 48px; height: 28px; border-radius: 999px; background: rgba(103,112,113,.25); border:1px solid var(--border); cursor:pointer; flex: 0 0 auto; }
+.switch[data-on="true"]{ background: var(--rego-blue); }
+.switch .knob{ position:absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 999px; background:#fff; box-shadow: 0 4px 12px rgba(18,19,20,.15); transition: .15s ease; }
+.switch[data-on="true"] .knob{ transform: translateX(20px); }
+
+.badge{ display:inline-flex; align-items:center; gap:.35rem; border-radius: 999px; padding:.2rem .55rem; font-size: .72rem; font-weight:700; border:1px solid var(--border); background:#fff; }
+.badge.inv{ color: var(--rego-blue); background: #F1F5F9; }
+
+.badge-by {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--rego-blue);
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  padding: .2rem .6rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Modal Master */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(18, 19, 20, 0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+  padding: 1rem;
+}
+.modal-overlay.hidden, .modal-hidden {
+  display: none !important;
+}
+</style>
+
+<!-- PWA Manifest & Meta adaptados -->
+<link rel="manifest" href="/Rego-Fix/ROI3/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="REGO ROI Lab">
+
+<link rel="apple-touch-icon" href="/assets/applogo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/applogo.png">
+<meta name="theme-color" content="#28556C">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/Rego-Fix/ROI3/sw.js', { scope: '/Rego-Fix/ROI3/' })
+        .then(reg => console.log('Service Worker ROI registrado en scope /Rego-Fix/ROI3/'))
+        .catch(err => console.error('Error registrando Service Worker:', err));
+    });
+  }
+</script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-red-600 selection:text-white">
 
-  <!-- Header Superior -->
-  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-50 px-4 py-3 sm:px-6">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="bg-red-600 text-white font-black text-xl px-2.5 py-1 rounded tracking-wider shadow-lg shadow-red-600/30">
-          REGO-FIX
-        </div>
-        <div>
-          <h1 class="text-base sm:text-lg font-bold leading-none text-slate-100">Calculadora de ROI v3</h1>
-          <p class="text-xs text-slate-400">powRgrip® vs Sistemas Convencionales</p>
-        </div>
-      </div>
-
-      <div class="flex items-center space-x-2">
-        <button id="btnVerNube" onclick="abrirModalEstudios()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
-          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
-          <span>Estudios en Nube</span>
+<body class="min-h-screen">
+<header class="max-w-6xl mx-auto px-3 sm:px-4 pt-4 pb-2">
+<div class="card p-3 sm:p-5">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3 gap-3">
+    <div class="flex items-center justify-between w-full sm:w-auto">
+      <img src="/assets/regofixlogo.png" alt="REGO-FIX" class="h-6 sm:h-8 w-auto object-contain shrink-0" onerror="this.style.display='none'">
+      
+      <!-- Selector de idioma móvil -->
+      <div class="flex sm:hidden items-center bg-slate-100/90 rounded-lg p-0.5 border border-slate-200">
+        <button class="lang-btn" data-lang="es" title="Español (México)">
+          <svg viewBox="0 0 640 480"><path fill="#006847" d="M0 0h213.3v480H0z"/><path fill="#fff" d="M213.3 0h213.4v480H213.3z"/><path fill="#ce1126" d="M426.7 0H640v480H426.7z"/><circle cx="320" cy="240" r="32" fill="#7a5528"/></svg>
         </button>
-        <button id="btnGuardarNube" onclick="abrirModalGuardar()" class="flex items-center space-x-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-md shadow-red-600/20">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-          <span class="hidden sm:inline">Guardar Estudio</span>
+        <button class="lang-btn" data-lang="pt" title="Português (Brasil)">
+          <svg viewBox="0 0 640 480"><path fill="#009c3b" d="M0 0h640v480H0z"/><path fill="#ffdf00" d="M320 40L600 240 320 440 40 240z"/><circle cx="320" cy="240" r="95" fill="#002776"/></svg>
+        </button>
+        <button class="lang-btn" data-lang="en" title="English (US)">
+          <svg viewBox="0 0 640 480"><path fill="#bd3d44" d="M0 0h640v480H0z"/><path stroke="#fff" stroke-width="37" d="M0 55h640M0 129h640M0 203h640M0 277h640M0 351h640M0 425h640"/><path fill="#192f5d" d="M0 0h260v260H0z"/></svg>
         </button>
       </div>
     </div>
-  </header>
 
-  <!-- Contenedor Principal -->
-  <main class="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-    <!-- Columna Izquierda: Parámetros y Entradas -->
-    <section class="lg:col-span-5 space-y-6">
-      
-      <!-- Datos Generales del Cliente -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Información del Proyecto</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs text-slate-400">Cliente / Planta</label>
-            <input type="text" id="clienteNombre" placeholder="Ej. Bocar, FUGRA..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-red-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs text-slate-400">Pieza / Componente</label>
-            <input type="text" id="componenteNombre" placeholder="Ej. Carcasa transmisión" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:border-red-500 focus:outline-none">
-          </div>
-        </div>
-      </div>
-
-      <!-- Parámetros de Operación -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-4">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Parámetros de Maquinado</h2>
-        
-        <div class="space-y-3">
-          <div>
-            <div class="flex justify-between text-xs mb-1">
-              <span class="text-slate-300">Costo Hora Máquina (USD)</span>
-              <span id="txtCostoHora" class="font-bold text-red-400">$65 USD/h</span>
-            </div>
-            <input type="range" id="costoHora" min="20" max="250" step="5" value="65" oninput="calcularROI()" class="w-full accent-red-600">
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs mb-1">
-              <span class="text-slate-300">Cambios de herramienta por turno</span>
-              <span id="txtCambiosTurno" class="font-bold text-red-400">4 cambios</span>
-            </div>
-            <input type="range" id="cambiosTurno" min="1" max="25" step="1" value="4" oninput="calcularROI()" class="w-full accent-red-600">
-          </div>
-
-          <div class="grid grid-cols-2 gap-3 pt-2">
-            <div>
-              <label class="text-xs text-slate-400">Turnos por día</label>
-              <select id="turnosDia" onchange="calcularROI()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-red-500">
-                <option value="1">1 Turno</option>
-                <option value="2">2 Turnos</option>
-                <option value="3" selected>3 Turnos</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs text-slate-400">Días laborables / año</label>
-              <input type="number" id="diasAno" value="280" oninput="calcularROI()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-red-500">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Ahorros Operativos & Tool Life -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-4">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Beneficios powRgrip®</h2>
-
-        <div class="space-y-3">
-          <div>
-            <label class="text-xs text-slate-400">Tiempo de Setup por cambio (minutos)</label>
-            <div class="grid grid-cols-2 gap-2 mt-1">
-              <input type="number" id="tiempoActual" value="12" placeholder="Actual" oninput="calcularROI()" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-center">
-              <input type="number" id="tiempoPG" value="1.5" disabled class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-center text-emerald-400 font-bold" title="powRgrip estándar: < 1.5 min">
-            </div>
-            <div class="flex justify-between text-[10px] text-slate-500 px-1 mt-0.5">
-              <span>Convencional (ER/Térmico)</span>
-              <span>powRgrip (Automático)</span>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs mb-1">
-              <span class="text-slate-300">Mejora en Vida Útil de Herramienta</span>
-              <span id="txtVidaUtil" class="font-bold text-emerald-400">+25%</span>
-            </div>
-            <input type="range" id="mejoraVida" min="10" max="100" step="5" value="25" oninput="calcularROI()" class="w-full accent-emerald-500">
-          </div>
-
-          <div>
-            <label class="text-xs text-slate-400">Gasto mensual actual en herramientas (USD)</label>
-            <input type="number" id="gastoHerramientas" value="4500" oninput="calcularROI()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm focus:border-red-500">
-          </div>
-        </div>
-      </div>
-
-      <!-- Inversión Inicial powRgrip -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Paquete de Inversión Inicial</h2>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs text-slate-400">Unidad de Sujeción</label>
-            <select id="unidadSujecion" onchange="calcularROI()" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs">
-              <option value="12500">PGU 9800 Automática</option>
-              <option value="6800">PGC 2506 Manual</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-slate-400">Toolholders + Collets</label>
-            <input type="number" id="inversionTooling" value="5800" oninput="calcularROI()" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs">
-          </div>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- Columna Derecha: Tarjetas de Retorno, Gráficas y Fotos -->
-    <section class="lg:col-span-7 space-y-6">
-
-      <!-- Métricas Clave (Tarjetas) -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-gradient-to-br from-slate-900 to-slate-900 border border-slate-800 rounded-xl p-4 text-center">
-          <span class="text-xs font-medium text-slate-400 uppercase">Ahorro Anual Total</span>
-          <div id="resAhorroAnual" class="text-2xl font-black text-emerald-400 mt-1">$0 USD</div>
-          <span class="text-[10px] text-slate-500">Setup + Vida útil</span>
-        </div>
-
-        <div class="bg-gradient-to-br from-slate-900 to-slate-900 border border-slate-800 rounded-xl p-4 text-center">
-          <span class="text-xs font-medium text-slate-400 uppercase">Tiempo de Retorno</span>
-          <div id="resPayback" class="text-2xl font-black text-amber-400 mt-1">0.0 Meses</div>
-          <span class="text-[10px] text-slate-500">Amortización inversión</span>
-        </div>
-
-        <div class="bg-gradient-to-br from-slate-900 to-slate-900 border border-slate-800 rounded-xl p-4 text-center">
-          <span class="text-xs font-medium text-slate-400 uppercase">Horas Máquina Liberadas</span>
-          <div id="resHorasLibres" class="text-2xl font-black text-sky-400 mt-1">0 h/año</div>
-          <span class="text-[10px] text-slate-500">Capacidad productiva extra</span>
-        </div>
-      </div>
-
-      <!-- Gráfica Comparativa -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Proyección de Ahorro Acumulado (12 Meses)</h2>
-          <span class="text-xs text-emerald-400 font-semibold" id="txtRoiPorcentaje">+0% ROI</span>
-        </div>
-        <div class="h-64 sm:h-72 w-full">
-          <canvas id="graficaROI"></canvas>
-        </div>
-      </div>
-
-      <!-- Módulo de Fotos de Evidencia (Desgaste, Setup, Pieza) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">Evidencias Fotográficas</h2>
-            <p class="text-xs text-slate-500">Adjunta fotos de desgaste de insertos/cortador o setup para el reporte en la nube.</p>
-          </div>
-          <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1 rounded-lg text-xs font-medium transition">
-            <span>+ Agregar Foto</span>
-            <input type="file" id="inputFoto" accept="image/*" class="hidden" onchange="procesarFoto(event)">
-          </label>
-        </div>
-
-        <!-- Galería de imágenes cargadas -->
-        <div id="galeriaFotos" class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div id="placeholderFotos" class="col-span-full text-center py-6 border border-dashed border-slate-800 rounded-lg text-xs text-slate-600">
-            No hay fotos adjuntas para este estudio.
-          </div>
-        </div>
-      </div>
-
-    </section>
-  </main>
-
-  <!-- Modal: Guardar en la Nube -->
-  <div id="modalGuardar" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-      <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-        Sincronizar Estudio con la Nube
-      </h3>
-      <p class="text-xs text-slate-400">Este estudio se guardará en la base de datos central junto con sus métricas y fotos adjuntas.</p>
-      
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs text-slate-400">Título / Referencia del Estudio</label>
-          <input type="text" id="tituloEstudio" placeholder="Ej. Prueba Fresado FUGRA - Desbaste" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm focus:border-red-500">
-        </div>
-        <div>
-          <label class="text-xs text-slate-400">Notas / Recomendaciones Técnicas</label>
-          <textarea id="notasEstudio" rows="3" placeholder="Detalles de vibración, runout medido con powRgrip..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs focus:border-red-500"></textarea>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="cerrarModalGuardar()" class="px-4 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white">Cancelar</button>
-        <button id="btnConfirmarGuardar" onclick="subirEstudioANube()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-semibold shadow">
-          Guardar en Nube
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+      <!-- Selector de idioma escritorio -->
+      <div class="hidden sm:flex items-center bg-slate-100/90 rounded-lg p-1 border border-slate-200">
+        <button class="lang-btn" data-lang="es" title="Español (México)">
+          <svg viewBox="0 0 640 480"><path fill="#006847" d="M0 0h213.3v480H0z"/><path fill="#fff" d="M213.3 0h213.4v480H213.3z"/><path fill="#ce1126" d="M426.7 0H640v480H426.7z"/><circle cx="320" cy="240" r="32" fill="#7a5528"/></svg>
+          <span>ES</span>
         </button>
+        <button class="lang-btn" data-lang="pt" title="Português (Brasil)">
+          <svg viewBox="0 0 640 480"><path fill="#009c3b" d="M0 0h640v480H0z"/><path fill="#ffdf00" d="M320 40L600 240 320 440 40 240z"/><circle cx="320" cy="240" r="95" fill="#002776"/></svg>
+          <span>PT</span>
+        </button>
+        <button class="lang-btn" data-lang="en" title="English (US)">
+          <svg viewBox="0 0 640 480"><path fill="#bd3d44" d="M0 0h640v480H0z"/><path stroke="#fff" stroke-width="37" d="M0 55h640M0 129h640M0 203h640M0 277h640M0 351h640M0 425h640"/><path fill="#192f5d" d="M0 0h260v260H0z"/></svg>
+          <span>EN</span>
+        </button>
+      </div>
+
+      <div class="text-left sm:text-right">
+        <div class="text-base sm:text-lg font-black leading-tight break-words" style="color:var(--rego-blue)" data-i18n="headerTitle">ROI Holders REGO-FIX</div>
+        <div class="muted text-[11px] sm:text-xs" data-i18n="headerSubtitle">Análisis Multi-Herramienta y Proceso</div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Explorador de Estudios Guardados en la Nube -->
-  <div id="modalEstudios" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl flex flex-col max-h-[85vh]">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-          Estudios Registrados en la Nube
-        </h3>
-        <button onclick="cerrarModalEstudios()" class="text-slate-400 hover:text-white text-lg">&times;</button>
-      </div>
+  <div class="grid grid-cols-2 sm:flex sm:justify-end gap-2 mt-3">
+    <button id="btnOpenHistory" class="btn btn-outline border-blue-300 text-[#28556C] w-full sm:w-auto">
+      <span>🗂️</span> <span data-i18n="btnMasterHistory">Historial Master</span>
+    </button>
+    <button id="btnSaveStudyNow" class="btn btn-outline border-green-500 text-green-800 w-full sm:w-auto font-black">
+      <span>☁️</span> <span data-i18n="btnSaveCloud">Guardar Nube</span>
+    </button>
+    <button id="btnPdfReport" class="btn btn-primary w-full sm:w-auto">
+      <span>📄</span> <span data-i18n="btnExportPdf">Exportar PDF</span>
+    </button>
+    <button id="btnWhatsApp" class="btn btn-outline border-green-500 text-green-700 w-full sm:w-auto">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
+      <span data-i18n="btnSend">Enviar</span>
+    </button>
+    <button id="btnResetAll" class="btn btn-danger w-full sm:w-auto" data-i18n="btnReset">
+      Reset
+    </button>
+  </div>
 
-      <!-- Lista dinámica de estudios -->
-      <div id="listaEstudiosNube" class="flex-1 overflow-y-auto space-y-2 pr-1">
-        <div class="text-center py-10 text-xs text-slate-500">Cargando estudios desde el servidor...</div>
+  <div class="mt-3 rounded-xl p-3 border border-slate-200/80 bg-gradient-to-r from-slate-50 via-cyan-50/30 to-lime-50/30 flex items-end justify-between gap-2">
+    <div class="flex-1">
+      <div class="font-extrabold text-xs sm:text-sm flex items-center gap-2" style="color:var(--rego-blue)">
+        <span data-i18n="bannerTitle">Enfoque: sujeción y ROI real</span>
+        <span id="syncIndicator" class="text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold">🟢 Online</span>
       </div>
+      <div class="muted text-[11px] mt-0.5" data-i18n="bannerSubtitle">Estudio, cálculo de ahorros y PDF comercial.</div>
+    </div>
+    <div class="shrink-0">
+      <span class="badge-by">by alexrasa</span>
+    </div>
+  </div>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto px-3 sm:px-4 pb-10 space-y-5">
+
+<!-- SECCIÓN 0 -->
+<section class="card p-4 sm:p-5">
+<div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+  <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec0Title">0) Datos del Cliente</h2>
+  <span class="badge inv" data-i18n="badgeStudy">Estudio</span>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+  <div><div class="label" data-i18n="lblDate">Fecha</div><input id="studyDate" class="input bg-white cursor-pointer" type="date" data-study="studyDate"></div>
+  <div><div class="label" data-i18n="lblUser">Usuario / Asesor</div><input id="userName" class="input" type="text" placeholder="Nombre" data-study="userName" data-i18n-ph="phName"></div>
+  <div><div class="label" data-i18n="lblRole">Puesto</div><input id="userRole" class="input" type="text" placeholder="Ej: Ing. Procesos" data-study="userRole" data-i18n-ph="phRole"></div>
+  <div><div class="label" data-i18n="lblCompany">Empresa</div><input id="company" class="input" type="text" placeholder="Razón social" data-study="company" data-i18n-ph="phCompany"></div>
+</div>
+</section>
+
+<!-- SECCIÓN 1A -->
+<section class="card p-4 sm:p-5">
+<div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+  <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec1aTitle">1A) Inversión y Costo de Máquina</h2>
+  <span class="badge inv" data-i18n="badgeBase">Base</span>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+<div>
+  <div class="flex items-center justify-between">
+    <div class="label" data-i18n="lblCostHour">Costo máquina/hora</div>
+    <button id="btnToggleHrCalc" class="text-[11px] font-bold text-[#28556C] underline">🪄 <span data-i18n="btnAssistant">Asistente</span></button>
+  </div>
+  <div class="relative mt-1 flex items-center">
+    <span id="currencySymbolInput" class="absolute left-3 font-bold text-gray-500 pointer-events-none text-xs sm:text-sm">$</span>
+    <input id="costHour" class="input pl-8" type="number" min="0" step="1" value="75">
+  </div>
+  <div id="costHourUnit" class="muted text-[10px] mt-0.5" data-i18n="lblCurrHour">USD/hora</div>
+</div>
+
+<div><div class="label" data-i18n="lblPartsMonth">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" min="0" step="1" value="5000"></div>
+<div><div class="label" data-i18n="lblInvest">Inversión Total</div><input id="invest" class="input mt-1" type="number" min="0" step="1" value="4500"></div>
+<div><div class="label" data-i18n="lblConsMonth">Consumibles (/mes)</div><input id="consMonth" class="input mt-1" type="number" min="0" step="1" value="0"></div>
+
+<div id="hrCalcPanel" class="col-span-1 sm:col-span-2 lg:col-span-4 bg-slate-50 p-3 rounded-xl border border-slate-200 hidden mt-1">
+  <div class="font-bold text-xs mb-2 text-[#28556C]" data-i18n="calcRefParams">Parámetros referenciales</div>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <div>
+      <div class="label text-[11px]" data-i18n="calcMachineType">Tipo de Máquina</div>
+      <select id="calcMachine" class="input mt-0.5 text-xs">
+        <option value="40" data-i18n="optLathe2">Torno CNC (2 Ejes)</option>
+        <option value="50" selected data-i18n="optMill3">Centro Maquinado (3 Ejes)</option>
+        <option value="75" data-i18n="optMill4">Centro Maquinado (4 Ejes)</option>
+        <option value="90" data-i18n="optSwiss">Torno Multitarea / Suizo</option>
+        <option value="120" data-i18n="optMill5">Centro Maquinado (5 Ejes)</option>
+      </select>
+    </div>
+    <div>
+      <div class="label text-[11px]" data-i18n="calcSector">Sector (Overhead)</div>
+      <select id="calcSector" class="input mt-0.5 text-xs">
+        <option value="1.0" selected data-i18n="optGeneral">General / Job Shop</option>
+        <option value="1.15" data-i18n="optAuto">Automotriz</option>
+        <option value="1.25" data-i18n="optMold">Moldes y Troqueles</option>
+        <option value="1.40" data-i18n="optAero">Aeroespacial</option>
+        <option value="1.50" data-i18n="optMed">Médico</option>
+      </select>
+    </div>
+    <div>
+      <div class="label text-[11px]" data-i18n="calcLabor">Mano de Obra</div>
+      <select id="calcOperator" class="input mt-0.5 text-xs">
+        <option value="25" selected data-i18n="optOp1">1 Op / 1 Máquina</option>
+        <option value="12.5" data-i18n="optOp2">1 Op / 2 Máquinas</option>
+        <option value="8" data-i18n="optOpAuto">Celda automatizada</option>
+      </select>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- SECCIÓN 1B -->
+<section class="card p-4 sm:p-5">
+<div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+  <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec1bTitle">1B) Contexto del Maquinado</h2>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+<div>
+  <div class="label" data-i18n="lblSpindle">Interfaz husillo</div>
+  <input id="spindleInterface" class="input" type="text" list="lista-husillos" placeholder="Ej: CAT40 / HSK63A" data-study="spindleInterface" data-i18n-ph="phSpindle">
+  <datalist id="lista-husillos"><option value="CAT 40"><option value="CAT 50"><option value="BT 30"><option value="BT 40"><option value="HSK-A 63"><option value="Capto C6"></datalist>
+</div>
+<div>
+  <div class="label" data-i18n="lblCoolant">Refrigerante</div>
+  <input id="coolant" class="input" type="text" list="lista-coolant" placeholder="Ej: Interno Alta Presión" data-study="coolant" data-i18n-ph="phCoolant">
+  <datalist id="lista-coolant"><option value="Externo (Flood)"><option value="Interno (TSC)"><option value="MQL"></datalist>
+</div>
+<div>
+  <div class="label" data-i18n="lblMaterial">Material principal</div>
+  <input id="material" class="input" type="text" list="lista-materiales" placeholder="Ej: Titanio / Inox" data-study="material" data-i18n-ph="phMaterial">
+  <datalist id="lista-materiales"><option value="Aluminio"><option value="Acero Endurecido"><option value="Titanio"><option value="Inconel"></datalist>
+</div>
+<div>
+  <div class="label" data-i18n="lblPriority">Prioridad Global</div>
+  <input id="priority" class="input" type="text" list="lista-prioridad" placeholder="Ej: Eliminar vibración" data-study="priority" data-i18n-ph="phPriority">
+  <datalist id="lista-prioridad"><option value="Máxima precisión (Runout)"><option value="Rigidez extrema"><option value="Cambio rápido"><option value="Aumentar vida herramienta"></datalist>
+</div>
+</div>
+<div class="mt-3">
+  <div class="label" data-i18n="lblGoal">Objetivo general del cliente</div>
+  <input id="goal" class="input" type="text" placeholder="Ej: Reducir ciclo en 15% y eliminar rechazos." data-study="goal" data-i18n-ph="phGoal">
+</div>
+</section>
+
+<!-- SECCIÓN 1C -->
+<section class="card p-4 sm:p-5">
+<div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+  <div>
+    <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec1cTitle">1C) Casos de Herramientas</h2>
+  </div>
+  <button id="btnAddTool" class="btn btn-outline text-xs border-dashed" data-i18n="btnAddCase">+ Agregar Caso</button>
+</div>
+
+<div id="toolsListContainer" class="space-y-3"></div>
+
+<div class="mt-6 border-t border-slate-100 pt-4">
+<button id="btnRecalcReco" class="btn btn-primary w-full py-2.5 text-sm shadow-sm font-extrabold" data-i18n="btnAnalyze">
+  Analizar y Configurar Ensambles
+</button>
+
+<div id="aiResultBox" class="mt-4 kpi bg-slate-50 hidden">
+  <div class="font-extrabold text-sm text-rego-blue mb-1" data-i18n="aiTitle">Dictamen de Ingeniería</div>
+  <textarea id="aiPitch" class="input text-xs font-semibold bg-white" data-study="aiPitch" rows="3" placeholder="Argumento comercial..." data-i18n-ph="phAiPitch"></textarea>
+  <div id="aiMissing" class="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 mt-2">...</div>
+</div>
+</div>
+</section>
+
+<!-- SECCIÓN 2 -->
+<section class="card p-4 sm:p-5">
+<div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+  <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec2Title">2) Ahorros Globales (4 frentes)</h2>
+  <span class="badge inv" data-i18n="badgeSavings">Ahorros</span>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+<div class="card p-3 bg-slate-50/50">
+  <div class="flex items-center justify-between mb-2">
+    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardTimeTitle">A) Ahorro por tiempo</span>
+    <div class="switch" id="swTime" data-on="true"><div class="knob"></div></div>
+  </div>
+  <div id="timeBody" class="space-y-2 text-xs">
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="label text-[11px]" data-i18n="lblChgAct">Cambios/mes (Act)</label><input id="chgAct" class="input" type="number" value="180"></div>
+      <div><label class="label text-[11px]" data-i18n="lblChgNew">Cambios/mes (Nuevo)</label><input id="chgNew" class="input" type="number" value="140"></div>
+      <div><label class="label text-[11px]" data-i18n="lblMinChgAct">Min/cambio (Act)</label><input id="chgMinAct" class="input" type="number" value="6"></div>
+      <div><label class="label text-[11px]" data-i18n="lblMinChgNew">Min/cambio (Nuevo)</label><input id="chgMinNew" class="input" type="number" value="4.5"></div>
+    </div>
+    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveTime" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
+  </div>
+</div>
+
+<div class="card p-3 bg-slate-50/50">
+  <div class="flex items-center justify-between mb-2">
+    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardLifeTitle">B) Vida de herramientas</span>
+    <div class="switch" id="swLife" data-on="true"><div class="knob"></div></div>
+  </div>
+  <div id="lifeBody" class="space-y-2 text-xs">
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="label text-[11px]" data-i18n="lblLifeAct">Ciclos/herr (Act)</label><input id="lifeAct" class="input" type="number" value="100"></div>
+      <div><label class="label text-[11px]" data-i18n="lblLifeNew">Ciclos/herr (Nuevo)</label><input id="lifeNew" class="input" type="number" value="160"></div>
+      <div><label class="label text-[11px]" data-i18n="lblToolCostAct">Costo Herr (Act)</label><input id="toolCost" class="input" type="number" value="50"></div>
+      <div><label class="label text-[11px]" data-i18n="lblToolCostNew">Costo Herr (Nuevo)</label><input id="toolCostNew" class="input" type="number" value="45"></div>
+      <div class="col-span-2"><label class="label text-[11px]" data-i18n="lblToolCount">Herramientas activas</label><input id="toolCount" class="input" type="number" value="3"></div>
+    </div>
+    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveLife" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
+  </div>
+</div>
+
+<div class="card p-3 bg-slate-50/50">
+  <div class="flex items-center justify-between mb-2">
+    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardProcTitle">C) Mejora de ciclo</span>
+    <div class="switch" id="swProc" data-on="true"><div class="knob"></div></div>
+  </div>
+  <div id="procBody" class="space-y-2 text-xs">
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="label text-[11px]" data-i18n="lblCycAct">Ciclo Act (min/pza)</label><input id="cycAct" class="input" type="number" step="0.01" value="3.20"></div>
+      <div><label class="label text-[11px]" data-i18n="lblCycNew">Ciclo Nuevo (min/pza)</label><input id="cycNew" class="input" type="number" step="0.01" value="2.85"></div>
+    </div>
+    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveProc" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
+  </div>
+</div>
+
+<div class="card p-3 bg-slate-50/50">
+  <div class="flex items-center justify-between mb-2">
+    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardScrapTitle">D) Reducción de Scrap</span>
+    <div class="switch" id="swScrap" data-on="true"><div class="knob"></div></div>
+  </div>
+  <div id="scrapBody" class="space-y-2 text-xs">
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="label text-[11px]" data-i18n="lblScrapAct">Rechazos Act/mes</label><input id="scrapAct" class="input" type="number" value="50"></div>
+      <div><label class="label text-[11px]" data-i18n="lblScrapNew">Rechazos Nuevo/mes</label><input id="scrapNew" class="input" type="number" value="5"></div>
+      <div class="col-span-2"><label class="label text-[11px]" data-i18n="lblScrapCost">Costo Pza Scrap</label><input id="scrapCost" class="input" type="number" value="15"></div>
+    </div>
+    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveScrap" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- SECCIÓN 3 -->
+<section class="card p-4 sm:p-5">
+<div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+  <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec3Title">3) Resultados del ROI</h2>
+  <span class="badge inv" data-i18n="badgeRoi">ROI</span>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+  <div class="kpi text-center">
+    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiGross">Ahorro bruto</div>
+    <div id="grossSave" class="text-lg font-black text-[#8CA015]">$0</div>
+  </div>
+  <div class="kpi text-center">
+    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiNet">Ahorro neto</div>
+    <div id="netSave" class="text-lg font-black text-[#8CA015]">$0</div>
+  </div>
+  <div class="kpi text-center">
+    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiPayback">Payback</div>
+    <div id="payback" class="text-lg font-black text-[#28556C]">—</div>
+  </div>
+</div>
+
+<div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+  <div class="kpi flex flex-col justify-center text-center p-5 bg-[#B7C91F] text-[#121314] border border-[#AAC82D] rounded-2xl shadow-md">
+    <div class="text-xs font-black uppercase tracking-wider text-[#28556C]" data-i18n="kpiRoiEst">ROI anual estimado</div>
+    <div id="roiAnnual" class="text-4xl sm:text-5xl font-black text-[#121314] my-2">—</div>
+    <div id="roiAnnualUsd" class="text-base sm:text-xl font-extrabold text-[#28556C]">—</div>
+    <div class="text-[11px] font-bold text-[#44474A] mt-1" data-i18n="kpiRoiFormula">((neto*12) / inversión)</div>
+  </div>
+  <div class="kpi h-52">
+    <canvas id="roiChart"></canvas>
+  </div>
+</div>
+</section>
+
+<!-- SECCIÓN 4: EVIDENCIA VISUAL DEL PROCESO (ANTES Y DESPUÉS) -->
+<section class="card p-4 sm:p-5">
+<div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+  <div>
+    <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec4Title">4) Evidencia del Proceso (Antes vs Después)</h2>
+    <div class="muted text-xs">Documenta con fotos comparativas el setup o acabado de la pieza.</div>
+  </div>
+  <span class="badge inv" data-i18n="badgePhotos">Fotos</span>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <!-- Foto ANTES -->
+  <div class="p-3 border border-slate-200 rounded-xl bg-slate-50 flex flex-col justify-between">
+    <div>
+      <div class="font-extrabold text-xs text-red-600 mb-1 flex items-center justify-between">
+        <span data-i18n="lblBeforeTitle">📸 Situación Actual / Proceso Anterior (Antes)</span>
+      </div>
+      <div id="beforePreviewContainer" class="my-2 min-h-[140px] flex items-center justify-center bg-white rounded-lg border border-dashed border-slate-300 overflow-hidden">
+        <span class="text-xs text-gray-400 italic" id="beforePlaceholder">Sin foto seleccionada</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 pt-2 border-t border-slate-200">
+      <input type="file" id="inputBeforePhoto" accept="image/*" class="hidden">
+      <button type="button" id="btnUploadBefore" class="btn btn-outline text-xs py-1 px-3">
+        <span>📷 Subir Foto "Antes"</span>
+      </button>
+      <button type="button" id="btnRemoveBefore" class="text-red-500 text-xs font-bold hidden">✕ Quitar</button>
     </div>
   </div>
 
-  <!-- Scripts de Lógica, PWA y Nube -->
-  <script>
-    // Registro PWA (Service Worker)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { scope: './' })
-          .then(reg => console.log('PWA ROI3 activa en:', reg.scope))
-          .catch(err => console.error('Fallo registro PWA:', err));
-      });
-    }
+  <!-- Foto DESPUÉS -->
+  <div class="p-3 border border-slate-200 rounded-xl bg-slate-50 flex flex-col justify-between">
+    <div>
+      <div class="font-extrabold text-xs text-green-700 mb-1 flex items-center justify-between">
+        <span data-i18n="lblAfterTitle">✨ Con Solución REGO-FIX (Después)</span>
+      </div>
+      <div id="afterPreviewContainer" class="my-2 min-h-[140px] flex items-center justify-center bg-white rounded-lg border border-dashed border-slate-300 overflow-hidden">
+        <span class="text-xs text-gray-400 italic" id="afterPlaceholder">Sin foto seleccionada</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 pt-2 border-t border-slate-200">
+      <input type="file" id="inputAfterPhoto" accept="image/*" class="hidden">
+      <button type="button" id="btnUploadAfter" class="btn btn-outline text-xs py-1 px-3 border-green-500 text-green-800">
+        <span>📷 Subir Foto "Después"</span>
+      </button>
+      <button type="button" id="btnRemoveAfter" class="text-red-500 text-xs font-bold hidden">✕ Quitar</button>
+    </div>
+  </div>
+</div>
+</section>
 
-    // Estado Global
-    let chartROI = null;
-    let fotosAdjuntas = [];
+<footer class="text-center pb-4"><div class="by">by alexrasa (Lab ROI)</div></footer>
+</main>
 
-    // Lógica de Cálculo ROI
-    function calcularROI() {
-      const costoH = parseFloat(document.getElementById('costoHora').value) || 0;
-      const cambios = parseFloat(document.getElementById('cambiosTurno').value) || 0;
-      const turnos = parseFloat(document.getElementById('turnosDia').value) || 1;
-      const dias = parseFloat(document.getElementById('diasAno').value) || 250;
-      const tActual = parseFloat(document.getElementById('tiempoActual').value) || 10;
-      const tPG = 1.5; // Tiempo estándar powRgrip
-      const mejVida = (parseFloat(document.getElementById('mejoraVida').value) || 20) / 100;
-      const gastoHerramientaMes = parseFloat(document.getElementById('gastoHerramientas').value) || 0;
-      
-      const invUnidad = parseFloat(document.getElementById('unidadSujecion').value) || 0;
-      const invTooling = parseFloat(document.getElementById('inversionTooling').value) || 0;
-      const inversionTotal = invUnidad + invTooling;
+<!-- MODAL DEL HISTORIAL MASTER -->
+<div id="historyModal" class="modal-overlay modal-hidden" style="display: none;">
+  <div class="card bg-white w-full max-w-2xl max-h-[85vh] flex flex-col p-4 sm:p-6 shadow-2xl">
+    <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+      <div>
+        <h3 class="font-extrabold text-base text-[#28556C]">🗂️ Repositorio Master de Estudios (Test Lab)</h3>
+        <p class="text-xs text-gray-500">Estudios sincronizados con la nube y guardados localmente</p>
+      </div>
+      <button id="btnCloseHistory" class="text-gray-400 hover:text-gray-700 text-lg font-bold p-1">✕</button>
+    </div>
+    
+    <div id="historyListContainer" class="flex-1 overflow-y-auto py-3 space-y-2">
+      <!-- Carga dinámica -->
+    </div>
 
-      // Actualizar etiquetas
-      document.getElementById('txtCostoHora').innerText = `$${costoH} USD/h`;
-      document.getElementById('txtCambiosTurno').innerText = `${cambios} cambios`;
-      document.getElementById('txtVidaUtil').innerText = `+${Math.round(mejVida * 100)}%`;
+    <div class="pt-3 border-t border-slate-200 flex justify-between items-center">
+      <button id="btnSyncPending" class="btn btn-outline text-xs border-green-500 text-green-700">
+        🔄 Refrescar Nube
+      </button>
+      <button id="btnCloseHistoryFooter" class="btn btn-primary text-xs">Cerrar</button>
+    </div>
+  </div>
+</div>
 
-      // 1. Ahorro de Tiempo de Setup
-      const cambiosAnuales = cambios * turnos * dias;
-      const minutosAhorradosCambio = Math.max(0, tActual - tPG);
-      const horasLiberadasAno = (cambiosAnuales * minutosAhorradosCambio) / 60;
-      const ahorroSetupAno = horasLiberadasAno * costoH;
+<script>
+/* ========================================================
+BASE DE DATOS LOCAL OFFLINE AISLADA (IndexedDB - Test Lab)
+======================================================== */
+const DB_NAME = "RegoFixMasterDB_ROI_Lab";
+const DB_VERSION = 1;
+let db = null;
 
-      // 2. Ahorro en Vida Útil de Herramientas
-      const gastoHerramientaAno = gastoHerramientaMes * 12;
-      const ahorroHerramientasAno = gastoHerramientaAno * (mejVida / (1 + mejVida));
-
-      // 3. Totales y Payback
-      const ahorroAnualNeto = ahorroSetupAno + ahorroHerramientasAno;
-      const ahorroMensual = ahorroAnualNeto / 12;
-      const paybackMeses = ahorroMensual > 0 ? (inversionTotal / ahorroMensual) : 0;
-      const roiPorc = inversionTotal > 0 ? ((ahorroAnualNeto - inversionTotal) / inversionTotal) * 100 : 0;
-
-      // Render de métricas
-      document.getElementById('resAhorroAnual').innerText = `$${Math.round(ahorroAnualNeto).toLocaleString('en-US')} USD`;
-      document.getElementById('resPayback').innerText = `${paybackMeses.toFixed(1)} Meses`;
-      document.getElementById('resHorasLibres').innerText = `${Math.round(horasLiberadasAno).toLocaleString('en-US')} h/año`;
-      document.getElementById('txtRoiPorcentaje').innerText = `${roiPorc > 0 ? '+' : ''}${Math.round(roiPorc)}% ROI Año 1`;
-
-      actualizarGrafica(inversionTotal, ahorroMensual);
-    }
-
-    // Render de Chart.js
-    function actualizarGrafica(inversion, ahorroMensual) {
-      const ctx = document.getElementById('graficaROI').getContext('2d');
-      const labels = ['Mes 1', 'Mes 2', 'Mes 3', 'Mes 4', 'Mes 5', 'Mes 6', 'Mes 7', 'Mes 8', 'Mes 9', 'Mes 10', 'Mes 11', 'Mes 12'];
-      const dataInversion = Array(12).fill(inversion);
-      const dataAhorroAcum = labels.map((_, i) => Math.round(ahorroMensual * (i + 1)));
-
-      if (chartROI) {
-        chartROI.destroy();
+function initIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains("studies")) {
+        const store = d.createObjectStore("studies", { keyPath: "id" });
+        store.createIndex("sync_status", "sync_status", { unique: false });
+        store.createIndex("timestamp", "timestamp", { unique: false });
       }
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = (e) => { console.error("Error DB", e); reject(e); };
+  });
+}
 
-      chartROI = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'Inversión Inicial powRgrip',
-              data: dataInversion,
-              borderColor: '#f43f5e',
-              borderDash: [5, 5],
-              borderWidth: 2,
-              pointRadius: 0,
-              fill: false
-            },
-            {
-              label: 'Ahorro Acumulado (Setup + Tool Life)',
-              data: dataAhorroAcum,
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              borderWidth: 3,
-              fill: true,
-              tension: 0.3
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: { color: '#94a3b8', font: { size: 11 } }
-            }
-          },
-          scales: {
-            x: {
-              grid: { color: 'rgba(51, 65, 85, 0.3)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } }
-            },
-            y: {
-              grid: { color: 'rgba(51, 65, 85, 0.3)' },
-              ticks: {
-                color: '#94a3b8',
-                font: { size: 10 },
-                callback: (val) => '$' + val.toLocaleString('en-US')
-              }
-            }
-          }
+function saveStudyToDB(studyData) {
+  return new Promise((resolve, reject) => {
+    if (!db) return resolve();
+    const tx = db.transaction(["studies"], "readwrite");
+    const store = tx.objectStore("studies");
+    store.put(studyData);
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
+  });
+}
+
+function getAllStudiesFromDB() {
+  return new Promise((resolve, reject) => {
+    if (!db) return resolve([]);
+    const tx = db.transaction(["studies"], "readonly");
+    const store = tx.objectStore("studies");
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = (e) => reject(e);
+  });
+}
+
+function deleteStudyFromDB(id) {
+  return new Promise((resolve, reject) => {
+    if (!db) return resolve();
+    const tx = db.transaction(["studies"], "readwrite");
+    const store = tx.objectStore("studies");
+    store.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e);
+  });
+}
+
+/* ========================================================
+DICCIONARIOS DE IDIOMA Y MONEDA
+======================================================== */
+const I18N = {
+  es: {
+    currencyCode: "USD", currencySymbol: "$", locale: "en-US",
+    headerTitle: "ROI Holders REGO-FIX", headerSubtitle: "Análisis Multi-Herramienta y Proceso",
+    btnMasterHistory: "Historial Master", btnSaveCloud: "Guardar Nube", btnExportPdf: "Exportar PDF",
+    btnCopy: "Copiar", btnSend: "Enviar", btnReset: "Reset", bannerTitle: "Enfoque: sujeción y ROI real",
+    bannerSubtitle: "Estudio, cálculo de ahorros y PDF comercial.", sec0Title: "0) Datos del Cliente",
+    badgeStudy: "Estudio", lblDate: "Fecha", lblUser: "Usuario / Asesor", lblRole: "Puesto",
+    lblCompany: "Empresa", phName: "Nombre", phRole: "Ej: Ing. Procesos", phCompany: "Razón social",
+    sec1aTitle: "1A) Inversión y Costo de Máquina", badgeBase: "Base", lblCostHour: "Costo máquina/hora",
+    btnAssistant: "Asistente", lblCurrHour: "USD/hora", lblPartsMonth: "Piezas por mes",
+    lblInvest: "Inversión Total", lblConsMonth: "Consumibles (/mes)", calcRefParams: "Parámetros referenciales (USD)",
+    calcMachineType: "Tipo de Máquina", optLathe2: "Torno CNC (2 Ejes)", optMill3: "Centro Maquinado (3 Ejes)",
+    optMill4: "Centro Maquinado (4 Ejes)", optSwiss: "Torno Multitarea / Suizo", optMill5: "Centro Maquinado (5 Ejes)",
+    calcSector: "Sector (Overhead)", optGeneral: "General / Job Shop", optAuto: "Automotriz", optMold: "Moldes y Troqueles",
+    optAero: "Aeroespacial", optMed: "Médico", calcLabor: "Mano de Obra", optOp1: "1 Op / 1 Máquina ($25/h)",
+    optOp2: "1 Op / 2 Máquinas ($12.5/h)", optOpAuto: "Celda automatizada", sec1bTitle: "1B) Contexto del Maquinado",
+    lblSpindle: "Interfaz husillo", phSpindle: "Ej: CAT40 / HSK63A", lblCoolant: "Refrigerante", phCoolant: "Ej: Interno Alta Presión",
+    lblMaterial: "Material principal", phMaterial: "Ej: Titanio / Inox", lblPriority: "Prioridad Global", phPriority: "Ej: Eliminar vibración",
+    lblGoal: "Objetivo general del cliente", phGoal: "Ej: Reducir ciclo en 15% y eliminar rechazos.",
+    sec1cTitle: "1C) Casos de Herramientas", btnAddCase: "+ Agregar Caso", caseLabel: "Caso", btnDeleteCase: "✕ Eliminar",
+    lblToolOp: "Operación / Herramienta", phToolOp: "Ej: Endmill 12mm...", lblToolSetup: "Sujeción Actual", phToolSetup: "Ej: ER32, Weldon...",
+    lblToolProblem: "Problema detectado", phToolProblem: "Ej: Vibración y mal acabado...", lblToolReco: "Propuesta REGO-FIX",
+    phToolReco: "Ensambles sugeridos...", btnAnalyze: "Analizar y Configurar Ensambles", aiTitle: "Dictamen de Ingeniería",
+    phAiPitch: "Argumento comercial...", sec2Title: "2) Ahorros Globales (4 frentes)", badgeSavings: "Ahorros",
+    cardTimeTitle: "A) Ahorro por tiempo", lblChgAct: "Cambios/mes (Act)", lblChgNew: "Cambios/mes (Nuevo)",
+    lblMinChgAct: "Min/cambio (Act)", lblMinChgNew: "Min/cambio (Nuevo)", lblMonthlySave: "Ahorro mensual:",
+    cardLifeTitle: "B) Vida de herramientas", lblLifeAct: "Ciclos/herr (Act)", lblLifeNew: "Ciclos/herr (Nuevo)",
+    lblToolCost: "Costo Herr", lblToolCostAct: "Costo Herr (Act)", lblToolCostNew: "Costo Herr (Nuevo)", lblToolCount: "Herramientas activas", cardProcTitle: "C) Mejora de ciclo",
+    lblCycAct: "Ciclo Act (min/pza)", lblCycNew: "Ciclo Nuevo (min/pza)", cardScrapTitle: "D) Reducción de Scrap",
+    lblScrapAct: "Rechazos Act/mes", lblScrapNew: "Rechazos Nuevo/mes", lblScrapCost: "Costo Pza Scrap",
+    sec3Title: "3) Resultados del ROI", badgeRoi: "ROI", kpiGross: "Ahorro bruto", kpiNet: "Ahorro neto",
+    kpiPayback: "Payback", kpiRoiEst: "ROI anual estimado", kpiRoiFormula: "((neto*12) / inversión)",
+    sec4Title: "4) Evidencia del Proceso (Antes vs Después)", badgePhotos: "Fotos",
+    lblBeforeTitle: "📸 Situación Actual / Proceso Anterior (Antes)", lblAfterTitle: "✨ Con Solución REGO-FIX (Después)",
+    chartActual: "Situación Actual", chartRego: "Con REGO-FIX", chartTitle: "Costo (USD)",
+    copiedAlert: "Copiado al portapapeles.", copyErrorAlert: "Error al copiar.", resetConfirm: "¿Borrar todo y empezar un estudio nuevo?",
+    aiOffline: "Atención: Para generar dictámenes de IA necesitas estar conectado a internet. Los cálculos y reportes PDF siguen disponibles offline.",
+    aiLoading: "⏳ Diseñando ensambles...", aiError: "Hubo un problema al contactar a la Inteligencia Artificial.",
+    aiComplete: "Revisión completa.", monthSuffix: " mes(es)", yearSuffix: " / año",
+    pdfTitle: "Estudio de Ingeniería de Sujeción", pdfSubtitle: "Análisis de ROI y Optimización Técnica",
+    pdfClient: "Empresa Cliente:", pdfAttention: "Responsable / Asesor:", pdfDate: "Fecha de Emisión:", pdfSec1: "1. Contexto Global del Maquinado",
+    pdfSec2: "2. Análisis Detallado de Operaciones y Propuestas", pdfSec3: "3. Retorno de Inversión y Comparativa Numérica",
+    pdfSec4: "4. Comparativa Visual del Proceso (Antes vs Después)",
+    pdfBefore: "Situación Actual (Antes)", pdfAfter: "Solución Optimizada REGO-FIX (Después)",
+    pdfSpindle: "Interfaz Husillo", pdfCoolant: "Refrigeración", pdfMaterial: "Material Procesado", pdfGoal: "Objetivo Principal",
+    pdfAiTitle: "Dictamen Técnico de Ingeniería", pdfCurrentSetup: "Sujeción Actual", pdfProblem: "Diagnóstico / Problema",
+    pdfSolution: "Solución Recomendada REGO-FIX", pdfBreakdown: "DESGLOSE DE AHORROS ESTIMADOS (MENSUAL)",
+    pdfTimeSetup: "Tiempo de Setup", pdfToolLife: "Vida Útil Herramienta", pdfProcImprove: "Mejora de Ciclo",
+    pdfScrapRed: "Reducción Scrap", pdfInvest: "Inversión Estimada", pdfNetSave: "Ahorro Neto Mensual",
+    pdfPayback: "Periodo de Retorno", pdfRoiEst: "ROI Anual Estimado", pdfChartComp: "Comparativa de Costo Operativo Mensual (USD)",
+    pdfUnnamedTool: "Operación de Maquinado", pdfTbd: "Pendiente de definir...",
+    btnUploadPhoto: "📷 Adjuntar Foto", btnRemovePhoto: "✕ Quitar Foto"
+  },
+  pt: {
+    currencyCode: "BRL", currencySymbol: "R$", locale: "pt-BR",
+    headerTitle: "ROI Porta-Ferramentas REGO-FIX", headerSubtitle: "Análise Multi-Ferramenta e Processo",
+    btnMasterHistory: "Histórico Master", btnSaveCloud: "Salvar na Nuvem", btnExportPdf: "Exportar PDF",
+    btnCopy: "Copiar", btnSend: "Enviar", btnReset: "Redefinir", bannerTitle: "Foco: fixação e ROI real",
+    bannerSubtitle: "Estudo, cálculo de economia e PDF comercial.", sec0Title: "0) Dados do Cliente",
+    badgeStudy: "Estudo", lblDate: "Data", lblUser: "Usuário / Consultor", lblRole: "Cargo",
+    lblCompany: "Empresa", phName: "Nome", phRole: "Ex: Eng. de Processos", phCompany: "Razão Social",
+    sec1aTitle: "1A) Investimento e Custo de Máquina", badgeBase: "Base", lblCostHour: "Custo máquina/hora",
+    btnAssistant: "Assistente", lblCurrHour: "BRL/hora", lblPartsMonth: "Peças por mês",
+    lblInvest: "Investimento Total", lblConsMonth: "Consumíveis (/mês)", calcRefParams: "Parâmetros de referência (BRL)",
+    calcMachineType: "Tipo de Máquina", optLathe2: "Torno CNC (2 Eixos)", optMill3: "Centro de Usinagem (3 Eixos)",
+    optMill4: "Centro de Usinagem (4 Eixos)", optSwiss: "Torno Multifunção / Suíço", optMill5: "Centro de Usinagem (5 Eixos)",
+    calcSector: "Setor (Overhead)", optGeneral: "Geral / Usinagem", optAuto: "Automotivo", optMold: "Moldes e Matrizes",
+    optAero: "Aeroespacial", optMed: "Médico", calcLabor: "Mão de Obra", optOp1: "1 Op / 1 Máquina (R$25/h)",
+    optOp2: "1 Op / 2 Máquinas (R$12.5/h)", optOpAuto: "Célula automatizada", sec1bTitle: "1B) Contexto da Usinagem",
+    lblSpindle: "Interface do fuso", phSpindle: "Ex: CAT40 / HSK63A", lblCoolant: "Refrigeração", phCoolant: "Ex: Interno Alta Pressão",
+    lblMaterial: "Material principal", phMaterial: "Ex: Titânio / Inox", lblPriority: "Prioridade Global", phPriority: "Ex: Eliminar vibração",
+    lblGoal: "Objetivo geral do cliente", phGoal: "Ex: Reduzir ciclo em 15% e eliminar refugos.",
+    sec1cTitle: "1C) Casos de Ferramentas", btnAddCase: "+ Adicionar Caso", caseLabel: "Caso", btnDeleteCase: "✕ Excluir",
+    lblToolOp: "Operação / Ferramenta", phToolOp: "Ex: Fresa topo 12mm...", lblToolSetup: "Fixação Atual", phToolSetup: "Ex: ER32, Weldon...",
+    lblToolProblem: "Problema detectado", phToolProblem: "Ex: Vibração e acabamento ruim...", lblToolReco: "Proposta REGO-FIX",
+    phToolReco: "Montagens sugeridas...", btnAnalyze: "Analisar e Configurar Montagens", aiTitle: "Parecer de Engenharia",
+    phAiPitch: "Argumento comercial...", sec2Title: "2) Economia Global (4 frentes)", badgeSavings: "Economia",
+    cardTimeTitle: "A) Economia por tempo", lblChgAct: "Trocas/mês (Atual)", lblChgNew: "Trocas/mês (Novo)",
+    lblMinChgAct: "Min/troca (Atual)", lblMinChgNew: "Min/troca (Novo)", lblMonthlySave: "Economia mensal:",
+    cardLifeTitle: "B) Vida útil das ferramentas", lblLifeAct: "Ciclos/ferr (Atual)", lblLifeNew: "Ciclos/ferr (Novo)",
+    lblToolCost: "Custo Ferr", lblToolCostAct: "Custo Ferr (Atual)", lblToolCostNew: "Custo Ferr (Novo)", lblToolCount: "Ferramentas ativas", cardProcTitle: "C) Melhoria de ciclo",
+    lblCycAct: "Ciclo Atual (min/peça)", lblCycNew: "Ciclo Novo (min/peça)", cardScrapTitle: "D) Redução de Refugo",
+    lblScrapAct: "Refugos Atual/mês", lblScrapNew: "Refugos Novo/mês", lblScrapCost: "Custo Peça Refugo",
+    sec3Title: "3) Resultados do ROI", badgeRoi: "ROI", kpiGross: "Economia bruta", kpiNet: "Economia líquida",
+    kpiPayback: "Payback", kpiRoiEst: "ROI anual estimado", kpiRoiFormula: "((líquido*12) / investimento)",
+    sec4Title: "4) Evidência do Processo (Antes vs Depois)", badgePhotos: "Fotos",
+    lblBeforeTitle: "📸 Situação Atual / Processo Anterior (Antes)", lblAfterTitle: "✨ Com Solução REGO-FIX (Depois)",
+    chartActual: "Situação Atual", chartRego: "Com REGO-FIX", chartTitle: "Custo (BRL)",
+    copiedAlert: "Copiado para a área de transferência.", copyErrorAlert: "Erro ao copiar.", resetConfirm: "Deseja limpar tudo e iniciar um novo estudo?",
+    aiOffline: "Atenção: Para gerar pareceres com IA é necessário estar conectado à internet. Cálculos e relatórios em PDF continuam funcionando offline.",
+    aiLoading: "⏳ Projetando montagens...", aiError: "Ocorreu um problema ao conectar com a IA.",
+    aiComplete: "Revisão completa.", monthSuffix: " mês(es)", yearSuffix: " / ano",
+    pdfTitle: "Estudo de Engenharia de Fixação", pdfSubtitle: "Análise de ROI e Otimização Técnica",
+    pdfClient: "Empresa Cliente:", pdfAttention: "Responsável / Consultor:", pdfDate: "Data de Emissão:", pdfSec1: "1. Contexto Global da Usinagem",
+    pdfSec2: "2. Análise Detalhada de Operações e Propostas", pdfSec3: "3. Retorno sobre Investimento e Comparativo Numérico",
+    pdfSec4: "4. Comparativo Visual do Processo (Antes vs Depois)",
+    pdfBefore: "Situação Atual (Antes)", pdfAfter: "Solução Optimizada REGO-FIX (Depois)",
+    pdfSpindle: "Interface do Fuso", pdfCoolant: "Refrigeração", pdfMaterial: "Material Principal", pdfGoal: "Objetivo Principal",
+    pdfAiTitle: "Parecer Técnico de Engenharia", pdfCurrentSetup: "Fixação Atual", pdfProblem: "Diagnóstico / Problema",
+    pdfSolution: "Solução Recomendada REGO-FIX", pdfBreakdown: "DETALHAMENTO DE ECONOMIA ESTIMADA (MENSAL)",
+    pdfTimeSetup: "Tempo de Setup", pdfToolLife: "Vida da Ferramenta", pdfProcImprove: "Melhoria de Ciclo",
+    pdfScrapRed: "Redução de Refugo", pdfInvest: "Investimento Proposto", pdfNetSave: "Economia Líquida Mensal",
+    pdfPayback: "Tempo de Retorno", pdfRoiEst: "ROI Anual Estimado", pdfChartComp: "Comparativo de Custo Operacional Mensal (BRL)",
+    pdfUnnamedTool: "Operação de Usinagem", pdfTbd: "A definir com consultoria...",
+    btnUploadPhoto: "📷 Anexar Foto", btnRemovePhoto: "✕ Remover Foto"
+  },
+  en: {
+    currencyCode: "USD", currencySymbol: "$", locale: "en-US",
+    headerTitle: "REGO-FIX Toolholding ROI", headerSubtitle: "Multi-Tool & Process Analysis",
+    btnMasterHistory: "Master History", btnSaveCloud: "Save Cloud", btnExportPdf: "Export PDF",
+    btnCopy: "Copy", btnSend: "Send", btnReset: "Reset", bannerTitle: "Focus: Toolholding & Real ROI",
+    bannerSubtitle: "Study, cost savings calculation & commercial PDF.", sec0Title: "0) Customer Information",
+    badgeStudy: "Study", lblDate: "Date", lblUser: "User / Engineer", lblRole: "Role",
+    lblCompany: "Company", phName: "Full Name", phRole: "E.g., Process Engineer", phCompany: "Company Name",
+    sec1aTitle: "1A) Investment & Machine Cost", badgeBase: "Base", lblCostHour: "Machine Cost / Hour",
+    btnAssistant: "Assistant", lblCurrHour: "USD/hour", lblPartsMonth: "Parts per Month",
+    lblInvest: "Total Investment", lblConsMonth: "Consumibles (/month)", calcRefParams: "Reference Parameters (USD)",
+    calcMachineType: "Machine Type", optLathe2: "CNC Lathe (2-Axis)", optMill3: "Machining Center (3-Axis)",
+    optMill4: "Machining Center (4-Axis)", optSwiss: "Multi-Tasking / Swiss Lathe", optMill5: "Machining Center (5-Axis)",
+    calcSector: "Industry Sector (Overhead)", optGeneral: "General / Job Shop", optAuto: "Automotive", optMold: "Mold & Die",
+    optAero: "Aerospace", optMed: "Medical", calcLabor: "Labor Cost", optOp1: "1 Op / 1 Machine ($25/h)",
+    optOp2: "1 Op / 2 Machines ($12.5/h)", optOpAuto: "Automated Cell", sec1bTitle: "1B) Machining Context",
+    lblSpindle: "Spindle Interface", phSpindle: "E.g., CAT40 / HSK63A", lblCoolant: "Coolant Type", phCoolant: "E.g., High Pressure Internal",
+    lblMaterial: "Main Material", phMaterial: "E.g., Titanium / Stainless", lblPriority: "Global Priority", phPriority: "E.g., Eliminate vibration",
+    lblGoal: "Customer's Overall Goal", phGoal: "E.g., Reduce cycle time by 15% and scrap.",
+    sec1cTitle: "1C) Tooling Cases", btnAddCase: "+ Add Case", caseLabel: "Case", btnDeleteCase: "✕ Delete",
+    lblToolOp: "Operation / Tool", phToolOp: "E.g., Endmill 1/2\"...", lblToolSetup: "Current Toolholder", phToolSetup: "E.g., ER32, Weldon...",
+    lblToolProblem: "Identified Problem", phToolProblem: "E.g., Chatter and poor finish...", lblToolReco: "REGO-FIX Proposal",
+    phToolReco: "Suggested assemblies...", btnAnalyze: "Analyze & Configure Assemblies", aiTitle: "Engineering Report",
+    phAiPitch: "Commercial argument...", sec2Title: "2) Overall Savings (4 areas)", badgeSavings: "Savings",
+    cardTimeTitle: "A) Time Savings", lblChgAct: "Changes/mo (Current)", lblChgNew: "Changes/mo (New)",
+    lblMinChgAct: "Min/change (Current)", lblMinChgNew: "Min/change (New)", lblMonthlySave: "Monthly Savings:",
+    cardLifeTitle: "B) Tool Life Improvement", lblLifeAct: "Cycles/tool (Current)", lblLifeNew: "Cycles/tool (New)",
+    lblToolCost: "Tool Cost", lblToolCostAct: "Tool Cost (Current)", lblToolCostNew: "Tool Cost (New)", lblToolCount: "Active Tools", cardProcTitle: "C) Cycle Time Reduction",
+    lblCycAct: "Cycle Current (min/pc)", lblCycNew: "Cycle New (min/pc)", cardScrapTitle: "D) Scrap Reduction",
+    lblScrapAct: "Rejects Current/mo", lblScrapNew: "Rejects New/mo", lblScrapCost: "Scrap Part Cost",
+    sec3Title: "3) Results del ROI", badgeRoi: "ROI", kpiGross: "Gross Savings", kpiNet: "Net Savings",
+    kpiPayback: "Payback", kpiRoiEst: "Estimated Annual ROI", kpiRoiFormula: "((net*12) / investment)",
+    sec4Title: "4) Process Evidence (Before vs After)", badgePhotos: "Photos",
+    lblBeforeTitle: "📸 Current Situation / Before Process", lblAfterTitle: "✨ With REGO-FIX Solution (After)",
+    chartActual: "Current Situation", chartRego: "With REGO-FIX", chartTitle: "Cost (USD)",
+    copiedAlert: "Copied to clipboard.", copyErrorAlert: "Error copying to clipboard.", resetConfirm: "Clear everything and start a new study?",
+    aiOffline: "Note: An internet connection is required to generate AI engineering proposals.",
+    aiLoading: "⏳ Designing assemblies...", aiError: "There was a problem connecting to AI.",
+    aiComplete: "Review complete.", monthSuffix: " month(s)", yearSuffix: " / year",
+    pdfTitle: "Toolholding Engineering Study", pdfSubtitle: "Technical Optimization & ROI Analysis",
+    pdfClient: "Client Company:", pdfAttention: "Responsible / Consultant:", pdfDate: "Issue Date:", pdfSec1: "1. Global Machining Context",
+    pdfSec2: "2. Detailed Tooling Operations & Solutions", pdfSec3: "3. Financial Analysis & Numeric Comparison",
+    pdfSec4: "4. Visual Process Comparison (Before vs After)",
+    pdfBefore: "Current Situation (Before)", pdfAfter: "Optimized REGO-FIX Solution (After)",
+    pdfSpindle: "Spindle Interface", pdfCoolant: "Coolant Type", pdfMaterial: "Primary Material", pdfGoal: "Main Objective",
+    pdfAiTitle: "Technical Engineering Assessment", pdfCurrentSetup: "Current Toolholder", pdfProblem: "Problem / Diagnosis",
+    pdfSolution: "Recommended REGO-FIX Solution", pdfBreakdown: "ESTIMATED MONTHLY SAVINGS BREAKDOWN",
+    pdfTimeSetup: "Setup Time", pdfToolLife: "Tool Life", pdfProcImprove: "Cycle Improvement",
+    pdfScrapRed: "Scrap Reduction", pdfInvest: "Proposed Investment", pdfNetSave: "Net Monthly Savings",
+    pdfPayback: "Payback Period", pdfRoiEst: "Estimated Annual ROI", pdfChartComp: "Monthly Operational Cost Comparison (USD)",
+    pdfUnnamedTool: "Machining Operation", pdfTbd: "Pending confirmation...",
+    btnUploadPhoto: "📷 Attach Photo", btnRemovePhoto: "✕ Remove Photo"
+  }
+};
+
+let currentLang = 'es';
+function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.es[key] || key); }
+function money(n) {
+  const conf = I18N[currentLang] || I18N.es;
+  return Number(n || 0).toLocaleString(conf.locale, { style: "currency", currency: conf.currencyCode, maximumFractionDigits: 0 });
+}
+
+function setLanguage(lang) {
+  if(!I18N[lang]) lang = 'es';
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  try { localStorage.setItem('rego_lang_roi_lab', lang); } catch(e){}
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    if(btn.dataset.lang === lang) btn.classList.add('active');
+    else btn.classList.remove('active');
+  });
+
+  const symb = $('currencySymbolInput');
+  if(symb) symb.textContent = I18N[currentLang].currencySymbol;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    el.textContent = t(k);
+  });
+
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const k = el.getAttribute('data-i18n-ph');
+    el.placeholder = t(k);
+  });
+
+  renderTools();
+  renderBeforeAfterUI();
+  renderAll();
+}
+
+/* ========================================================
+ESTADO GLOBAL AISLADO (ROI Lab)
+======================================================== */
+const state = {
+currentStudyId: "study_lab_" + Date.now(),
+switches: { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true },
+study: {
+studyDate: "", userName: "", userRole: "", company: "",
+spindleInterface: "", coolant: "", material: "", priority: "", goal: "",
+calcMachine: "50", calcSector: "1.0", calcOperator: "25",
+aiPitch: "", aiMissing: "",
+beforePhoto: "", afterPhoto: "",
+tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" } ]
+}
+};
+
+const defaultMathValues = {
+  costHour: "75", partsMonth: "5000", invest: "4500", consMonth: "0",
+  chgAct: "180", chgNew: "140", chgMinAct: "6", chgMinNew: "4.5",
+  lifeAct: "100", lifeNew: "160", toolCost: "50", toolCostNew: "45", toolCount: "3",
+  cycAct: "3.20", cycNew: "2.85", scrapAct: "50", scrapNew: "5", scrapCost: "15"
+};
+
+const mathIds = [
+"costHour","partsMonth","invest","consMonth",
+"chgAct","chgNew","chgMinAct","chgMinNew",
+"setAct","setNew","setMinAct","setMinNew",
+"stpAct","stpNew","stpMinAct","stpMinNew",
+"lifeAct","lifeNew","toolCost","toolCostNew","toolCount",
+"cycAct","cycNew","scrapAct","scrapNew","scrapCost"
+];
+
+const $ = (id)=>document.getElementById(id);
+const clamp0 = (n)=>Math.max(0, Number(n||0));
+function safeJson(str, fallback){ try{ return JSON.parse(str); }catch(e){ return fallback; } }
+
+function persist(){
+  try {
+    localStorage.setItem("rego_switches_roi_lab", JSON.stringify(state.switches));
+    
+    // Evitar desbordar la cuota de localStorage guardando datos ligeros sin base64
+    const safeStudyToStorage = {
+      ...state.study,
+      beforePhoto: "",
+      afterPhoto: "",
+      tools: (state.study.tools || []).map(t => ({ ...t, photo: "" }))
+    };
+    localStorage.setItem("rego_study_roi_lab", JSON.stringify(safeStudyToStorage));
+    
+    // Guardar íntegro (con fotos) en IndexedDB
+    const payload = {
+      id: state.currentStudyId,
+      timestamp: Date.now(),
+      company: state.study.company || "Sin Empresa",
+      userName: state.study.userName || "Sin Asesor",
+      date: state.study.studyDate,
+      lang: currentLang,
+      currency: I18N[currentLang].currencyCode,
+      data: { study: state.study, switches: state.switches },
+      sync_status: "pending"
+    };
+    saveStudyToDB(payload);
+  } catch(e) { console.warn("Aviso guardando:", e); }
+}
+
+function load(){
+  try {
+    const savedLang = localStorage.getItem("rego_lang_roi_lab");
+    if(savedLang && I18N[savedLang]) currentLang = savedLang;
+
+    const sw = localStorage.getItem("rego_switches_roi_lab");
+    if(sw) state.switches = safeJson(sw, state.switches);
+
+    const st = localStorage.getItem("rego_study_roi_lab");
+    if(st) {
+      state.study = { ...state.study, ...safeJson(st, {}) };
+      if(!state.study.tools || state.study.tools.length === 0) {
+        state.study.tools = [{ id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" }];
+      }
+    }
+  } catch(e) { console.error("Error cargando", e); }
+}
+
+/* ========================================================
+PROCESAMIENTO Y ULTRA-COMPRESIÓN DE IMÁGENES (0 MS OVERHEAD)
+======================================================== */
+function compressImage(file, callback, errorCallback) {
+  if (!file) return;
+
+  const blobUrl = URL.createObjectURL(file);
+  const img = new Image();
+
+  img.onload = () => {
+    try {
+      URL.revokeObjectURL(blobUrl);
+      const canvas = document.createElement("canvas");
+      const MAX_SIZE = 500;
+      let width = img.naturalWidth || img.width || MAX_SIZE;
+      let height = img.naturalHeight || img.height || MAX_SIZE;
+
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height = Math.round(height * (MAX_SIZE / width));
+          width = MAX_SIZE;
         }
-      });
-    }
-
-    // Manejo de Fotos (Base64)
-    function procesarFoto(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        fotosAdjuntas.push({
-          nombre: file.name,
-          data: e.target.result
-        });
-        renderGaleria();
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function renderGaleria() {
-      const cont = document.getElementById('galeriaFotos');
-      if (fotosAdjuntas.length === 0) {
-        cont.innerHTML = '<div class="col-span-full text-center py-6 border border-dashed border-slate-800 rounded-lg text-xs text-slate-600">No hay fotos adjuntas para este estudio.</div>';
-        return;
+      } else {
+        if (height > MAX_SIZE) {
+          width = Math.round(width * (MAX_SIZE / height));
+          height = MAX_SIZE;
+        }
       }
-      cont.innerHTML = fotosAdjuntas.map((foto, index) => `
-        <div class="relative group rounded-lg overflow-hidden border border-slate-700 bg-slate-950 aspect-video flex items-center justify-center">
-          <img src="${foto.data}" alt="${foto.nombre}" class="object-cover w-full h-full">
-          <button onclick="eliminarFoto(${index})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition">
-            &times;
-          </button>
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const compressedBase64 = canvas.toDataURL("image/jpeg", 0.55);
+      callback(compressedBase64);
+    } catch (err) {
+      console.error("Error procesando canvas:", err);
+      if (errorCallback) errorCallback();
+    }
+  };
+
+  img.onerror = () => {
+    URL.revokeObjectURL(blobUrl);
+    alert("Formato de imagen no compatible. Usa JPG o PNG.");
+    if (errorCallback) errorCallback();
+  };
+
+  img.src = blobUrl;
+}
+
+function handleToolPhotoUpload(file, toolId) {
+  const statusEl = document.getElementById("photo_status_" + toolId);
+  const rmBtn = document.getElementById("btn_rm_photo_" + toolId);
+
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="text-[11px] text-amber-600 font-bold animate-pulse">⏳ Comprimiendo...</span>`;
+  }
+
+  compressImage(file, (compressedBase64) => {
+    const tool = state.study.tools.find(tData => String(tData.id) === String(toolId));
+    if (tool) {
+      tool.photo = compressedBase64;
+      persist();
+
+      if (statusEl) {
+        statusEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <img src="${compressedBase64}" class="h-10 w-10 object-cover rounded-lg border border-slate-200 shadow-sm" />
+            <span class="text-[11px] text-green-700 font-bold">✓ Foto adjunta</span>
+          </div>`;
+      }
+      if (rmBtn) {
+        rmBtn.classList.remove("hidden");
+      }
+    }
+  }, () => {
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="text-[11px] text-gray-400 italic">Sin foto adjunta (opcional)</span>`;
+    }
+  });
+}
+
+function renderTools() {
+  const container = $("toolsListContainer");
+  if(!container) return;
+  container.innerHTML = "";
+
+  state.study.tools.forEach((tData, index) => {
+    const div = document.createElement("div");
+    div.className = "p-3 border border-slate-200 rounded-xl bg-white shadow-sm";
+    div.innerHTML = `
+      <div class="flex justify-between items-center mb-2 pb-1 border-b border-slate-100">
+        <div class="font-extrabold text-xs text-[#28556C]">${t("caseLabel")} ${index + 1}</div>
+        ${state.study.tools.length > 1 ? `<button type="button" class="text-red-500 text-[11px] font-bold uppercase btn-remove-tool" data-id="${tData.id}">${t("btnDeleteCase")}</button>` : ''}
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+        <div>
+          <label for="op_${tData.id}" class="label text-[11px]">${t("lblToolOp")}</label>
+          <input id="op_${tData.id}" name="op_${tData.id}" autocomplete="off" class="input tool-op" data-id="${tData.id}" value="${tData.op || ''}" placeholder="${t("phToolOp")}">
         </div>
-      `).join('');
-    }
+        <div>
+          <label for="setup_${tData.id}" class="label text-[11px]">${t("lblToolSetup")}</label>
+          <input id="setup_${tData.id}" name="setup_${tData.id}" autocomplete="off" class="input tool-setup" data-id="${tData.id}" value="${tData.setup || ''}" placeholder="${t("phToolSetup")}">
+        </div>
+        <div class="sm:col-span-2">
+          <label for="prob_${tData.id}" class="label text-[11px] text-red-600">${t("lblToolProblem")}</label>
+          <textarea id="prob_${tData.id}" name="prob_${tData.id}" autocomplete="off" class="input tool-problem border-red-200" data-id="${tData.id}" placeholder="${t("phToolProblem")}" rows="2">${tData.problem || ''}</textarea>
+        </div>
+        <div class="sm:col-span-2">
+          <label for="reco_${tData.id}" class="label text-[11px] text-green-700">${t("lblToolReco")}</label>
+          <textarea id="reco_${tData.id}" name="reco_${tData.id}" autocomplete="off" class="input bg-green-50 tool-reco border-green-200 text-green-900 font-medium" data-id="${tData.id}" placeholder="${t("phToolReco")}" rows="2">${tData.reco || ''}</textarea>
+        </div>
 
-    function eliminarFoto(index) {
-      fotosAdjuntas.splice(index, 1);
-      renderGaleria();
-    }
-
-    // Integración con Nube: Guardar
-    function abrirModalGuardar() {
-      document.getElementById('modalGuardar').classList.remove('hidden');
-    }
-    function cerrarModalGuardar() {
-      document.getElementById('modalGuardar').classList.add('hidden');
-    }
-
-    async function subirEstudioANube() {
-      const btn = document.getElementById('btnConfirmarGuardar');
-      btn.innerText = 'Guardando...';
-      btn.disabled = true;
-
-      const payload = {
-        titulo: document.getElementById('tituloEstudio').value || 'Estudio sin título',
-        cliente: document.getElementById('clienteNombre').value || 'Sin cliente',
-        componente: document.getElementById('componenteNombre').value || 'General',
-        costoHora: document.getElementById('costoHora').value,
-        cambiosTurno: document.getElementById('cambiosTurno').value,
-        tiempoActual: document.getElementById('tiempoActual').value,
-        gastoHerramientas: document.getElementById('gastoHerramientas').value,
-        mejoraVida: document.getElementById('mejoraVida').value,
-        inversionTotal: parseFloat(document.getElementById('unidadSujecion').value) + parseFloat(document.getElementById('inversionTooling').value),
-        ahorroAnual: document.getElementById('resAhorroAnual').innerText,
-        payback: document.getElementById('resPayback').innerText,
-        notas: document.getElementById('notasEstudio').value,
-        fotos: fotosAdjuntas,
-        fecha: new Date().toISOString()
-      };
-
-      try {
-        const res = await fetch('./api/save-study.js', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        alert('¡Estudio y evidencias guardadas con éxito en la nube!');
-        cerrarModalGuardar();
-      } catch (err) {
-        console.error('Error al guardar en la nube:', err);
-        localStorage.setItem('estudio_offline_' + Date.now(), JSON.stringify(payload));
-        alert('Guardado en caché local (offline). Se sincronizará al haber red.');
-        cerrarModalGuardar();
-      } finally {
-        btn.innerText = 'Guardar en Nube';
-        btn.disabled = false;
-      }
-    }
-
-    // Integración con Nube: Listar y Cargar
-    function abrirModalEstudios() {
-      document.getElementById('modalEstudios').classList.remove('hidden');
-      cargarEstudiosDesdeNube();
-    }
-    function cerrarModalEstudios() {
-      document.getElementById('modalEstudios').classList.add('hidden');
-    }
-
-    async function cargarEstudiosDesdeNube() {
-      const cont = document.getElementById('listaEstudiosNube');
-      cont.innerHTML = '<div class="text-center py-10 text-xs text-slate-500">Consultando nube...</div>';
-
-      try {
-        const res = await fetch('./api/get-studies.js');
-        const estudios = await res.json();
-
-        if (!estudios || estudios.length === 0) {
-          cont.innerHTML = '<div class="text-center py-10 text-xs text-slate-500">No hay estudios en la nube aún. Guarda uno primero.</div>';
-          return;
-        }
-
-        cont.innerHTML = estudios.map((est, i) => `
-          <div class="bg-slate-950 border border-slate-800 p-3 rounded-lg flex items-center justify-between hover:border-slate-700 transition">
-            <div>
-              <div class="font-bold text-sm text-slate-200">${est.titulo}</div>
-              <div class="text-xs text-slate-400">${est.cliente} • ${est.componente}</div>
-              <div class="text-[10px] text-emerald-400 font-medium mt-0.5">${est.ahorroAnual} • Payback: ${est.payback}</div>
-            </div>
-            <button onclick='cargarEstudioSeleccionado(${JSON.stringify(est)})' class="bg-slate-800 hover:bg-red-600 hover:text-white text-slate-300 text-xs px-3 py-1.5 rounded transition">
-              Cargar
+        <!-- Módulo de Foto del Caso Directo -->
+        <div class="sm:col-span-2 mt-1 border-t border-slate-100 pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <input type="file" id="file_photo_${tData.id}" accept="image/*" class="tool-photo-input hidden" data-id="${tData.id}">
+            <button type="button" class="btn btn-outline text-xs py-1 px-3 btn-trigger-photo" data-id="${tData.id}">
+              <span>${t("btnUploadPhoto")}</span>
+            </button>
+            <button type="button" id="btn_rm_photo_${tData.id}" class="text-red-500 text-xs font-bold btn-remove-photo ${tData.photo ? '' : 'hidden'}" data-id="${tData.id}">
+              ${t("btnRemovePhoto")}
             </button>
           </div>
-        `).join('');
+          
+          <div id="photo_status_${tData.id}">
+            ${tData.photo ? `
+              <div class="flex items-center gap-2">
+                <img src="${tData.photo}" class="h-10 w-10 object-cover rounded-lg border border-slate-200 shadow-sm" />
+                <span class="text-[11px] text-green-700 font-bold">✓ Foto adjunta</span>
+              </div>
+            ` : '<span class="text-[11px] text-gray-400 italic">Sin foto adjunta (opcional)</span>'}
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
 
-      } catch (err) {
-        cont.innerHTML = '<div class="text-center py-10 text-xs text-amber-500">No se pudo conectar a la nube. Verifica conexión.</div>';
-      }
-    }
+  document.querySelectorAll(".tool-op").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "op")));
+  document.querySelectorAll(".tool-setup").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "setup")));
+  document.querySelectorAll(".tool-problem").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "problem")));
+  document.querySelectorAll(".tool-reco").forEach(el => el.addEventListener("input", (e)=> updateTool(e, "reco")));
 
-    function cargarEstudioSeleccionado(est) {
-      document.getElementById('clienteNombre').value = est.cliente || '';
-      document.getElementById('componenteNombre').value = est.componente || '';
-      document.getElementById('costoHora').value = est.costoHora || 65;
-      document.getElementById('cambiosTurno').value = est.cambiosTurno || 4;
-      document.getElementById('tiempoActual').value = est.tiempoActual || 12;
-      document.getElementById('gastoHerramientas').value = est.gastoHerramientas || 4500;
-      document.getElementById('mejoraVida').value = est.mejoraVida || 25;
-      
-      fotosAdjuntas = est.fotos || [];
-      renderGaleria();
-
-      calcularROI();
-      cerrarModalEstudios();
-    }
-
-    // Inicialización al cargar la página
-    window.addEventListener('DOMContentLoaded', () => {
-      calcularROI();
+  document.querySelectorAll(".btn-trigger-photo").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      const fileInput = document.getElementById("file_photo_" + id);
+      if (fileInput) fileInput.click();
     });
-  </script>
+  });
+
+  document.querySelectorAll(".tool-photo-input").forEach(input => {
+    input.addEventListener("change", (e) => {
+      const id = input.getAttribute("data-id");
+      const file = e.target.files && e.target.files[0];
+      if (file) handleToolPhotoUpload(file, id);
+      input.value = "";
+    });
+  });
+
+  document.querySelectorAll(".btn-remove-photo").forEach(el => {
+    el.addEventListener("click", () => {
+      const id = el.getAttribute("data-id");
+      const tool = state.study.tools.find(tData => String(tData.id) === String(id));
+      if (tool) {
+        tool.photo = "";
+        persist();
+        const statusEl = document.getElementById("photo_status_" + id);
+        if (statusEl) statusEl.innerHTML = `<span class="text-[11px] text-gray-400 italic">Sin foto adjunta (opcional)</span>`;
+        el.classList.add("hidden");
+      }
+    });
+  });
+
+  document.querySelectorAll(".btn-remove-tool").forEach(el => el.addEventListener("click", () => {
+    const id = el.getAttribute("data-id");
+    state.study.tools = state.study.tools.filter(tool => String(tool.id) !== String(id));
+    persist();
+    renderTools();
+  }));
+}
+
+function updateTool(e, field) {
+  const id = e.target.getAttribute("data-id");
+  const tool = state.study.tools.find(tData => String(tData.id) === String(id));
+  if(tool) { tool[field] = e.target.value; persist(); }
+}
+
+/* ========================================================
+MANEJO DE FOTOS ANTES Y DESPUÉS (SECCIÓN 4)
+======================================================== */
+function renderBeforeAfterUI() {
+  const bContainer = $("beforePreviewContainer");
+  const bRemoveBtn = $("btnRemoveBefore");
+  if (bContainer) {
+    if (state.study.beforePhoto) {
+      bContainer.innerHTML = `<img src="${state.study.beforePhoto}" class="h-32 w-full object-contain rounded-lg" />`;
+      if (bRemoveBtn) bRemoveBtn.classList.remove("hidden");
+    } else {
+      bContainer.innerHTML = `<span class="text-xs text-gray-400 italic">Sin foto seleccionada</span>`;
+      if (bRemoveBtn) bRemoveBtn.classList.add("hidden");
+    }
+  }
+
+  const aContainer = $("afterPreviewContainer");
+  const aRemoveBtn = $("btnRemoveAfter");
+  if (aContainer) {
+    if (state.study.afterPhoto) {
+      aContainer.innerHTML = `<img src="${state.study.afterPhoto}" class="h-32 w-full object-contain rounded-lg" />`;
+      if (aRemoveBtn) aRemoveBtn.classList.remove("hidden");
+    } else {
+      aContainer.innerHTML = `<span class="text-xs text-gray-400 italic">Sin foto seleccionada</span>`;
+      if (aRemoveBtn) aRemoveBtn.classList.add("hidden");
+    }
+  }
+}
+
+function bindBeforeAfterListeners() {
+  const btnUpB = $("btnUploadBefore");
+  const inB = $("inputBeforePhoto");
+  const btnRmB = $("btnRemoveBefore");
+
+  if (btnUpB && inB) {
+    btnUpB.addEventListener("click", () => inB.click());
+    inB.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        compressImage(file, (base64) => {
+          state.study.beforePhoto = base64;
+          persist();
+          renderBeforeAfterUI();
+        });
+      }
+      inB.value = "";
+    });
+  }
+  if (btnRmB) {
+    btnRmB.addEventListener("click", () => {
+      state.study.beforePhoto = "";
+      persist();
+      renderBeforeAfterUI();
+    });
+  }
+
+  const btnUpA = $("btnUploadAfter");
+  const inA = $("inputAfterPhoto");
+  const btnRmA = $("btnRemoveAfter");
+
+  if (btnUpA && inA) {
+    btnUpA.addEventListener("click", () => inA.click());
+    inA.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        compressImage(file, (base64) => {
+          state.study.afterPhoto = base64;
+          persist();
+          renderBeforeAfterUI();
+        });
+      }
+      inA.value = "";
+    });
+  }
+  if (btnRmA) {
+    btnRmA.addEventListener("click", () => {
+      state.study.afterPhoto = "";
+      persist();
+      renderBeforeAfterUI();
+    });
+  }
+}
+
+function setSwitch(el, on){ if(el) el.dataset.on = on ? "true":"false"; }
+function getSwitch(el){ return el ? el.dataset.on === "true" : false; }
+
+function bindSwitch(id, key) {
+  const el = $(id);
+  if (!el) return;
+  setSwitch(el, !!state.switches[key]);
+  
+  const toggle = (e) => {
+    if (e) e.preventDefault();
+    const next = !getSwitch(el);
+    setSwitch(el, next);
+    state.switches[key] = next;
+    persist();
+    renderAll();
+  };
+  el.onclick = toggle;
+}
+
+function bindSwitches() {
+  ["swTime","swLife","swProc","swScrap"].forEach(id => {
+    bindSwitch(id, id.replace('sw','').toLowerCase());
+  });
+}
+
+function calc(){
+  const costMin = clamp0($("costHour")?.value) / 60;
+  const partsMonth = clamp0($("partsMonth")?.value);
+  const invest = clamp0($("invest")?.value);
+  const consMonth = clamp0($("consMonth")?.value);
+
+  // Variables numéricas
+  const chgAct = clamp0($("chgAct")?.value);
+  const chgNew = clamp0($("chgNew")?.value);
+  const chgMinAct = clamp0($("chgMinAct")?.value);
+  const chgMinNew = clamp0($("chgMinNew")?.value);
+
+  const lifeAct = Math.max(1, clamp0($("lifeAct")?.value));
+  const lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
+  const tcAct = clamp0($("toolCost")?.value);
+  const tcNew = clamp0($("toolCostNew")?.value);
+  const toolCount = Math.max(1, clamp0($("toolCount")?.value));
+
+  const cycAct = clamp0($("cycAct")?.value);
+  const cycNew = clamp0($("cycNew")?.value);
+
+  const scrapAct = clamp0($("scrapAct")?.value);
+  const scrapNew = clamp0($("scrapNew")?.value);
+  const scrapCost = clamp0($("scrapCost")?.value);
+
+  let saveTime = 0, saveLife = 0, saveProc = 0, saveScrap = 0;
+  const costoOperativoMensualActual = (partsMonth * cycAct) * costMin;
+
+  if(state.switches.time){
+    let minSaved = Math.max(0, (chgAct * chgMinAct) - (chgNew * chgMinNew));
+    saveTime = minSaved * costMin;
+  }
+
+  let spendActTools = 0, spendNewTools = 0;
+  if(state.switches.life){
+    spendActTools = (partsMonth / lifeAct) * toolCount * tcAct;
+    spendNewTools = (partsMonth / lifeNew) * toolCount * tcNew;
+    saveLife = Math.max(0, spendActTools - spendNewTools);
+  }
+
+  if(state.switches.proc) {
+    saveProc = Math.max(0, cycAct - cycNew) * partsMonth * costMin;
+  }
+
+  if(state.switches.scrap){
+    const costScrapAct = scrapAct * scrapCost;
+    saveScrap = Math.max(0, costScrapAct - (scrapNew * scrapCost));
+  }
+
+  const gross = saveTime + saveLife + saveProc + saveScrap;
+  const net = Math.max(0, gross - consMonth);
+  let payback = (invest > 0 && net > 0) ? invest / net : null;
+  let roiAnnual = (invest > 0) ? (net * 12) / invest : null;
+
+  const costoTotalActualMensual = costoOperativoMensualActual + spendActTools + (scrapAct * scrapCost);
+  const costoTotalNuevoMensual = costoTotalActualMensual - net;
+
+  return {
+    invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual,
+    costoTotalActualMensual, costoTotalNuevoMensual,
+    chgAct, chgNew, chgMinAct, chgMinNew,
+    lifeAct, lifeNew, tcAct, tcNew, toolCount, spendActTools, spendNewTools,
+    cycAct, cycNew, partsMonth, costMin,
+    scrapAct, scrapNew, scrapCost
+  };
+}
+
+/* ========================================================
+IA CALL - RECOMENDACIÓN DE ENSAMBLES REGO-FIX
+======================================================== */
+async function recommendRegoFixAI() {
+  if (!navigator.onLine) {
+    alert(t("aiOffline"));
+    return;
+  }
+
+  const btn = $("btnRecalcReco");
+  if (!btn) return;
+  const originalText = btn.innerHTML;
+
+  btn.disabled = true;
+  btn.innerHTML = t("aiLoading");
+
+  const s = state.study;
+  const toolsContext = s.tools.map((tData, i) => `Caso ${i+1}: Op/Herramienta: ${tData.op || 'Sin definir'} | Setup Actual: ${tData.setup || 'Sin definir'} | Problema: ${tData.problem || 'Sin definir'}`).join("\n");
+
+  const prompt = `
+    Contexto Global: Husillo: ${s.spindleInterface || 'CAT40/HSK63'}, Refrigerante: ${s.coolant || 'Interno'}, Material: ${s.material || 'Acero'}, Prioridad: ${s.priority || 'Vida'}, Objetivo: ${s.goal || 'Optimizar'}. Idioma: ${currentLang}. Moneda: ${I18N[currentLang].currencyCode}.
+
+    Casos a evaluar:
+    ${toolsContext}
+
+    INSTRUCCIONES CLAVE:
+    1. Prioridad poweRgrip (PG). Si el material es difícil (Inconel, Titanio, Inox), usa PG 25 por defecto, a menos que se requiera PG 10/PG 15 para acabados finos o 5 ejes.
+    2. NUNCA uses la palabra "estanca". Todas las pinzas estándar PG son selladas para refrigeración interna. Llámalas simplemente "Pinza PG [Tamaño] de [Ø]".
+    3. Si el diámetro es fraccional en pulgadas (ej. 3/32", 1/8", 15/64", 1/4", 3/8", 1/2"), indícalo en pulgadas.
+    4. Devuelve EXACTAMENTE un arreglo 'tools_reco' donde el índice 0 corresponda al Caso 1, índice 1 al Caso 2, etc.
+  `;
+
+  try {
+    const response = await fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
+    });
+
+    if (!response.ok) throw new Error("Error en servidor");
+
+    const jsonString = await response.json();
+    let recoData = typeof jsonString === "string" ? JSON.parse(jsonString) : jsonString;
+
+    if ($("aiPitch")) $("aiPitch").value = recoData.general_pitch || recoData.pitch || "";
+    if ($("aiMissing")) $("aiMissing").textContent = recoData.missing_data || t("aiComplete");
+
+    state.study.aiPitch = recoData.general_pitch || recoData.pitch || "";
+    state.study.aiMissing = recoData.missing_data || "";
+
+    let list = recoData.tools_reco || recoData.recommendations || recoData.cases || recoData.tools || [];
+    if (!Array.isArray(list) && typeof list === 'object') {
+      list = Object.values(list);
+    }
+
+    state.study.tools.forEach((tData, i) => {
+      if (list[i] !== undefined) {
+        let rec = list[i];
+        if (typeof rec === 'object' && rec !== null) {
+          tData.reco = rec.recommendation || rec.reco || rec.propuesta || JSON.stringify(rec, null, 2).replace(/[{}"]/g, '').trim();
+        } else {
+          tData.reco = String(rec).trim();
+        }
+      }
+    });
+
+    persist();
+    renderTools();
+    if ($("aiResultBox")) $("aiResultBox").classList.remove("hidden");
+
+  } catch (error) {
+    console.error("Error al procesar recomendación:", error);
+    alert(t("aiError"));
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+/* ========================================================
+SINCRONIZACIÓN Y NUBE PERSISTENTE
+======================================================== */
+async function syncStudyToServer(studyObj) {
+  if (!navigator.onLine) return false;
+  try {
+    const res = await fetch("/api/save-study", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(studyObj)
+    });
+    if (res.ok) {
+      studyObj.sync_status = "synced";
+      await saveStudyToDB(studyObj);
+      return true;
+    }
+  } catch (e) {
+    console.error("Error sincronizando al servidor:", e);
+  }
+  return false;
+}
+
+async function fetchStudiesFromServer() {
+  if (!navigator.onLine) return [];
+  try {
+    const res = await fetch("/api/get-studies");
+    if (res.ok) {
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    }
+  } catch (e) {
+    console.warn("No se pudo obtener el historial del servidor:", e);
+  }
+  return [];
+}
+
+async function syncAllPendingStudies() {
+  if (!navigator.onLine) return;
+  const all = await getAllStudiesFromDB();
+  for (const s of all) {
+    if (s.sync_status !== "synced") {
+      await syncStudyToServer(s);
+    }
+  }
+  updateSyncBadge();
+}
+
+function updateSyncBadge() {
+  const badge = $("syncIndicator");
+  if (!badge) return;
+  if (!navigator.onLine) {
+    badge.className = "text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold";
+    badge.textContent = "🟡 Modo Offline";
+  } else {
+    badge.className = "text-[10px] bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-bold";
+    badge.textContent = "🟢 Sincronizado";
+  }
+}
+
+window.addEventListener("online", () => {
+  updateSyncBadge();
+  syncAllPendingStudies();
+});
+window.addEventListener("offline", updateSyncBadge);
+
+/* ========================================================
+HISTORIAL MASTER Y MODAL
+======================================================== */
+function openHistoryModal() {
+  const modal = $("historyModal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  modal.classList.remove("modal-hidden");
+  renderHistoryList();
+}
+
+function closeHistoryModal() {
+  const modal = $("historyModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  modal.classList.add("modal-hidden");
+}
+
+async function forceUploadStudy(id) {
+  const all = await getAllStudiesFromDB();
+  const target = all.find(s => String(s.id) === String(id));
+  if (target) {
+    const ok = await syncStudyToServer(target);
+    if (ok) {
+      alert("✅ Estudio subido a la nube correctamente.");
+    } else {
+      alert("⚠️ No se pudo subir. Verifica tu conexión a internet.");
+    }
+    renderHistoryList();
+  }
+}
+
+async function renderHistoryList() {
+  const container = $("historyListContainer");
+  if (!container) return;
+  container.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">Cargando estudios de la nube y locales...</div>`;
+
+  const localStudies = await getAllStudiesFromDB();
+  const serverStudies = await fetchStudiesFromServer();
+
+  const combinedMap = new Map();
+  serverStudies.forEach(s => combinedMap.set(s.id, { ...s, sync_status: "synced" }));
+  localStudies.forEach(s => combinedMap.set(s.id, s));
+
+  const studies = Array.from(combinedMap.values());
+  studies.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  if (studies.length === 0) {
+    container.innerHTML = `<div class="text-xs text-gray-400 text-center py-6">No hay estudios guardados en la nube ni localmente.</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  studies.forEach((st) => {
+    const isCurrent = String(st.id) === String(state.currentStudyId);
+    const isSynced = st.sync_status === 'synced';
+    const div = document.createElement("div");
+    div.className = `p-3 rounded-xl border flex items-center justify-between gap-2 text-xs transition ${isCurrent ? 'bg-blue-50 border-blue-300' : 'bg-slate-50 border-slate-200'}`;
+    div.innerHTML = `
+      <div class="flex-1">
+        <div class="font-bold text-[#28556C] flex items-center gap-2">
+          ${st.company || "Sin Empresa"} 
+          <span class="text-[10px] ${isSynced ? 'text-green-700 bg-green-100' : 'text-amber-700 bg-amber-100'} px-1.5 py-0.5 rounded font-black">
+            ${isSynced ? '🟢 En la Nube' : '🟡 Local'}
+          </span>
+        </div>
+        <div class="text-[11px] text-gray-500">Asesor: ${st.userName || "—"} | Fecha: ${st.date || "—"} | Moneda: ${st.currency || "USD"}</div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        ${!isSynced ? `<button class="btn btn-outline border-amber-500 text-amber-800 text-[11px] py-1 px-2 btn-upload-now" data-id="${st.id}" title="Subir a la nube">☁️ Subir</button>` : ''}
+        <button class="btn btn-outline text-[11px] py-1 px-2 btn-load-study" data-id="${st.id}">Abrir</button>
+        <button class="btn btn-danger text-[11px] py-1 px-2 btn-del-study" data-id="${st.id}">✕</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  document.querySelectorAll(".btn-upload-now").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const id = e.target.getAttribute("data-id");
+      forceUploadStudy(id);
+    });
+  });
+
+  document.querySelectorAll(".btn-load-study").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      const id = e.target.getAttribute("data-id");
+      const target = studies.find(s => String(s.id) === String(id));
+      if (target && target.data) {
+        state.currentStudyId = target.id;
+        state.study = target.data.study;
+        state.switches = target.data.switches;
+        if (target.lang) setLanguage(target.lang);
+        persist();
+        bindInputs();
+        renderTools();
+        renderBeforeAfterUI();
+        renderAll();
+        closeHistoryModal();
+      }
+    });
+  });
+
+  document.querySelectorAll(".btn-del-study").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const id = e.target.getAttribute("data-id");
+      if (confirm(currentLang === 'es' ? "¿Eliminar este estudio de la nube y del dispositivo?" : "¿Delete this study?")) {
+        setTimeout(async () => {
+          await deleteStudyFromDB(id);
+          if (navigator.onLine) {
+            try {
+              await fetch("/api/delete-study", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id })
+              });
+            } catch (errCloud) {
+              console.warn("No se pudo conectar a la nube para borrar:", errCloud);
+            }
+          }
+          renderHistoryList();
+        }, 10);
+      }
+    });
+  });
+}
+
+/* ========================================================
+RENDERIZADO UI Y GRÁFICA
+======================================================== */
+let roiChartInstance = null;
+function renderChart(costoActual, costoNuevo) {
+  const canvas = document.getElementById('roiChart');
+  if(!canvas) return;
+  const curr = I18N[currentLang].currencyCode;
+
+  if (roiChartInstance) {
+    roiChartInstance.data.labels = [t("chartActual"), t("chartRego")];
+    roiChartInstance.data.datasets[0].label = `${t("chartTitle")} (${curr})`;
+    roiChartInstance.data.datasets[0].data = [costoActual, costoNuevo];
+    roiChartInstance.update('none');
+  } else {
+    const ctx = canvas.getContext('2d');
+    roiChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [t("chartActual"), t("chartRego")],
+        datasets: [{ label: `${t("chartTitle")} (${curr})`, data: [costoActual, costoNuevo], backgroundColor: ['#D31B23', '#8CA015'], borderRadius: 6 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+}
+
+function renderKPIs(){
+  const r = calc();
+  ["saveTime", "saveLife", "saveProc", "saveScrap"].forEach(id => {
+    if($(id)) { $(id).textContent = money(r[id]);$(id).className = "text-sm font-black text-[#8CA015]"; }
+  });
+
+  if($("grossSave")) $("grossSave").textContent = money(r.gross);
+  if($("netSave")) $("netSave").textContent = money(r.net);
+
+  const pb = $("payback");
+  if(pb) {
+    if(r.payback === null) pb.textContent = "—";
+    else pb.textContent = r.payback.toFixed(1) + t("monthSuffix");
+  }
+
+  if($("roiAnnual")) {
+    if(r.roiAnnual === null) {
+      $("roiAnnual").textContent = "—";
+      if($("roiAnnualUsd")) $("roiAnnualUsd").textContent = "—";
+    } else {
+      $("roiAnnual").textContent = (r.roiAnnual*100).toFixed(0) + "%";
+      if($("roiAnnualUsd")) $("roiAnnualUsd").textContent = money(r.net * 12) + t("yearSuffix");
+    }
+  }
+
+  renderChart(r.costoTotalActualMensual, r.costoTotalNuevoMensual);
+}
+
+function renderAll(){
+  try {
+    ["timeBody","lifeBody","procBody","scrapBody"].forEach(id=> {
+      const el=$(id), on=state.switches[id.replace('Body','')];
+      if(el) {
+        el.style.opacity = on ? "1" : ".45";
+        el.style.pointerEvents = on ? "auto" : "none";
+      }
+    });
+    renderKPIs();
+
+    if(state.study.aiPitch && $("aiPitch") && $("aiMissing") && $("aiResultBox")) {
+      $("aiPitch").value = state.study.aiPitch;
+      $("aiMissing").textContent = state.study.aiMissing;
+      $("aiResultBox").classList.remove("hidden");
+    }
+  } catch(e) { console.error("Error renderAll:", e); }
+}
+
+/* ========================================================
+REPORTE PDF MODULAR — SOLO MÓDULOS ACTIVOS
+======================================================== */
+function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+
+function buildReportHTML(chartImageBase64){
+  const r = calc(), s = state.study;
+  const sw = state.switches;
+  const LOGO_URL = "/assets/regofixlogo.png";
+  const curr = I18N[currentLang].currencyCode;
+
+  // Renderizado de Casos con Foto Integrada
+  const toolsRender = s.tools.map((tData, i) => `
+  <div class="tool-card">
+    <div class="tool-card-header">
+      <div class="tool-card-title">
+        <span class="tool-badge">${t("caseLabel")} ${i+1}</span>
+        <span>${esc(tData.op || t("pdfUnnamedTool"))}</span>
+      </div>
+    </div>
+    <div class="tool-body">
+      <div class="tool-grid-layout ${tData.photo ? 'has-photo' : ''}">
+        <div class="tool-info-col">
+          <div class="meta-item">
+            <span class="k">${t("pdfCurrentSetup")}</span>
+            <span class="v">${esc(tData.setup || "—")}</span>
+          </div>
+          <div class="meta-item" style="margin-top: 6px;">
+            <span class="k text-red">${t("pdfProblem")}</span>
+            <div class="v-problem">${esc(tData.problem || "—")}</div>
+          </div>
+          <div class="solution-box">
+            <div class="k text-green">${t("pdfSolution")}</div>
+            <div class="v text-blue" style="font-size: 12px; font-weight:700; margin-top:2px;">${esc(tData.reco || t("pdfTbd"))}</div>
+          </div>
+        </div>
+        ${tData.photo ? `
+        <div class="tool-photo-col">
+          <div class="k" style="margin-bottom: 4px; text-align: center;">Evidencia de Herramienta</div>
+          <img src="${tData.photo}" class="tool-inline-img" />
+        </div>
+        ` : ''}
+      </div>
+    </div>
+  </div>`).join("");
+
+  // Sección de Evidencia Antes vs Después (solo si al menos una existe)
+  const hasBeforeAfter = s.beforePhoto || s.afterPhoto;
+  const beforeAfterRender = hasBeforeAfter ? `
+  <h2 class="sec-heading">${t("pdfSec4")}</h2>
+  <div class="panel" style="padding: 12px;">
+    <div class="grid-before-after">
+      <div class="ba-col">
+        <div class="k text-red" style="font-size: 10px; margin-bottom: 6px;">${t("pdfBefore")}</div>
+        <div class="ba-img-container">
+          ${s.beforePhoto ? `<img src="${s.beforePhoto}" class="ba-img" />` : `<span class="italic text-gray-400" style="font-size:11px;">Sin evidencia registrada</span>`}
+        </div>
+      </div>
+      <div class="ba-col">
+        <div class="k text-green" style="font-size: 10px; margin-bottom: 6px;">${t("pdfAfter")}</div>
+        <div class="ba-img-container" style="border-color: #E3F2B6; background: #F7FCEB;">
+          ${s.afterPhoto ? `<img src="${s.afterPhoto}" class="ba-img" />` : `<span class="italic text-gray-400" style="font-size:11px;">Sin evidencia registrada</span>`}
+        </div>
+      </div>
+    </div>
+  </div>` : '';
+
+  // Cálculos dinámicos
+  const minCicloAhorrados = Math.max(0, (r.cycAct - r.cycNew) * r.partsMonth);
+  const hrsAhorradasMes = (minCicloAhorrados / 60).toFixed(1);
+  const mejoraCicloPct = r.cycAct > 0 ? (((r.cycAct - r.cycNew) / r.cycAct) * 100).toFixed(0) : 0;
+  const vidaMejoraPct = r.lifeAct > 0 ? (((r.lifeNew - r.lifeAct) / r.lifeAct) * 100).toFixed(0) : 0;
+
+  // FILAS DINÁMICAS DE LA TABLA SEGÚN SWITCHES ACTIVOS
+  let tableRowsHTML = "";
+
+  if (sw.life) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Costo Unitario de Herramienta</strong></td>
+        <td class="val-act">${esc(money(r.tcAct))}</td>
+        <td class="val-new">${esc(money(r.tcNew))}</td>
+        <td class="val-diff">${r.tcNew < r.tcAct ? '▼ ' + esc(money(r.tcAct - r.tcNew)) + ' menor costo' : (r.tcNew === r.tcAct ? 'Mismo costo unitario' : 'Herramienta de mayor gama')}</td>
+      </tr>
+      <tr>
+        <td><strong>Duración de Herramienta (Vida Útil)</strong></td>
+        <td class="val-act">${r.lifeAct} ciclos/pzas</td>
+        <td class="val-new">${r.lifeNew} ciclos/pzas</td>
+        <td class="val-diff">▲ +${vidaMejoraPct}% más piezas/afilado</td>
+      </tr>
+      <tr>
+        <td><strong>Gasto Mensual en Herramientas</strong></td>
+        <td class="val-act">${esc(money(r.spendActTools))} /mes</td>
+        <td class="val-new">${esc(money(r.spendNewTools))} /mes</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveLife))}</td>
+      </tr>
+    `;
+  }
+
+  if (sw.proc) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Tiempo de Ciclo por Pieza</strong></td>
+        <td class="val-act">${r.cycAct.toFixed(2)} min/pza</td>
+        <td class="val-new">${r.cycNew.toFixed(2)} min/pza</td>
+        <td class="val-diff">Reducción: ${(r.cycAct - r.cycNew).toFixed(2)} min (-${mejoraCicloPct}%)</td>
+      </tr>
+      <tr>
+        <td><strong>Horas de Máquina Liberadas</strong></td>
+        <td class="val-act">—</td>
+        <td class="val-new">${hrsAhorradasMes} hrs/mes libres</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveProc))}</td>
+      </tr>
+    `;
+  }
+
+  if (sw.time) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Tiempo y Frecuencia de Setup</strong></td>
+        <td class="val-act">${r.chgAct} cambios (${r.chgMinAct} min c/u)</td>
+        <td class="val-new">${r.chgNew} cambios (${r.chgMinNew} min c/u)</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveTime))}</td>
+      </tr>
+    `;
+  }
+
+  if (sw.scrap) {
+    tableRowsHTML += `
+      <tr>
+        <td><strong>Piezas Scrap / Rechazos Mensuales</strong></td>
+        <td class="val-act">${r.scrapAct} pzas (${esc(money(r.scrapCost))} c/u)</td>
+        <td class="val-new">${r.scrapNew} pzas (${esc(money(r.scrapCost))} c/u)</td>
+        <td class="val-diff">Ahorro: ${esc(money(r.saveScrap))}</td>
+      </tr>
+    `;
+  }
+
+  // DESGLOSE MODULAR DE TARJETAS
+  let savingsCardsHTML = "";
+  let activeSavingsCount = 0;
+
+  if (sw.time) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfTimeSetup")}</span><div class="v">${esc(money(r.saveTime))}</div></div>`;
+    activeSavingsCount++;
+  }
+  if (sw.life) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfToolLife")}</span><div class="v">${esc(money(r.saveLife))}</div></div>`;
+    activeSavingsCount++;
+  }
+  if (sw.proc) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfProcImprove")}</span><div class="v">${esc(money(r.saveProc))}</div></div>`;
+    activeSavingsCount++;
+  }
+  if (sw.scrap) {
+    savingsCardsHTML += `<div class="saving-item"><span class="k">${t("pdfScrapRed")}</span><div class="v">${esc(money(r.saveScrap))}</div></div>`;
+    activeSavingsCount++;
+  }
+
+  return `<!doctype html>
+<html lang="${currentLang}">
+<head>
+<meta charset="utf-8"/>
+<title>${t("pdfTitle")} — REGO-FIX</title>
+<style>
+  :root {
+    --rego-blue: #28556C;
+    --rego-green: #7D9411;
+    --rego-red: #D31B23;
+    --dark: #1E293B;
+    --muted: #64748B;
+    --bg-card: #F8FAFC;
+    --border: #CBD5E1;
+  }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  
+  @page {
+    size: letter portrait;
+    margin: 14mm 12mm 14mm 12mm;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--dark);
+    margin: 0;
+    padding: 0;
+    background: #FFFFFF;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  .wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 2px;
+  }
+
+  .brand-bar {
+    height: 5px;
+    background: linear-gradient(90deg, var(--rego-blue) 0%, var(--rego-green) 100%);
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 10px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .h-left h1 {
+    font-size: 18px;
+    font-weight: 900;
+    margin: 0 0 2px 0;
+    color: var(--rego-blue);
+    letter-spacing: -0.3px;
+  }
+  .h-subtitle {
+    color: var(--rego-green);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .client-card {
+    margin-top: 6px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 8px;
+    font-size: 10.5px;
+    color: #475569;
+  }
+  .client-card strong { color: var(--rego-blue); }
+  .h-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .logo {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+  }
+  .brand-sub {
+    font-size: 8.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-align: right;
+    line-height: 1.2;
+  }
+
+  h2.sec-heading {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--rego-blue);
+    margin: 14px 0 6px 0;
+    padding-bottom: 3px;
+    border-bottom: 1.5px solid var(--border);
+    page-break-after: avoid;
+  }
+
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 11px;
+    margin-bottom: 8px;
+    page-break-inside: avoid;
+  }
+
+  .grid-context {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px 10px;
+  }
+
+  .k {
+    display: block;
+    font-size: 8.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .v {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--dark);
+    word-break: break-word;
+  }
+  .text-blue { color: var(--rego-blue) !important; }
+  .text-green { color: var(--rego-green) !important; }
+  .text-red { color: var(--rego-red) !important; }
+
+  .panel-ai {
+    background: #F4F7F9;
+    border-left: 4px solid var(--rego-blue);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    page-break-inside: avoid;
+  }
+  .panel-ai pre {
+    white-space: pre-wrap;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--rego-blue);
+    line-height: 1.4;
+  }
+
+  /* Tarjeta de Casos */
+  .tool-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  .tool-card-header {
+    background: #F1F5F9;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tool-card-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--rego-blue);
+  }
+  .tool-badge {
+    background: var(--rego-blue);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 8.5px;
+    font-weight: 800;
+  }
+  .tool-body {
+    padding: 8px;
+  }
+  .tool-grid-layout.has-photo {
+    display: grid;
+    grid-template-columns: 1fr 130px;
+    gap: 10px;
+    align-items: center;
+  }
+  .tool-photo-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px;
+    background: #F8FAFC;
+  }
+  .tool-inline-img {
+    max-height: 95px;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  .v-problem {
+    font-size: 10.5px;
+    color: #475569;
+    background: #FEF2F2;
+    padding: 4px 7px;
+    border-radius: 4px;
+    border: 1px solid #FEE2E2;
+    margin-top: 2px;
+  }
+  .solution-box {
+    margin-top: 5px;
+    background: #F7FCEB;
+    border: 1px solid #E3F2B6;
+    border-left: 3px solid var(--rego-green);
+    padding: 5px 8px;
+    border-radius: 4px;
+  }
+
+  /* Tabla de Comparativa Numérica */
+  .table-compare {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    font-size: 10.5px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .table-compare th {
+    background: #F1F5F9;
+    color: var(--rego-blue);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 9px;
+    padding: 6px 8px;
+    border-bottom: 1.5px solid var(--border);
+    text-align: left;
+  }
+  .table-compare td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #E2E8F0;
+  }
+  .table-compare tr:last-child td {
+    border-bottom: none;
+  }
+  .table-compare .val-act {
+    color: #475569;
+    font-weight: 600;
+  }
+  .table-compare .val-new {
+    color: var(--rego-blue);
+    font-weight: 800;
+  }
+  .table-compare .val-diff {
+    color: var(--rego-green);
+    font-weight: 800;
+  }
+
+  /* Desglose y KPI */
+  .grid-savings {
+    display: grid;
+    grid-template-columns: repeat(${Math.max(1, activeSavingsCount)}, 1fr);
+    gap: 6px;
+    text-align: center;
+  }
+  .saving-item {
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 4px;
+  }
+  .saving-item .v {
+    font-size: 12.5px;
+    font-weight: 900;
+    color: var(--rego-green);
+    margin-top: 2px;
+  }
+
+  .kpi-board {
+    margin-top: 8px;
+    background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+    border: 1.5px solid var(--rego-blue);
+    border-radius: 8px;
+    padding: 8px 10px;
+    page-break-inside: avoid;
+  }
+  .grid-main-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    text-align: center;
+  }
+  .kpi-main-val {
+    font-size: 16px;
+    font-weight: 900;
+    margin-top: 2px;
+  }
+  .annual-roi-banner {
+    margin-top: 6px;
+    padding-top: 5px;
+    border-top: 1px dashed var(--border);
+    text-align: center;
+  }
+  .roi-tag-large {
+    font-size: 17px;
+    font-weight: 900;
+    color: var(--rego-green);
+  }
+
+  /* Antes y Después */
+  .grid-before-after {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    text-align: center;
+  }
+  .ba-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .ba-img-container {
+    height: 140px;
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    overflow: hidden;
+  }
+  .ba-img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+
+  .chart-box {
+    margin-top: 8px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px;
+    background: #FFFFFF;
+    page-break-inside: avoid;
+  }
+  .chart-img {
+    max-height: 140px;
+    width: auto;
+    max-width: 95%;
+  }
+
+  @media print {
+    body { background: #FFFFFF; }
+    .wrap { max-width: 100%; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand-bar"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="h-left">
+      <h1>${t("pdfTitle")}</h1>
+      <div class="h-subtitle">${t("pdfSubtitle")}</div>
+      
+      <div class="client-card">
+        <span><strong>${t("pdfClient")}</strong></span>
+        <span>${esc(s.company || "—")}</span>
+        
+        <span><strong>${t("pdfAttention")}</strong></span>
+        <span>${esc(s.userName || "—")} ${s.userRole ? `(${esc(s.userRole)})` : ''}</span>
+        
+        <span><strong>${t("pdfDate")}</strong></span>
+        <span>${esc(s.studyDate || "—")}</span>
+      </div>
+    </div>
+    <div class="h-right">
+      <img class="logo" src="${LOGO_URL}" onerror="this.style.display='none'" />
+      <div class="brand-sub">Tecnología de Sujeción Suiza<br><strong>Consultoría AlexRaSa</strong></div>
+    </div>
+  </div>
+
+  <!-- 1. Contexto -->
+  <h2 class="sec-heading">${t("pdfSec1")}</h2>
+  <div class="panel">
+    <div class="grid-context">
+      <div><span class="k">${t("pdfSpindle")}</span><span class="v">${esc(s.spindleInterface || "—")}</span></div>
+      <div><span class="k">${t("pdfCoolant")}</span><span class="v">${esc(s.coolant || "—")}</span></div>
+      <div><span class="k">${t("pdfMaterial")}</span><span class="v">${esc(s.material || "—")}</span></div>
+      <div><span class="k">${t("pdfGoal")}</span><span class="v">${esc(s.goal || "—")}</span></div>
+    </div>
+  </div>
+
+  ${s.aiPitch ? `
+  <div class="panel-ai">
+    <span class="k text-blue" style="margin-bottom: 4px;">${t("pdfAiTitle")}</span>
+    <pre>${esc(s.aiPitch)}</pre>
+  </div>` : ''}
+
+  <!-- 2. Casos de Herramientas -->
+  <h2 class="sec-heading">${t("pdfSec2")}</h2>
+  ${toolsRender}
+
+  <!-- 3. Comparativa Numérica y Financiera -->
+  <h2 class="sec-heading">${t("pdfSec3")}</h2>
+
+  ${tableRowsHTML ? `
+  <!-- TABLA TÉCNICA COMPARATIVA DE PARÁMETROS -->
+  <table class="table-compare">
+    <thead>
+      <tr>
+        <th style="width: 32%;">Concepto / Variable de Proceso</th>
+        <th style="width: 22%;">Situación Actual</th>
+        <th style="width: 24%;">Con REGO-FIX</th>
+        <th style="width: 22%;">Impacto / Beneficio</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRowsHTML}
+    </tbody>
+  </table>` : ''}
+  
+  ${savingsCardsHTML ? `
+  <!-- DESGLOSE DE AHORROS MENSUALES ACTIVOS -->
+  <div class="panel" style="background:#F1F5F9; border-color:#CBD5E1;">
+    <div class="k" style="text-align: center; margin-bottom: 5px;">${t("pdfBreakdown")}</div>
+    <div class="grid-savings">
+      ${savingsCardsHTML}
+    </div>
+  </div>` : ''}
+
+  <!-- RETORNO DE INVERSIÓN (KPIs) -->
+  <div class="kpi-board">
+    <div class="grid-main-kpis">
+      <div>
+        <span class="k">${t("pdfInvest")}</span>
+        <div class="kpi-main-val text-blue">${esc(money(r.invest))}</div>
+      </div>
+      <div>
+        <span class="k">${t("pdfNetSave")}</span>
+        <div class="kpi-main-val text-green">${esc(money(r.net))}</div>
+      </div>
+      <div>
+        <span class="k">${t("pdfPayback")}</span>
+        <div class="kpi-main-val" style="color: ${r.payback !== null && r.payback <= 6 ? 'var(--rego-green)' : 'var(--rego-blue)'}">
+          ${esc(r.payback === null ? "—" : (r.payback.toFixed(1) + t("monthSuffix")))}
+        </div>
+      </div>
+    </div>
+    
+    <div class="annual-roi-banner">
+      <span class="k">${t("pdfRoiEst")}</span>
+      <div class="roi-tag-large">
+        ${esc(r.roiAnnual === null ? "—" : ((r.roiAnnual * 100).toFixed(0) + "%"))}
+        <span style="font-size: 11.5px; font-weight: 700; color: var(--rego-blue); margin-left: 6px;">(${esc(money(r.net * 12))} ${curr}${t("yearSuffix")})</span>
+      </div>
+    </div>
+  </div>
+
+  ${chartImageBase64 ? `
+  <div class="chart-box">
+    <span class="k" style="margin-bottom: 5px;">${t("pdfChartComp")}</span>
+    <img src="${chartImageBase64}" class="chart-img" />
+  </div>` : ''}
+
+  <!-- 4. Comparativa Antes vs Después -->
+  ${beforeAfterRender}
+
+</div>
+</body>
+</html>`;
+}
+
+function exportPdf() {
+  const canvas = document.getElementById('roiChart');
+  let chartImageBase64 = null;
+  if (canvas) chartImageBase64 = canvas.toDataURL('image/png', 1.0);
+
+  let printFrame = document.getElementById('printFrame');
+  if (!printFrame) {
+    printFrame = document.createElement('iframe');
+    printFrame.id = 'printFrame';
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+  }
+
+  const frameDoc = printFrame.contentWindow || printFrame.contentDocument;
+  const doc = frameDoc.document || frameDoc;
+
+  doc.open();
+  doc.write(buildReportHTML(chartImageBase64));
+  doc.close();
+
+  setTimeout(() => {
+    printFrame.contentWindow.focus();
+    printFrame.contentWindow.print();
+  }, 300);
+}
+
+function getSummaryText() {
+  const r = calc();
+  const toolsText = state.study.tools.map((tData,i) => `\n${t("lblToolOp")} ${i+1}: ${tData.op}\n- ${t("lblToolProblem")}: ${tData.problem}\n- ${t("lblToolReco")}: ${tData.reco}`).join("\n");
+
+  return [
+    `${t("headerTitle")} — ${t("badgeStudy")}`,
+    `${t("lblCompany")}: ${state.study.company || "—"} | ${t("lblUser")}: ${state.study.userName || "—"}`,
+    "", `--- ${t("sec1cTitle").toUpperCase()} ---`, toolsText,
+    "", `--- ${t("sec2Title").toUpperCase()} ---`,
+    `${t("pdfTimeSetup")}: ${money(r.saveTime)} | ${t("pdfToolLife")}: ${money(r.saveLife)} | ${t("pdfProcImprove")}: ${money(r.saveProc)} | ${t("pdfScrapRed")}: ${money(r.saveScrap)}`,
+    "", `--- ${t("sec3Title").toUpperCase()} ---`,
+    `${t("lblInvest")}: ${money(r.invest)} | ${t("kpiNet")}: ${money(r.net)}/mes | ${t("kpiPayback")}: ${r.payback===null ? "—" : (r.payback.toFixed(1)+"m")}`,
+    `${t("kpiRoiEst")}: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")} (${money(r.net * 12)} /año)`
+  ].join("\n");
+}
+
+function shareWhatsApp(){ window.open(`https://wa.me/?text=${encodeURIComponent(getSummaryText())}`, '_blank'); }
+
+/* ========================================================
+INICIALIZACIÓN
+======================================================== */
+function bindInputs(){
+  if(!state.study.studyDate) state.study.studyDate = new Date().toISOString().split('T')[0];
+  if($("studyDate")) $("studyDate").value = state.study.studyDate;
+
+  document.querySelectorAll("[data-study]").forEach(el => {
+    const k = el.getAttribute("data-study");
+    if(k && state.study[k] != null && !el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
+      el.value = state.study[k];
+    }
+    el.addEventListener("input", () => {
+      if(k) state.study[k] = el.value;
+      persist();
+    });
+    el.addEventListener("change", () => {
+      if(k) state.study[k] = el.value;
+      persist();
+    });
+  });
+
+  const btnToggleHrCalc = $("btnToggleHrCalc");
+  const hrCalcPanel = $("hrCalcPanel");
+  if(btnToggleHrCalc && hrCalcPanel) {
+    btnToggleHrCalc.addEventListener("click", () => { hrCalcPanel.classList.toggle("hidden"); });
+  }
+
+  const updateCalc = () => {
+    const base = parseFloat($("calcMachine")?.value) || 0;
+    const sector = parseFloat($("calcSector")?.value) || 1;
+    const operador = parseFloat($("calcOperator")?.value) || 0;
+    if($("costHour")) {
+      $("costHour").value = Math.round((base * sector) + operador);
+      state.study.costHour = $("costHour").value;
+    }
+    persist();
+    renderAll();
+  };
+
+  ["calcMachine", "calcSector", "calcOperator"].forEach(id => {
+    const el = $(id);
+    if(el) {
+      if(state.study[id]) el.value = state.study[id];
+      el.addEventListener("change", () => { state.study[id] = el.value; updateCalc(); });
+    }
+  });
+
+  mathIds.forEach(id => {
+    const el = $(id);
+    if(el) {
+      if(state.study[id] !== undefined) el.value = state.study[id];
+      el.addEventListener("input", () => { state.study[id] = el.value; persist(); renderAll(); });
+    }
+  });
+
+  if($("btnPdfReport")) $("btnPdfReport").addEventListener("click", exportPdf);
+  if($("btnWhatsApp")) $("btnWhatsApp").addEventListener("click", shareWhatsApp);
+  if($("btnRecalcReco")) $("btnRecalcReco").addEventListener("click", recommendRegoFixAI);
+
+  if($("btnSaveStudyNow")) {
+    $("btnSaveStudyNow").addEventListener("click", async () => {
+      persist();
+      const all = await getAllStudiesFromDB();
+      const current = all.find(s => String(s.id) === String(state.currentStudyId));
+      if (current) {
+        const ok = await syncStudyToServer(current);
+        alert(ok ? "✅ Estudio guardado y subido a la nube correctamente." : "Guardado localmente en dispositivo.");
+        updateSyncBadge();
+      }
+    });
+  }
+
+  if($("btnOpenHistory")) $("btnOpenHistory").addEventListener("click", openHistoryModal);
+  if($("btnCloseHistory")) $("btnCloseHistory").addEventListener("click", closeHistoryModal);
+  if($("btnCloseHistoryFooter")) $("btnCloseHistoryFooter").addEventListener("click", closeHistoryModal);
+  
+  const modalElem = $("historyModal");
+  if (modalElem) {
+    modalElem.addEventListener("click", (e) => {
+      if (e.target === modalElem) closeHistoryModal();
+    });
+  }
+
+  if($("btnSyncPending")) $("btnSyncPending").addEventListener("click", async () => {
+    await syncAllPendingStudies();
+    renderHistoryList();
+  });
+
+  if($("btnResetAll")) {
+    $("btnResetAll").addEventListener("click", () => {
+      if(!confirm(t("resetConfirm"))) return;
+      
+      state.currentStudyId = "study_lab_" + Date.now();
+      state.switches = { time: true, timeChanges: true, timeSetups: false, timeStops: false, life: true, proc: true, scrap: true };
+      state.study = {
+        studyDate: new Date().toISOString().split('T')[0],
+        userName: "", userRole: "", company: "",
+        spindleInterface: "", coolant: "", material: "", priority: "", goal: "",
+        calcMachine: "50", calcSector: "1.0", calcOperator: "25",
+        aiPitch: "", aiMissing: "",
+        beforePhoto: "", afterPhoto: "",
+        tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" } ]
+      };
+
+      document.querySelectorAll("[data-study]").forEach(el => {
+        const k = el.getAttribute("data-study");
+        if (k === "studyDate") {
+          el.value = state.study.studyDate;
+        } else if (!el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
+          el.value = "";
+        }
+      });
+
+      Object.keys(defaultMathValues).forEach(id => {
+        const el = $(id);
+        if (el) el.value = defaultMathValues[id];
+        delete state.study[id];
+      });
+
+      if ($("aiResultBox")) $("aiResultBox").classList.add("hidden");
+      if ($("aiPitch")) $("aiPitch").value = "";
+      if ($("aiMissing")) $("aiMissing").textContent = "";
+
+      persist();
+      bindSwitches();
+      renderTools();
+      renderBeforeAfterUI();
+      renderAll();
+    });
+  }
+
+  if($("btnAddTool")) {
+    $("btnAddTool").addEventListener("click", () => {
+      state.study.tools.push({ id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" });
+      persist();
+      renderTools();
+    });
+  }
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const lang = e.currentTarget.getAttribute('data-lang');
+      setLanguage(lang);
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await initIndexedDB();
+  load();
+  bindSwitches();
+  bindInputs();
+  bindBeforeAfterListeners();
+  setLanguage(currentLang);
+  updateSyncBadge();
+  syncAllPendingStudies();
+});
+</script>
 </body>
 </html>
