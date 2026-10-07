@@ -369,8 +369,14 @@ textarea.input{ min-height: 80px; resize: vertical; }
     <div class="grid grid-cols-2 gap-2">
       <div><label class="label text-[11px]" data-i18n="lblChgAct">Cambios/mes (Act)</label><input id="chgAct" class="input" type="number" value="180"></div>
       <div><label class="label text-[11px]" data-i18n="lblChgNew">Cambios/mes (Nuevo)</label><input id="chgNew" class="input" type="number" value="140"></div>
-      <div><label class="label text-[11px]" data-i18n="lblMinChgAct">Min/cambio (Act)</label><input id="chgMinAct" class="input" type="number" value="6"></div>
-      <div><label class="label text-[11px]" data-i18n="lblMinChgNew">Min/cambio (Nuevo)</label><input id="chgMinNew" class="input" type="number" value="4.5"></div>
+      <div>
+        <label class="label text-[11px]" data-i18n="lblMinChgAct">Tiempo/cambio (Act)</label>
+        <input id="chgMinAct" class="input" type="text" placeholder="HH:MM:SS o MM:SS" value="00:06:00">
+      </div>
+      <div>
+        <label class="label text-[11px]" data-i18n="lblMinChgNew">Tiempo/cambio (Nuevo)</label>
+        <input id="chgMinNew" class="input" type="text" placeholder="HH:MM:SS o MM:SS" value="00:04:30">
+      </div>
     </div>
     <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveTime" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
   </div>
@@ -400,8 +406,14 @@ textarea.input{ min-height: 80px; resize: vertical; }
   </div>
   <div id="procBody" class="space-y-2 text-xs">
     <div class="grid grid-cols-2 gap-2">
-      <div><label class="label text-[11px]" data-i18n="lblCycAct">Ciclo Act (min/pza)</label><input id="cycAct" class="input" type="number" step="0.01" value="3.20"></div>
-      <div><label class="label text-[11px]" data-i18n="lblCycNew">Ciclo Nuevo (min/pza)</label><input id="cycNew" class="input" type="number" step="0.01" value="2.85"></div>
+      <div>
+        <label class="label text-[11px]" data-i18n="lblCycAct">Ciclo Act (HH:MM:SS)</label>
+        <input id="cycAct" class="input" type="text" placeholder="HH:MM:SS o MM:SS" value="00:03:12">
+      </div>
+      <div>
+        <label class="label text-[11px]" data-i18n="lblCycNew">Ciclo Nuevo (HH:MM:SS)</label>
+        <input id="cycNew" class="input" type="text" placeholder="HH:MM:SS o MM:SS" value="00:02:51">
+      </div>
     </div>
     <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveProc" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
   </div>
@@ -539,13 +551,44 @@ textarea.input{ min-height: 80px; resize: vertical; }
 
 <script>
 /* ========================================================
+UTILIDADES DE TIEMPO (HH:MM:SS <-> MINUTOS BACKSTAGE)
+======================================================== */
+function parseTimeToMinutes(val) {
+  if (typeof val === 'number') return Math.max(0, val);
+  if (!val || typeof val !== 'string') return 0;
+  const str = val.trim();
+  if (!str.includes(':')) {
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : Math.max(0, num);
+  }
+  const parts = str.split(':').map(p => parseFloat(p) || 0);
+  if (parts.length === 3) {
+    // HH:MM:SS -> (HH*60) + MM + (SS/60)
+    return Math.max(0, (parts[0] * 60) + parts[1] + (parts[2] / 60));
+  } else if (parts.length === 2) {
+    // MM:SS -> MM + (SS/60)
+    return Math.max(0, parts[0] + (parts[1] / 60));
+  }
+  return 0;
+}
+
+function formatMinutesToHMS(totalMinutes) {
+  if (isNaN(totalMinutes) || totalMinutes <= 0) return "00:00:00";
+  const totalSeconds = Math.round(totalMinutes * 60);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/* ========================================================
 BASE DE DATOS LOCAL OFFLINE AISLADA (IndexedDB - Test Lab)
 ======================================================== */
 const DB_NAME = "RegoFixMasterDB_ROI_Lab";
 const DB_VERSION = 1;
 let db = null;
 
-// Contraseña para eliminar registros en la nube (cámbiala si lo requieres)
+// Contraseña para eliminar registros en la nube
 const ADMIN_DELETE_PASS = "REGO2026";
 
 function initIndexedDB() {
@@ -626,10 +669,10 @@ const I18N = {
     phToolReco: "Ensambles sugeridos...", btnAnalyze: "Analizar y Configurar Ensambles", aiTitle: "Dictamen de Ingeniería",
     phAiPitch: "Argumento comercial...", sec2Title: "2) Ahorros Globales (4 frentes)", badgeSavings: "Ahorros",
     cardTimeTitle: "A) Ahorro por tiempo", lblChgAct: "Cambios/mes (Act)", lblChgNew: "Cambios/mes (Nuevo)",
-    lblMinChgAct: "Min/cambio (Act)", lblMinChgNew: "Min/cambio (Nuevo)", lblMonthlySave: "Ahorro mensual:",
+    lblMinChgAct: "Tiempo/cambio (Act)", lblMinChgNew: "Tiempo/cambio (Nuevo)", lblMonthlySave: "Ahorro mensual:",
     cardLifeTitle: "B) Vida de herramientas", lblLifeAct: "Ciclos/herr (Act)", lblLifeNew: "Ciclos/herr (Nuevo)",
     lblToolCost: "Costo Herr", lblToolCostAct: "Costo Herr (Act)", lblToolCostNew: "Costo Herr (Nuevo)", lblToolCount: "Herramientas activas", cardProcTitle: "C) Mejora de ciclo",
-    lblCycAct: "Ciclo Act (min/pza)", lblCycNew: "Ciclo Nuevo (min/pza)", cardScrapTitle: "D) Reducción de Scrap",
+    lblCycAct: "Ciclo Act (HH:MM:SS)", lblCycNew: "Ciclo Nuevo (HH:MM:SS)", cardScrapTitle: "D) Reducción de Scrap",
     lblScrapAct: "Rechazos Act/mes", lblScrapNew: "Rechazos Nuevo/mes", lblScrapCost: "Costo Pza Scrap",
     sec3Title: "3) Resultados del ROI", badgeRoi: "ROI", kpiGross: "Ahorro bruto", kpiNet: "Ahorro neto",
     kpiPayback: "Payback", kpiRoiEst: "ROI anual estimado", kpiRoiFormula: "((neto*12) / inversión)",
@@ -679,10 +722,10 @@ const I18N = {
     phToolReco: "Montagens sugeridas...", btnAnalyze: "Analisar e Configurar Montagens", aiTitle: "Parecer de Engenharia",
     phAiPitch: "Argumento comercial...", sec2Title: "2) Economia Global (4 frentes)", badgeSavings: "Economia",
     cardTimeTitle: "A) Economia por tempo", lblChgAct: "Trocas/mês (Atual)", lblChgNew: "Trocas/mês (Novo)",
-    lblMinChgAct: "Min/troca (Atual)", lblMinChgNew: "Min/troca (Novo)", lblMonthlySave: "Economia mensal:",
+    lblMinChgAct: "Tempo/troca (Atual)", lblMinChgNew: "Tempo/troca (Novo)", lblMonthlySave: "Economia mensal:",
     cardLifeTitle: "B) Vida útil das ferramentas", lblLifeAct: "Ciclos/ferr (Atual)", lblLifeNew: "Ciclos/ferr (Novo)",
     lblToolCost: "Custo Ferr", lblToolCostAct: "Custo Ferr (Atual)", lblToolCostNew: "Custo Ferr (Novo)", lblToolCount: "Ferramentas ativas", cardProcTitle: "C) Melhoria de ciclo",
-    lblCycAct: "Ciclo Atual (min/peça)", lblCycNew: "Ciclo Novo (min/peça)", cardScrapTitle: "D) Redução de Refugo",
+    lblCycAct: "Ciclo Atual (HH:MM:SS)", lblCycNew: "Ciclo Novo (HH:MM:SS)", cardScrapTitle: "D) Redução de Refugo",
     lblScrapAct: "Refugos Atual/mês", lblScrapNew: "Refugos Novo/mês", lblScrapCost: "Custo Peça Refugo",
     sec3Title: "3) Resultados do ROI", badgeRoi: "ROI", kpiGross: "Economia bruta", kpiNet: "Economia líquida",
     kpiPayback: "Payback", kpiRoiEst: "ROI anual estimado", kpiRoiFormula: "((líquido*12) / investimento)",
@@ -732,10 +775,10 @@ const I18N = {
     phToolReco: "Suggested assemblies...", btnAnalyze: "Analyze & Configure Assemblies", aiTitle: "Engineering Report",
     phAiPitch: "Commercial argument...", sec2Title: "2) Overall Savings (4 areas)", badgeSavings: "Savings",
     cardTimeTitle: "A) Time Savings", lblChgAct: "Changes/mo (Current)", lblChgNew: "Changes/mo (New)",
-    lblMinChgAct: "Min/change (Current)", lblMinChgNew: "Min/change (New)", lblMonthlySave: "Monthly Savings:",
+    lblMinChgAct: "Time/change (Current)", lblMinChgNew: "Time/change (New)", lblMonthlySave: "Monthly Savings:",
     cardLifeTitle: "B) Tool Life Improvement", lblLifeAct: "Cycles/tool (Current)", lblLifeNew: "Cycles/tool (New)",
     lblToolCost: "Tool Cost", lblToolCostAct: "Tool Cost (Current)", lblToolCostNew: "Tool Cost (New)", lblToolCount: "Active Tools", cardProcTitle: "C) Cycle Time Reduction",
-    lblCycAct: "Cycle Current (min/pc)", lblCycNew: "Cycle New (min/pc)", cardScrapTitle: "D) Scrap Reduction",
+    lblCycAct: "Cycle Current (HH:MM:SS)", lblCycNew: "Cycle New (HH:MM:SS)", cardScrapTitle: "D) Scrap Reduction",
     lblScrapAct: "Rejects Current/mo", lblScrapNew: "Rejects New/mo", lblScrapCost: "Scrap Part Cost",
     sec3Title: "3) Results del ROI", badgeRoi: "ROI", kpiGross: "Gross Savings", kpiNet: "Net Savings",
     kpiPayback: "Payback", kpiRoiEst: "Estimated Annual ROI", kpiRoiFormula: "((net*12) / investment)",
@@ -816,9 +859,9 @@ tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" }
 
 const defaultMathValues = {
   costHour: "75", partsMonth: "5000", invest: "4500", consMonth: "0",
-  chgAct: "180", chgNew: "140", chgMinAct: "6", chgMinNew: "4.5",
+  chgAct: "180", chgNew: "140", chgMinAct: "00:06:00", chgMinNew: "00:04:30",
   lifeAct: "100", lifeNew: "160", toolCost: "50", toolCostNew: "45", toolCount: "3",
-  cycAct: "3.20", cycNew: "2.85", scrapAct: "50", scrapNew: "5", scrapCost: "15"
+  cycAct: "00:03:12", cycNew: "00:02:51", scrapAct: "50", scrapNew: "5", scrapCost: "15"
 };
 
 const mathIds = [
@@ -1188,8 +1231,10 @@ function calc(){
   // Variables numéricas
   const chgAct = clamp0($("chgAct")?.value);
   const chgNew = clamp0($("chgNew")?.value);
-  const chgMinAct = clamp0($("chgMinAct")?.value);
-  const chgMinNew = clamp0($("chgMinNew")?.value);
+  
+  // Conversión backstage de HH:MM:SS a minutos decimales
+  const chgMinAct = parseTimeToMinutes($("chgMinAct")?.value);
+  const chgMinNew = parseTimeToMinutes($("chgMinNew")?.value);
 
   const lifeAct = Math.max(1, clamp0($("lifeAct")?.value));
   const lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
@@ -1197,8 +1242,9 @@ function calc(){
   const tcNew = clamp0($("toolCostNew")?.value);
   const toolCount = Math.max(1, clamp0($("toolCount")?.value));
 
-  const cycAct = clamp0($("cycAct")?.value);
-  const cycNew = clamp0($("cycNew")?.value);
+  // Conversión backstage de ciclo por pieza HH:MM:SS a minutos decimales
+  const cycAct = parseTimeToMinutes($("cycAct")?.value);
+  const cycNew = parseTimeToMinutes($("cycNew")?.value);
 
   const scrapAct = clamp0($("scrapAct")?.value);
   const scrapNew = clamp0($("scrapNew")?.value);
@@ -1704,9 +1750,9 @@ function buildReportHTML(chartImageBase64){
     tableRowsHTML += `
       <tr>
         <td><strong>Tiempo de Ciclo por Pieza</strong></td>
-        <td class="val-act">${r.cycAct.toFixed(2)} min/pza</td>
-        <td class="val-new">${r.cycNew.toFixed(2)} min/pza</td>
-        <td class="val-diff">Reducción: ${(r.cycAct - r.cycNew).toFixed(2)} min (-${mejoraCicloPct}%)</td>
+        <td class="val-act">${formatMinutesToHMS(r.cycAct)} /pza</td>
+        <td class="val-new">${formatMinutesToHMS(r.cycNew)} /pza</td>
+        <td class="val-diff">Reducción: ${formatMinutesToHMS(r.cycAct - r.cycNew)} (-${mejoraCicloPct}%)</td>
       </tr>
       <tr>
         <td><strong>Horas de Máquina Liberadas</strong></td>
@@ -1721,8 +1767,8 @@ function buildReportHTML(chartImageBase64){
     tableRowsHTML += `
       <tr>
         <td><strong>Tiempo y Frecuencia de Setup</strong></td>
-        <td class="val-act">${r.chgAct} cambios (${r.chgMinAct} min c/u)</td>
-        <td class="val-new">${r.chgNew} cambios (${r.chgMinNew} min c/u)</td>
+        <td class="val-act">${r.chgAct} cambios (${formatMinutesToHMS(r.chgMinAct)} c/u)</td>
+        <td class="val-new">${r.chgNew} cambios (${formatMinutesToHMS(r.chgMinNew)} c/u)</td>
         <td class="val-diff">Ahorro: ${esc(money(r.saveTime))}</td>
       </tr>
     `;
