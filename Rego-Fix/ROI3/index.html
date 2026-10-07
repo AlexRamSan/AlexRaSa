@@ -307,9 +307,9 @@ textarea.input{ min-height: 80px; resize: vertical; }
   <datalist id="lista-husillos"><option value="CAT 40"><option value="CAT 50"><option value="BT 30"><option value="BT 40"><option value="HSK-A 63"><option value="Capto C6"></datalist>
 </div>
 <div>
-  <div class="label" data-i18n="lblCoolant">Refrigerante</div>
-  <input id="coolant" class="input" type="text" list="lista-coolant" placeholder="Ej: Interno Alta Presión" data-study="coolant" data-i18n-ph="phCoolant">
-  <datalist id="lista-coolant"><option value="Externo (Flood)"><option value="Interno (TSC)"><option value="MQL"></datalist>
+  <div class="label" data-i18n="lblCoolant">Refrigerante / Lubricación</div>
+  <!-- Casilla de texto libre para lubricación -->
+  <input id="coolant" class="input" type="text" placeholder="Ej: MQL, Flood, Seco, TSC 70 bar..." data-study="coolant">
 </div>
 <div>
   <div class="label" data-i18n="lblMaterial">Material principal</div>
@@ -545,6 +545,9 @@ const DB_NAME = "RegoFixMasterDB_ROI_Lab";
 const DB_VERSION = 1;
 let db = null;
 
+// Contraseña para eliminar registros en la nube (cámbiala si lo requieres)
+const ADMIN_DELETE_PASS = "REGO2026";
+
 function initIndexedDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -614,7 +617,7 @@ const I18N = {
     calcSector: "Sector (Overhead)", optGeneral: "General / Job Shop", optAuto: "Automotriz", optMold: "Moldes y Troqueles",
     optAero: "Aeroespacial", optMed: "Médico", calcLabor: "Mano de Obra", optOp1: "1 Op / 1 Máquina ($25/h)",
     optOp2: "1 Op / 2 Máquinas ($12.5/h)", optOpAuto: "Celda automatizada", sec1bTitle: "1B) Contexto del Maquinado",
-    lblSpindle: "Interfaz husillo", phSpindle: "Ej: CAT40 / HSK63A", lblCoolant: "Refrigerante", phCoolant: "Ej: Interno Alta Presión",
+    lblSpindle: "Interfaz husillo", phSpindle: "Ej: CAT40 / HSK63A", lblCoolant: "Refrigerante / Lubricación", phCoolant: "Ej: MQL, Flood, Seco, TSC 70 bar...",
     lblMaterial: "Material principal", phMaterial: "Ej: Titanio / Inox", lblPriority: "Prioridad Global", phPriority: "Ej: Eliminar vibración",
     lblGoal: "Objetivo general del cliente", phGoal: "Ej: Reducir ciclo en 15% y eliminar rechazos.",
     sec1cTitle: "1C) Casos de Herramientas", btnAddCase: "+ Agregar Caso", caseLabel: "Caso", btnDeleteCase: "✕ Eliminar",
@@ -667,7 +670,7 @@ const I18N = {
     calcSector: "Setor (Overhead)", optGeneral: "Geral / Usinagem", optAuto: "Automotivo", optMold: "Moldes e Matrizes",
     optAero: "Aeroespacial", optMed: "Médico", calcLabor: "Mão de Obra", optOp1: "1 Op / 1 Máquina (R$25/h)",
     optOp2: "1 Op / 2 Máquinas (R$12.5/h)", optOpAuto: "Célula automatizada", sec1bTitle: "1B) Contexto da Usinagem",
-    lblSpindle: "Interface do fuso", phSpindle: "Ex: CAT40 / HSK63A", lblCoolant: "Refrigeração", phCoolant: "Ex: Interno Alta Pressão",
+    lblSpindle: "Interface do fuso", phSpindle: "Ex: CAT40 / HSK63A", lblCoolant: "Refrigeração", phCoolant: "Ex: MQL, Flood, Seco, TSC 70 bar...",
     lblMaterial: "Material principal", phMaterial: "Ex: Titânio / Inox", lblPriority: "Prioridade Global", phPriority: "Ex: Eliminar vibração",
     lblGoal: "Objetivo geral do cliente", phGoal: "Ex: Reduzir ciclo em 15% e eliminar refugos.",
     sec1cTitle: "1C) Casos de Ferramentas", btnAddCase: "+ Adicionar Caso", caseLabel: "Caso", btnDeleteCase: "✕ Excluir",
@@ -720,7 +723,7 @@ const I18N = {
     calcSector: "Industry Sector (Overhead)", optGeneral: "General / Job Shop", optAuto: "Automotive", optMold: "Mold & Die",
     optAero: "Aerospace", optMed: "Medical", calcLabor: "Labor Cost", optOp1: "1 Op / 1 Machine ($25/h)",
     optOp2: "1 Op / 2 Machines ($12.5/h)", optOpAuto: "Automated Cell", sec1bTitle: "1B) Machining Context",
-    lblSpindle: "Spindle Interface", phSpindle: "E.g., CAT40 / HSK63A", lblCoolant: "Coolant Type", phCoolant: "E.g., High Pressure Internal",
+    lblSpindle: "Spindle Interface", phSpindle: "E.g., CAT40 / HSK63A", lblCoolant: "Coolant Type", phCoolant: "E.g., MQL, Flood, Dry, TSC 70 bar...",
     lblMaterial: "Main Material", phMaterial: "E.g., Titanium / Stainless", lblPriority: "Global Priority", phPriority: "E.g., Eliminate vibration",
     lblGoal: "Customer's Overall Goal", phGoal: "E.g., Reduce cycle time by 15% and scrap.",
     sec1cTitle: "1C) Tooling Cases", btnAddCase: "+ Add Case", caseLabel: "Case", btnDeleteCase: "✕ Delete",
@@ -1490,10 +1493,20 @@ async function renderHistoryList() {
     });
   });
 
+  // Eliminación protegida por contraseña
   document.querySelectorAll(".btn-del-study").forEach(btn => {
     btn.addEventListener("click", (e) => {
       const id = e.target.getAttribute("data-id");
-      if (confirm(currentLang === 'es' ? "¿Eliminar este estudio de la nube y del dispositivo?" : "¿Delete this study?")) {
+      
+      const pass = prompt("Introduce la contraseña de administrador para eliminar el estudio:");
+      if (pass === null) return;
+      
+      if (pass.trim() !== ADMIN_DELETE_PASS) {
+        alert("❌ Contraseña incorrecta. Acción cancelada.");
+        return;
+      }
+
+      if (confirm(currentLang === 'es' ? "¿Confirmas la eliminación permanente del estudio?" : "Confirm deletion?")) {
         setTimeout(async () => {
           await deleteStudyFromDB(id);
           if (navigator.onLine) {
@@ -1501,7 +1514,7 @@ async function renderHistoryList() {
               await fetch("/api/delete-study", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: id })
+                body: JSON.stringify({ id: id, password: pass })
               });
             } catch (errCloud) {
               console.warn("No se pudo conectar a la nube para borrar:", errCloud);
@@ -2222,6 +2235,10 @@ function buildReportHTML(chartImageBase64){
       <div class="roi-tag-large">
         ${esc(r.roiAnnual === null ? "—" : ((r.roiAnnual * 100).toFixed(0) + "%"))}
         <span style="font-size: 11.5px; font-weight: 700; color: var(--rego-blue); margin-left: 6px;">(${esc(money(r.net * 12))} ${curr}${t("yearSuffix")})</span>
+      </div>
+      <!-- Inversión destacada en el banner central -->
+      <div style="font-size: 10.5px; font-weight: 800; color: #475569; margin-top: 5px; text-transform: uppercase;">
+        Monto Total de Inversión: <span style="color: var(--rego-blue); font-weight: 900;">${esc(money(r.invest))} ${curr}</span>
       </div>
     </div>
   </div>
