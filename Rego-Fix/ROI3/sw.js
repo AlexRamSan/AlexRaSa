@@ -1,5 +1,5 @@
-const CACHE_NAME = 'rego-fix-roi3-v3.2';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'rego-roi3-v3';
+const ASSETS = [
   './',
   './index.html',
   './manifest.json',
@@ -8,21 +8,19 @@ const STATIC_ASSETS = [
   './lib/chart.js'
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
+        keys.map((k) => {
+          if (k !== CACHE_NAME) return caches.delete(k);
         })
       )
     )
@@ -30,23 +28,12 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  // Evitar interceptar o romper llamadas al backend de la nube
-  if (event.request.url.includes('/api/')) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(
-          JSON.stringify({ error: 'Modo offline. Conéctate a internet para sincronizar con la nube.' }),
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-      })
-    );
+self.addEventListener('fetch', (e) => {
+  if (e.request.url.includes('/api/')) {
+    e.respondWith(fetch(e.request));
     return;
   }
-
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
-    })
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
   );
 });
