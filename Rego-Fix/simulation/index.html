@@ -5,20 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>REGO-FIX® Tool Load & Deflection Simulator</title>
   
-  <!-- PWA Meta -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#12151A">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#004B87">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- Inter Font & Tailwind CDN for UI layout -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Three.js & OrbitControls from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
@@ -29,13 +26,14 @@
         extend: {
           colors: {
             rego: {
-              red: '#E30613',
-              darkred: '#B0040E',
-              dark: '#0E1116',
-              card: '#161B22',
-              border: '#242C38',
-              muted: '#8A94A6',
-              accent: '#38BDF8'
+              blue: '#004B87',
+              lightblue: '#0072CE',
+              green: '#00A651',
+              lightgreen: '#25D366',
+              dark: '#0B1320',
+              card: '#131E30',
+              border: '#203049',
+              muted: '#7F93AC'
             }
           },
           fontFamily: {
@@ -48,26 +46,22 @@
   </script>
 
   <style>
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: #0E1116; }
-    ::-webkit-scrollbar-thumb { background: #242C38; border-radius: 2px; }
-    ::-webkit-scrollbar-thumb:hover { background: #E30613; }
-    
-    input[type=range] {
-      accent-color: #E30613;
-    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0B1320; }
+    ::-webkit-scrollbar-thumb { background: #203049; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #0072CE; }
+    input[type=range] { accent-color: #0072CE; }
   </style>
 </head>
 <body class="bg-rego-dark text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col select-none">
 
-  <!-- Header REGO-FIX Style -->
-  <header class="h-14 border-b border-rego-border bg-rego-card/90 backdrop-blur px-4 flex items-center justify-between shrink-0 z-20">
+  <!-- Header REGO-FIX Azul y Verde -->
+  <header class="h-14 border-b border-rego-border bg-rego-card/95 backdrop-blur px-4 flex items-center justify-between shrink-0 z-20">
     <div class="flex items-center gap-3">
       <div class="flex items-center gap-2">
-        <div class="bg-rego-red text-white font-extrabold px-2.5 py-1 text-sm tracking-wider rounded-sm shadow-sm flex items-center gap-1.5">
+        <div class="bg-rego-blue text-white font-black px-3 py-1 text-sm tracking-widest rounded-sm shadow-md flex items-center gap-1.5 border border-sky-400/30">
           <span>REGO-FIX</span>
-          <span class="text-[10px] bg-black/30 px-1 py-0.5 rounded font-mono font-bold">SWISS</span>
+          <span class="text-[10px] bg-rego-green text-white font-bold px-1.5 py-0.5 rounded tracking-normal">SWISS</span>
         </div>
         <div class="hidden sm:block h-5 w-[1px] bg-rego-border"></div>
         <h1 class="text-xs sm:text-sm font-semibold tracking-wide text-slate-200 uppercase">Simulador de Esfuerzo & Deflexión</h1>
@@ -76,75 +70,75 @@
 
     <div class="flex items-center gap-3">
       <div id="system-badge" class="px-2.5 py-1 rounded border border-rego-border bg-rego-dark text-[11px] font-mono flex items-center gap-2">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span id="holder-active-label" class="text-slate-300 font-semibold">powRgrip® PG25</span>
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-rego-green animate-pulse"></span>
+        <span id="holder-active-label" class="text-slate-200 font-semibold">powRgrip® PG25</span>
       </div>
-      <button id="btn-reset-view" class="p-1.5 text-slate-400 hover:text-white rounded hover:bg-rego-border/60 transition" title="Centrar Vista 3D">
+      <button id="btn-reset-view" class="p-1.5 text-slate-400 hover:text-white rounded hover:bg-rego-border/60 transition" title="Reiniciar Vista">
         <i data-lucide="scan" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
 
-  <!-- Main Workspace -->
+  <!-- Workspace Principal -->
   <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
     
-    <!-- 3D Viewport Area -->
-    <main class="flex-1 relative bg-gradient-to-b from-[#090b0e] to-[#12151a] overflow-hidden">
-      <!-- 3D Canvas -->
+    <!-- Viewport (Three.js o Canvas 2D) -->
+    <main class="flex-1 relative bg-gradient-to-b from-[#070D16] to-[#0E1A2C] overflow-hidden">
       <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
 
-      <!-- Live Overlays / HUD -->
-      <div class="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-2">
-        <div class="bg-rego-card/85 backdrop-blur-md border border-rego-border/80 px-3 py-2 rounded shadow-xl text-left pointer-events-auto">
-          <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Estado de Carga Dinámica</div>
-          <div id="hud-status" class="text-sm font-mono font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> ESTABLE
+      <!-- HUD Superior Izquierdo -->
+      <div class="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-2.5">
+        <div class="bg-rego-card/90 backdrop-blur-md border border-rego-border px-3.5 py-2.5 rounded shadow-2xl text-left pointer-events-auto min-w-[210px]">
+          <div class="text-[10px] uppercase font-bold tracking-wider text-rego-muted">Estado de Carga Dinámica</div>
+          <div id="hud-status" class="text-sm font-mono font-bold text-rego-green flex items-center gap-2 mt-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-rego-green shadow-[0_0_8px_#00A651]"></span> ESTABLE
           </div>
-          <div class="text-[10px] text-slate-400 font-mono mt-1" id="hud-vibration">Vibración: <span class="text-slate-200">Baja (Suave)</span></div>
+          <div class="text-[11px] text-slate-300 font-mono mt-1" id="hud-vibration">Vibración: <span class="text-emerald-400 font-semibold">Amortiguada</span></div>
         </div>
 
-        <div class="bg-rego-card/85 backdrop-blur-md border border-rego-border/80 px-3 py-2 rounded shadow-xl pointer-events-auto text-left">
-          <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Deflexión Teórica Punta ($y$)</div>
-          <div class="text-xl font-mono font-black text-white flex items-baseline gap-1 mt-0.5">
-            <span id="hud-deflection">0.00</span> <span class="text-xs font-normal text-slate-400">&micro;m</span>
+        <div class="bg-rego-card/90 backdrop-blur-md border border-rego-border px-3.5 py-2.5 rounded shadow-2xl pointer-events-auto text-left min-w-[210px]">
+          <div class="text-[10px] uppercase font-bold tracking-wider text-rego-muted">Deflexión en Punta (y)</div>
+          <div class="text-2xl font-mono font-black text-white flex items-baseline gap-1 mt-0.5">
+            <span id="hud-deflection">0.00</span> <span class="text-xs font-normal text-slate-400">µm</span>
           </div>
-          <div class="text-[10px] text-slate-400 font-mono" id="hud-runout-diff">Alabeo Dinámico: <span class="text-emerald-400">&le; 3 &micro;m</span></div>
+          <div class="text-[11px] text-slate-300 font-mono mt-0.5" id="hud-runout-diff">Alabeo Dinámico: <span class="text-rego-green font-bold">≤ 3 µm TIR</span></div>
         </div>
       </div>
 
-      <!-- Color Legend HUD -->
-      <div class="absolute bottom-4 left-4 z-10 bg-rego-card/80 backdrop-blur border border-rego-border px-3 py-2 rounded flex items-center gap-3 text-[11px] font-mono pointer-events-none">
-        <span class="text-slate-400">Esfuerzo:</span>
-        <div class="flex items-center gap-1">
-          <span class="w-2.5 h-2.5 rounded-sm bg-[#10b981]"></span><span class="text-slate-300">Seguro</span>
+      <!-- Leyenda HUD Inferior -->
+      <div class="absolute bottom-4 left-4 z-10 bg-rego-card/90 backdrop-blur border border-rego-border px-3.5 py-2 rounded flex items-center gap-3 text-[11px] font-mono pointer-events-none shadow-lg">
+        <span class="text-rego-muted">Esfuerzo:</span>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm bg-rego-green"></span><span class="text-slate-200">Seguro</span>
         </div>
-        <div class="flex items-center gap-1">
-          <span class="w-2.5 h-2.5 rounded-sm bg-[#f59e0b]"></span><span class="text-slate-300">Medio</span>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm bg-[#0072CE]"></span><span class="text-slate-200">Óptimo PG</span>
         </div>
-        <div class="flex items-center gap-1">
-          <span class="w-2.5 h-2.5 rounded-sm bg-[#E30613]"></span><span class="text-slate-300">Crítico / Chatter</span>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-sm bg-amber-500"></span><span class="text-slate-200">Crítico / Chatter</span>
         </div>
       </div>
 
-      <!-- Quick Tips -->
-      <div class="absolute bottom-4 right-4 z-10 hidden sm:block text-[11px] text-slate-500 font-mono pointer-events-none">
-        Arrastra para rotar &bull; Scroll para zoom &bull; Click derecho para pan
+      <div id="render-mode-badge" class="absolute bottom-4 right-4 z-10 text-[10px] text-rego-muted font-mono bg-rego-card/70 px-2 py-1 rounded border border-rego-border/60">
+        Iniciando Render...
       </div>
     </main>
 
-    <!-- Controls & Real-Time Analytics Sidebar -->
-    <aside class="w-full lg:w-[410px] bg-rego-card border-t lg:border-t-0 lg:border-l border-rego-border flex flex-col shrink-0 overflow-y-auto z-10">
+    <!-- Barra Lateral de Parámetros e Indicadores -->
+    <aside class="w-full lg:w-[420px] bg-rego-card border-t lg:border-t-0 lg:border-l border-rego-border flex flex-col shrink-0 overflow-y-auto z-10 shadow-2xl">
       
-      <!-- System Selection Tabs -->
       <div class="p-4 border-b border-rego-border space-y-3">
         <div>
-          <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Sistema de Sujeción</label>
+          <label class="text-[11px] font-bold uppercase tracking-wider text-rego-muted block mb-1.5">Sistema de Sujeción</label>
           <div class="grid grid-cols-2 gap-2">
-            <button id="btn-system-pg" class="py-2 px-3 rounded text-xs font-bold font-mono transition border text-white bg-rego-red/20 border-rego-red text-center flex flex-col items-center justify-center">
-              <span>powRgrip® PG</span>
+            <button id="btn-system-pg" class="py-2.5 px-3 rounded text-xs font-bold font-mono transition border text-white bg-rego-blue/30 border-rego-lightblue shadow-[0_0_12px_rgba(0,114,206,0.25)] text-center flex flex-col items-center justify-center">
+              <span class="text-sky-300 font-extrabold flex items-center gap-1">
+                powRgrip® PG
+                <span class="w-1.5 h-1.5 rounded-full bg-rego-green"></span>
+              </span>
               <span class="text-[9px] text-slate-300 font-normal">Rigidez Máxima (Amort. 9x)</span>
             </button>
-            <button id="btn-system-er" class="py-2 px-3 rounded text-xs font-medium font-mono transition border border-rego-border bg-rego-dark/60 text-slate-400 hover:text-slate-200 text-center flex flex-col items-center justify-center">
+            <button id="btn-system-er" class="py-2.5 px-3 rounded text-xs font-medium font-mono transition border border-rego-border bg-rego-dark/70 text-slate-400 hover:text-slate-200 text-center flex flex-col items-center justify-center">
               <span>ER Collet Estándar</span>
               <span class="text-[9px] text-slate-500 font-normal">Sujeción Clásica</span>
             </button>
@@ -153,8 +147,8 @@
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="text-[10px] font-semibold uppercase text-slate-400 block mb-1">Material Pieza</label>
-            <select id="sel-material" class="w-full bg-rego-dark border border-rego-border rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:border-rego-red focus:outline-none">
+            <label class="text-[10px] font-semibold uppercase text-rego-muted block mb-1">Material Pieza</label>
+            <select id="sel-material" class="w-full bg-rego-dark border border-rego-border rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:border-rego-lightblue focus:outline-none">
               <option value="4140">Acero 4140 (Tratado)</option>
               <option value="1018">Acero 1018 (Dulce)</option>
               <option value="316L">Inox 316L (Austenítico)</option>
@@ -164,30 +158,28 @@
             </select>
           </div>
           <div>
-            <label class="text-[10px] font-semibold uppercase text-slate-400 block mb-1">Herramienta (Carburo)</label>
-            <select id="sel-tool-dia" class="w-full bg-rego-dark border border-rego-border rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:border-rego-red focus:outline-none">
-              <option value="6">&Oslash; 6 mm (Z=3)</option>
-              <option value="10">&Oslash; 10 mm (Z=4)</option>
-              <option value="12" selected>&Oslash; 12 mm (Z=4)</option>
-              <option value="16">&Oslash; 16 mm (Z=5)</option>
-              <option value="20">&Oslash; 20 mm (Z=5)</option>
+            <label class="text-[10px] font-semibold uppercase text-rego-muted block mb-1">Herramienta (Carburo)</label>
+            <select id="sel-tool-dia" class="w-full bg-rego-dark border border-rego-border rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:border-rego-lightblue focus:outline-none">
+              <option value="6">Ø 6 mm (Z=3)</option>
+              <option value="10">Ø 10 mm (Z=4)</option>
+              <option value="12" selected>Ø 12 mm (Z=4)</option>
+              <option value="16">Ø 16 mm (Z=5)</option>
+              <option value="20">Ø 20 mm (Z=5)</option>
             </select>
           </div>
         </div>
       </div>
 
-      <!-- Sliders Parameters -->
       <div class="p-4 border-b border-rego-border space-y-4">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Parámetros de Corte</span>
-          <span class="text-[10px] text-rego-red font-mono font-semibold">Cálculo Kienzle</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Parámetros de Corte</span>
+          <span class="text-[10px] text-rego-green font-mono font-bold uppercase tracking-wider">Cálculo Kienzle</span>
         </div>
 
-        <!-- Stick-out (Voladizo) -->
         <div class="space-y-1">
           <div class="flex justify-between text-xs font-mono">
-            <span class="text-slate-400">Voladizo Herramienta ($L$):</span>
-            <span id="val-stickout" class="font-bold text-white">40 mm</span>
+            <span class="text-rego-muted">Voladizo Herramienta (L):</span>
+            <span id="val-stickout" class="font-bold text-sky-400">40 mm</span>
           </div>
           <input id="range-stickout" type="range" min="25" max="90" value="40" step="1" class="w-full h-1.5 bg-rego-border rounded-lg appearance-none cursor-pointer">
           <div class="flex justify-between text-[10px] text-slate-500 font-mono">
@@ -196,113 +188,100 @@
           </div>
         </div>
 
-        <!-- Profundidad ap -->
         <div class="space-y-1">
           <div class="flex justify-between text-xs font-mono">
-            <span class="text-slate-400">Profundidad Axial ($a_p$):</span>
+            <span class="text-rego-muted">Profundidad Axial (ap):</span>
             <span id="val-ap" class="font-bold text-white">12.0 mm</span>
           </div>
           <input id="range-ap" type="range" min="0.5" max="30" value="12" step="0.5" class="w-full h-1.5 bg-rego-border rounded-lg appearance-none cursor-pointer">
         </div>
 
-        <!-- Ancho ae -->
         <div class="space-y-1">
           <div class="flex justify-between text-xs font-mono">
-            <span class="text-slate-400">Ancho Radial ($a_e$):</span>
+            <span class="text-rego-muted">Ancho Radial (ae):</span>
             <span id="val-ae" class="font-bold text-white">3.0 mm</span>
           </div>
           <input id="range-ae" type="range" min="0.2" max="20" value="3" step="0.2" class="w-full h-1.5 bg-rego-border rounded-lg appearance-none cursor-pointer">
         </div>
 
-        <!-- Avance por diente fz -->
         <div class="space-y-1">
           <div class="flex justify-between text-xs font-mono">
-            <span class="text-slate-400">Avance por Diente ($f_z$):</span>
+            <span class="text-rego-muted">Avance por Diente (fz):</span>
             <span id="val-fz" class="font-bold text-white">0.08 mm/z</span>
           </div>
           <input id="range-fz" type="range" min="0.01" max="0.30" value="0.08" step="0.005" class="w-full h-1.5 bg-rego-border rounded-lg appearance-none cursor-pointer">
         </div>
 
-        <!-- Velocidad vc -->
         <div class="space-y-1">
           <div class="flex justify-between text-xs font-mono">
-            <span class="text-slate-400">Velocidad de Corte ($v_c$):</span>
+            <span class="text-rego-muted">Velocidad de Corte (vc):</span>
             <span id="val-vc" class="font-bold text-white">180 m/min</span>
           </div>
           <input id="range-vc" type="range" min="30" max="450" value="180" step="5" class="w-full h-1.5 bg-rego-border rounded-lg appearance-none cursor-pointer">
         </div>
       </div>
 
-      <!-- Results Grid (Swiss HUD Cards) -->
-      <div class="p-4 flex-1 space-y-3 bg-rego-dark/40">
+      <div class="p-4 flex-1 space-y-3 bg-rego-dark/50">
         <span class="text-xs font-bold uppercase tracking-wider text-slate-300 block">Indicadores Mecánicos en Tiempo Real</span>
         
         <div class="grid grid-cols-2 gap-2.5">
-          <!-- Fuerza Fc -->
           <div class="bg-rego-card border border-rego-border p-2.5 rounded">
-            <div class="text-[10px] uppercase font-mono text-slate-400">Fuerza Tangencial ($F_c$)</div>
-            <div class="text-lg font-mono font-bold text-white mt-1">
+            <div class="text-[10px] uppercase font-mono text-rego-muted">Fuerza Tangencial (Fc)</div>
+            <div class="text-lg font-mono font-bold text-white mt-0.5">
               <span id="res-fc">680</span> <span class="text-xs font-normal text-slate-400">N</span>
             </div>
-            <div class="text-[9px] text-slate-500 font-mono mt-0.5" id="res-kc">kc: 2150 N/mm²</div>
+            <div class="text-[9px] text-sky-400/80 font-mono mt-0.5" id="res-kc">kc: 2150 N/mm²</div>
           </div>
 
-          <!-- Fuerza Radial Fr -->
           <div class="bg-rego-card border border-rego-border p-2.5 rounded">
-            <div class="text-[10px] uppercase font-mono text-slate-400">Fuerza Radial ($F_r$)</div>
-            <div class="text-lg font-mono font-bold text-white mt-1">
+            <div class="text-[10px] uppercase font-mono text-rego-muted">Fuerza Radial (Fr)</div>
+            <div class="text-lg font-mono font-bold text-white mt-0.5">
               <span id="res-fr">245</span> <span class="text-xs font-normal text-slate-400">N</span>
             </div>
-            <div class="text-[9px] text-slate-500 font-mono mt-0.5">Induce flexión</div>
+            <div class="text-[9px] text-slate-500 font-mono mt-0.5">Induce flexión transversal</div>
           </div>
 
-          <!-- Potencia P -->
           <div class="bg-rego-card border border-rego-border p-2.5 rounded">
-            <div class="text-[10px] uppercase font-mono text-slate-400">Potencia Neta ($P_c$)</div>
-            <div class="text-lg font-mono font-bold text-white mt-1">
+            <div class="text-[10px] uppercase font-mono text-rego-muted">Potencia Neta (Pc)</div>
+            <div class="text-lg font-mono font-bold text-white mt-0.5">
               <span id="res-power">2.04</span> <span class="text-xs font-normal text-slate-400">kW</span>
             </div>
             <div class="text-[9px] text-slate-500 font-mono mt-0.5" id="res-torque">Par: 4.1 Nm</div>
           </div>
 
-          <!-- MRR -->
           <div class="bg-rego-card border border-rego-border p-2.5 rounded">
-            <div class="text-[10px] uppercase font-mono text-slate-400">Tasa Remoción (MRR)</div>
-            <div class="text-lg font-mono font-bold text-emerald-400 mt-1">
+            <div class="text-[10px] uppercase font-mono text-rego-muted">Tasa Remoción (MRR)</div>
+            <div class="text-lg font-mono font-bold text-rego-green mt-0.5">
               <span id="res-mrr">68.2</span> <span class="text-xs font-normal text-slate-400">cm³/min</span>
             </div>
             <div class="text-[9px] text-slate-500 font-mono mt-0.5" id="res-rpm">RPM: 4774 min⁻¹</div>
           </div>
         </div>
 
-        <!-- Comparative Advantage powRgrip Banner -->
-        <div id="rego-advantage-box" class="mt-3 p-3 rounded border border-rego-red/40 bg-rego-red/10 text-xs">
-          <div class="flex items-center gap-2 text-rego-red font-bold">
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
+        <div id="rego-advantage-box" class="mt-3 p-3.5 rounded border border-rego-lightblue/40 bg-rego-blue/15 text-xs shadow">
+          <div class="flex items-center gap-2 text-sky-400 font-bold">
+            <i data-lucide="shield-check" class="w-4 h-4 text-rego-green"></i>
             <span>Ventaja de Rigidez powRgrip®</span>
           </div>
           <p class="text-[11px] text-slate-300 mt-1 leading-snug" id="advantage-text">
-            Gracias a la inserción cónica de alta presión y concentricidad &lt; 3 &micro;m TIR, la deflexión dinámica se reduce en hasta un <strong>42%</strong> respecto a boquillas ER, eliminando armónicos de vibración (*chatter*).
+            Gracias al anclaje cónico sin calor y concentricidad garantizada <strong>&lt; 3 µm TIR</strong>, powRgrip absorbe armónicos de vibración multiplicando la vida del carburo y optimizando el acabado superficial.
           </p>
         </div>
       </div>
 
-      <!-- Footer Branding -->
-      <div class="p-3 border-t border-rego-border bg-rego-card text-center text-[10px] text-slate-500 font-mono">
-        REGO-FIX Tool Load Simulation Engine &bull; alexrasa.store
+      <div class="p-3 border-t border-rego-border bg-rego-card text-center text-[10px] text-rego-muted font-mono flex items-center justify-center gap-2">
+        <span>REGO-FIX® Swiss Tooling</span>
+        <span>•</span>
+        <span>alexrasa.store</span>
       </div>
 
     </aside>
   </div>
 
-  <!-- Scripts -->
   <script src="js/engine.js"></script>
   <script src="js/app.js"></script>
   <script>
-    // Lucide icons init
     lucide.createIcons();
-
-    // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
