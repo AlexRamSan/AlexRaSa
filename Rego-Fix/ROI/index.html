@@ -2,13 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>ROI Holders REGO-FIX — Análisis Multi-Herramienta (Test Lab) | AlexRaSa</title>
 <meta name="description" content="Calculadora modular de ROI enfocada en holders REGO-FIX. Entorno de pruebas y desarrollo." />
 
-<!-- Carga local CSS puro de Tailwind y Chart.js en /Rego-Fix/ROI/ -->
-<link rel="stylesheet" href="/Rego-Fix/ROI/lib/tailwindcss.css">
-<script src="/Rego-Fix/ROI/lib/chart.js"></script>
+<!-- Carga local CSS puro de Tailwind y Chart.js en /Rego-Fix/ROI3/ -->
+<link rel="stylesheet" href="/Rego-Fix/ROI3/lib/tailwindcss.css">
+<script src="/Rego-Fix/ROI3/lib/chart.js"></script>
 
 <style>
 :root{
@@ -26,7 +26,7 @@
 --border: rgba(40,85,108,.18);
 --shadow: 0 10px 30px rgba(18,19,20,.08);
 }
-html,body{ background: var(--bg) !important; color: var(--rego-black); font-family: system-ui, -apple-system, sans-serif; }
+html,body{ background: var(--bg) !important; color: var(--rego-black); font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
 
 header img, img[alt="REGO-FIX"] {
   max-height: 32px !important;
@@ -49,7 +49,7 @@ header img, img[alt="REGO-FIX"] {
 
 .kpi{ border: 1px solid var(--border); border-radius: 18px; padding: .9rem 1rem; background: #fff; }
 .muted{ color: var(--rego-gm); }
-.label{ color: var(--rego-gd); font-weight: 700; font-size:.85rem; }
+.label{ color: var(--rego-gd); font-weight: 700; font-size:.82rem; }
 
 .lang-btn {
   display: inline-flex;
@@ -80,7 +80,11 @@ header img, img[alt="REGO-FIX"] {
   font-weight: 900;
 }
 
-.input{ width:100%; border:1px solid #CBD5E1; border-radius: 12px; padding: .6rem .8rem; outline: none; background:#fff; font-size:.9rem; transition: border-color 0.2s; }
+/* 16px en iPad/móvil evita el auto-zoom molesto de Safari al escribir */
+.input{ width:100%; border:1px solid #CBD5E1; border-radius: 12px; padding: .55rem .75rem; outline: none; background:#fff; font-size: 16px; transition: border-color 0.2s; -webkit-appearance: none; appearance: none; }
+@media (min-width: 1024px) {
+  .input { font-size: .88rem; }
+}
 .input:focus{ border-color: var(--rego-blue); box-shadow: 0 0 0 3px rgba(40,85,108,.15); }
 .input.pl-8{ padding-left: 2.2rem !important; }
 textarea.input{ min-height: 80px; resize: vertical; }
@@ -118,7 +122,7 @@ textarea.input{ min-height: 80px; resize: vertical; }
 </style>
 
 <!-- PWA Manifest & Meta adaptados -->
-<link rel="manifest" href="/Rego-Fix/ROI/manifest.json">
+<link rel="manifest" href="/Rego-Fix/ROI3/manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -131,8 +135,8 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/Rego-Fix/ROI/sw.js', { scope: '/Rego-Fix/ROI/' })
-        .then(reg => console.log('Service Worker ROI registrado en scope /Rego-Fix/ROI/'))
+      navigator.serviceWorker.register('/Rego-Fix/ROI3/sw.js', { scope: '/Rego-Fix/ROI3/' })
+        .then(reg => console.log('Service Worker ROI registrado en scope /Rego-Fix/ROI3/'))
         .catch(err => console.error('Error registrando Service Worker:', err));
     });
   }
@@ -229,9 +233,9 @@ textarea.input{ min-height: 80px; resize: vertical; }
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
   <div><div class="label" data-i18n="lblDate">Fecha</div><input id="studyDate" class="input bg-white cursor-pointer" type="date" data-study="studyDate"></div>
-  <div><div class="label" data-i18n="lblUser">Usuario / Asesor</div><input id="userName" class="input" type="text" placeholder="Nombre" data-study="userName" data-i18n-ph="phName"></div>
-  <div><div class="label" data-i18n="lblRole">Puesto</div><input id="userRole" class="input" type="text" placeholder="Ej: Ing. Procesos" data-study="userRole" data-i18n-ph="phRole"></div>
-  <div><div class="label" data-i18n="lblCompany">Empresa</div><input id="company" class="input" type="text" placeholder="Razón social" data-study="company" data-i18n-ph="phCompany"></div>
+  <div><div class="label" data-i18n="lblUser">Usuario / Asesor</div><input id="userName" class="input" type="text" autocomplete="off" placeholder="Nombre" data-study="userName" data-i18n-ph="phName"></div>
+  <div><div class="label" data-i18n="lblRole">Puesto</div><input id="userRole" class="input" type="text" autocomplete="off" placeholder="Ej: Ing. Procesos" data-study="userRole" data-i18n-ph="phRole"></div>
+  <div><div class="label" data-i18n="lblCompany">Empresa</div><input id="company" class="input" type="text" autocomplete="off" placeholder="Razón social" data-study="company" data-i18n-ph="phCompany"></div>
 </div>
 </section>
 
@@ -246,56 +250,50 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <div>
   <div class="flex items-center justify-between">
     <div class="label" data-i18n="lblCostHour">Costo máquina/hora</div>
-    <button id="btnToggleHrCalc" class="text-[11px] font-bold text-[#28556C] underline">🪄 <span data-i18n="btnAssistant">Asistente</span></button>
+    <button id="btnToggleHrCalc" type="button" class="text-[11px] font-bold text-[#28556C] underline">🪄 <span data-i18n="btnAssistant">Asistente</span></button>
   </div>
   <div class="relative mt-1 flex items-center">
     <span id="currencySymbolInput" class="absolute left-3 font-bold text-gray-500 pointer-events-none text-xs sm:text-sm">$</span>
-    <input id="costHour" class="input pl-8" type="number" min="0" step="1" value="75">
+    <input id="costHour" class="input pl-8" type="number" inputmode="decimal" min="0" step="any" value="75">
   </div>
   <div id="costHourUnit" class="muted text-[10px] mt-0.5" data-i18n="lblCurrHour">USD/hora</div>
 </div>
 
-<div><div class="label" data-i18n="lblPartsMonth">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" min="0" step="1" value="5000"></div>
-<div><div class="label" data-i18n="lblInvest">Inversión Total</div><input id="invest" class="input mt-1" type="number" min="0" step="1" value="4500"></div>
-<div><div class="label" data-i18n="lblConsMonth">Consumibles (/mes)</div><input id="consMonth" class="input mt-1" type="number" min="0" step="1" value="0"></div>
+<div><div class="label" data-i18n="lblPartsMonth">Piezas por mes</div><input id="partsMonth" class="input mt-1" type="number" inputmode="decimal" min="0" step="1" value="5000"></div>
+<div><div class="label" data-i18n="lblInvest">Inversión Total (Holders/Equipo)</div><input id="invest" class="input mt-1" type="number" inputmode="decimal" min="0" step="any" value="4500"></div>
+<div><div class="label" data-i18n="lblConsMonth">Consumibles extra (/mes)</div><input id="consMonth" class="input mt-1" type="number" inputmode="decimal" min="0" step="any" value="0"></div>
 
+<!-- Panel de Asistente 100% escribible sin listas cerradas -->
 <div id="hrCalcPanel" class="col-span-1 sm:col-span-2 lg:col-span-4 bg-slate-50 p-3 rounded-xl border border-slate-200 hidden mt-1">
-  <div class="font-bold text-xs mb-2 text-[#28556C]" data-i18n="calcRefParams">Parámetros referenciales</div>
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+  <div class="font-bold text-xs mb-2 text-[#28556C]" data-i18n="calcRefParams">Asistente de cálculo de hora máquina (Escritura libre)</div>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
     <div>
-      <div class="label text-[11px]" data-i18n="calcMachineType">Tipo de Máquina</div>
-      <select id="calcMachine" class="input mt-0.5 text-xs">
-        <option value="40" data-i18n="optLathe2">Torno CNC (2 Ejes)</option>
-        <option value="50" selected data-i18n="optMill3">Centro Maquinado (3 Ejes)</option>
-        <option value="75" data-i18n="optMill4">Centro Maquinado (4 Ejes)</option>
-        <option value="90" data-i18n="optSwiss">Torno Multitarea / Suizo</option>
-        <option value="120" data-i18n="optMill5">Centro Maquinado (5 Ejes)</option>
-      </select>
+      <div class="label text-[11px]" data-i18n="calcMachineType">Tipo de Máquina y Tarifa Base (/h)</div>
+      <div class="grid grid-cols-2 gap-1.5 mt-0.5">
+        <input id="calcMachineDesc" class="input text-xs" type="text" autocomplete="off" placeholder="Ej: 3 Ejes, 5 Ejes..." data-study="calcMachineDesc">
+        <input id="calcMachine" class="input text-xs" type="number" inputmode="decimal" step="any" value="50" placeholder="Tarifa base">
+      </div>
     </div>
     <div>
-      <div class="label text-[11px]" data-i18n="calcSector">Sector (Overhead)</div>
-      <select id="calcSector" class="input mt-0.5 text-xs">
-        <option value="1.0" selected data-i18n="optGeneral">General / Job Shop</option>
-        <option value="1.15" data-i18n="optAuto">Automotriz</option>
-        <option value="1.25" data-i18n="optMold">Moldes y Troqueles</option>
-        <option value="1.40" data-i18n="optAero">Aeroespacial</option>
-        <option value="1.50" data-i18n="optMed">Médico</option>
-      </select>
+      <div class="label text-[11px]" data-i18n="calcSector">Sector y Factor Overhead</div>
+      <div class="grid grid-cols-2 gap-1.5 mt-0.5">
+        <input id="calcSectorDesc" class="input text-xs" type="text" autocomplete="off" placeholder="Ej: Automotriz, Aero..." data-study="calcSectorDesc">
+        <input id="calcSector" class="input text-xs" type="number" inputmode="decimal" step="0.05" value="1.0" placeholder="Ej: 1.15">
+      </div>
     </div>
     <div>
-      <div class="label text-[11px]" data-i18n="calcLabor">Mano de Obra</div>
-      <select id="calcOperator" class="input mt-0.5 text-xs">
-        <option value="25" selected data-i18n="optOp1">1 Op / 1 Máquina</option>
-        <option value="12.5" data-i18n="optOp2">1 Op / 2 Máquinas</option>
-        <option value="8" data-i18n="optOpAuto">Celda automatizada</option>
-      </select>
+      <div class="label text-[11px]" data-i18n="calcLabor">Mano de Obra (/h)</div>
+      <div class="grid grid-cols-2 gap-1.5 mt-0.5">
+        <input id="calcOperatorDesc" class="input text-xs" type="text" autocomplete="off" placeholder="Ej: 1 Op / 2 Máq..." data-study="calcOperatorDesc">
+        <input id="calcOperator" class="input text-xs" type="number" inputmode="decimal" step="any" value="25" placeholder="Costo Op/h">
+      </div>
     </div>
   </div>
 </div>
 </div>
 </section>
 
-<!-- SECCIÓN 1B -->
+<!-- SECCIÓN 1B (100% Texto Libre para iPad, sin datalist que estorbe) -->
 <section class="card p-4 sm:p-5">
 <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
   <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec1bTitle">1B) Contexto del Maquinado</h2>
@@ -303,28 +301,24 @@ textarea.input{ min-height: 80px; resize: vertical; }
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 <div>
   <div class="label" data-i18n="lblSpindle">Interfaz husillo</div>
-  <input id="spindleInterface" class="input" type="text" list="lista-husillos" placeholder="Ej: CAT40 / HSK63A" data-study="spindleInterface" data-i18n-ph="phSpindle">
-  <datalist id="lista-husillos"><option value="CAT 40"><option value="CAT 50"><option value="BT 30"><option value="BT 40"><option value="HSK-A 63"><option value="Capto C6"></datalist>
+  <input id="spindleInterface" class="input" type="text" autocomplete="off" placeholder="Ej: CAT40, BT40, HSK-A63..." data-study="spindleInterface" data-i18n-ph="phSpindle">
 </div>
 <div>
-  <div class="label" data-i18n="lblCoolant">Refrigerante</div>
-  <input id="coolant" class="input" type="text" list="lista-coolant" placeholder="Ej: Interno Alta Presión" data-study="coolant" data-i18n-ph="phCoolant">
-  <datalist id="lista-coolant"><option value="Externo (Flood)"><option value="Interno (TSC)"><option value="MQL"></datalist>
+  <div class="label" data-i18n="lblCoolant">Refrigerante / Lubricación</div>
+  <input id="coolant" class="input" type="text" autocomplete="off" placeholder="Ej: MQL, Flood, Seco, TSC 70 bar..." data-study="coolant" data-i18n-ph="phCoolant">
 </div>
 <div>
   <div class="label" data-i18n="lblMaterial">Material principal</div>
-  <input id="material" class="input" type="text" list="lista-materiales" placeholder="Ej: Titanio / Inox" data-study="material" data-i18n-ph="phMaterial">
-  <datalist id="lista-materiales"><option value="Aluminio"><option value="Acero Endurecido"><option value="Titanio"><option value="Inconel"></datalist>
+  <input id="material" class="input" type="text" autocomplete="off" placeholder="Ej: Aluminio, D2, Inox, Titanio..." data-study="material" data-i18n-ph="phMaterial">
 </div>
 <div>
   <div class="label" data-i18n="lblPriority">Prioridad Global</div>
-  <input id="priority" class="input" type="text" list="lista-prioridad" placeholder="Ej: Eliminar vibración" data-study="priority" data-i18n-ph="phPriority">
-  <datalist id="lista-prioridad"><option value="Máxima precisión (Runout)"><option value="Rigidez extrema"><option value="Cambio rápido"><option value="Aumentar vida herramienta"></datalist>
+  <input id="priority" class="input" type="text" autocomplete="off" placeholder="Ej: Eliminar vibración, Runout, Vida..." data-study="priority" data-i18n-ph="phPriority">
 </div>
 </div>
 <div class="mt-3">
   <div class="label" data-i18n="lblGoal">Objetivo general del cliente</div>
-  <input id="goal" class="input" type="text" placeholder="Ej: Reducir ciclo en 15% y eliminar rechazos." data-study="goal" data-i18n-ph="phGoal">
+  <input id="goal" class="input" type="text" autocomplete="off" placeholder="Ej: Reducir ciclo en 15% y eliminar rechazos." data-study="goal" data-i18n-ph="phGoal">
 </div>
 </section>
 
@@ -334,13 +328,13 @@ textarea.input{ min-height: 80px; resize: vertical; }
   <div>
     <h2 class="text-sm sm:text-base font-extrabold" style="color:var(--rego-blue)" data-i18n="sec1cTitle">1C) Casos de Herramientas</h2>
   </div>
-  <button id="btnAddTool" class="btn btn-outline text-xs border-dashed" data-i18n="btnAddCase">+ Agregar Caso</button>
+  <button id="btnAddTool" type="button" class="btn btn-outline text-xs border-dashed" data-i18n="btnAddCase">+ Agregar Caso</button>
 </div>
 
 <div id="toolsListContainer" class="space-y-3"></div>
 
 <div class="mt-6 border-t border-slate-100 pt-4">
-<button id="btnRecalcReco" class="btn btn-primary w-full py-2.5 text-sm shadow-sm font-extrabold" data-i18n="btnAnalyze">
+<button id="btnRecalcReco" type="button" class="btn btn-primary w-full py-2.5 text-sm shadow-sm font-extrabold" data-i18n="btnAnalyze">
   Analizar y Configurar Ensambles
 </button>
 
@@ -359,68 +353,266 @@ textarea.input{ min-height: 80px; resize: vertical; }
   <span class="badge inv" data-i18n="badgeSavings">Ahorros</span>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-<div class="card p-3 bg-slate-50/50">
-  <div class="flex items-center justify-between mb-2">
-    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardTimeTitle">A) Ahorro por tiempo</span>
-    <div class="switch" id="swTime" data-on="true"><div class="knob"></div></div>
-  </div>
-  <div id="timeBody" class="space-y-2 text-xs">
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="label text-[11px]" data-i18n="lblChgAct">Cambios/mes (Act)</label><input id="chgAct" class="input" type="number" value="180"></div>
-      <div><label class="label text-[11px]" data-i18n="lblChgNew">Cambios/mes (Nuevo)</label><input id="chgNew" class="input" type="number" value="140"></div>
-      <div><label class="label text-[11px]" data-i18n="lblMinChgAct">Min/cambio (Act)</label><input id="chgMinAct" class="input" type="number" value="6"></div>
-      <div><label class="label text-[11px]" data-i18n="lblMinChgNew">Min/cambio (Nuevo)</label><input id="chgMinNew" class="input" type="number" value="4.5"></div>
-    </div>
-    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveTime" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
-  </div>
-</div>
+<div class="space-y-4">
 
-<div class="card p-3 bg-slate-50/50">
-  <div class="flex items-center justify-between mb-2">
-    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardLifeTitle">B) Vida de herramientas</span>
-    <div class="switch" id="swLife" data-on="true"><div class="knob"></div></div>
-  </div>
-  <div id="lifeBody" class="space-y-2 text-xs">
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="label text-[11px]" data-i18n="lblLifeAct">Ciclos/herr (Act)</label><input id="lifeAct" class="input" type="number" value="100"></div>
-      <div><label class="label text-[11px]" data-i18n="lblLifeNew">Ciclos/herr (Nuevo)</label><input id="lifeNew" class="input" type="number" value="160"></div>
-      <div><label class="label text-[11px]" data-i18n="lblToolCostAct">Costo Herr (Act)</label><input id="toolCost" class="input" type="number" value="50"></div>
-      <div><label class="label text-[11px]" data-i18n="lblToolCostNew">Costo Herr (Nuevo)</label><input id="toolCostNew" class="input" type="number" value="45"></div>
-      <div class="col-span-2"><label class="label text-[11px]" data-i18n="lblToolCount">Herramientas activas</label><input id="toolCount" class="input" type="number" value="3"></div>
+  <!-- FRENTE B DESTACADO (ANCHO COMPLETO): VIDA DE HERRAMIENTAS (NUEVA Y REAFILADA) + CONOS (6 AÑOS) -->
+  <div class="card p-3 sm:p-4 bg-slate-50/70 border-2 border-[#28556C]/20">
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
+      <div>
+        <span class="font-extrabold text-xs sm:text-sm" style="color:var(--rego-blue)" data-i18n="cardLifeTitle">B) Vida de Herramientas (Nueva vs Reafilada) y Amortización de Conos (6 Años)</span>
+        <div class="muted text-[11px]" data-i18n="cardLifeSubtitle">Compara piezas de duración en herramienta nueva, reafilada y vida útil de los conos portaherramientas.</div>
+      </div>
+      <div class="switch" id="swLife" data-on="true"><div class="knob"></div></div>
     </div>
-    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveLife" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
-  </div>
-</div>
 
-<div class="card p-3 bg-slate-50/50">
-  <div class="flex items-center justify-between mb-2">
-    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardProcTitle">C) Mejora de ciclo</span>
-    <div class="switch" id="swProc" data-on="true"><div class="knob"></div></div>
-  </div>
-  <div id="procBody" class="space-y-2 text-xs">
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="label text-[11px]" data-i18n="lblCycAct">Ciclo Act (min/pza)</label><input id="cycAct" class="input" type="number" step="0.01" value="3.20"></div>
-      <div><label class="label text-[11px]" data-i18n="lblCycNew">Ciclo Nuevo (min/pza)</label><input id="cycNew" class="input" type="number" step="0.01" value="2.85"></div>
-    </div>
-    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveProc" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
-  </div>
-</div>
+    <div id="lifeBody" class="space-y-3 text-xs">
+      <!-- Cantidad de herramientas de corte que intervienen por pieza -->
+      <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <label class="label text-xs text-[#28556C]" data-i18n="lblToolCount">Herramientas de corte activas en el proceso</label>
+          <div class="muted text-[10px]" data-i18n="lblToolCountHint">Cantidad de herramientas evaluadas que cortan cada pieza</div>
+        </div>
+        <div class="w-full sm:w-36">
+          <input id="toolCount" class="input font-bold text-center" type="number" inputmode="decimal" min="1" step="1" value="3">
+        </div>
+      </div>
 
-<div class="card p-3 bg-slate-50/50">
-  <div class="flex items-center justify-between mb-2">
-    <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardScrapTitle">D) Reducción de Scrap</span>
-    <div class="switch" id="swScrap" data-on="true"><div class="knob"></div></div>
-  </div>
-  <div id="scrapBody" class="space-y-2 text-xs">
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="label text-[11px]" data-i18n="lblScrapAct">Rechazos Act/mes</label><input id="scrapAct" class="input" type="number" value="50"></div>
-      <div><label class="label text-[11px]" data-i18n="lblScrapNew">Rechazos Nuevo/mes</label><input id="scrapNew" class="input" type="number" value="5"></div>
-      <div class="col-span-2"><label class="label text-[11px]" data-i18n="lblScrapCost">Costo Pza Scrap</label><input id="scrapCost" class="input" type="number" value="15"></div>
+      <!-- COMPARATIVA LADO A LADO: HERRAMIENTAS DE CORTE (ACTUAL VS REGO-FIX) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        
+        <!-- COLUMNA 1: PROCESO ACTUAL (HERRAMIENTA NUEVA + REAFILADA) -->
+        <div class="bg-white p-3 rounded-xl border border-red-200 shadow-sm space-y-2.5">
+          <div class="font-extrabold text-xs text-red-700 border-b border-red-100 pb-1.5 flex justify-between items-center">
+            <span data-i18n="lblActToolHeader">🔴 Herramienta de Corte Actual</span>
+            <span class="text-[10px] bg-red-50 text-red-700 px-2 py-0.5 rounded-full">Situación Actual</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="label text-[11px]" data-i18n="lblToolCostAct">Costo Herr. Nueva ($)</label>
+              <input id="toolCost" class="input" type="number" inputmode="decimal" step="any" value="50">
+            </div>
+            <div>
+              <label class="label text-[11px]" data-i18n="lblLifeAct">Vida Herr. Nueva (Pzas)</label>
+              <input id="lifeAct" class="input" type="number" inputmode="decimal" step="1" value="100">
+            </div>
+
+            <div>
+              <label class="label text-[11px]" data-i18n="lblToolCostRegrind">Costo Reafilado ($)</label>
+              <input id="toolCostRegrind" class="input" type="number" inputmode="decimal" step="any" value="15">
+            </div>
+            <div>
+              <label class="label text-[11px]" data-i18n="lblLifeActRegrind">Vida Reafilada (Pzas)</label>
+              <input id="lifeActRegrind" class="input" type="number" inputmode="decimal" step="1" value="75">
+            </div>
+
+            <div class="col-span-2">
+              <label class="label text-[11px]" data-i18n="lblRegrindCount">N° de Reafilados por herramienta (Act)</label>
+              <input id="regrindCount" class="input" type="number" inputmode="decimal" min="0" step="1" value="2">
+            </div>
+          </div>
+
+          <div class="bg-red-50/70 border border-red-100 rounded-lg p-2 text-[11px] space-y-0.5">
+            <div class="flex justify-between">
+              <span class="text-gray-600" data-i18n="lblTotalLifePcs">Vida total acumulada (1 nueva + afilados):</span>
+              <strong id="totPcsActDisplay" class="text-gray-900">250 pzas</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600" data-i18n="lblTotalToolSpend">Costo total (compra + afilados):</span>
+              <strong id="totCostActDisplay" class="text-gray-900">$80.00</strong>
+            </div>
+            <div class="flex justify-between border-t border-red-200/60 pt-1 mt-1">
+              <span class="font-bold text-red-800" data-i18n="lblMonthlyToolSpend">Gasto mensual herramientas (Act):</span>
+              <strong id="spendActToolsDisplay" class="text-red-700 font-black">$0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMNA 2: PROPUESTA REGO-FIX (HERRAMIENTA NUEVA + REAFILADA) -->
+        <div class="bg-white p-3 rounded-xl border border-green-300 shadow-sm space-y-2.5">
+          <div class="font-extrabold text-xs text-green-800 border-b border-green-100 pb-1.5 flex justify-between items-center">
+            <span data-i18n="lblNewToolHeader">🟢 Herramienta con Sujeción REGO-FIX</span>
+            <span class="text-[10px] bg-lime-100 text-green-900 px-2 py-0.5 rounded-full">Propuesta Optimizada</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="label text-[11px]" data-i18n="lblToolCostNew">Costo Herr. Nueva ($)</label>
+              <input id="toolCostNew" class="input" type="number" inputmode="decimal" step="any" value="50">
+            </div>
+            <div>
+              <label class="label text-[11px]" data-i18n="lblLifeNew">Vida Herr. Nueva (Pzas)</label>
+              <input id="lifeNew" class="input" type="number" inputmode="decimal" step="1" value="160">
+            </div>
+
+            <div>
+              <label class="label text-[11px]" data-i18n="lblToolCostRegrindNew">Costo Reafilado ($)</label>
+              <input id="toolCostRegrindNew" class="input" type="number" inputmode="decimal" step="any" value="15">
+            </div>
+            <div>
+              <label class="label text-[11px]" data-i18n="lblLifeNewRegrind">Vida Reafilada (Pzas)</label>
+              <input id="lifeNewRegrind" class="input" type="number" inputmode="decimal" step="1" value="125">
+            </div>
+
+            <div class="col-span-2">
+              <label class="label text-[11px]" data-i18n="lblRegrindCountNew">N° de Reafilados por herramienta (Con REGO-FIX)</label>
+              <input id="regrindCountNew" class="input" type="number" inputmode="decimal" min="0" step="1" value="3">
+            </div>
+          </div>
+
+          <div class="bg-lime-50/80 border border-lime-200 rounded-lg p-2 text-[11px] space-y-0.5">
+            <div class="flex justify-between">
+              <span class="text-gray-600" data-i18n="lblTotalLifePcs">Vida total acumulada (1 nueva + afilados):</span>
+              <strong id="totPcsNewDisplay" class="text-gray-900">535 pzas</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600" data-i18n="lblTotalToolSpend">Costo total (compra + afilados):</span>
+              <strong id="totCostNewDisplay" class="text-gray-900">$95.00</strong>
+            </div>
+            <div class="flex justify-between border-t border-lime-300/80 pt-1 mt-1">
+              <span class="font-bold text-green-900" data-i18n="lblMonthlyToolSpendNew">Gasto mensual herramientas (Nuevo):</span>
+              <strong id="spendNewToolsDisplay" class="text-green-800 font-black">$0</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-BLOQUE: ANÁLISIS DE CONOS / PORTAHERRAMIENTAS (AMORTIZACIÓN A 6 AÑOS = 72 MESES) -->
+      <div class="bg-white p-3 rounded-xl border border-blue-200 shadow-sm space-y-2.5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-1.5 gap-1">
+          <div class="font-extrabold text-xs text-[#28556C]" data-i18n="lblHoldersTitle">🛡️ Análisis de Vida Útil de Conos / Holders (Estándar REGO-FIX: 6 Años / 72 Meses)</div>
+          <span class="text-[10px] font-bold bg-blue-50 text-[#28556C] px-2 py-0.5 rounded-full">Amortización de Conos</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <!-- Conos Actuales -->
+          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+            <div class="font-bold text-[11px] text-gray-700 mb-1.5" data-i18n="lblHoldersActSub">Conos Actuales (Reemplazo periódico por desgaste/runout)</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="label text-[10px]" data-i18n="lblHolderQtyAct">Cant. Conos</label>
+                <input id="holderQtyAct" class="input text-xs" type="number" inputmode="decimal" min="0" step="1" value="3">
+              </div>
+              <div>
+                <label class="label text-[10px]" data-i18n="lblHolderCostAct">Costo Unit. ($)</label>
+                <input id="holderCostAct" class="input text-xs" type="number" inputmode="decimal" min="0" step="any" value="180">
+              </div>
+              <div>
+                <label class="label text-[10px]" data-i18n="lblHolderLifeAct">Vida (Meses)</label>
+                <input id="holderMonthsAct" class="input text-xs" type="number" inputmode="decimal" min="1" step="1" value="18">
+              </div>
+            </div>
+            <div class="mt-2 flex justify-between text-[11px] text-gray-600 border-t border-slate-200 pt-1">
+              <span data-i18n="lblHolderMonthDepAct">Depreciación / gasto mensual conos (Act):</span>
+              <strong id="holderDepActDisplay" class="text-red-600">$30.00 /mes</strong>
+            </div>
+          </div>
+
+          <!-- Conos REGO-FIX (6 años = 72 meses) -->
+          <div class="p-2.5 rounded-lg bg-cyan-50/40 border border-cyan-200">
+            <div class="font-bold text-[11px] text-[#28556C] mb-1.5" data-i18n="lblHoldersNewSub">Conos REGO-FIX (Vida útil estimada: 6 años = 72 meses)</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="label text-[10px]" data-i18n="lblHolderQtyNew">Cant. Conos</label>
+                <input id="holderQtyNew" class="input text-xs" type="number" inputmode="decimal" min="0" step="1" value="3">
+              </div>
+              <div>
+                <label class="label text-[10px]" data-i18n="lblHolderCostNew">Costo Unit. ($)</label>
+                <input id="holderCostNew" class="input text-xs" type="number" inputmode="decimal" min="0" step="any" value="420">
+              </div>
+              <div>
+                <label class="label text-[10px]" data-i18n="lblHolderLifeNew">Vida (6 años=72m)</label>
+                <input id="holderMonthsNew" class="input text-xs font-bold text-[#28556C]" type="number" inputmode="decimal" min="1" step="1" value="72">
+              </div>
+            </div>
+            <div class="mt-2 flex justify-between text-[11px] text-[#28556C] border-t border-cyan-200 pt-1">
+              <span data-i18n="lblHolderMonthDepNew">Amortización mensual conos (72 meses):</span>
+              <strong id="holderDepNewDisplay" class="text-green-700">$17.50 /mes</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Ahorro Mensual Total Frente B -->
+      <div class="kpi flex flex-col sm:flex-row justify-between items-start sm:items-center py-2 px-3 bg-white gap-2">
+        <div class="text-[11px] text-gray-600">
+          <span class="font-bold text-[#28556C]" data-i18n="lblMonthlySaveB">Ahorro mensual total (Herramientas + Reafilados + Conos 6 años):</span>
+          <span id="saveLifeBreakdownText" class="block sm:inline sm:ml-2 text-[10px] text-gray-500"></span>
+        </div>
+        <span id="saveLife" class="font-extrabold text-base text-[#8CA015]">$0</span>
+      </div>
     </div>
-    <div class="kpi flex justify-between items-center py-1.5"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveScrap" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
   </div>
-</div>
+
+  <!-- FILA INFERIOR: FRENTES A, C y D -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <!-- FRENTE A: TIEMPO -->
+    <div class="card p-3 bg-slate-50/50 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardTimeTitle">A) Ahorro por tiempo de Setup</span>
+          <div class="switch" id="swTime" data-on="true"><div class="knob"></div></div>
+        </div>
+        <div id="timeBody" class="space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="label text-[11px]" data-i18n="lblChgAct">Cambios/mes (Act)</label><input id="chgAct" class="input" type="number" inputmode="decimal" value="180"></div>
+            <div><label class="label text-[11px]" data-i18n="lblChgNew">Cambios/mes (Nuevo)</label><input id="chgNew" class="input" type="number" inputmode="decimal" value="140"></div>
+            <div>
+              <label class="label text-[11px]" data-i18n="lblMinChgAct">Tiempo/cambio (Act)</label>
+              <input id="chgMinAct" class="input" type="text" autocomplete="off" placeholder="HH:MM:SS o min" value="00:06:00">
+            </div>
+            <div>
+              <label class="label text-[11px]" data-i18n="lblMinChgNew">Tiempo/cambio (Nuevo)</label>
+              <input id="chgMinNew" class="input" type="text" autocomplete="off" placeholder="HH:MM:SS o min" value="00:04:30">
+            </div>
+          </div>
+          <div class="kpi flex justify-between items-center py-1.5 mt-2"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveTime" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRENTE C: MEJORA DE CICLO -->
+    <div class="card p-3 bg-slate-50/50 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardProcTitle">C) Mejora de tiempo de ciclo</span>
+          <div class="switch" id="swProc" data-on="true"><div class="knob"></div></div>
+        </div>
+        <div id="procBody" class="space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="label text-[11px]" data-i18n="lblCycAct">Ciclo Act (HH:MM:SS)</label>
+              <input id="cycAct" class="input" type="text" autocomplete="off" placeholder="HH:MM:SS o MM:SS" value="00:03:12">
+            </div>
+            <div>
+              <label class="label text-[11px]" data-i18n="lblCycNew">Ciclo Nuevo (HH:MM:SS)</label>
+              <input id="cycNew" class="input" type="text" autocomplete="off" placeholder="HH:MM:SS o MM:SS" value="00:02:51">
+            </div>
+          </div>
+          <div class="kpi flex justify-between items-center py-1.5 mt-2"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveProc" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRENTE D: SCRAP -->
+    <div class="card p-3 bg-slate-50/50 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-bold text-xs" style="color:var(--rego-blue)" data-i18n="cardScrapTitle">D) Reducción de Scrap</span>
+          <div class="switch" id="swScrap" data-on="true"><div class="knob"></div></div>
+        </div>
+        <div id="scrapBody" class="space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div><label class="label text-[11px]" data-i18n="lblScrapAct">Rechazos Act/mes</label><input id="scrapAct" class="input" type="number" inputmode="decimal" value="50"></div>
+            <div><label class="label text-[11px]" data-i18n="lblScrapNew">Rechazos Nuevo/mes</label><input id="scrapNew" class="input" type="number" inputmode="decimal" value="5"></div>
+            <div class="col-span-2"><label class="label text-[11px]" data-i18n="lblScrapCost">Costo Pza Scrap</label><input id="scrapCost" class="input" type="number" inputmode="decimal" step="any" value="15"></div>
+          </div>
+          <div class="kpi flex justify-between items-center py-1.5 mt-2"><span class="muted text-[11px]" data-i18n="lblMonthlySave">Ahorro mensual:</span><span id="saveScrap" class="font-extrabold text-sm text-[#8CA015]">$0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 </section>
 
@@ -433,15 +625,15 @@ textarea.input{ min-height: 80px; resize: vertical; }
 
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
   <div class="kpi text-center">
-    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiGross">Ahorro bruto</div>
+    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiGross">Ahorro bruto mensual</div>
     <div id="grossSave" class="text-lg font-black text-[#8CA015]">$0</div>
   </div>
   <div class="kpi text-center">
-    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiNet">Ahorro neto</div>
+    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiNet">Ahorro neto mensual</div>
     <div id="netSave" class="text-lg font-black text-[#8CA015]">$0</div>
   </div>
   <div class="kpi text-center">
-    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiPayback">Payback</div>
+    <div class="muted text-[10px] uppercase font-bold" data-i18n="kpiPayback">Payback (Retorno)</div>
     <div id="payback" class="text-lg font-black text-[#28556C]">—</div>
   </div>
 </div>
@@ -539,11 +731,42 @@ textarea.input{ min-height: 80px; resize: vertical; }
 
 <script>
 /* ========================================================
+UTILIDADES DE TIEMPO (HH:MM:SS <-> MINUTOS BACKSTAGE)
+======================================================== */
+function parseTimeToMinutes(val) {
+  if (typeof val === 'number') return Math.max(0, val);
+  if (!val || typeof val !== 'string') return 0;
+  const str = val.trim();
+  if (!str.includes(':')) {
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : Math.max(0, num);
+  }
+  const parts = str.split(':').map(p => parseFloat(p) || 0);
+  if (parts.length === 3) {
+    return Math.max(0, (parts[0] * 60) + parts[1] + (parts[2] / 60));
+  } else if (parts.length === 2) {
+    return Math.max(0, parts[0] + (parts[1] / 60));
+  }
+  return 0;
+}
+
+function formatMinutesToHMS(totalMinutes) {
+  if (isNaN(totalMinutes) || totalMinutes <= 0) return "00:00:00";
+  const totalSeconds = Math.round(totalMinutes * 60);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/* ========================================================
 BASE DE DATOS LOCAL OFFLINE AISLADA (IndexedDB - Test Lab)
 ======================================================== */
 const DB_NAME = "RegoFixMasterDB_ROI_Lab";
 const DB_VERSION = 1;
 let db = null;
+
+const ADMIN_DELETE_PASS = "REGO2026";
 
 function initIndexedDB() {
   return new Promise((resolve, reject) => {
@@ -608,36 +831,59 @@ const I18N = {
     lblCompany: "Empresa", phName: "Nombre", phRole: "Ej: Ing. Procesos", phCompany: "Razón social",
     sec1aTitle: "1A) Inversión y Costo de Máquina", badgeBase: "Base", lblCostHour: "Costo máquina/hora",
     btnAssistant: "Asistente", lblCurrHour: "USD/hora", lblPartsMonth: "Piezas por mes",
-    lblInvest: "Inversión Total", lblConsMonth: "Consumibles (/mes)", calcRefParams: "Parámetros referenciales (USD)",
-    calcMachineType: "Tipo de Máquina", optLathe2: "Torno CNC (2 Ejes)", optMill3: "Centro Maquinado (3 Ejes)",
-    optMill4: "Centro Maquinado (4 Ejes)", optSwiss: "Torno Multitarea / Suizo", optMill5: "Centro Maquinado (5 Ejes)",
-    calcSector: "Sector (Overhead)", optGeneral: "General / Job Shop", optAuto: "Automotriz", optMold: "Moldes y Troqueles",
-    optAero: "Aeroespacial", optMed: "Médico", calcLabor: "Mano de Obra", optOp1: "1 Op / 1 Máquina ($25/h)",
-    optOp2: "1 Op / 2 Máquinas ($12.5/h)", optOpAuto: "Celda automatizada", sec1bTitle: "1B) Contexto del Maquinado",
-    lblSpindle: "Interfaz husillo", phSpindle: "Ej: CAT40 / HSK63A", lblCoolant: "Refrigerante", phCoolant: "Ej: Interno Alta Presión",
-    lblMaterial: "Material principal", phMaterial: "Ej: Titanio / Inox", lblPriority: "Prioridad Global", phPriority: "Ej: Eliminar vibración",
+    lblInvest: "Inversión Total (Holders/Equipo)", lblConsMonth: "Consumibles extra (/mes)",
+    calcRefParams: "Asistente de cálculo de hora máquina (Escritura libre)",
+    calcMachineType: "Tipo de Máquina y Tarifa Base (/h)",
+    calcSector: "Sector y Factor Overhead",
+    calcLabor: "Mano de Obra (/h)",
+    sec1bTitle: "1B) Contexto del Maquinado",
+    lblSpindle: "Interfaz husillo", phSpindle: "Ej: CAT40, BT40, HSK-A63...", lblCoolant: "Refrigerante / Lubricación", phCoolant: "Ej: MQL, Flood, Seco, TSC 70 bar...",
+    lblMaterial: "Material principal", phMaterial: "Ej: Aluminio, D2, Inox, Titanio...", lblPriority: "Prioridad Global", phPriority: "Ej: Eliminar vibración, Runout, Vida...",
     lblGoal: "Objetivo general del cliente", phGoal: "Ej: Reducir ciclo en 15% y eliminar rechazos.",
     sec1cTitle: "1C) Casos de Herramientas", btnAddCase: "+ Agregar Caso", caseLabel: "Caso", btnDeleteCase: "✕ Eliminar",
     lblToolOp: "Operación / Herramienta", phToolOp: "Ej: Endmill 12mm...", lblToolSetup: "Sujeción Actual", phToolSetup: "Ej: ER32, Weldon...",
     lblToolProblem: "Problema detectado", phToolProblem: "Ej: Vibración y mal acabado...", lblToolReco: "Propuesta REGO-FIX",
     phToolReco: "Ensambles sugeridos...", btnAnalyze: "Analizar y Configurar Ensambles", aiTitle: "Dictamen de Ingeniería",
     phAiPitch: "Argumento comercial...", sec2Title: "2) Ahorros Globales (4 frentes)", badgeSavings: "Ahorros",
-    cardTimeTitle: "A) Ahorro por tiempo", lblChgAct: "Cambios/mes (Act)", lblChgNew: "Cambios/mes (Nuevo)",
-    lblMinChgAct: "Min/cambio (Act)", lblMinChgNew: "Min/cambio (Nuevo)", lblMonthlySave: "Ahorro mensual:",
-    cardLifeTitle: "B) Vida de herramientas", lblLifeAct: "Ciclos/herr (Act)", lblLifeNew: "Ciclos/herr (Nuevo)",
-    lblToolCost: "Costo Herr", lblToolCostAct: "Costo Herr (Act)", lblToolCostNew: "Costo Herr (Nuevo)", lblToolCount: "Herramientas activas", cardProcTitle: "C) Mejora de ciclo",
-    lblCycAct: "Ciclo Act (min/pza)", lblCycNew: "Ciclo Nuevo (min/pza)", cardScrapTitle: "D) Reducción de Scrap",
+    cardTimeTitle: "A) Ahorro por tiempo de Setup", lblChgAct: "Cambios/mes (Act)", lblChgNew: "Cambios/mes (Nuevo)",
+    lblMinChgAct: "Tiempo/cambio (Act)", lblMinChgNew: "Tiempo/cambio (Nuevo)", lblMonthlySave: "Ahorro mensual:",
+    cardLifeTitle: "B) Vida de Herramientas (Nueva vs Reafilada) y Amortización de Conos (6 Años)",
+    cardLifeSubtitle: "Compara piezas de duración en herramienta nueva, reafilada y vida útil de los conos portaherramientas.",
+    lblToolCount: "Herramientas de corte activas en el proceso",
+    lblToolCountHint: "Cantidad de herramientas evaluadas que cortan cada pieza",
+    lblActToolHeader: "🔴 Herramienta de Corte Actual",
+    lblNewToolHeader: "🟢 Herramienta con Sujeción REGO-FIX",
+    lblToolCostAct: "Costo Herr. Nueva ($)", lblLifeAct: "Vida Herr. Nueva (Pzas)",
+    lblToolCostRegrind: "Costo Reafilado ($)", lblLifeActRegrind: "Vida Reafilada (Pzas)",
+    lblRegrindCount: "N° de Reafilados por herramienta (Act)",
+    lblToolCostNew: "Costo Herr. Nueva ($)", lblLifeNew: "Vida Herr. Nueva (Pzas)",
+    lblToolCostRegrindNew: "Costo Reafilado ($)", lblLifeNewRegrind: "Vida Reafilada (Pzas)",
+    lblRegrindCountNew: "N° de Reafilados por herramienta (Con REGO-FIX)",
+    lblTotalLifePcs: "Vida total acumulada (1 nueva + afilados):",
+    lblTotalToolSpend: "Costo total ciclo (compra + afilados):",
+    lblMonthlyToolSpend: "Gasto mensual herramientas (Act):",
+    lblMonthlyToolSpendNew: "Gasto mensual herramientas (Nuevo):",
+    lblHoldersTitle: "🛡️ Análisis de Vida Útil de Conos / Holders (Estándar REGO-FIX: 6 Años / 72 Meses)",
+    lblHoldersActSub: "Conos Actuales (Reemplazo periódico por desgaste/runout)",
+    lblHoldersNewSub: "Conos REGO-FIX (Vida útil garantizada: 6 años = 72 meses)",
+    lblHolderQtyAct: "Cant. Conos", lblHolderCostAct: "Costo Unit. ($)", lblHolderLifeAct: "Vida (Meses)",
+    lblHolderQtyNew: "Cant. Conos", lblHolderCostNew: "Costo Unit. ($)", lblHolderLifeNew: "Vida (6 años=72m)",
+    lblHolderMonthDepAct: "Depreciación / gasto mensual conos (Act):",
+    lblHolderMonthDepNew: "Amortización mensual conos (72 meses):",
+    lblMonthlySaveB: "Ahorro mensual total (Herramientas + Reafilados + Conos 6 años):",
+    cardProcTitle: "C) Mejora de tiempo de ciclo",
+    lblCycAct: "Ciclo Act (HH:MM:SS)", lblCycNew: "Ciclo Nuevo (HH:MM:SS)", cardScrapTitle: "D) Reducción de Scrap",
     lblScrapAct: "Rechazos Act/mes", lblScrapNew: "Rechazos Nuevo/mes", lblScrapCost: "Costo Pza Scrap",
-    sec3Title: "3) Resultados del ROI", badgeRoi: "ROI", kpiGross: "Ahorro bruto", kpiNet: "Ahorro neto",
-    kpiPayback: "Payback", kpiRoiEst: "ROI anual estimado", kpiRoiFormula: "((neto*12) / inversión)",
+    sec3Title: "3) Resultados del ROI", badgeRoi: "ROI", kpiGross: "Ahorro bruto mensual", kpiNet: "Ahorro neto mensual",
+    kpiPayback: "Payback (Retorno)", kpiRoiEst: "ROI anual estimado", kpiRoiFormula: "((neto*12) / inversión)",
     sec4Title: "4) Evidencia del Proceso (Antes vs Después)", badgePhotos: "Fotos",
     lblBeforeTitle: "📸 Situación Actual / Proceso Anterior (Antes)", lblAfterTitle: "✨ Con Solución REGO-FIX (Después)",
-    chartActual: "Situación Actual", chartRego: "Con REGO-FIX", chartTitle: "Costo (USD)",
+    chartActual: "Situación Actual", chartRego: "Con REGO-FIX", chartTitle: "Costo Mensual (USD)",
     copiedAlert: "Copiado al portapapeles.", copyErrorAlert: "Error al copiar.", resetConfirm: "¿Borrar todo y empezar un estudio nuevo?",
     aiOffline: "Atención: Para generar dictámenes de IA necesitas estar conectado a internet. Los cálculos y reportes PDF siguen disponibles offline.",
     aiLoading: "⏳ Diseñando ensambles...", aiError: "Hubo un problema al contactar a la Inteligencia Artificial.",
     aiComplete: "Revisión completa.", monthSuffix: " mes(es)", yearSuffix: " / año",
-    pdfTitle: "Estudio de Ingeniería de Sujeción", pdfSubtitle: "Análisis de ROI y Optimización Técnica",
+    pdfTitle: "Estudio de Ingeniería de Sujeción", pdfSubtitle: "Análisis de ROI, Vida de Filo y Amortización a 6 Años",
     pdfClient: "Empresa Cliente:", pdfAttention: "Responsable / Asesor:", pdfDate: "Fecha de Emisión:", pdfSec1: "1. Contexto Global del Maquinado",
     pdfSec2: "2. Análisis Detallado de Operaciones y Propuestas", pdfSec3: "3. Retorno de Inversión y Comparativa Numérica",
     pdfSec4: "4. Comparativa Visual del Proceso (Antes vs Después)",
@@ -645,7 +891,7 @@ const I18N = {
     pdfSpindle: "Interfaz Husillo", pdfCoolant: "Refrigeración", pdfMaterial: "Material Procesado", pdfGoal: "Objetivo Principal",
     pdfAiTitle: "Dictamen Técnico de Ingeniería", pdfCurrentSetup: "Sujeción Actual", pdfProblem: "Diagnóstico / Problema",
     pdfSolution: "Solución Recomendada REGO-FIX", pdfBreakdown: "DESGLOSE DE AHORROS ESTIMADOS (MENSUAL)",
-    pdfTimeSetup: "Tiempo de Setup", pdfToolLife: "Vida Útil Herramienta", pdfProcImprove: "Mejora de Ciclo",
+    pdfTimeSetup: "Tiempo de Setup", pdfToolLife: "Herramientas y Conos", pdfProcImprove: "Mejora de Ciclo",
     pdfScrapRed: "Reducción Scrap", pdfInvest: "Inversión Estimada", pdfNetSave: "Ahorro Neto Mensual",
     pdfPayback: "Periodo de Retorno", pdfRoiEst: "ROI Anual Estimado", pdfChartComp: "Comparativa de Costo Operativo Mensual (USD)",
     pdfUnnamedTool: "Operación de Maquinado", pdfTbd: "Pendiente de definir...",
@@ -661,25 +907,48 @@ const I18N = {
     lblCompany: "Empresa", phName: "Nome", phRole: "Ex: Eng. de Processos", phCompany: "Razão Social",
     sec1aTitle: "1A) Investimento e Custo de Máquina", badgeBase: "Base", lblCostHour: "Custo máquina/hora",
     btnAssistant: "Assistente", lblCurrHour: "BRL/hora", lblPartsMonth: "Peças por mês",
-    lblInvest: "Investimento Total", lblConsMonth: "Consumíveis (/mês)", calcRefParams: "Parâmetros de referência (BRL)",
-    calcMachineType: "Tipo de Máquina", optLathe2: "Torno CNC (2 Eixos)", optMill3: "Centro de Usinagem (3 Eixos)",
-    optMill4: "Centro de Usinagem (4 Eixos)", optSwiss: "Torno Multifunção / Suíço", optMill5: "Centro de Usinagem (5 Eixos)",
-    calcSector: "Setor (Overhead)", optGeneral: "Geral / Usinagem", optAuto: "Automotivo", optMold: "Moldes e Matrizes",
-    optAero: "Aeroespacial", optMed: "Médico", calcLabor: "Mão de Obra", optOp1: "1 Op / 1 Máquina (R$25/h)",
-    optOp2: "1 Op / 2 Máquinas (R$12.5/h)", optOpAuto: "Célula automatizada", sec1bTitle: "1B) Contexto da Usinagem",
-    lblSpindle: "Interface do fuso", phSpindle: "Ex: CAT40 / HSK63A", lblCoolant: "Refrigeração", phCoolant: "Ex: Interno Alta Pressão",
-    lblMaterial: "Material principal", phMaterial: "Ex: Titânio / Inox", lblPriority: "Prioridade Global", phPriority: "Ex: Eliminar vibração",
+    lblInvest: "Investimento Total", lblConsMonth: "Consumíveis (/mês)",
+    calcRefParams: "Assistente de custo hora-máquina (Texto livre)",
+    calcMachineType: "Tipo de Máquina e Taxa Base (/h)",
+    calcSector: "Setor e Fator Overhead",
+    calcLabor: "Mão de Obra (/h)",
+    sec1bTitle: "1B) Contexto da Usinagem",
+    lblSpindle: "Interface do fuso", phSpindle: "Ex: CAT40, BT40, HSK-A63...", lblCoolant: "Refrigeração", phCoolant: "Ex: MQL, Flood, Seco, TSC 70 bar...",
+    lblMaterial: "Material principal", phMaterial: "Ex: Alumínio, Inox, Titânio...", lblPriority: "Prioridade Global", phPriority: "Ex: Eliminar vibração, Runout...",
     lblGoal: "Objetivo geral do cliente", phGoal: "Ex: Reduzir ciclo em 15% e eliminar refugos.",
     sec1cTitle: "1C) Casos de Ferramentas", btnAddCase: "+ Adicionar Caso", caseLabel: "Caso", btnDeleteCase: "✕ Excluir",
     lblToolOp: "Operação / Ferramenta", phToolOp: "Ex: Fresa topo 12mm...", lblToolSetup: "Fixação Atual", phToolSetup: "Ex: ER32, Weldon...",
     lblToolProblem: "Problema detectado", phToolProblem: "Ex: Vibração e acabamento ruim...", lblToolReco: "Proposta REGO-FIX",
     phToolReco: "Montagens sugeridas...", btnAnalyze: "Analisar e Configurar Montagens", aiTitle: "Parecer de Engenharia",
     phAiPitch: "Argumento comercial...", sec2Title: "2) Economia Global (4 frentes)", badgeSavings: "Economia",
-    cardTimeTitle: "A) Economia por tempo", lblChgAct: "Trocas/mês (Atual)", lblChgNew: "Trocas/mês (Novo)",
-    lblMinChgAct: "Min/troca (Atual)", lblMinChgNew: "Min/troca (Novo)", lblMonthlySave: "Economia mensal:",
-    cardLifeTitle: "B) Vida útil das ferramentas", lblLifeAct: "Ciclos/ferr (Atual)", lblLifeNew: "Ciclos/ferr (Novo)",
-    lblToolCost: "Custo Ferr", lblToolCostAct: "Custo Ferr (Atual)", lblToolCostNew: "Custo Ferr (Novo)", lblToolCount: "Ferramentas ativas", cardProcTitle: "C) Melhoria de ciclo",
-    lblCycAct: "Ciclo Atual (min/peça)", lblCycNew: "Ciclo Novo (min/peça)", cardScrapTitle: "D) Redução de Refugo",
+    cardTimeTitle: "A) Economia por tempo de Setup", lblChgAct: "Trocas/mês (Atual)", lblChgNew: "Trocas/mês (Novo)",
+    lblMinChgAct: "Tempo/troca (Atual)", lblMinChgNew: "Tempo/troca (Novo)", lblMonthlySave: "Economia mensal:",
+    cardLifeTitle: "B) Vida de Ferramentas (Nova vs Afiada) e Cones (6 Anos)",
+    cardLifeSubtitle: "Compare a vida útil da ferramenta nova, reafiada e a amortização dos cones.",
+    lblToolCount: "Ferramentas ativas no processo",
+    lblToolCountHint: "Quantidade de ferramentas avaliadas",
+    lblActToolHeader: "🔴 Ferramenta de Corte Atual",
+    lblNewToolHeader: "🟢 Ferramenta com Fixação REGO-FIX",
+    lblToolCostAct: "Custo Ferr. Nova ($)", lblLifeAct: "Vida Ferr. Nova (Pçs)",
+    lblToolCostRegrind: "Custo Afiação ($)", lblLifeActRegrind: "Vida Afiada (Pçs)",
+    lblRegrindCount: "N° de Afiações por ferramenta (Atual)",
+    lblToolCostNew: "Custo Ferr. Nova ($)", lblLifeNew: "Vida Ferr. Nova (Pçs)",
+    lblToolCostRegrindNew: "Custo Afiação ($)", lblLifeNewRegrind: "Vida Afiada (Pçs)",
+    lblRegrindCountNew: "N° de Afiações por ferramenta (REGO-FIX)",
+    lblTotalLifePcs: "Vida total acumulada (1 nova + afiações):",
+    lblTotalToolSpend: "Custo total ciclo (compra + afiações):",
+    lblMonthlyToolSpend: "Gasto mensal ferramentas (Atual):",
+    lblMonthlyToolSpendNew: "Gasto mensal ferramentas (Novo):",
+    lblHoldersTitle: "🛡️ Análise de Vida Útil de Cones / Holders (Padrão REGO-FIX: 6 Anos / 72 Meses)",
+    lblHoldersActSub: "Cones Atuais (Substituição periódica por desgaste)",
+    lblHoldersNewSub: "Cones REGO-FIX (Vida útil: 6 anos = 72 meses)",
+    lblHolderQtyAct: "Qtd. Cones", lblHolderCostAct: "Custo Unit. ($)", lblHolderLifeAct: "Vida (Meses)",
+    lblHolderQtyNew: "Qtd. Cones", lblHolderCostNew: "Custo Unit. ($)", lblHolderLifeNew: "Vida (72 meses)",
+    lblHolderMonthDepAct: "Depreciação mensal cones (Atual):",
+    lblHolderMonthDepNew: "Amortização mensal cones (72 meses):",
+    lblMonthlySaveB: "Economia mensal total (Ferramentas + Afiações + Cones 6 anos):",
+    cardProcTitle: "C) Melhoria de ciclo",
+    lblCycAct: "Ciclo Atual (HH:MM:SS)", lblCycNew: "Ciclo Novo (HH:MM:SS)", cardScrapTitle: "D) Redução de Refugo",
     lblScrapAct: "Refugos Atual/mês", lblScrapNew: "Refugos Novo/mês", lblScrapCost: "Custo Peça Refugo",
     sec3Title: "3) Resultados do ROI", badgeRoi: "ROI", kpiGross: "Economia bruta", kpiNet: "Economia líquida",
     kpiPayback: "Payback", kpiRoiEst: "ROI anual estimado", kpiRoiFormula: "((líquido*12) / investimento)",
@@ -687,10 +956,10 @@ const I18N = {
     lblBeforeTitle: "📸 Situação Atual / Processo Anterior (Antes)", lblAfterTitle: "✨ Com Solução REGO-FIX (Depois)",
     chartActual: "Situação Atual", chartRego: "Com REGO-FIX", chartTitle: "Custo (BRL)",
     copiedAlert: "Copiado para a área de transferência.", copyErrorAlert: "Erro ao copiar.", resetConfirm: "Deseja limpar tudo e iniciar um novo estudo?",
-    aiOffline: "Atenção: Para gerar pareceres com IA é necessário estar conectado à internet. Cálculos e relatórios em PDF continuam funcionando offline.",
+    aiOffline: "Atenção: Para gerar pareceres com IA é necessário estar conectado à internet.",
     aiLoading: "⏳ Projetando montagens...", aiError: "Ocorreu um problema ao conectar com a IA.",
     aiComplete: "Revisão completa.", monthSuffix: " mês(es)", yearSuffix: " / ano",
-    pdfTitle: "Estudo de Engenharia de Fixação", pdfSubtitle: "Análise de ROI e Otimização Técnica",
+    pdfTitle: "Estudo de Engenharia de Fixação", pdfSubtitle: "Análise de ROI, Afiações e Amortização 6 Anos",
     pdfClient: "Empresa Cliente:", pdfAttention: "Responsável / Consultor:", pdfDate: "Data de Emissão:", pdfSec1: "1. Contexto Global da Usinagem",
     pdfSec2: "2. Análise Detalhada de Operações e Propostas", pdfSec3: "3. Retorno sobre Investimento e Comparativo Numérico",
     pdfSec4: "4. Comparativo Visual do Processo (Antes vs Depois)",
@@ -698,7 +967,7 @@ const I18N = {
     pdfSpindle: "Interface do Fuso", pdfCoolant: "Refrigeração", pdfMaterial: "Material Principal", pdfGoal: "Objetivo Principal",
     pdfAiTitle: "Parecer Técnico de Engenharia", pdfCurrentSetup: "Fixação Atual", pdfProblem: "Diagnóstico / Problema",
     pdfSolution: "Solução Recomendada REGO-FIX", pdfBreakdown: "DETALHAMENTO DE ECONOMIA ESTIMADA (MENSAL)",
-    pdfTimeSetup: "Tempo de Setup", pdfToolLife: "Vida da Ferramenta", pdfProcImprove: "Melhoria de Ciclo",
+    pdfTimeSetup: "Tempo de Setup", pdfToolLife: "Ferramentas e Cones", pdfProcImprove: "Melhoria de Ciclo",
     pdfScrapRed: "Redução de Refugo", pdfInvest: "Investimento Proposto", pdfNetSave: "Economia Líquida Mensal",
     pdfPayback: "Tempo de Retorno", pdfRoiEst: "ROI Anual Estimado", pdfChartComp: "Comparativo de Custo Operacional Mensal (BRL)",
     pdfUnnamedTool: "Operação de Usinagem", pdfTbd: "A definir com consultoria...",
@@ -714,36 +983,59 @@ const I18N = {
     lblCompany: "Company", phName: "Full Name", phRole: "E.g., Process Engineer", phCompany: "Company Name",
     sec1aTitle: "1A) Investment & Machine Cost", badgeBase: "Base", lblCostHour: "Machine Cost / Hour",
     btnAssistant: "Assistant", lblCurrHour: "USD/hour", lblPartsMonth: "Parts per Month",
-    lblInvest: "Total Investment", lblConsMonth: "Consumibles (/month)", calcRefParams: "Reference Parameters (USD)",
-    calcMachineType: "Machine Type", optLathe2: "CNC Lathe (2-Axis)", optMill3: "Machining Center (3-Axis)",
-    optMill4: "Machining Center (4-Axis)", optSwiss: "Multi-Tasking / Swiss Lathe", optMill5: "Machining Center (5-Axis)",
-    calcSector: "Industry Sector (Overhead)", optGeneral: "General / Job Shop", optAuto: "Automotive", optMold: "Mold & Die",
-    optAero: "Aerospace", optMed: "Medical", calcLabor: "Labor Cost", optOp1: "1 Op / 1 Machine ($25/h)",
-    optOp2: "1 Op / 2 Machines ($12.5/h)", optOpAuto: "Automated Cell", sec1bTitle: "1B) Machining Context",
-    lblSpindle: "Spindle Interface", phSpindle: "E.g., CAT40 / HSK63A", lblCoolant: "Coolant Type", phCoolant: "E.g., High Pressure Internal",
-    lblMaterial: "Main Material", phMaterial: "E.g., Titanium / Stainless", lblPriority: "Global Priority", phPriority: "E.g., Eliminate vibration",
+    lblInvest: "Total Investment", lblConsMonth: "Consumables (/month)",
+    calcRefParams: "Machine Hour Rate Assistant (Free input)",
+    calcMachineType: "Machine Type & Base Rate (/h)",
+    calcSector: "Industry & Overhead Factor",
+    calcLabor: "Labor Cost (/h)",
+    sec1bTitle: "1B) Machining Context",
+    lblSpindle: "Spindle Interface", phSpindle: "E.g., CAT40, BT40, HSK63A...", lblCoolant: "Coolant Type", phCoolant: "E.g., MQL, Flood, Dry, TSC 70 bar...",
+    lblMaterial: "Main Material", phMaterial: "E.g., Titanium, Inconel, Stainless...", lblPriority: "Global Priority", phPriority: "E.g., Eliminate vibration, Runout...",
     lblGoal: "Customer's Overall Goal", phGoal: "E.g., Reduce cycle time by 15% and scrap.",
     sec1cTitle: "1C) Tooling Cases", btnAddCase: "+ Add Case", caseLabel: "Case", btnDeleteCase: "✕ Delete",
     lblToolOp: "Operation / Tool", phToolOp: "E.g., Endmill 1/2\"...", lblToolSetup: "Current Toolholder", phToolSetup: "E.g., ER32, Weldon...",
     lblToolProblem: "Identified Problem", phToolProblem: "E.g., Chatter and poor finish...", lblToolReco: "REGO-FIX Proposal",
     phToolReco: "Suggested assemblies...", btnAnalyze: "Analyze & Configure Assemblies", aiTitle: "Engineering Report",
     phAiPitch: "Commercial argument...", sec2Title: "2) Overall Savings (4 areas)", badgeSavings: "Savings",
-    cardTimeTitle: "A) Time Savings", lblChgAct: "Changes/mo (Current)", lblChgNew: "Changes/mo (New)",
-    lblMinChgAct: "Min/change (Current)", lblMinChgNew: "Min/change (New)", lblMonthlySave: "Monthly Savings:",
-    cardLifeTitle: "B) Tool Life Improvement", lblLifeAct: "Cycles/tool (Current)", lblLifeNew: "Cycles/tool (New)",
-    lblToolCost: "Tool Cost", lblToolCostAct: "Tool Cost (Current)", lblToolCostNew: "Tool Cost (New)", lblToolCount: "Active Tools", cardProcTitle: "C) Cycle Time Reduction",
-    lblCycAct: "Cycle Current (min/pc)", lblCycNew: "Cycle New (min/pc)", cardScrapTitle: "D) Scrap Reduction",
+    cardTimeTitle: "A) Setup Time Savings", lblChgAct: "Changes/mo (Current)", lblChgNew: "Changes/mo (New)",
+    lblMinChgAct: "Time/change (Current)", lblMinChgNew: "Time/change (New)", lblMonthlySave: "Monthly Savings:",
+    cardLifeTitle: "B) Tool Life (New vs Regrind) & Toolholder Amortization (6 Years)",
+    cardLifeSubtitle: "Compare parts per edge on new tools, reground tools, and 6-year toolholder lifespan.",
+    lblToolCount: "Active cutting tools in process",
+    lblToolCountHint: "Number of evaluated cutting tools per part",
+    lblActToolHeader: "🔴 Current Cutting Tool",
+    lblNewToolHeader: "🟢 Cutting Tool with REGO-FIX",
+    lblToolCostAct: "New Tool Cost ($)", lblLifeAct: "New Tool Life (Parts)",
+    lblToolCostRegrind: "Regrind Cost ($)", lblLifeActRegrind: "Reground Life (Parts)",
+    lblRegrindCount: "Regrinds per tool (Current)",
+    lblToolCostNew: "New Tool Cost ($)", lblLifeNew: "New Tool Life (Parts)",
+    lblToolCostRegrindNew: "Regrind Cost ($)", lblLifeNewRegrind: "Reground Life (Parts)",
+    lblRegrindCountNew: "Regrinds per tool (With REGO-FIX)",
+    lblTotalLifePcs: "Total accumulated life (1 new + regrinds):",
+    lblTotalToolSpend: "Total cycle cost (purchase + regrinds):",
+    lblMonthlyToolSpend: "Monthly cutting tool spend (Act):",
+    lblMonthlyToolSpendNew: "Monthly cutting tool spend (New):",
+    lblHoldersTitle: "🛡️ Toolholder Lifespan Analysis (REGO-FIX Standard: 6 Years / 72 Months)",
+    lblHoldersActSub: "Current Holders (Periodic replacement due to wear/runout)",
+    lblHoldersNewSub: "REGO-FIX Holders (Guaranteed lifespan: 6 years = 72 months)",
+    lblHolderQtyAct: "Holder Qty", lblHolderCostAct: "Unit Cost ($)", lblHolderLifeAct: "Life (Months)",
+    lblHolderQtyNew: "Holder Qty", lblHolderCostNew: "Unit Cost ($)", lblHolderLifeNew: "Life (72 mos)",
+    lblHolderMonthDepAct: "Monthly holder depreciation (Act):",
+    lblHolderMonthDepNew: "Monthly holder amortization (72 mos):",
+    lblMonthlySaveB: "Total monthly savings (Tools + Regrinds + Holders 6 yrs):",
+    cardProcTitle: "C) Cycle Time Reduction",
+    lblCycAct: "Cycle Current (HH:MM:SS)", lblCycNew: "Cycle New (HH:MM:SS)", cardScrapTitle: "D) Scrap Reduction",
     lblScrapAct: "Rejects Current/mo", lblScrapNew: "Rejects New/mo", lblScrapCost: "Scrap Part Cost",
-    sec3Title: "3) Results del ROI", badgeRoi: "ROI", kpiGross: "Gross Savings", kpiNet: "Net Savings",
-    kpiPayback: "Payback", kpiRoiEst: "Estimated Annual ROI", kpiRoiFormula: "((net*12) / investment)",
+    sec3Title: "3) ROI Results", badgeRoi: "ROI", kpiGross: "Gross Monthly Savings", kpiNet: "Net Monthly Savings",
+    kpiPayback: "Payback Period", kpiRoiEst: "Estimated Annual ROI", kpiRoiFormula: "((net*12) / investment)",
     sec4Title: "4) Process Evidence (Before vs After)", badgePhotos: "Photos",
     lblBeforeTitle: "📸 Current Situation / Before Process", lblAfterTitle: "✨ With REGO-FIX Solution (After)",
-    chartActual: "Current Situation", chartRego: "With REGO-FIX", chartTitle: "Cost (USD)",
+    chartActual: "Current Situation", chartRego: "With REGO-FIX", chartTitle: "Monthly Cost (USD)",
     copiedAlert: "Copied to clipboard.", copyErrorAlert: "Error copying to clipboard.", resetConfirm: "Clear everything and start a new study?",
     aiOffline: "Note: An internet connection is required to generate AI engineering proposals.",
     aiLoading: "⏳ Designing assemblies...", aiError: "There was a problem connecting to AI.",
     aiComplete: "Review complete.", monthSuffix: " month(s)", yearSuffix: " / year",
-    pdfTitle: "Toolholding Engineering Study", pdfSubtitle: "Technical Optimization & ROI Analysis",
+    pdfTitle: "Toolholding Engineering Study", pdfSubtitle: "Technical Optimization, Regrind & 6-Year Holder ROI",
     pdfClient: "Client Company:", pdfAttention: "Responsible / Consultant:", pdfDate: "Issue Date:", pdfSec1: "1. Global Machining Context",
     pdfSec2: "2. Detailed Tooling Operations & Solutions", pdfSec3: "3. Financial Analysis & Numeric Comparison",
     pdfSec4: "4. Visual Process Comparison (Before vs After)",
@@ -751,7 +1043,7 @@ const I18N = {
     pdfSpindle: "Spindle Interface", pdfCoolant: "Coolant Type", pdfMaterial: "Primary Material", pdfGoal: "Main Objective",
     pdfAiTitle: "Technical Engineering Assessment", pdfCurrentSetup: "Current Toolholder", pdfProblem: "Problem / Diagnosis",
     pdfSolution: "Recommended REGO-FIX Solution", pdfBreakdown: "ESTIMATED MONTHLY SAVINGS BREAKDOWN",
-    pdfTimeSetup: "Setup Time", pdfToolLife: "Tool Life", pdfProcImprove: "Cycle Improvement",
+    pdfTimeSetup: "Setup Time", pdfToolLife: "Tools & Holders", pdfProcImprove: "Cycle Improvement",
     pdfScrapRed: "Scrap Reduction", pdfInvest: "Proposed Investment", pdfNetSave: "Net Monthly Savings",
     pdfPayback: "Payback Period", pdfRoiEst: "Estimated Annual ROI", pdfChartComp: "Monthly Operational Cost Comparison (USD)",
     pdfUnnamedTool: "Machining Operation", pdfTbd: "Pending confirmation...",
@@ -763,7 +1055,7 @@ let currentLang = 'es';
 function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.es[key] || key); }
 function money(n) {
   const conf = I18N[currentLang] || I18N.es;
-  return Number(n || 0).toLocaleString(conf.locale, { style: "currency", currency: conf.currencyCode, maximumFractionDigits: 0 });
+  return Number(n || 0).toLocaleString(conf.locale, { style: "currency", currency: conf.currencyCode, maximumFractionDigits: 2 });
 }
 
 function setLanguage(lang) {
@@ -804,7 +1096,9 @@ switches: { time: true, timeChanges: true, timeSetups: false, timeStops: false, 
 study: {
 studyDate: "", userName: "", userRole: "", company: "",
 spindleInterface: "", coolant: "", material: "", priority: "", goal: "",
-calcMachine: "50", calcSector: "1.0", calcOperator: "25",
+calcMachineDesc: "Centro 3 Ejes", calcMachine: "50",
+calcSectorDesc: "General", calcSector: "1.0",
+calcOperatorDesc: "1 Op / 1 Máq", calcOperator: "25",
 aiPitch: "", aiMissing: "",
 beforePhoto: "", afterPhoto: "",
 tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" } ]
@@ -813,18 +1107,28 @@ tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" }
 
 const defaultMathValues = {
   costHour: "75", partsMonth: "5000", invest: "4500", consMonth: "0",
-  chgAct: "180", chgNew: "140", chgMinAct: "6", chgMinNew: "4.5",
-  lifeAct: "100", lifeNew: "160", toolCost: "50", toolCostNew: "45", toolCount: "3",
-  cycAct: "3.20", cycNew: "2.85", scrapAct: "50", scrapNew: "5", scrapCost: "15"
+  chgAct: "180", chgNew: "140", chgMinAct: "00:06:00", chgMinNew: "00:04:30",
+  toolCount: "3",
+  // Herramienta actual (Nueva y Reafilada)
+  toolCost: "50", lifeAct: "100", toolCostRegrind: "15", lifeActRegrind: "75", regrindCount: "2",
+  // Herramienta con REGO-FIX (Nueva y Reafilada)
+  toolCostNew: "50", lifeNew: "160", toolCostRegrindNew: "15", lifeNewRegrind: "125", regrindCountNew: "3",
+  // Conos / Holders (Actual vs REGO-FIX 6 años = 72 meses)
+  holderQtyAct: "3", holderCostAct: "180", holderMonthsAct: "18",
+  holderQtyNew: "3", holderCostNew: "420", holderMonthsNew: "72",
+  // Ciclo y Scrap
+  cycAct: "00:03:12", cycNew: "00:02:51", scrapAct: "50", scrapNew: "5", scrapCost: "15"
 };
 
 const mathIds = [
-"costHour","partsMonth","invest","consMonth",
-"chgAct","chgNew","chgMinAct","chgMinNew",
-"setAct","setNew","setMinAct","setMinNew",
-"stpAct","stpNew","stpMinAct","stpMinNew",
-"lifeAct","lifeNew","toolCost","toolCostNew","toolCount",
-"cycAct","cycNew","scrapAct","scrapNew","scrapCost"
+  "costHour","partsMonth","invest","consMonth",
+  "chgAct","chgNew","chgMinAct","chgMinNew",
+  "toolCount",
+  "toolCost","lifeAct","toolCostRegrind","lifeActRegrind","regrindCount",
+  "toolCostNew","lifeNew","toolCostRegrindNew","lifeNewRegrind","regrindCountNew",
+  "holderQtyAct","holderCostAct","holderMonthsAct",
+  "holderQtyNew","holderCostNew","holderMonthsNew",
+  "cycAct","cycNew","scrapAct","scrapNew","scrapCost"
 ];
 
 const $ = (id)=>document.getElementById(id);
@@ -835,7 +1139,6 @@ function persist(){
   try {
     localStorage.setItem("rego_switches_roi_lab", JSON.stringify(state.switches));
     
-    // Evitar desbordar la cuota de localStorage guardando datos ligeros sin base64
     const safeStudyToStorage = {
       ...state.study,
       beforePhoto: "",
@@ -844,7 +1147,6 @@ function persist(){
     };
     localStorage.setItem("rego_study_roi_lab", JSON.stringify(safeStudyToStorage));
     
-    // Guardar íntegro (con fotos) en IndexedDB
     const payload = {
       id: state.currentStudyId,
       timestamp: Date.now(),
@@ -879,7 +1181,7 @@ function load(){
 }
 
 /* ========================================================
-PROCESAMIENTO Y ULTRA-COMPRESIÓN DE IMÁGENES (0 MS OVERHEAD)
+PROCESAMIENTO Y ULTRA-COMPRESIÓN DE IMÁGENES
 ======================================================== */
 function compressImage(file, callback, errorCallback) {
   if (!file) return;
@@ -977,11 +1279,11 @@ function renderTools() {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
         <div>
           <label for="op_${tData.id}" class="label text-[11px]">${t("lblToolOp")}</label>
-          <input id="op_${tData.id}" name="op_${tData.id}" autocomplete="off" class="input tool-op" data-id="${tData.id}" value="${tData.op || ''}" placeholder="${t("phToolOp")}">
+          <input id="op_${tData.id}" name="op_${tData.id}" type="text" autocomplete="off" class="input tool-op" data-id="${tData.id}" value="${tData.op || ''}" placeholder="${t("phToolOp")}">
         </div>
         <div>
           <label for="setup_${tData.id}" class="label text-[11px]">${t("lblToolSetup")}</label>
-          <input id="setup_${tData.id}" name="setup_${tData.id}" autocomplete="off" class="input tool-setup" data-id="${tData.id}" value="${tData.setup || ''}" placeholder="${t("phToolSetup")}">
+          <input id="setup_${tData.id}" name="setup_${tData.id}" type="text" autocomplete="off" class="input tool-setup" data-id="${tData.id}" value="${tData.setup || ''}" placeholder="${t("phToolSetup")}">
         </div>
         <div class="sm:col-span-2">
           <label for="prob_${tData.id}" class="label text-[11px] text-red-600">${t("lblToolProblem")}</label>
@@ -1176,27 +1478,63 @@ function bindSwitches() {
   });
 }
 
+/* ========================================================
+MOTOR MATEMÁTICO DE ROI (NUEVA + REAFILADA + CONOS 6 AÑOS)
+======================================================== */
 function calc(){
   const costMin = clamp0($("costHour")?.value) / 60;
   const partsMonth = clamp0($("partsMonth")?.value);
   const invest = clamp0($("invest")?.value);
   const consMonth = clamp0($("consMonth")?.value);
 
-  // Variables numéricas
+  // A) Cambios / Setup
   const chgAct = clamp0($("chgAct")?.value);
   const chgNew = clamp0($("chgNew")?.value);
-  const chgMinAct = clamp0($("chgMinAct")?.value);
-  const chgMinNew = clamp0($("chgMinNew")?.value);
+  const chgMinAct = parseTimeToMinutes($("chgMinAct")?.value);
+  const chgMinNew = parseTimeToMinutes($("chgMinNew")?.value);
 
-  const lifeAct = Math.max(1, clamp0($("lifeAct")?.value));
-  const lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
-  const tcAct = clamp0($("toolCost")?.value);
-  const tcNew = clamp0($("toolCostNew")?.value);
+  // B) Herramientas de corte (Nueva + Reafilada) y Conos (Amortización a 6 años = 72 meses)
   const toolCount = Math.max(1, clamp0($("toolCount")?.value));
 
-  const cycAct = clamp0($("cycAct")?.value);
-  const cycNew = clamp0($("cycNew")?.value);
+  // Situación Actual (Herramienta Nueva + Reafilada)
+  const tcActNew = clamp0($("toolCost")?.value);
+  const lifeActNew = Math.max(1, clamp0($("lifeAct")?.value));
+  const tcActRegrind = clamp0($("toolCostRegrind")?.value);
+  const lifeActRegrind = clamp0($("lifeActRegrind")?.value);
+  const regrindCountAct = Math.floor(clamp0($("regrindCount")?.value));
 
+  // Piezas totales y costo total en el ciclo de 1 herramienta física actual (1 uso nueva + N reafilados)
+  const totalPcsPerToolAct = Math.max(1, lifeActNew + (regrindCountAct * lifeActRegrind));
+  const totalCostPerToolAct = tcActNew + (regrindCountAct * tcActRegrind);
+  const costPerPieceToolAct = totalCostPerToolAct / totalPcsPerToolAct;
+
+  // Situación REGO-FIX (Herramienta Nueva + Reafilada)
+  const tcNew = clamp0($("toolCostNew")?.value);
+  const lifeNew = Math.max(1, clamp0($("lifeNew")?.value));
+  const tcNewRegrind = clamp0($("toolCostRegrindNew")?.value);
+  const lifeNewRegrind = clamp0($("lifeNewRegrind")?.value);
+  const regrindCountNew = Math.floor(clamp0($("regrindCountNew")?.value));
+
+  const totalPcsPerToolNew = Math.max(1, lifeNew + (regrindCountNew * lifeNewRegrind));
+  const totalCostPerToolNew = tcNew + (regrindCountNew * tcNewRegrind);
+  const costPerPieceToolNew = totalCostPerToolNew / totalPcsPerToolNew;
+
+  // Conos / Holders (Amortización Mensual: Actual vs REGO-FIX 72 meses)
+  const holderQtyAct = clamp0($("holderQtyAct")?.value);
+  const holderCostAct = clamp0($("holderCostAct")?.value);
+  const holderMonthsAct = Math.max(1, clamp0($("holderMonthsAct")?.value));
+  const holderMonthlyAct = (holderQtyAct * holderCostAct) / holderMonthsAct;
+
+  const holderQtyNew = clamp0($("holderQtyNew")?.value);
+  const holderCostNew = clamp0($("holderCostNew")?.value);
+  const holderMonthsNew = Math.max(1, clamp0($("holderMonthsNew")?.value));
+  const holderMonthlyNew = (holderQtyNew * holderCostNew) / holderMonthsNew;
+
+  // C) Tiempo de Ciclo
+  const cycAct = parseTimeToMinutes($("cycAct")?.value);
+  const cycNew = parseTimeToMinutes($("cycNew")?.value);
+
+  // D) Scrap
   const scrapAct = clamp0($("scrapAct")?.value);
   const scrapNew = clamp0($("scrapNew")?.value);
   const scrapCost = clamp0($("scrapCost")?.value);
@@ -1209,11 +1547,13 @@ function calc(){
     saveTime = minSaved * costMin;
   }
 
-  let spendActTools = 0, spendNewTools = 0;
+  let spendActTools = 0, spendNewTools = 0, saveCuttingTools = 0, saveHoldersMonthly = 0;
   if(state.switches.life){
-    spendActTools = (partsMonth / lifeAct) * toolCount * tcAct;
-    spendNewTools = (partsMonth / lifeNew) * toolCount * tcNew;
-    saveLife = Math.max(0, spendActTools - spendNewTools);
+    spendActTools = partsMonth * toolCount * costPerPieceToolAct;
+    spendNewTools = partsMonth * toolCount * costPerPieceToolNew;
+    saveCuttingTools = spendActTools - spendNewTools;
+    saveHoldersMonthly = holderMonthlyAct - holderMonthlyNew;
+    saveLife = Math.max(0, (spendActTools + holderMonthlyAct) - (spendNewTools + holderMonthlyNew));
   }
 
   if(state.switches.proc) {
@@ -1230,14 +1570,19 @@ function calc(){
   let payback = (invest > 0 && net > 0) ? invest / net : null;
   let roiAnnual = (invest > 0) ? (net * 12) / invest : null;
 
-  const costoTotalActualMensual = costoOperativoMensualActual + spendActTools + (scrapAct * scrapCost);
-  const costoTotalNuevoMensual = costoTotalActualMensual - net;
+  const costoTotalActualMensual = costoOperativoMensualActual + spendActTools + holderMonthlyAct + (scrapAct * scrapCost);
+  const costoTotalNuevoMensual = Math.max(0, costoTotalActualMensual - net);
 
   return {
     invest, consMonth, saveTime, saveLife, saveProc, saveScrap, gross, net, payback, roiAnnual,
     costoTotalActualMensual, costoTotalNuevoMensual,
     chgAct, chgNew, chgMinAct, chgMinNew,
-    lifeAct, lifeNew, tcAct, tcNew, toolCount, spendActTools, spendNewTools,
+    toolCount,
+    tcActNew, lifeActNew, tcActRegrind, lifeActRegrind, regrindCountAct, totalPcsPerToolAct, totalCostPerToolAct,
+    tcNew, lifeNew, tcNewRegrind, lifeNewRegrind, regrindCountNew, totalPcsPerToolNew, totalCostPerToolNew,
+    spendActTools, spendNewTools, saveCuttingTools,
+    holderQtyAct, holderCostAct, holderMonthsAct, holderMonthlyAct,
+    holderQtyNew, holderCostNew, holderMonthsNew, holderMonthlyNew, saveHoldersMonthly,
     cycAct, cycNew, partsMonth, costMin,
     scrapAct, scrapNew, scrapCost
   };
@@ -1269,7 +1614,7 @@ async function recommendRegoFixAI() {
     ${toolsContext}
 
     INSTRUCCIONES CLAVE:
-    1. Prioridad poweRgrip (PG). Si el material es difícil (Inconel, Titanio, Inox), usa PG 25 por defecto, a menos que se requiera PG 10/PG 15 para acabados finos o 5 ejes.
+    1. Prioridad powRgrip (PG). Si el material es difícil (Inconel, Titanio, Inox), usa PG 25 por defecto, a menos que se requiera PG 10/PG 15 para acabados finos o 5 ejes.
     2. NUNCA uses la palabra "estanca". Todas las pinzas estándar PG son selladas para refrigeración interna. Llámalas simplemente "Pinza PG [Tamaño] de [Ø]".
     3. Si el diámetro es fraccional en pulgadas (ej. 3/32", 1/8", 15/64", 1/4", 3/8", 1/2"), indícalo en pulgadas.
     4. Devuelve EXACTAMENTE un arreglo 'tools_reco' donde el índice 0 corresponda al Caso 1, índice 1 al Caso 2, etc.
@@ -1493,7 +1838,16 @@ async function renderHistoryList() {
   document.querySelectorAll(".btn-del-study").forEach(btn => {
     btn.addEventListener("click", (e) => {
       const id = e.target.getAttribute("data-id");
-      if (confirm(currentLang === 'es' ? "¿Eliminar este estudio de la nube y del dispositivo?" : "¿Delete this study?")) {
+      
+      const pass = prompt("Introduce la contraseña de administrador para eliminar el estudio:");
+      if (pass === null) return;
+      
+      if (pass.trim() !== ADMIN_DELETE_PASS) {
+        alert("❌ Contraseña incorrecta. Acción cancelada.");
+        return;
+      }
+
+      if (confirm(currentLang === 'es' ? "¿Confirmas la eliminación permanente del estudio?" : "Confirm deletion?")) {
         setTimeout(async () => {
           await deleteStudyFromDB(id);
           if (navigator.onLine) {
@@ -1501,7 +1855,7 @@ async function renderHistoryList() {
               await fetch("/api/delete-study", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: id })
+                body: JSON.stringify({ id: id, password: pass })
               });
             } catch (errCloud) {
               console.warn("No se pudo conectar a la nube para borrar:", errCloud);
@@ -1544,8 +1898,24 @@ function renderChart(costoActual, costoNuevo) {
 function renderKPIs(){
   const r = calc();
   ["saveTime", "saveLife", "saveProc", "saveScrap"].forEach(id => {
-    if($(id)) { $(id).textContent = money(r[id]);$(id).className = "text-sm font-black text-[#8CA015]"; }
+    if($(id)) { $(id).textContent = money(r[id]); }
   });
+
+  // Indicadores detallados del Frente B (Herramientas nuevas, reafiladas y conos a 6 años)
+  if($("totPcsActDisplay")) $("totPcsActDisplay").textContent = `${r.totalPcsPerToolAct.toLocaleString()} pzas`;
+  if($("totCostActDisplay")) $("totCostActDisplay").textContent = money(r.totalCostPerToolAct);
+  if($("spendActToolsDisplay")) $("spendActToolsDisplay").textContent = `${money(r.spendActTools)} /mes`;
+
+  if($("totPcsNewDisplay")) $("totPcsNewDisplay").textContent = `${r.totalPcsPerToolNew.toLocaleString()} pzas`;
+  if($("totCostNewDisplay")) $("totCostNewDisplay").textContent = money(r.totalCostPerToolNew);
+  if($("spendNewToolsDisplay")) $("spendNewToolsDisplay").textContent = `${money(r.spendNewTools)} /mes`;
+
+  if($("holderDepActDisplay")) $("holderDepActDisplay").textContent = `${money(r.holderMonthlyAct)} /mes`;
+  if($("holderDepNewDisplay")) $("holderDepNewDisplay").textContent = `${money(r.holderMonthlyNew)} /mes`;
+
+  if($("saveLifeBreakdownText")) {
+    $("saveLifeBreakdownText").textContent = `(Filos/Reafilados: ${money(r.saveCuttingTools)}/mes | Conos 6 años: ${money(r.saveHoldersMonthly)}/mes)`;
+  }
 
   if($("grossSave")) $("grossSave").textContent = money(r.gross);
   if($("netSave")) $("netSave").textContent = money(r.net);
@@ -1589,7 +1959,7 @@ function renderAll(){
 }
 
 /* ========================================================
-REPORTE PDF MODULAR — SOLO MÓDULOS ACTIVOS
+REPORTE PDF MODULAR — INCLUYE DESGLOSE DE REAFILADO Y CONOS A 6 AÑOS
 ======================================================== */
 function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
 
@@ -1634,7 +2004,7 @@ function buildReportHTML(chartImageBase64){
     </div>
   </div>`).join("");
 
-  // Sección de Evidencia Antes vs Después (solo si al menos una existe)
+  // Sección de Evidencia Antes vs Después
   const hasBeforeAfter = s.beforePhoto || s.afterPhoto;
   const beforeAfterRender = hasBeforeAfter ? `
   <h2 class="sec-heading">${t("pdfSec4")}</h2>
@@ -1659,7 +2029,7 @@ function buildReportHTML(chartImageBase64){
   const minCicloAhorrados = Math.max(0, (r.cycAct - r.cycNew) * r.partsMonth);
   const hrsAhorradasMes = (minCicloAhorrados / 60).toFixed(1);
   const mejoraCicloPct = r.cycAct > 0 ? (((r.cycAct - r.cycNew) / r.cycAct) * 100).toFixed(0) : 0;
-  const vidaMejoraPct = r.lifeAct > 0 ? (((r.lifeNew - r.lifeAct) / r.lifeAct) * 100).toFixed(0) : 0;
+  const vidaTotalMejoraPct = r.totalPcsPerToolAct > 0 ? (((r.totalPcsPerToolNew - r.totalPcsPerToolAct) / r.totalPcsPerToolAct) * 100).toFixed(0) : 0;
 
   // FILAS DINÁMICAS DE LA TABLA SEGÚN SWITCHES ACTIVOS
   let tableRowsHTML = "";
@@ -1667,22 +2037,28 @@ function buildReportHTML(chartImageBase64){
   if (sw.life) {
     tableRowsHTML += `
       <tr>
-        <td><strong>Costo Unitario de Herramienta</strong></td>
-        <td class="val-act">${esc(money(r.tcAct))}</td>
-        <td class="val-new">${esc(money(r.tcNew))}</td>
-        <td class="val-diff">${r.tcNew < r.tcAct ? '▼ ' + esc(money(r.tcAct - r.tcNew)) + ' menor costo' : (r.tcNew === r.tcAct ? 'Mismo costo unitario' : 'Herramienta de mayor gama')}</td>
+        <td><strong>Herramienta Nueva (Costo y Vida)</strong></td>
+        <td class="val-act">${esc(money(r.tcActNew))} (${r.lifeActNew} pzas)</td>
+        <td class="val-new">${esc(money(r.tcNew))} (${r.lifeNew} pzas)</td>
+        <td class="val-diff">▲ Mayor rendimiento en 1ra vida</td>
       </tr>
       <tr>
-        <td><strong>Duración de Herramienta (Vida Útil)</strong></td>
-        <td class="val-act">${r.lifeAct} ciclos/pzas</td>
-        <td class="val-new">${r.lifeNew} ciclos/pzas</td>
-        <td class="val-diff">▲ +${vidaMejoraPct}% más piezas/afilado</td>
+        <td><strong>Herramienta Reafilada (Costo, Vida y N° Afilados)</strong></td>
+        <td class="val-act">${r.regrindCountAct} afil. × ${esc(money(r.tcActRegrind))} (${r.lifeActRegrind} pzas c/u)</td>
+        <td class="val-new">${r.regrindCountNew} afil. × ${esc(money(r.tcNewRegrind))} (${r.lifeNewRegrind} pzas c/u)</td>
+        <td class="val-diff">Total ciclo: ${r.totalPcsPerToolAct} vs ${r.totalPcsPerToolNew} pzas (+${vidaTotalMejoraPct}%)</td>
       </tr>
       <tr>
-        <td><strong>Gasto Mensual en Herramientas</strong></td>
+        <td><strong>Gasto Mensual en Herramientas de Corte</strong></td>
         <td class="val-act">${esc(money(r.spendActTools))} /mes</td>
         <td class="val-new">${esc(money(r.spendNewTools))} /mes</td>
-        <td class="val-diff">Ahorro: ${esc(money(r.saveLife))}</td>
+        <td class="val-diff">Ahorro filos: ${esc(money(r.saveCuttingTools))} /mes</td>
+      </tr>
+      <tr>
+        <td><strong>Amortización de Conos (Estándar 6 Años = 72 Meses)</strong></td>
+        <td class="val-act">${r.holderQtyAct} conos × ${esc(money(r.holderCostAct))} (vida ${r.holderMonthsAct}m) = ${esc(money(r.holderMonthlyAct))}/mes</td>
+        <td class="val-new">${r.holderQtyNew} conos × ${esc(money(r.holderCostNew))} (vida ${r.holderMonthsNew}m) = ${esc(money(r.holderMonthlyNew))}/mes</td>
+        <td class="val-diff">${r.saveHoldersMonthly >= 0 ? 'Ahorro conos: ' + esc(money(r.saveHoldersMonthly)) + '/mes' : 'Inversión amortizada a 6 años'}</td>
       </tr>
     `;
   }
@@ -1691,9 +2067,9 @@ function buildReportHTML(chartImageBase64){
     tableRowsHTML += `
       <tr>
         <td><strong>Tiempo de Ciclo por Pieza</strong></td>
-        <td class="val-act">${r.cycAct.toFixed(2)} min/pza</td>
-        <td class="val-new">${r.cycNew.toFixed(2)} min/pza</td>
-        <td class="val-diff">Reducción: ${(r.cycAct - r.cycNew).toFixed(2)} min (-${mejoraCicloPct}%)</td>
+        <td class="val-act">${formatMinutesToHMS(r.cycAct)} /pza</td>
+        <td class="val-new">${formatMinutesToHMS(r.cycNew)} /pza</td>
+        <td class="val-diff">Reducción: ${formatMinutesToHMS(r.cycAct - r.cycNew)} (-${mejoraCicloPct}%)</td>
       </tr>
       <tr>
         <td><strong>Horas de Máquina Liberadas</strong></td>
@@ -1708,8 +2084,8 @@ function buildReportHTML(chartImageBase64){
     tableRowsHTML += `
       <tr>
         <td><strong>Tiempo y Frecuencia de Setup</strong></td>
-        <td class="val-act">${r.chgAct} cambios (${r.chgMinAct} min c/u)</td>
-        <td class="val-new">${r.chgNew} cambios (${r.chgMinNew} min c/u)</td>
+        <td class="val-act">${r.chgAct} cambios (${formatMinutesToHMS(r.chgMinAct)} c/u)</td>
+        <td class="val-new">${r.chgNew} cambios (${formatMinutesToHMS(r.chgMinNew)} c/u)</td>
         <td class="val-diff">Ahorro: ${esc(money(r.saveTime))}</td>
       </tr>
     `;
@@ -1906,7 +2282,6 @@ function buildReportHTML(chartImageBase64){
     line-height: 1.4;
   }
 
-  /* Tarjeta de Casos */
   .tool-card {
     background: #FFFFFF;
     border: 1px solid var(--border);
@@ -1979,13 +2354,12 @@ function buildReportHTML(chartImageBase64){
     border-radius: 4px;
   }
 
-  /* Tabla de Comparativa Numérica */
   .table-compare {
     width: 100%;
     border-collapse: collapse;
     margin-top: 4px;
     margin-bottom: 8px;
-    font-size: 10.5px;
+    font-size: 10px;
     background: #FFFFFF;
     border-radius: 6px;
     overflow: hidden;
@@ -1996,7 +2370,7 @@ function buildReportHTML(chartImageBase64){
     color: var(--rego-blue);
     font-weight: 800;
     text-transform: uppercase;
-    font-size: 9px;
+    font-size: 8.5px;
     padding: 6px 8px;
     border-bottom: 1.5px solid var(--border);
     text-align: left;
@@ -2021,7 +2395,6 @@ function buildReportHTML(chartImageBase64){
     font-weight: 800;
   }
 
-  /* Desglose y KPI */
   .grid-savings {
     display: grid;
     grid-template-columns: repeat(${Math.max(1, activeSavingsCount)}, 1fr);
@@ -2072,7 +2445,6 @@ function buildReportHTML(chartImageBase64){
     color: var(--rego-green);
   }
 
-  /* Antes y Después */
   .grid-before-after {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2174,13 +2546,12 @@ function buildReportHTML(chartImageBase64){
   <h2 class="sec-heading">${t("pdfSec3")}</h2>
 
   ${tableRowsHTML ? `
-  <!-- TABLA TÉCNICA COMPARATIVA DE PARÁMETROS -->
   <table class="table-compare">
     <thead>
       <tr>
-        <th style="width: 32%;">Concepto / Variable de Proceso</th>
-        <th style="width: 22%;">Situación Actual</th>
-        <th style="width: 24%;">Con REGO-FIX</th>
+        <th style="width: 28%;">Concepto / Variable de Proceso</th>
+        <th style="width: 25%;">Situación Actual</th>
+        <th style="width: 25%;">Con REGO-FIX</th>
         <th style="width: 22%;">Impacto / Beneficio</th>
       </tr>
     </thead>
@@ -2190,7 +2561,6 @@ function buildReportHTML(chartImageBase64){
   </table>` : ''}
   
   ${savingsCardsHTML ? `
-  <!-- DESGLOSE DE AHORROS MENSUALES ACTIVOS -->
   <div class="panel" style="background:#F1F5F9; border-color:#CBD5E1;">
     <div class="k" style="text-align: center; margin-bottom: 5px;">${t("pdfBreakdown")}</div>
     <div class="grid-savings">
@@ -2280,7 +2650,7 @@ function getSummaryText() {
     `${t("lblCompany")}: ${state.study.company || "—"} | ${t("lblUser")}: ${state.study.userName || "—"}`,
     "", `--- ${t("sec1cTitle").toUpperCase()} ---`, toolsText,
     "", `--- ${t("sec2Title").toUpperCase()} ---`,
-    `${t("pdfTimeSetup")}: ${money(r.saveTime)} | ${t("pdfToolLife")}: ${money(r.saveLife)} | ${t("pdfProcImprove")}: ${money(r.saveProc)} | ${t("pdfScrapRed")}: ${money(r.saveScrap)}`,
+    `${t("pdfTimeSetup")}: ${money(r.saveTime)} | ${t("pdfToolLife")} (Filos + Conos 6 años): ${money(r.saveLife)} | ${t("pdfProcImprove")}: ${money(r.saveProc)} | ${t("pdfScrapRed")}: ${money(r.saveScrap)}`,
     "", `--- ${t("sec3Title").toUpperCase()} ---`,
     `${t("lblInvest")}: ${money(r.invest)} | ${t("kpiNet")}: ${money(r.net)}/mes | ${t("kpiPayback")}: ${r.payback===null ? "—" : (r.payback.toFixed(1)+"m")}`,
     `${t("kpiRoiEst")}: ${r.roiAnnual===null ? "—" : ((r.roiAnnual*100).toFixed(0)+"%")} (${money(r.net * 12)} /año)`
@@ -2332,8 +2702,8 @@ function bindInputs(){
   ["calcMachine", "calcSector", "calcOperator"].forEach(id => {
     const el = $(id);
     if(el) {
-      if(state.study[id]) el.value = state.study[id];
-      el.addEventListener("change", () => { state.study[id] = el.value; updateCalc(); });
+      if(state.study[id] !== undefined) el.value = state.study[id];
+      el.addEventListener("input", () => { state.study[id] = el.value; updateCalc(); });
     }
   });
 
@@ -2388,7 +2758,9 @@ function bindInputs(){
         studyDate: new Date().toISOString().split('T')[0],
         userName: "", userRole: "", company: "",
         spindleInterface: "", coolant: "", material: "", priority: "", goal: "",
-        calcMachine: "50", calcSector: "1.0", calcOperator: "25",
+        calcMachineDesc: "Centro 3 Ejes", calcMachine: "50",
+        calcSectorDesc: "General", calcSector: "1.0",
+        calcOperatorDesc: "1 Op / 1 Máq", calcOperator: "25",
         aiPitch: "", aiMissing: "",
         beforePhoto: "", afterPhoto: "",
         tools: [ { id: Date.now(), op: "", setup: "", problem: "", reco: "", photo: "" } ]
@@ -2398,6 +2770,8 @@ function bindInputs(){
         const k = el.getAttribute("data-study");
         if (k === "studyDate") {
           el.value = state.study.studyDate;
+        } else if (state.study[k] !== undefined && !el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
+          el.value = state.study[k];
         } else if (!el.classList.contains("tool-op") && !el.classList.contains("tool-setup") && !el.classList.contains("tool-problem") && !el.classList.contains("tool-reco")) {
           el.value = "";
         }
