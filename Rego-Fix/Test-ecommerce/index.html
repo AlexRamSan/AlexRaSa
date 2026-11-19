@@ -17,11 +17,12 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; color: #333; }
         .system-border { border-top: 5px solid var(--rf-blue); }
         .badge-stock { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
-        .store--category-wrapper { background-color: #f5f5f5; padding: 20px; margin-bottom: 30px; border-radius: 5px; }
-        nav.store--category-table { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; list-style: none; padding: 0; }
-        nav.store--category-table > a { display: block; background: #fff; border: 1px solid #efefef; border-radius: 3px; padding: 15px; text-align: center; text-decoration: none; color: #333; transition: all 0.2s; cursor: pointer; }
-        nav.store--category-table > a:hover { border-color: var(--rf-blue); box-shadow: 0 2px 8px rgba(0,61,165,0.1); }
-        nav.store--category-table > a img { margin: auto; width: 100%; max-width: 120px; aspect-ratio: 1; object-fit: contain; display: block; mix-blend-multiply; }
+        .store--category-wrapper { background-color: #f5f5f5; padding: 20px; margin-bottom: 30px; border-radius: 4px; }
+        nav.store--category-table { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; list-style: none; padding: 0; }
+        nav.store--category-table > a { display: block; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 15px; text-align: center; text-decoration: none; color: #333; transition: all 0.2s; cursor: pointer; }
+        nav.store--category-table > a:hover { border-color: var(--rf-blue); box-shadow: 0 2px 8px rgba(0,61,165,0.15); }
+        nav.store--category-table > a.active-category { border-color: var(--rf-blue); background-color: #f0f7ff; }
+        nav.store--category-table > a img { margin: auto; width: 100%; max-width: 120px; aspect-ratio: 1; object-fit: contain; display: block; mix-blend-mode: multiply; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -42,7 +43,6 @@
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-6">
                 <a href="https://rego-fix.mx/" class="flex items-center">
-                    <!-- Logotipo limpio enfocado en REGO-FIX México -->
                     <span class="text-xl font-black text-[#003DA5] tracking-tight">REGO-FIX <span class="text-[#00B2E2] font-normal">MÉXICO</span></span>
                 </a>
                 <div class="hidden md:flex space-x-6 text-sm font-semibold text-gray-700">
@@ -85,23 +85,23 @@
     <!-- Contenido Principal -->
     <main class="max-w-7xl mx-auto px-4 py-8">
         
-        <!-- Grilla de Categorías Oficiales (con enlaces directos corregidos para accesorios y tuercas) -->
+        <!-- Grilla de Categorías Oficiales -->
         <div class="store--category-wrapper">
             <h3 class="font-bold text-gray-800 mb-3 text-xs uppercase tracking-wider">Categorías Principales</h3>
             <nav class="store--category-table">
-                <a onclick="filterByCategory('Accesorios')">
+                <a onclick="filterByCategory('Accesorios')" id="cat-accesorios">
                     <img src="https://regousa.com/wp-content/uploads/2024/04/Accessories.jpg" alt="Accesorios">
                     <h5 class="font-bold text-xs mt-2 text-gray-800">Accesorios</h5>
                 </a>
-                <a onclick="filterByCategory('Tuercas')">
+                <a onclick="filterByCategory('Tuercas')" id="cat-tuercas">
                     <img src="https://regousa.com/wp-content/uploads/2024/04/Clamping-Nuts.jpg" alt="Tuercas">
                     <h5 class="font-bold text-xs mt-2 text-gray-800">Tuercas de Apriete</h5>
                 </a>
-                <a onclick="filterByCategory('Pinzas')">
+                <a onclick="filterByCategory('Pinzas')" id="cat-pinzas">
                     <img src="https://regousa.com/wp-content/uploads/2024/04/Collets.jpg" alt="Pinzas">
                     <h5 class="font-bold text-xs mt-2 text-gray-800">Pinzas de Sujeción</h5>
                 </a>
-                <a onclick="filterByCategory('Portaherramientas')">
+                <a onclick="filterByCategory('Portaherramientas')" id="cat-portaherramientas">
                     <img src="https://regousa.com/wp-content/uploads/2024/04/Toolholders-1.jpg" alt="Portaherramientas">
                     <h5 class="font-bold text-xs mt-2 text-gray-800">Portaherramientas</h5>
                 </a>
@@ -109,7 +109,7 @@
         </div>
 
         <!-- Barra de Filtros Interactivos -->
-        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-8 space-y-4">
+        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-8 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
                 <!-- Buscador de SKU -->
@@ -118,7 +118,7 @@
                     <div class="relative">
                         <i class="fa fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
                         <input type="text" id="filter-search" placeholder="Ej. 7150, BT40, DS/ER, UP..." 
-                               class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]"
+                               class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]"
                                oninput="handleFilterChange()">
                     </div>
                 </div>
@@ -126,7 +126,7 @@
                 <!-- Filtro por Categoría -->
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Tipo de Componente</label>
-                    <select id="filter-cat" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]" onchange="handleFilterChange()">
+                    <select id="filter-cat" class="w-full py-2 px-3 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]" onchange="handleFilterChange()">
                         <option value="">Todas las categorías</option>
                         <option value="Pinzas">Pinzas / Collets ER (UP / Standard)</option>
                         <option value="Portaherramientas">Portaherramientas / Holders (BT, DIN, CAT, HSK)</option>
@@ -140,7 +140,7 @@
                 <!-- Filtro por Serie ER -->
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Serie ER</label>
-                    <select id="filter-series" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-[#003DA5]" onchange="handleFilterChange()">
+                    <select id="filter-series" class="w-full py-2 px-3 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]" onchange="handleFilterChange()">
                         <option value="">Todas las series</option>
                         <option value="ER 8">ER 8</option>
                         <option value="ER 11">ER 11</option>
@@ -193,13 +193,13 @@
 
     <!-- Modal Login Distribuidores -->
     <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-xl w-full max-w-sm shadow-2xl relative">
+        <div class="bg-white p-8 rounded-lg w-full max-w-sm shadow-2xl relative">
             <button onclick="closeLogin()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800"><i class="fa fa-times text-lg"></i></button>
             <h3 class="text-xl font-bold mb-2 text-[#003DA5]">Acceso Distribuidores</h3>
             <p class="text-xs text-gray-500 mb-6">Ingresa para visualizar precios preferenciales.</p>
             
-            <input type="text" id="login-user" placeholder="Usuario" class="w-full border border-gray-300 p-3 mb-4 rounded focus:outline-none focus:border-[#003DA5] text-sm">
-            <input type="password" id="login-pass" placeholder="Contraseña" class="w-full border border-gray-300 p-3 mb-2 rounded focus:outline-none focus:border-[#003DA5] text-sm">
+            <input type="text" id="login-user" placeholder="Usuario" class="w-full border border-gray-300 p-3 mb-4 rounded text-sm focus:outline-none focus:border-[#003DA5]">
+            <input type="password" id="login-pass" placeholder="Contraseña" class="w-full border border-gray-300 p-3 mb-2 rounded text-sm focus:outline-none focus:border-[#003DA5]">
             
             <div id="login-error" class="text-red-500 text-xs font-semibold hidden mb-4 bg-red-50 p-2 rounded"><i class="fa fa-exclamation-circle mr-1"></i> Credenciales incorrectas</div>
             
@@ -259,9 +259,9 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="/Rego-Fix/Test-ecommerce/products.js"></script>
-    <script src="/Rego-Fix/Test-ecommerce/sku_images_final.js"></script>
+    <!-- Scripts (Rutas relativas estables) -->
+    <script src="./products.js"></script>
+    <script src="./sku_images_final.js"></script>
 
     <script>
         const ITEMS_PER_PAGE = 100;
@@ -275,7 +275,7 @@
 
         async function loadInventory() {
             try {
-                const response = await fetch('/Rego-Fix/Test-ecommerce/inventory.json');
+                const response = await fetch('./inventory.json');
                 if (response.ok) {
                     const rawData = await response.json();
                     window.inventoryData = {};
@@ -317,6 +317,15 @@
 
         function filterByCategory(catName) {
             document.getElementById('filter-cat').value = catName;
+            
+            // Actualizar estilo visual activo en las tarjetas superiores
+            document.querySelectorAll('nav.store--category-table > a').forEach(el => el.classList.remove('active-category'));
+            if(catName) {
+                const targetId = 'cat-' + catName.toLowerCase();
+                const cardEl = document.getElementById(targetId);
+                if(cardEl) cardEl.classList.add('active-category');
+            }
+
             handleFilterChange();
             window.scrollTo({ top: 400, behavior: 'smooth' });
         }
@@ -356,7 +365,7 @@
 
             if (filteredProducts.length === 0) {
                 grid.innerHTML = `
-                    <div class="py-16 text-center text-gray-500 bg-white rounded-lg border border-gray-200">
+                    <div class="py-16 text-center text-gray-500 bg-white rounded border border-gray-200">
                         <i class="fa fa-folder-open text-4xl mb-3 text-gray-300"></i>
                         <p class="font-semibold">No se encontraron productos con esos criterios de búsqueda.</p>
                     </div>`;
@@ -378,10 +387,10 @@
                 const qtyQro = stockInfo ? stockInfo.qty : 0;
                 const stockBadge = qtyQro > 0
                     ? `<span class="badge-stock bg-green-100 text-green-800 ml-2"><i class="fa fa-check mr-1"></i> Stock Qro: ${qtyQro} pzas</span>`
-                    : `<span class="badge-stock bg-orange-100 text-orange-800 ml-2"><i class="fa fa-clock-o mr-1"></i> Sobre pedido</span>`;
+                    : `<span class="badge-stock bg-orange-100 text-orange-800 ml-2"><i class="fa fa-clock mr-1"></i> Sobre pedido</span>`;
 
                 html += `
-                    <div class="bg-white border border-gray-200 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-md transition">
+                    <div class="bg-white border border-gray-200 rounded p-3 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-sm transition">
                         <div class="flex items-center space-x-4 w-full md:w-auto flex-1">
                             <div class="w-16 h-16 shrink-0 flex items-center justify-center bg-gray-50 border border-gray-100 rounded p-1">
                                 <img src="${getProductImage(item.sku)}" alt="${item.name}" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.src='https://regousa.com/wp-content/uploads/2022/04/favicon.png';">
