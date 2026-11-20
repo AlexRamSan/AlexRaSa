@@ -557,46 +557,43 @@
 
             const itemsPayload = window.cart.map(item => ({
                 sku: item.sku,
-                name: item.name,
+                name: `${item.name} [${getDeliveryLabelForCart(item.qty, item.qtyQro)}]`,
                 qty: item.qty,
-                unitPrice: item.basePrice,
-                lineTotal: item.basePrice * item.qty,
-                stockQro: item.qtyQro,
-                leadTime: getDeliveryLabelForCart(item.qty, item.qtyQro)
+                price: item.basePrice,
+                listPrice: item.basePrice,
+                distPrice: item.basePrice,
+                total: item.basePrice * item.qty,
+                totalNet: item.basePrice * item.qty
             }));
 
+            const summaryLeadTime = `Contacto: ${name} (${email}) | Forma de pago: ${payment}`;
+
             const payload = {
-                action: 'send_quote_order',
-                source: 'ProductFinder_ER',
-                distributor: 'Cliente Directo Web',
-                customerName: company,
-                client: {
-                    name: name,
-                    email: email,
-                    company: company,
-                    paymentMethod: payment
+                distributor: {
+                    name: 'Tienda Web REGO-FIX México',
+                    tier: 'Precio Lista Oficial'
                 },
+                client: company,
                 items: itemsPayload,
                 totals: {
                     subtotal: subtotal.toFixed(2),
+                    subtotalNet: subtotal.toFixed(2),
                     iva: iva.toFixed(2),
-                    total: total.toFixed(2),
-                    currency: 'USD'
+                    total: total.toFixed(2)
                 },
+                leadTime: summaryLeadTime,
                 emailTo: email,
-                targetEmail: email,
-                internalCopyEmail: 'mramirez@rego-fix.com',
-                cc: 'mramirez@rego-fix.com'
+                internalCopyEmail: 'mramirez@rego-fix.com'
             };
 
             try {
-                const response = await fetch('/api/contactos', {
+                const response = await fetch('/api/contactos?action=send_quote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                const summaryLines = itemsPayload.map(i => `• ${i.qty}x [${i.sku}] - ${i.leadTime}`).join('\n');
+                const summaryLines = window.cart.map(i => `• ${i.qty}x [${i.sku}] - ${getDeliveryLabelForCart(i.qty, i.qtyQro)}`).join('\n');
 
                 if (response.ok) {
                     alert(`¡Orden procesada y enviada por correo!\n\nSe envió confirmación a: ${email}\nCon copia a: mramirez@rego-fix.com\n\nCliente: ${name} (${company})\nMétodo de Pago: ${payment}\n\nDetalle:\n${summaryLines}\n\nTotal: $${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`);
@@ -605,7 +602,7 @@
                     toggleCart();
                 } else {
                     const errData = await response.json().catch(() => ({}));
-                    alert(`No se pudo completar el envío automático al servidor (${response.status}). ${errData.error || 'Verifica la configuración de /api/contactos.'}`);
+                    alert(`No se pudo completar el envío automático (${response.status}). ${errData.error || 'Verifica la configuración de /api/contactos.'}`);
                 }
             } catch (error) {
                 alert('Error de conexión al intentar enviar el correo. Verifica tu conexión o el endpoint /api/contactos.');
