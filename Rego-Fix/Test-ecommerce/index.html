@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" dir="ltr" prefix="og: https://ogp.me/ns#">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ER System | Catálogo y Product Finder - REGO-FIX México</title>
-    
-    <!-- Estilos oficiales y Tailwind -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ER System | Product Finder - REGO-FIX México</title>
+
+    <!-- Estilos Oficiales REGO-FIX y Bootstrap -->
+    <link rel="stylesheet" media="all" href="//cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.css" crossorigin="anonymous" />
+    <link rel="stylesheet" media="all" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root {
             --rf-blue: #003DA5;
@@ -25,65 +26,48 @@
         nav.store--category-table > a img { margin: auto; width: 100%; max-width: 120px; aspect-ratio: 1; object-fit: contain; display: block; mix-blend-mode: multiply; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="path-productfinder has-glyphicons bg-gray-50 text-gray-800">
 
-    <!-- Cabecera Superior México -->
-    <header class="bg-[#003DA5] text-white text-xs py-2 px-4">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left">
-            <span>Soporte Técnico Especializado | Envíos a Querétaro, Estado de México y todo el país</span>
-            <div class="space-x-4 mt-2 md:mt-0 font-medium">
-                <a href="https://rego-fix.mx/contacto-rego-fix-mexico/" target="_blank" class="hover:underline">Contacto</a>
-                <a href="https://rego-fix.mx/distribucion/" target="_blank" class="hover:underline">Distribución</a>
+    <!-- Header Oficial REGO-FIX -->
+    <header class="main-header" role="heading">
+        <div class="navbar navbar-default container-fluid system-border bg-white shadow-sm" id="navbar" role="banner">
+            <div class="container flex justify-between items-center py-3" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                
+                <!-- Logotipo Oficial -->
+                <div class="navbar-header flex items-center space-x-6">
+                    <a class="logo navbar-btn pull-left" href="https://rego-fix.mx" title="Home" rel="home">
+                        <img src="//static.rego-fix.com/sites/default/files/rf_logo_500_0_0.png" alt="REGO-FIX Home" style="max-height: 40px;" />
+                    </a>
+                </div>
+
+                <!-- Botones flotantes / Perfil / Carrito estilo oficial -->
+                <div class="flex items-center space-x-4" style="display:flex; align-items:center; gap: 15px;">
+                    <div id="distributor-info" class="hidden text-xs font-bold text-[#003DA5] bg-blue-100 px-3 py-1.5 rounded-full border border-blue-200"></div>
+                    
+                    <button onclick="openLogin()" id="btn-login-trigger" class="relative bg-gray-100 p-2.5 rounded-full hover:bg-gray-200 transition" title="Acceso a Distribuidores" style="padding: 10px; border-radius: 50%; border:none; background:#f3f4f6; cursor:pointer;">
+                        <i class="fa fa-user text-gray-700 text-lg"></i>
+                    </button>
+
+                    <button onclick="toggleCart()" class="relative bg-gray-100 p-2.5 rounded-full hover:bg-gray-200 transition" title="Cesta de Cotización" style="padding: 10px; border-radius: 50%; border:none; background:#f3f4f6; cursor:pointer; position:relative;">
+                        <i class="fa fa-shopping-cart text-gray-700 text-lg"></i>
+                        <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:11px; display:flex; align-items:center; justify-content:center;">0</span>
+                    </button>
+                </div>
+
             </div>
         </div>
     </header>
 
-    <!-- Barra de Navegación Oficial -->
-    <nav class="bg-white shadow-md sticky top-0 z-40 system-border">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-6">
-                <a href="https://rego-fix.mx/" class="flex items-center">
-                    <span class="text-xl font-black text-[#003DA5] tracking-tight">REGO-FIX <span class="text-[#00B2E2] font-normal">MÉXICO</span></span>
-                </a>
-                <div class="hidden md:flex space-x-6 text-sm font-semibold text-gray-700">
-                    <a href="https://rego-fix.mx/" class="hover:text-[#003DA5]">Inicio</a>
-                    <a href="#" onclick="filterByCategory('')" class="text-[#003DA5] border-b-2 border-[#003DA5] pb-1">Catálogo ER (Inventario Querétaro)</a>
-                    <a href="https://rego-fix.mx/contacto-rego-fix-mexico/" class="hover:text-[#003DA5]">Soporte Técnico</a>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-4">
-                <div id="distributor-info" class="hidden text-xs font-bold text-[#003DA5] bg-blue-100 px-3 py-1.5 rounded-full border border-blue-200"></div>
-                
-                <button onclick="openLogin()" id="btn-login-trigger" class="relative bg-gray-100 p-2.5 rounded-full hover:bg-gray-200 transition" title="Acceso a Distribuidores">
-                    <i class="fa fa-user text-gray-700 text-lg"></i>
-                </button>
-
-                <button onclick="toggleCart()" class="relative bg-gray-100 p-2.5 rounded-full hover:bg-gray-200 transition" title="Cesta de Cotización">
-                    <i class="fa fa-shopping-cart text-gray-700 text-lg"></i>
-                    <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Migas de Pan -->
-    <div class="bg-white border-b py-2 text-xs text-gray-500">
-        <div class="max-w-7xl mx-auto px-4">
-            <a href="https://rego-fix.mx/" class="hover:underline">Productos</a> / <span class="text-[#003DA5] font-semibold">Sistema ER (Buscador de Productos)</span>
+    <!-- Migas de Pan / Título -->
+    <div class="bg-white border-b py-3 px-6 shadow-xs">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-3xl font-black text-[#003DA5] uppercase tracking-wide">Product Finder - Sistema ER</h1>
+            <p class="text-sm text-gray-600 mt-1">Selecciona una categoría o busca directamente por número de parte o SKU en el inventario local de Querétaro.</p>
         </div>
     </div>
 
-    <!-- Título Principal -->
-    <section class="bg-white py-6 border-b px-4">
-        <div class="max-w-7xl mx-auto">
-            <h1 class="text-3xl font-black text-[#003DA5] uppercase tracking-wide">Buscador de Productos - Sistema ER</h1>
-            <p class="text-sm text-gray-600 mt-1">Selecciona una categoría o busca directamente por número de parte o SKU en el inventario local de Querétaro.</p>
-        </div>
-    </section>
-
-    <!-- Contenido Principal -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Contenido Principal de Búsqueda y Catálogo -->
+    <main class="max-w-7xl mx-auto px-4 py-8" style="max-width: 1200px; margin: 0 auto; padding: 30px 15px;">
         
         <!-- Grilla de Categorías Oficiales -->
         <div class="store--category-wrapper">
@@ -109,16 +93,16 @@
         </div>
 
         <!-- Barra de Filtros Interactivos -->
-        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-8 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm mb-8 space-y-4 bg-white" style="background:#fff; padding:20px; border-radius:6px; border:1px solid #e5e7eb; margin-bottom:20px;">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px;">
                 
-                <!-- Buscador de SKU -->
+                <!-- Buscador por SKU -->
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Buscar por SKU o descripción</label>
                     <div class="relative">
-                        <i class="fa fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
-                        <input type="text" id="filter-search" placeholder="Ej. 7150, BT40, DS/ER, UP..." 
-                               class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]"
+                        <input type="text" id="filter-search" placeholder="Ej. 7150, BT40, DS/ER..." 
+                               class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]"
+                               style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:4px;"
                                oninput="handleFilterChange()">
                     </div>
                 </div>
@@ -126,7 +110,7 @@
                 <!-- Filtro por Categoría -->
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Tipo de Componente</label>
-                    <select id="filter-cat" class="w-full py-2 px-3 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]" onchange="handleFilterChange()">
+                    <select id="filter-cat" class="w-full py-2 px-3 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]" style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:4px;" onchange="handleFilterChange()">
                         <option value="">Todas las categorías</option>
                         <option value="Pinzas">Pinzas / Collets ER (UP / Standard)</option>
                         <option value="Portaherramientas">Portaherramientas / Holders (BT, DIN, CAT, HSK)</option>
@@ -140,7 +124,7 @@
                 <!-- Filtro por Serie ER -->
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Serie ER</label>
-                    <select id="filter-series" class="w-full py-2 px-3 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]" onchange="handleFilterChange()">
+                    <select id="filter-series" class="w-full py-2 px-3 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#003DA5]" style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:4px;" onchange="handleFilterChange()">
                         <option value="">Todas las series</option>
                         <option value="ER 8">ER 8</option>
                         <option value="ER 11">ER 11</option>
@@ -154,112 +138,96 @@
                 </div>
             </div>
 
-            <!-- Resumen de resultados -->
-            <div class="flex flex-col sm:flex-row justify-between items-center pt-3 border-t text-xs text-gray-500">
+            <div class="flex justify-between items-center pt-3 border-t text-xs text-gray-500" style="display:flex; justify-content:space-between; margin-top:15px; padding-top:10px; border-top:1px solid #eee;">
                 <span id="results-count">Cargando inventario...</span>
                 <span class="font-medium text-gray-700">Precios en USD antes de IVA (Validez Oficial REGO-FIX México)</span>
             </div>
         </div>
 
-        <!-- Listado Dinámico de Productos con Stock Querétaro -->
-        <div id="catalog-grid" class="space-y-3"></div>
+        <!-- Listado Dinámico con Precios y Stock Querétaro -->
+        <div id="catalog-grid" class="space-y-3" style="display:flex; flex-direction:column; gap:10px;"></div>
 
         <!-- Paginación -->
-        <div id="pagination-controls" class="flex justify-center items-center space-x-3 mt-10"></div>
+        <div id="pagination-controls" class="flex justify-center items-center space-x-3 mt-10" style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:30px;"></div>
 
     </main>
 
-    <!-- Footer Oficial -->
-    <footer class="bg-[#003DA5] text-white py-10 px-4 mt-16">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
+    <!-- Footer Oficial REGO-FIX -->
+    <footer class="footerblock clearfix bg-[#003DA5] text-white py-10 px-4 mt-16" style="background:#003DA5; color:white; padding:40px 20px; margin-top:60px;">
+        <div class="container max-w-7xl mx-auto" style="max-width:1200px; margin:0 auto; display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:30px;">
             <div>
-                <span class="text-xl font-black tracking-tight text-white block mb-2">REGO-FIX <span class="text-[#00B2E2] font-normal">MÉXICO</span></span>
-                <p class="text-blue-100 text-xs">Inventario oficial y lista de precios para herramentales de precisión ER en México.</p>
+                <h3 style="font-weight:bold; font-size:16px; margin-bottom:10px;">Subsidiary REGO-FIX México</h3>
+                <p style="font-size:12px; line-height:1.5; color:#e0e7ff;">
+                    Boulevard Universitario Primer Retorno<br>
+                    Número Exterior 1, Interior 82B<br>
+                    Localidad La Pradera, El Marqués, Querétaro, México
+                </p>
             </div>
             <div>
-                <h3 class="font-bold text-base mb-2">REGO-FIX MÉXICO</h3>
-                <p class="text-blue-100 text-xs leading-relaxed">Boulevard Universitario Primer Retorno, Ext. 1, Int. 82B, La Pradera, El Marqués, 76269, Querétaro, México</p>
+                <h3 style="font-weight:bold; font-size:16px; margin-bottom:10px;">Contacto Directo</h3>
+                <p style="font-size:12px; color:#e0e7ff;"><strong>Teléfono:</strong> +52 442 888 0796</p>
+                <p style="font-size:12px; color:#e0e7ff;"><strong>Correo:</strong> info@rego-fix.mx</p>
             </div>
             <div>
-                <h3 class="font-bold text-base mb-2">Contacto Directo</h3>
-                <p class="text-blue-100 text-xs"><strong>Teléfono:</strong> +52 442 888 0796</p>
-                <p class="text-blue-100 text-xs"><strong>Correo:</strong> info@rego-fix.mx</p>
+                <h3 style="font-weight:bold; font-size:16px; margin-bottom:10px;">Validez Oficial</h3>
+                <p style="font-size:12px; color:#e0e7ff;">Inventario oficial y lista de precios para herramentales de precisión ER en México.</p>
             </div>
         </div>
-        <div class="max-w-7xl mx-auto border-t border-blue-400 mt-8 pt-4 text-center text-xs text-blue-200">
+        <div class="text-center text-xs text-blue-200 mt-8 pt-4 border-t border-blue-400" style="text-align:center; margin-top:30px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.2); font-size:12px;">
             Copyright © 2026 – REGO-FIX México. Todos los derechos reservados.
         </div>
     </footer>
 
     <!-- Modal Login Distribuidores -->
-    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-lg w-full max-w-sm shadow-2xl relative">
-            <button onclick="closeLogin()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800"><i class="fa fa-times text-lg"></i></button>
-            <h3 class="text-xl font-bold mb-2 text-[#003DA5]">Acceso Distribuidores</h3>
-            <p class="text-xs text-gray-500 mb-6">Ingresa para visualizar precios preferenciales.</p>
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center backdrop-blur-sm" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000;">
+        <div class="bg-white p-8 rounded-lg w-full max-w-sm shadow-2xl relative bg-white" style="background:#white; padding:30px; border-radius:8px; width:100%; max-width:350px; position:relative; background:white;">
+            <button onclick="closeLogin()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:16px; cursor:pointer;"><i class="fa fa-times"></i></button>
+            <h3 class="text-xl font-bold mb-2 text-[#003DA5]" style="color:#003DA5; margin-bottom:10px; font-weight:bold;">Acceso Distribuidores</h3>
+            <p class="text-xs text-gray-500 mb-6" style="font-size:12px; color:#6b7280; margin-bottom:20px;">Ingresa para visualizar tus precios preferenciales y descuentos de inventario.</p>
             
-            <input type="text" id="login-user" placeholder="Usuario" class="w-full border border-gray-300 p-3 mb-4 rounded text-sm focus:outline-none focus:border-[#003DA5]">
-            <input type="password" id="login-pass" placeholder="Contraseña" class="w-full border border-gray-300 p-3 mb-2 rounded text-sm focus:outline-none focus:border-[#003DA5]">
+            <input type="text" id="login-user" placeholder="Usuario (ej. usuario1)" class="w-full border border-gray-300 p-3 mb-4 rounded text-sm" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #d1d5db; border-radius:4px;">
+            <input type="password" id="login-pass" placeholder="Contraseña" class="w-full border border-gray-300 p-3 mb-2 rounded text-sm" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #d1d5db; border-radius:4px;">
             
-            <div id="login-error" class="text-red-500 text-xs font-semibold hidden mb-4 bg-red-50 p-2 rounded"><i class="fa fa-exclamation-circle mr-1"></i> Credenciales incorrectas</div>
+            <div id="login-error" class="text-red-500 text-xs font-semibold hidden mb-4 bg-red-50 p-2 rounded" style="color:red; font-size:11px; display:none; margin-bottom:15px;"><i class="fa fa-exclamation-circle mr-1"></i> Credenciales incorrectas (prueba usuario1 / usuario1)</div>
             
-            <button onclick="handleLogin()" class="w-full py-3 mt-2 text-sm font-bold bg-[#00B2E2] text-white rounded shadow hover:bg-sky-600 transition">Entrar al Sistema</button>
+            <button onclick="handleLogin()" style="width:100%; padding:12px; background:#00B2E2; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Entrar al Sistema</button>
         </div>
     </div>
 
     <!-- Drawer Carrito de Cotización -->
-    <div id="cart-drawer" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col p-6">
-            <div class="flex justify-between items-center border-b pb-4">
+    <div id="cart-drawer" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; z-index:999; justify-content:flex-end;">
+        <div class="h-full w-full max-w-md bg-white shadow-xl flex flex-col p-6" style="width:100%; max-width:400px; height:100%; background:white; display:flex; flex-direction:column; padding:20px; margin-left:auto;">
+            <div class="flex justify-between items-center border-b pb-4" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px;">
                 <h2 class="text-lg font-bold text-gray-800">Carrito de Cotización ER</h2>
-                <button onclick="toggleCart()" class="text-gray-500 hover:text-black"><i class="fa fa-times text-xl"></i></button>
+                <button onclick="toggleCart()" style="background:none; border:none; font-size:18px; cursor:pointer;"><i class="fa fa-times"></i></button>
             </div>
             
-            <div id="cart-items" class="flex-1 overflow-y-auto py-4 space-y-4">
+            <div id="cart-items" class="flex-1 overflow-y-auto py-4 space-y-4" style="flex:1; overflow-y:auto; padding:15px 0;">
                 <p class="text-gray-500 text-center py-8">El carrito está vacío.</p>
             </div>
 
-            <div class="border-t pt-4 space-y-2">
-                <div class="flex justify-between text-sm">
+            <div class="border-t pt-4 space-y-2" style="border-top:1px solid #eee; padding-top:15px;">
+                <div class="flex justify-between text-sm" style="display:flex; justify-content:space-between; font-size:14px;">
                     <span>Subtotal:</span>
                     <span id="subtotal-amount" class="font-semibold">$0.00 USD</span>
                 </div>
-                <div class="flex justify-between text-sm text-gray-500">
+                <div class="flex justify-between text-sm text-gray-500" style="display:flex; justify-content:space-between; font-size:14px; color:#6b7280;">
                     <span>IVA (16%):</span>
                     <span id="iva-amount">$0.00 USD</span>
                 </div>
-                <div class="flex justify-between text-base font-bold text-[#003DA5] border-t pt-2 mt-2">
+                <div class="flex justify-between text-base font-bold text-[#003DA5] border-t pt-2 mt-2" style="display:flex; justify-content:space-between; font-size:16px; font-weight:bold; color:#003DA5; border-top:1px solid #eee; padding-top:8px;">
                     <span>Total con IVA:</span>
                     <span id="total-amount">$0.00 USD</span>
                 </div>
 
-                <div class="bg-gray-50 p-3 rounded border text-xs text-gray-600 mt-2">
-                    <label class="flex items-center font-medium text-gray-800 mb-1 cursor-pointer">
-                        <input type="checkbox" id="need-invoice" class="mr-2" checked> Solicitar Factura Fiscal (CFDI 4.0)
-                    </label>
-                    <p class="text-gray-500">Cotización con validez oficial REGO-FIX México.</p>
-                </div>
-
-                <div class="mt-3">
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Método de Pago:</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="selectPayment('PayPal')" id="btn-paypal" class="border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-[#003DA5] bg-blue-50 text-[#003DA5]">
-                            <i class="fa fa-paypal"></i> <span>PayPal</span>
-                        </button>
-                        <button onclick="selectPayment('Transferencia')" id="btn-card" class="border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-gray-200 bg-white text-gray-700">
-                            <i class="fa fa-university"></i> <span>Transferencia (SPEI)</span>
-                        </button>
-                    </div>
-                </div>
-
-                <button onclick="processCheckout()" class="w-full bg-[#003DA5] hover:bg-blue-900 text-white font-bold py-3 rounded shadow mt-3 transition text-center block">
+                <button onclick="processCheckout()" style="width:100%; background:#003DA5; color:white; font-weight:bold; padding:12px; border:none; border-radius:4px; margin-top:15px; cursor:pointer;">
                     Confirmar Pedido / Cotización
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Scripts (Rutas relativas estables) -->
+    <!-- Scripts de Datos e Inventario Local -->
     <script src="./products.js"></script>
     <script src="./sku_images_final.js"></script>
 
@@ -269,7 +237,6 @@
         let filteredProducts = [];
         
         window.cart = [];
-        window.selectedPaymentMethod = 'PayPal';
         window.distributorDiscount = 0;
         window.inventoryData = {};
 
@@ -317,15 +284,12 @@
 
         function filterByCategory(catName) {
             document.getElementById('filter-cat').value = catName;
-            
-            // Actualizar estilo visual activo en las tarjetas superiores
             document.querySelectorAll('nav.store--category-table > a').forEach(el => el.classList.remove('active-category'));
             if(catName) {
                 const targetId = 'cat-' + catName.toLowerCase();
                 const cardEl = document.getElementById(targetId);
                 if(cardEl) cardEl.classList.add('active-category');
             }
-
             handleFilterChange();
             window.scrollTo({ top: 400, behavior: 'smooth' });
         }
@@ -343,9 +307,9 @@
                     const itemCat = (item.cat || '').toLowerCase();
                     const targetCat = cat.toLowerCase();
                     if (targetCat === 'accesorios') {
-                        matchesCat = itemCat.includes('accesorio') || itemCat.includes('accessory') || itemCat.includes('llave') || itemCat.includes('wrench') || itemCat.includes('spanner');
+                        matchesCat = itemCat.includes('accesorio') || itemCat.includes('accessory') || itemCat.includes('llave') || itemCat.includes('wrench');
                     } else if (targetCat === 'tuercas') {
-                        matchesCat = itemCat.includes('tuerca') || itemCat.includes('nut') || itemCat.includes('recool') || itemCat.includes('clamping nut');
+                        matchesCat = itemCat.includes('tuerca') || itemCat.includes('nut') || itemCat.includes('recool');
                     } else {
                         matchesCat = itemCat.includes(targetCat);
                     }
@@ -365,7 +329,7 @@
 
             if (filteredProducts.length === 0) {
                 grid.innerHTML = `
-                    <div class="py-16 text-center text-gray-500 bg-white rounded border border-gray-200">
+                    <div class="py-16 text-center text-gray-500 bg-white rounded border border-gray-200" style="padding:40px; background:white; text-align:center;">
                         <i class="fa fa-folder-open text-4xl mb-3 text-gray-300"></i>
                         <p class="font-semibold">No se encontraron productos con esos criterios de búsqueda.</p>
                     </div>`;
@@ -381,41 +345,37 @@
                 const discountedPrice = basePrice * (1 - window.distributorDiscount);
                 const priceDisplay = window.distributorDiscount > 0 
                     ? `<span class="text-xs line-through text-gray-400 mr-1">$${basePrice.toFixed(2)}</span><span class="text-base font-black text-red-600">$${discountedPrice.toFixed(2)}</span>`
-                    : `<span class="text-base font-black text-[#003DA5]">$${basePrice.toFixed(2)}</span>`;
+                    : `<span class="text-base font-black text-[#003DA5]" style="color:#003DA5; font-weight:bold; font-size:16px;">$${basePrice.toFixed(2)}</span>`;
 
                 const stockInfo = window.inventoryData[item.sku];
                 const qtyQro = stockInfo ? stockInfo.qty : 0;
                 const stockBadge = qtyQro > 0
-                    ? `<span class="badge-stock bg-green-100 text-green-800 ml-2"><i class="fa fa-check mr-1"></i> Stock Qro: ${qtyQro} pzas</span>`
-                    : `<span class="badge-stock bg-orange-100 text-orange-800 ml-2"><i class="fa fa-clock mr-1"></i> Sobre pedido</span>`;
+                    ? `<span class="badge-stock bg-green-100 text-green-800 ml-2" style="background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;"><i class="fa fa-check mr-1"></i> Stock Qro: ${qtyQro} pzas</span>`
+                    : `<span class="badge-stock bg-orange-100 text-orange-800 ml-2" style="background:#ffedd5; color:#9a3412; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;"><i class="fa fa-clock-o mr-1"></i> Sobre pedido</span>`;
 
                 html += `
-                    <div class="bg-white border border-gray-200 rounded p-3 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-sm transition">
-                        <div class="flex items-center space-x-4 w-full md:w-auto flex-1">
-                            <div class="w-16 h-16 shrink-0 flex items-center justify-center bg-gray-50 border border-gray-100 rounded p-1">
-                                <img src="${getProductImage(item.sku)}" alt="${item.name}" class="max-h-full max-w-full object-contain mix-blend-multiply" onerror="this.src='https://regousa.com/wp-content/uploads/2022/04/favicon.png';">
+                    <div class="bg-white border border-gray-200 rounded p-3 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-sm transition" style="background:white; border:1px solid #e5e7eb; padding:15px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                        <div class="flex items-center space-x-4 flex-1" style="display:flex; align-items:center; gap:15px;">
+                            <div class="w-16 h-16 shrink-0 flex items-center justify-center bg-gray-50 border border-gray-100 rounded p-1" style="width:60px; height:60px; background:#f9fafb; display:flex; align-items:center; justify-content:center; border:1px solid #f3f4f6;">
+                                <img src="${getProductImage(item.sku)}" alt="${item.name}" style="max-height:50px; max-width:50px; object-fit:contain; mix-blend-mode:multiply;" onerror="this.src='https://regousa.com/wp-content/uploads/2022/04/favicon.png';">
                             </div>
                             <div>
-                                <div class="flex items-center space-x-2 mb-1 flex-wrap gap-y-1">
+                                <div class="flex items-center space-x-2 mb-1">
                                     <span class="text-[10px] font-mono font-bold bg-sky-50 text-[#003DA5] px-2 py-0.5 rounded border border-sky-200 uppercase">${item.series}</span>
                                     <span class="text-[10px] font-mono text-gray-500 font-bold">SKU: ${item.sku}</span>
                                     ${stockBadge}
                                 </div>
                                 <h4 class="font-bold text-gray-900 text-sm leading-snug">${item.name}</h4>
-                                <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">${item.cat}</span>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between md:justify-end w-full md:w-auto space-x-6 border-t md:border-t-0 pt-2 md:pt-0 border-gray-100">
-                            <div class="text-left md:text-right">
-                                <div class="flex items-baseline md:justify-end">
-                                    ${priceDisplay}
-                                    <span class="text-[10px] font-normal text-gray-500 ml-1">USD</span>
-                                </div>
+                        <div class="flex items-center space-x-6" style="display:flex; align-items:center; gap:20px;">
+                            <div style="text-align:right;">
+                                ${priceDisplay} <span style="font-size:10px; color:#6b7280;">USD</span>
                             </div>
                             <button onclick="addToCart('${item.sku}', '${encodeURIComponent(item.name)}', ${item.price})" 
-                                    class="bg-white border border-[#003DA5] hover:bg-[#003DA5] hover:text-white text-[#003DA5] font-semibold text-xs px-4 py-2 rounded transition flex items-center space-x-2 shrink-0">
-                                <i class="fa fa-cart-plus"></i> <span>Añadir</span>
+                                    style="background:white; border:1px solid #003DA5; color:#003DA5; font-weight:bold; font-size:12px; padding:8px 15px; border-radius:4px; cursor:pointer;">
+                                <i class="fa fa-cart-plus"></i> Añadir
                             </button>
                         </div>
                     </div>
@@ -430,13 +390,9 @@
             if (totalPages <= 1) { container.innerHTML = ''; return; }
 
             container.innerHTML = `
-                <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1.5 border rounded text-xs bg-white"' : 'class="px-3 py-1.5 border rounded text-xs bg-white hover:bg-gray-100"'}>
-                    <i class="fa fa-chevron-left"></i>
-                </button>
-                <span class="text-xs text-gray-600 font-semibold px-2">Página ${currentPage} de ${totalPages}</span>
-                <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1.5 border rounded text-xs bg-white"' : 'class="px-3 py-1.5 border rounded text-xs bg-white hover:bg-gray-100"'}>
-                    <i class="fa fa-chevron-right"></i>
-                </button>
+                <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''} style="padding:5px 10px; border:1px solid #d1d5db; background:white; border-radius:4px; cursor:pointer;"><i class="fa fa-chevron-left"></i></button>
+                <span style="font-size:12px; font-weight:bold; color:#4b5563;">Página ${currentPage} de ${totalPages}</span>
+                <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''} style="padding:5px 10px; border:1px solid #d1d5db; background:white; border-radius:4px; cursor:pointer;"><i class="fa fa-chevron-right"></i></button>
             `;
         }
 
@@ -450,13 +406,22 @@
             }
         }
 
-        window.toggleCart = function() { document.getElementById('cart-drawer').classList.toggle('hidden'); };
+        window.toggleCart = function() {
+            const drawer = document.getElementById('cart-drawer');
+            drawer.style.display = drawer.style.display === 'flex' ? 'none' : 'flex';
+        };
+
         window.addToCart = function(sku, encodedName, basePrice) {
             window.cart.push({ sku, name: decodeURIComponent(encodedName), basePrice });
             window.updateCartUI();
-            if(document.getElementById('cart-drawer').classList.contains('hidden')) window.toggleCart();
+            const drawer = document.getElementById('cart-drawer');
+            if (drawer.style.display !== 'flex') window.toggleCart();
         };
-        window.removeFromCart = function(index) { window.cart.splice(index, 1); window.updateCartUI(); };
+
+        window.removeFromCart = function(index) {
+            window.cart.splice(index, 1);
+            window.updateCartUI();
+        };
 
         window.updateCartUI = function() {
             const container = document.getElementById('cart-items');
@@ -476,13 +441,13 @@
                 const discountedPrice = item.basePrice * (1 - window.distributorDiscount);
                 subtotal += discountedPrice;
                 html += `
-                    <div class="flex justify-between items-center bg-gray-50 p-3 rounded border border-gray-200 text-xs">
-                        <div class="pr-2">
-                            <span class="font-mono text-[10px] text-gray-500 font-bold">${item.sku}</span>
-                            <h5 class="font-semibold text-gray-800 line-clamp-1">${item.name}</h5>
-                            <p class="font-mono mt-1 font-bold text-[#003DA5]">$${discountedPrice.toFixed(2)} USD</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f9fafb; padding:10px; border-radius:4px; border:1px solid #e5e7eb; font-size:12px;">
+                        <div>
+                            <strong style="color:#003DA5;">${item.sku}</strong>
+                            <div style="font-weight:600; color:#374151; max-width:230px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
+                            <div style="color:#003DA5; font-weight:bold; margin-top:2px;">$${discountedPrice.toFixed(2)} USD</div>
                         </div>
-                        <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500 transition p-1"><i class="fa fa-trash"></i></button>
+                        <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa fa-trash"></i></button>
                     </div>
                 `;
             });
@@ -495,20 +460,9 @@
             document.getElementById('total-amount').innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
         };
 
-        window.selectPayment = function(method) {
-            window.selectedPaymentMethod = method;
-            document.getElementById('btn-paypal').className = method === 'PayPal' ? "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-[#003DA5] bg-blue-50 text-[#003DA5]" : "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-gray-200 bg-white text-gray-700";
-            document.getElementById('btn-card').className = method === 'Transferencia' ? "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-[#003DA5] bg-blue-50 text-[#003DA5]" : "border py-2 px-3 rounded text-xs font-semibold flex items-center justify-center space-x-1 border-gray-200 bg-white text-gray-700";
-        };
-
-        window.processCheckout = function() {
-            if(window.cart.length === 0) { alert('El carrito está vacío.'); return; }
-            alert('Generando orden de cotización/pedido por ' + document.getElementById('total-amount').innerText + ' vía ' + window.selectedPaymentMethod + '.');
-        };
-
         window.openLogin = function() {
-            if(window.distributorDiscount > 0) {
-                if(confirm("¿Deseas cerrar la sesión de distribuidor?")) {
+            if (window.distributorDiscount > 0) {
+                if (confirm("¿Deseas cerrar la sesión de distribuidor?")) {
                     window.distributorDiscount = 0;
                     document.getElementById('distributor-info').classList.add('hidden');
                     handleFilterChange();
@@ -516,12 +470,12 @@
                 }
                 return;
             }
-            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-modal').style.display = 'flex';
         };
 
         window.closeLogin = function() {
-            document.getElementById('login-modal').classList.add('hidden');
-            document.getElementById('login-error').classList.add('hidden');
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('login-error').style.display = 'none';
         };
 
         window.handleLogin = function() {
@@ -529,10 +483,10 @@
             const p = document.getElementById('login-pass').value;
             let discount = 0, name = '';
 
-            if(u === 'usuario1' && p === 'usuario1') { discount = 0.05; name = '<i class="fa fa-tag mr-1"></i> Dist. Nivel 1 (5% OFF)'; }
-            else if(u === 'usuario2' && p === 'usuario2') { discount = 0.10; name = '<i class="fa fa-tag mr-1"></i> Dist. Nivel 2 (10% OFF)'; }
+            if (u === 'usuario1' && p === 'usuario1') { discount = 0.05; name = '<i class="fa fa-tag mr-1"></i> Dist. Nivel 1 (5% OFF)'; }
+            else if (u === 'usuario2' && p === 'usuario2') { discount = 0.10; name = '<i class="fa fa-tag mr-1"></i> Dist. Nivel 2 (10% OFF)'; }
 
-            if(discount > 0) {
+            if (discount > 0) {
                 window.distributorDiscount = discount;
                 window.closeLogin();
                 const info = document.getElementById('distributor-info');
@@ -541,8 +495,13 @@
                 handleFilterChange();
                 window.updateCartUI();
             } else {
-                document.getElementById('login-error').classList.remove('hidden');
+                document.getElementById('login-error').style.display = 'block';
             }
+        };
+
+        window.processCheckout = function() {
+            if (window.cart.length === 0) { alert('El carrito está vacío.'); return; }
+            alert('Generando orden de cotización/pedido por ' + document.getElementById('total-amount').innerText + ' con validez oficial REGO-FIX México.');
         };
 
         document.addEventListener('DOMContentLoaded', initCatalog);
