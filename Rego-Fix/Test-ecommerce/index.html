@@ -40,7 +40,7 @@
                     </a>
                 </div>
 
-                <!-- Botón de Carrito (Sin botón de usuario) -->
+                <!-- Botón de Carrito -->
                 <div style="display:flex; align-items:center; gap: 15px;">
                     <button onclick="toggleCart()" title="Cesta de Cotización" style="padding: 10px 14px; border-radius: 50%; border:none; background:#f3f4f6; cursor:pointer; position:relative; display:flex; align-items:center; justify-content:center;">
                         <i class="fa fa-shopping-cart text-gray-700" style="font-size:16px; color:#374151;"></i>
@@ -167,13 +167,13 @@
 
     <!-- Drawer Carrito de Cotización -->
     <div id="cart-drawer" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; z-index:999; justify-content:flex-end;">
-        <div style="width:100%; max-width:420px; height:100%; background:white; display:flex; flex-direction:column; padding:20px; margin-left:auto; box-shadow:-5px 0 25px rgba(0,0,0,0.15); overflow-y:auto;">
+        <div style="width:100%; max-width:440px; height:100%; background:white; display:flex; flex-direction:column; padding:20px; margin-left:auto; box-shadow:-5px 0 25px rgba(0,0,0,0.15); overflow-y:auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:12px;">
                 <h2 style="font-size:16px; font-weight:bold; color:#1f2937; margin:0;">Carrito de Cotización ER</h2>
                 <button onclick="toggleCart()" style="background:none; border:none; font-size:18px; cursor:pointer; color:#6b7280;"><i class="fa fa-times"></i></button>
             </div>
             
-            <div id="cart-items" style="padding:15px 0; display:flex; flex-direction:column; gap:10px; max-height: 200px; overflow-y: auto; border-bottom: 1px solid #eee;">
+            <div id="cart-items" style="padding:15px 0; display:flex; flex-direction:column; gap:10px; max-height: 240px; overflow-y: auto; border-bottom: 1px solid #eee;">
                 <p style="color:#6b7280; text-align:center; font-size:13px; margin:20px 0;">El carrito está vacío.</p>
             </div>
 
@@ -199,7 +199,7 @@
                 <div>
                     <label style="display:block; font-size:11px; font-weight:bold; color:#4b5563; margin-bottom:3px;">Método de Pago:</label>
                     <select id="client-payment" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; outline:none; background:white;">
-                        <option value="Depósito / Transferencia Bancaria">Depósito / Transferencia Bancaria (SPEI)</option>
+                        <option value="Depósito / Transferencia Bancaria (SPEI)">Depósito / Transferencia Bancaria (SPEI)</option>
                         <option value="Tarjeta de Crédito / Débito">Tarjeta de Crédito / Débito</option>
                     </select>
                 </div>
@@ -218,7 +218,7 @@
                         <span id="total-amount">$0.00 USD</span>
                     </div>
 
-                    <button onclick="processCheckout()" style="width:100%; background:#003DA5; color:white; font-weight:bold; padding:11px; border:none; border-radius:4px; cursor:pointer; font-size:13px;">
+                    <button id="btn-checkout" onclick="processCheckout()" style="width:100%; background:#003DA5; color:white; font-weight:bold; padding:11px; border:none; border-radius:4px; cursor:pointer; font-size:13px;">
                         Procesar Pedido / Cotización
                     </button>
                 </div>
@@ -338,19 +338,25 @@
             const pageItems = filteredProducts.slice(start, start + ITEMS_PER_PAGE);
 
             let html = '';
-            pageItems.forEach(item => {
+            pageItems.forEach((item) => {
                 const basePrice = item.price;
                 const priceDisplay = `<span style="color:#003DA5; font-weight:900; font-size:15px;">$${basePrice.toFixed(2)}</span>`;
 
                 const stockInfo = window.inventoryData[item.sku];
                 const qtyQro = stockInfo ? stockInfo.qty : 0;
+                const safeId = item.sku.replace(/[^a-zA-Z0-9]/g, '_');
+
                 const stockBadge = qtyQro > 0
                     ? `<span style="background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;"><i class="fa fa-check mr-1"></i> Stock Qro: ${qtyQro} pzas</span>`
-                    : `<span style="background:#ffedd5; color:#9a3412; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;"><i class="fa fa-clock-o mr-1"></i> Sobre pedido</span>`;
+                    : `<span style="background:#ffedd5; color:#9a3412; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;"><i class="fa fa-clock-o mr-1"></i> Sin stock local</span>`;
+
+                const initialDeliveryText = qtyQro > 0 
+                    ? `<span style="color:#15803d;"><i class="fa fa-truck"></i> Entrega inmediata (1-2 días hábiles)</span>`
+                    : `<span style="color:#c2410c;"><i class="fa fa-plane"></i> Tiempo de entrega: 2 a 3 semanas (Importación)</span>`;
 
                 html += `
-                    <div style="background:white; border:1px solid #e5e7eb; padding:15px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; gap:15px;">
-                        <div style="display:flex; align-items:center; gap:15px; flex:1;">
+                    <div style="background:white; border:1px solid #e5e7eb; padding:15px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap;">
+                        <div style="display:flex; align-items:center; gap:15px; flex:1; min-width:260px;">
                             <div style="width:55px; height:55px; background:#f9fafb; display:flex; align-items:center; justify-content:center; border:1px solid #f3f4f6; border-radius:4px; flex-shrink:0;">
                                 <img src="${getProductImage(item.sku)}" alt="${item.name}" style="max-height:45px; max-width:45px; object-fit:contain; mix-blend-mode:multiply;" onerror="this.src='https://regousa.com/wp-content/uploads/2022/04/favicon.png';">
                             </div>
@@ -360,23 +366,57 @@
                                     <span style="font-size:10px; font-family:monospace; color:#6b7280; font-weight:bold;">SKU: ${item.sku}</span>
                                     ${stockBadge}
                                 </div>
-                                <h4 style="font-weight:700; color:#111827; font-size:13px; margin:0; line-height:1.4;">${item.name}</h4>
+                                <h4 style="font-weight:700; color:#111827; font-size:13px; margin:0 0 4px 0; line-height:1.4;">${item.name}</h4>
+                                <div id="delivery_${safeId}" style="font-size:11px; font-weight:600;">${initialDeliveryText}</div>
                             </div>
                         </div>
 
-                        <div style="display:flex; align-items:center; gap:20px; flex-shrink:0;">
+                        <div style="display:flex; align-items:center; gap:15px; flex-shrink:0;">
                             <div style="text-align:right;">
                                 ${priceDisplay} <span style="font-size:10px; color:#6b7280;">USD</span>
                             </div>
-                            <button onclick="addToCart('${item.sku}', '${encodeURIComponent(item.name)}', ${item.price})" 
-                                    style="background:white; border:1px solid #003DA5; color:#003DA5; font-weight:bold; font-size:12px; padding:7px 14px; border-radius:4px; cursor:pointer; transition:all 0.2s;">
-                                <i class="fa fa-cart-plus"></i> Añadir
-                            </button>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <input type="number" id="qty_${safeId}" value="1" min="1" max="999" 
+                                       oninput="updateDeliveryEstimate('${safeId}', ${qtyQro})"
+                                       style="width:58px; padding:6px 4px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; text-align:center; font-weight:bold; color:#1f2937;" title="Cantidad">
+                                <button onclick="addToCart('${item.sku}', '${encodeURIComponent(item.name)}', ${item.price}, '${safeId}', ${qtyQro})" 
+                                        style="background:white; border:1px solid #003DA5; color:#003DA5; font-weight:bold; font-size:12px; padding:7px 14px; border-radius:4px; cursor:pointer; transition:all 0.2s;">
+                                    <i class="fa fa-cart-plus"></i> Añadir
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             });
             grid.innerHTML = html;
+        }
+
+        window.updateDeliveryEstimate = function(safeId, qtyQro) {
+            const inputEl = document.getElementById('qty_' + safeId);
+            const deliveryEl = document.getElementById('delivery_' + safeId);
+            if (!inputEl || !deliveryEl) return;
+
+            const reqQty = Math.max(1, parseInt(inputEl.value) || 1);
+
+            if (qtyQro >= reqQty) {
+                deliveryEl.innerHTML = `<span style="color:#15803d;"><i class="fa fa-truck"></i> Entrega inmediata (1-2 días hábiles)</span>`;
+            } else if (qtyQro > 0 && reqQty > qtyQro) {
+                const missing = reqQty - qtyQro;
+                deliveryEl.innerHTML = `<span style="color:#b45309;"><i class="fa fa-clock-o"></i> ${qtyQro} pzas entrega inmediata / ${missing} pzas en 2-3 semanas</span>`;
+            } else {
+                deliveryEl.innerHTML = `<span style="color:#c2410c;"><i class="fa fa-plane"></i> Tiempo de entrega: 2 a 3 semanas (Importación)</span>`;
+            }
+        };
+
+        function getDeliveryLabelForCart(reqQty, qtyQro) {
+            if (qtyQro >= reqQty) {
+                return `Entrega inmediata (1-2 días hábiles)`;
+            } else if (qtyQro > 0 && reqQty > qtyQro) {
+                const missing = reqQty - qtyQro;
+                return `${qtyQro} inmediata / ${missing} en 2-3 semanas`;
+            } else {
+                return `2 a 3 semanas (Importación)`;
+            }
         }
 
         function renderPagination() {
@@ -406,11 +446,41 @@
             drawer.style.display = drawer.style.display === 'flex' ? 'none' : 'flex';
         };
 
-        window.addToCart = function(sku, encodedName, basePrice) {
-            window.cart.push({ sku, name: decodeURIComponent(encodedName), basePrice });
+        window.addToCart = function(sku, encodedName, basePrice, safeId, qtyQro) {
+            const inputEl = document.getElementById('qty_' + safeId);
+            const qty = inputEl ? Math.max(1, parseInt(inputEl.value) || 1) : 1;
+
+            const existingIndex = window.cart.findIndex(item => item.sku === sku);
+            if (existingIndex !== -1) {
+                window.cart[existingIndex].qty += qty;
+            } else {
+                window.cart.push({ 
+                    sku, 
+                    name: decodeURIComponent(encodedName), 
+                    basePrice, 
+                    qty, 
+                    qtyQro 
+                });
+            }
+
+            if (inputEl) {
+                inputEl.value = 1;
+                updateDeliveryEstimate(safeId, qtyQro);
+            }
+
             window.updateCartUI();
             const drawer = document.getElementById('cart-drawer');
             if (drawer.style.display !== 'flex') window.toggleCart();
+        };
+
+        window.updateCartItemQty = function(index, newQty) {
+            const parsed = parseInt(newQty);
+            if (isNaN(parsed) || parsed < 1) {
+                window.cart[index].qty = 1;
+            } else {
+                window.cart[index].qty = parsed;
+            }
+            window.updateCartUI();
         };
 
         window.removeFromCart = function(index) {
@@ -420,7 +490,8 @@
 
         window.updateCartUI = function() {
             const container = document.getElementById('cart-items');
-            document.getElementById('cart-count').innerText = window.cart.length;
+            const totalItems = window.cart.reduce((acc, item) => acc + item.qty, 0);
+            document.getElementById('cart-count').innerText = totalItems;
 
             if (window.cart.length === 0) {
                 container.innerHTML = `<p style="color:#6b7280; text-align:center; font-size:13px; margin:20px 0;">El carrito está vacío.</p>`;
@@ -433,15 +504,23 @@
             let html = '';
             let subtotal = 0;
             window.cart.forEach((item, index) => {
-                subtotal += item.basePrice;
+                const lineTotal = item.basePrice * item.qty;
+                subtotal += lineTotal;
+                const deliveryNote = getDeliveryLabelForCart(item.qty, item.qtyQro);
+                const deliveryColor = item.qtyQro >= item.qty ? '#15803d' : (item.qtyQro > 0 ? '#b45309' : '#c2410c');
+
                 html += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f9fafb; padding:8px 10px; border-radius:4px; border:1px solid #e5e7eb; font-size:12px;">
-                        <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f9fafb; padding:10px; border-radius:4px; border:1px solid #e5e7eb; font-size:12px; gap:8px;">
+                        <div style="flex:1; min-width:0;">
                             <strong style="color:#003DA5; font-family:monospace;">${item.sku}</strong>
-                            <div style="font-weight:600; color:#374151; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
-                            <div style="color:#003DA5; font-weight:bold; margin-top:2px;">$${item.basePrice.toFixed(2)} USD</div>
+                            <div style="font-weight:600; color:#374151; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">${item.name}</div>
+                            <div style="font-size:10px; color:${deliveryColor}; font-weight:600; margin-top:2px;"><i class="fa fa-clock-o"></i> ${deliveryNote}</div>
+                            <div style="color:#003DA5; font-weight:bold; margin-top:3px;">$${item.basePrice.toFixed(2)} c/u &rarr; $${lineTotal.toFixed(2)} USD</div>
                         </div>
-                        <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:5px;"><i class="fa fa-trash"></i></button>
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                            <input type="number" value="${item.qty}" min="1" max="999" onchange="updateCartItemQty(${index}, this.value)" style="width:46px; padding:4px; border:1px solid #d1d5db; border-radius:4px; text-align:center; font-weight:bold; font-size:11px;">
+                            <button onclick="removeFromCart(${index})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:4px;" title="Eliminar"><i class="fa fa-trash"></i></button>
+                        </div>
                     </div>
                 `;
             });
@@ -454,7 +533,7 @@
             document.getElementById('total-amount').innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`;
         };
 
-        window.processCheckout = function() {
+        window.processCheckout = async function() {
             if (window.cart.length === 0) { alert('El carrito está vacío.'); return; }
             
             const name = document.getElementById('client-name').value.trim();
@@ -467,10 +546,73 @@
                 return;
             }
 
-            alert(`¡Pedido procesado con éxito!\n\nCliente: ${name}\nCompañía: ${company}\nCorreo: ${email}\nMétodo de Pago: ${payment}\nTotal: ` + document.getElementById('total-amount').innerText);
-            window.cart = [];
-            window.updateCartUI();
-            toggleCart();
+            const btn = document.getElementById('btn-checkout');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'Enviando orden y notificaciones...';
+
+            const subtotal = window.cart.reduce((acc, item) => acc + (item.basePrice * item.qty), 0);
+            const iva = subtotal * 0.16;
+            const total = subtotal + iva;
+
+            const itemsPayload = window.cart.map(item => ({
+                sku: item.sku,
+                name: item.name,
+                qty: item.qty,
+                unitPrice: item.basePrice,
+                lineTotal: item.basePrice * item.qty,
+                stockQro: item.qtyQro,
+                leadTime: getDeliveryLabelForCart(item.qty, item.qtyQro)
+            }));
+
+            const payload = {
+                action: 'send_quote_order',
+                source: 'ProductFinder_ER',
+                distributor: 'Cliente Directo Web',
+                customerName: company,
+                client: {
+                    name: name,
+                    email: email,
+                    company: company,
+                    paymentMethod: payment
+                },
+                items: itemsPayload,
+                totals: {
+                    subtotal: subtotal.toFixed(2),
+                    iva: iva.toFixed(2),
+                    total: total.toFixed(2),
+                    currency: 'USD'
+                },
+                emailTo: email,
+                targetEmail: email,
+                internalCopyEmail: 'mramirez@rego-fix.com',
+                cc: 'mramirez@rego-fix.com'
+            };
+
+            try {
+                const response = await fetch('/api/contactos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const summaryLines = itemsPayload.map(i => `• ${i.qty}x [${i.sku}] - ${i.leadTime}`).join('\n');
+
+                if (response.ok) {
+                    alert(`¡Orden procesada y enviada por correo!\n\nSe envió confirmación a: ${email}\nCon copia a: mramirez@rego-fix.com\n\nCliente: ${name} (${company})\nMétodo de Pago: ${payment}\n\nDetalle:\n${summaryLines}\n\nTotal: $${total.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`);
+                    window.cart = [];
+                    window.updateCartUI();
+                    toggleCart();
+                } else {
+                    const errData = await response.json().catch(() => ({}));
+                    alert(`No se pudo completar el envío automático al servidor (${response.status}). ${errData.error || 'Verifica la configuración de /api/contactos.'}`);
+                }
+            } catch (error) {
+                alert('Error de conexión al intentar enviar el correo. Verifica tu conexión o el endpoint /api/contactos.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
         };
 
         document.addEventListener('DOMContentLoaded', initCatalog);
